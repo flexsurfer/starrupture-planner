@@ -1,0 +1,401 @@
+/**
+ * Production Planner Component
+ * 
+ * This component provides the main UI for the production planner feature.
+ * It allows users to select any producible item and visualizes the complete
+ * production chain using React Flow with automatic layout via Dagre.
+ * 
+ * Features:
+ * - Item selection dropdown (excludes raw materials)
+ * - Interactive flow diagram with zoom/pan controls
+ * - Dark/light theme support
+ * - Minimap for navigation
+ * - Building count calculations and material flow rates
+ */
+
+import React, { useState, useCallback, useMemo } from 'react';
+import {
+    ReactFlow,
+    type Node,
+    type Edge,
+    Controls,
+    Background,
+    useNodesState,
+    useEdgesState,
+    useReactFlow,
+    ReactFlowProvider,
+    Position,
+    MiniMap,
+} from '@xyflow/react';
+import dagre from 'dagre';
+import '@xyflow/react/dist/style.css';
+
+import { useSubscription } from '@flexsurfer/reflex';
+import { SUB_IDS } from '../state/sub-ids';
+
+import type { Item, Building } from './planner/types';
+import { buildProductionFlow, getItemName } from './planner/productionFlowBuilder';
+
+
+// Define node and edge types outside component to prevent React Flow warnings
+const nodeTypes = {};
+const edgeTypes = {};
+
+/**
+ * Inner component that uses useReactFlow hook for fitView functionality
+ */
+const PlannerPageInner: React.FC = () => {
+    const { fitView } = useReactFlow();
+    // Theme subscription for dark/light mode support
+    const theme = useSubscription<'light' | 'dark'>([SUB_IDS.THEME]);
+    const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
+    const items = useSubscription<Item[]>([SUB_IDS.ITEMS]);
+
+    // Component state
+    const [selectedItemId, setSelectedItemId] = useState<string>('');
+    const [targetAmount, setTargetAmount] = useState<number>(60);
+
+    // Helper function to find the default output rate for an item
+    const getDefaultOutputRate = useCallback((itemId: string): number => {
+        for (const building of buildings) {
+            for (const recipe of building.recipes) {
+                if (recipe.output.id === itemId) {
+                    return recipe.output.amount_per_minute;
+                }
+            }
+        }
+        return 60; // fallback if not found
+    }, []);
+
+    // Color system for items (matching ItemsPage badge colors)
+    const getItemColor = useCallback((itemId: string): string => {
+        const item = (items).find(i => i.id === itemId);
+        if (!item) return '#6b7280'; // neutral gray
+
+        const colorMap = {
+            raw: '#3b82f6',      // blue (primary)
+            processed: '#8b5cf6', // purple (secondary)
+            component: '#06d6a0', // teal (accent)
+            ammo: '#f59e0b',     // amber (warning)
+            final: '#10b981',    // green (success)
+        };
+
+        return colorMap[item.type as keyof typeof colorMap] || '#6b7280';
+    }, []);
+
+    // Color system for buildings
+    const getBuildingColor = useCallback((buildingId: string): string => {
+        const colorMap = {
+            ore_excavator: '#3b82f6',    // red - extraction
+            helium_extractor: '#06b6d4', // cyan - gas extraction  
+            smelter: '#f97316',          // orange - basic processing
+            furnace: '#dc2626',          // red - high heat processing
+            fabricator: '#8b5cf6',       // purple - manufacturing
+        };
+
+        return colorMap[buildingId as keyof typeof colorMap] || '#6b7280';
+    }, []);
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+    // Memoized list of selectable items (excludes raw materials)
+    const selectableItems = useMemo(() => {
+        return items.filter(item => item.type !== 'raw');
+    }, []);
+
+    /**
+     * Converts the flow builder output to React Flow format and applies layout
+     * 
+     * This function:
+     * 1. Builds the production flow using the separate flow builder
+     * 2. Creates a Dagre graph for automatic layout
+     * 3. Converts flow nodes to React Flow nodes with custom styling
+     * 4. Converts flow edges to React Flow edges with labels
+     * 5. Applies the calculated positions to all nodes
+     */
+    const generateReactFlowData = useCallback((targetItemId: string, amount: number) => {
+        // Use fallback of 1 if amount is 0 or invalid (for temporary empty input state)
+        const validAmount = amount > 0 ? amount : 1;
+
+        // Build the production flow using our separate module
+        const { nodes: flowNodes, edges: flowEdges } = buildProductionFlow({
+            targetItemId,
+            targetAmount: validAmount
+        }, buildings);
+
+        // Create Dagre graph for automatic layout
+        // Dagre arranges nodes in a hierarchical layout (left-to-right)
+        const dagreGraph = new dagre.graphlib.Graph();
+        dagreGraph.setDefaultEdgeLabel(() => ({}));
+        dagreGraph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 100 });
+
+        // Add all nodes to the layout graph
+        flowNodes.forEach((_, index) => {
+            dagreGraph.setNode(`node_${index}`, { width: 200, height: 120 });
+        });
+
+        // Add edges to define the layout relationships
+        flowEdges.forEach((edge) => {
+            const fromIndex = flowNodes.findIndex(node => {
+                const nodeId = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
+                return nodeId === edge.from;
+            });
+            const toIndex = flowNodes.findIndex(node => {
+                const nodeId = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
+                return nodeId === edge.to;
+            });
+
+            if (fromIndex !== -1 && toIndex !== -1) {
+                dagreGraph.setEdge(`node_${fromIndex}`, `node_${toIndex}`);
+            }
+        });
+
+        // Calculate positions using Dagre
+        dagre.layout(dagreGraph);
+
+        // Convert flow nodes to React Flow nodes with positioning and styling
+        const reactFlowNodes: Node[] = flowNodes.map((node, index) => {
+            const nodeWithPosition = dagreGraph.node(`node_${index}`);
+
+            return {
+                id: `node_${index}`,
+                type: 'default',
+                position: { x: nodeWithPosition.x - 100, y: nodeWithPosition.y - 60 },
+                data: {
+                    label: (
+                        <div className="text-center p-2">
+                            <div className="text-xs font-semibold mb-1">
+                                x{node.buildingCount.toFixed(2)}
+                            </div>
+                            {/* Building icon */}
+                            <div
+                                className="w-20 h-20 mx-auto mb-2 rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: getBuildingColor(node.buildingId) }}
+                            >
+                                <img
+                                    src={`./icons/buildings/${node.buildingId}.jpg`}
+                                    alt={node.buildingName}
+                                    className="w-19 h-19 rounded-full object-cover"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                />
+                            </div>
+                            {/* Building information */}
+                            <div className="text-xs font-semibold mb-2">
+                                {node.buildingName}
+                            </div>
+                            {/* Item image and info inline */}
+                            <div className="flex items-center gap-2 justify-center">
+                                <div className="relative flex-shrink-0">
+                                    <img
+                                        src={`./icons/items/${node.outputItem}.jpg`}
+                                        alt={getItemName(node.outputItem, items)}
+                                        className="w-10 h-10 rounded border-1 shadow-sm"
+                                        style={{ borderColor: getItemColor(node.outputItem) }}
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                    />
+                                </div>
+                                <div className="text-left">
+                                    <div className="text-xs opacity-75 leading-tight">
+                                        {getItemName(node.outputItem, items)}
+                                    </div>
+                                    <div className="text-xs leading-tight"
+                                        style={{ color: getItemColor(node.outputItem) }}>
+                                        {node.outputAmount.toFixed(1)}/min
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ),
+                },
+                sourcePosition: Position.Right,
+                targetPosition: Position.Left,
+            };
+        });
+
+        // Create a mapping from internal node IDs to React Flow node IDs
+        const nodeIdMap = new Map<string, string>();
+        flowNodes.forEach((node, index) => {
+            const nodeKey = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
+            nodeIdMap.set(nodeKey, `node_${index}`);
+        });
+
+        // Convert flow edges to React Flow edges with labels
+        const reactFlowEdges: Edge[] = [];
+        const edgeIdSet = new Set<string>();
+
+        flowEdges.forEach((edge) => {
+            const fromNodeId = nodeIdMap.get(edge.from);
+            const toNodeId = nodeIdMap.get(edge.to);
+
+            if (fromNodeId && toNodeId) {
+                const edgeId = `${fromNodeId}-${toNodeId}-${edge.itemId}`;
+
+                // Safety check: prevent duplicate React Flow edges
+                if (edgeIdSet.has(edgeId)) {
+                    return;
+                }
+                edgeIdSet.add(edgeId);
+
+                const reactFlowEdge = {
+                    id: edgeId,
+                    source: fromNodeId,
+                    target: toNodeId,
+                    type: 'default',
+                    style: { stroke: getItemColor(edge.itemId), strokeWidth: 2 },
+                    label: `${getItemName(edge.itemId, items)} (${edge.amount.toFixed(1)}/min)`,
+                    labelStyle: { fontSize: 12, fontWeight: 'bold', color: getItemColor(edge.itemId) },
+                };
+                reactFlowEdges.push(reactFlowEdge);
+            }
+        });
+
+        // Set the new state
+        setNodes(reactFlowNodes);
+        setEdges(reactFlowEdges);
+    }, [setNodes, setEdges, getItemColor, getBuildingColor, items]);
+
+    /**
+     * Handles item selection from the dropdown
+     * Regenerates the flow diagram when a new item is selected
+     */
+    const handleItemSelect = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+        const itemId = event.target.value;
+        setSelectedItemId(itemId);
+
+        if (itemId) {
+            // Set target amount to the default output rate of one building for this item
+            const defaultOutput = getDefaultOutputRate(itemId);
+            setTargetAmount(defaultOutput);
+            generateReactFlowData(itemId, defaultOutput);
+            // Fit view after generating new data
+            setTimeout(() => {
+                fitView({ duration: 300, padding: 0.1 });
+            }, 10);
+        } else {
+            setNodes([]);
+            setEdges([]);
+        }
+    }, [generateReactFlowData, getDefaultOutputRate, setNodes, setEdges, fitView]);
+
+    // Force regeneration of the current selection when the component updates
+    React.useEffect(() => {
+        if (selectedItemId) {
+            generateReactFlowData(selectedItemId, targetAmount);
+            // Fit view after nodes are updated (with a small delay to ensure DOM is updated)
+            setTimeout(() => {
+                fitView({ duration: 300, padding: 0.1 });
+            }, 10);
+        }
+    }, [selectedItemId, targetAmount, generateReactFlowData, fitView]);
+
+    return (
+        <div className="h-full flex flex-col bg-base-100">
+            {/* Header Section */}
+            <div className="p-2 bg-base-200 shadow-lg flex-shrink-0 flex flex-row items-center gap-4">
+                <div className="flex items-start gap-6 flex-wrap">
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text font-semibold">Select item to produce:</span>
+                        </label>
+                        <select
+                            className="select select-bordered w-full max-w-xs"
+                            value={selectedItemId}
+                            onChange={handleItemSelect}
+                        >
+                            <option value="">Choose an item...</option>
+                            {selectableItems.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                    {item.name} ({item.type})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="form-control ">
+                        <div className="flex flex-col ">
+                            <label className="label">
+                                <span className="label-text font-semibold">Target (per min):</span>
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                value={targetAmount === 0 ? '' : targetAmount}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    // Allow empty input temporarily to enable proper keyboard editing
+                                    if (value === '') {
+                                        setTargetAmount(0); // Use 0 as temp placeholder
+                                    } else {
+                                        const numValue = Number(value);
+                                        if (numValue >= 1) {
+                                            setTargetAmount(numValue);
+                                        }
+                                    }
+                                }}
+                                onBlur={(e) => {
+                                    const value = Number(e.target.value);
+                                    if (value < 1 || isNaN(value)) {
+                                        setTargetAmount(1);
+                                    }
+                                }}
+                                className="input input-bordered w-24"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Flow Diagram Section */}
+            <div className="flex-1 min-h-0">
+                {selectedItemId ? (
+                    <div className="w-full h-full">
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            colorMode={theme}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            nodeTypes={nodeTypes}
+                            edgeTypes={edgeTypes}
+                            attributionPosition="bottom-left"
+                        >
+                            <MiniMap />
+                            <Background />
+                            <Controls />
+                        </ReactFlow>
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="text-6xl mb-4">🏭</div>
+                            <h2 className="text-xl font-semibold text-base-content/80">
+                                Select an item to view its production flow
+                            </h2>
+                            <p className="text-base-content/60 mt-2">
+                                Choose any processed item, component, or ammo to see the required buildings and resource flow.
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+/**
+ * Main Production Planner component wrapper with ReactFlowProvider
+ */
+const PlannerPage: React.FC = () => {
+    return (
+        <ReactFlowProvider>
+            <PlannerPageInner />
+        </ReactFlowProvider>
+    );
+};
+
+export default PlannerPage;

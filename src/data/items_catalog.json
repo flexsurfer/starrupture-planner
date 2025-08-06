@@ -1,0 +1,202 @@
+[
+  {
+    "id": "ore_titanium",
+    "name": "Titanium Ore",
+    "type": "raw"
+  },
+  {
+    "id": "ore_wolfram",
+    "name": "Wolfram Ore",
+    "type": "raw"
+  },
+  {
+    "id": "ore_calcium",
+    "name": "Calcium Ore",
+    "type": "raw"
+  },
+  {
+    "id": "ore_sulphur",
+    "name": "Sulphur Ore",
+    "type": "raw"
+  },
+  {
+    "id": "ore_goethite",
+    "name": "Goethite Ore",
+    "type": "raw"
+  },
+  {
+    "id": "helium",
+    "name": "Helium",
+    "type": "raw"
+  },
+  {
+    "id": "crude_oil",
+    "name": "Crude Oil",
+    "type": "raw"
+  },
+  {
+    "id": "bar_titanium",
+    "name": "Titanium Bar",
+    "type": "processed"
+  },
+  {
+    "id": "bar_wolfram",
+    "name": "Wolfram Bar",
+    "type": "processed"
+  },
+  {
+    "id": "block_calcium",
+    "name": "Calcium Block",
+    "type": "processed"
+  },
+  {
+    "id": "powder_calcium",
+    "name": "Calcium Powder",
+    "type": "processed"
+  },
+  {
+    "id": "powder_wolfram",
+    "name": "Wolfram Powder",
+    "type": "processed"
+  },
+  {
+    "id": "ceramics",
+    "name": "Ceramics",
+    "type": "processed"
+  },
+  {
+    "id": "glass",
+    "name": "Glass",
+    "type": "processed"
+  },
+  {
+    "id": "titanium_housing",
+    "name": "Titanium Housing",
+    "type": "processed"
+  },
+  {
+    "id": "explosive",
+    "name": "Explosive",
+    "type": "processed"
+  },
+  {
+    "id": "heat_sheet",
+    "name": "Heat Resistant Sheet",
+    "type": "processed"
+  },
+  {
+    "id": "synthetic_silicon",
+    "name": "Synthetic Silicon",
+    "type": "processed"
+  },
+  {
+    "id": "supermagnet",
+    "name": "Supermagnet",
+    "type": "processed"
+  },
+  {
+    "id": "sulphuric_acid",
+    "name": "Sulphuric Acid",
+    "type": "processed"
+  },
+  {
+    "id": "basic_building",
+    "name": "Basic Building Material",
+    "type": "component"
+  },
+  {
+    "id": "calcite_sheets",
+    "name": "Calcite Sheets",
+    "type": "component"
+  },
+  {
+    "id": "titanium_beam",
+    "name": "Titanium Beam",
+    "type": "component"
+  },
+  {
+    "id": "titanium_rod",
+    "name": "Titanium Rod",
+    "type": "component"
+  },
+  {
+    "id": "titanium_sheet",
+    "name": "Titanium Sheet",
+    "type": "component"
+  },
+  {
+    "id": "wolfram_plate",
+    "name": "Wolfram Plate",
+    "type": "component"
+  },
+  {
+    "id": "wolfram_wire",
+    "name": "Wolfram Wire",
+    "type": "component"
+  },
+  {
+    "id": "rotor",
+    "name": "Rotor",
+    "type": "component"
+  },
+  {
+    "id": "tube",
+    "name": "Tube",
+    "type": "component"
+  },
+  {
+    "id": "stabilizer",
+    "name": "Stabilizer",
+    "type": "component"
+  },
+  {
+    "id": "stator",
+    "name": "Stator",
+    "type": "component"
+  },
+  {
+    "id": "electronics",
+    "name": "Electronics",
+    "type": "component"
+  },
+  {
+    "id": "syringe",
+    "name": "Syringe",
+    "type": "component"
+  },    
+  {
+    "id": "inductor",
+    "name": "Inductor",
+    "type": "component"
+  },
+  {
+    "id": "valve",
+    "name": "Valve",  
+    "type": "component"
+  },
+  {
+    "id": "turbine",
+    "name": "Turbine",
+    "type": "component"
+  },
+  {
+    "id": "nozzle",
+    "name": "Nozzle",
+    "type": "component"
+  },
+  {
+    "id": "pressure_tank",
+    "name": "Pressure Tank",
+    "type": "component"
+  },
+  {
+    "id": "pistol_ammo",
+    "name": "Pistol Ammo",
+    "type": "ammo"
+  },
+  {
+    "id": "standard_ammo",
+    "name": "Standard Ammo",
+    "type": "ammo"
+  }
+]
