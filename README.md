@@ -14,7 +14,7 @@
 [![Vite](https://img.shields.io/badge/Vite-7.0.4-646CFF?logo=vite)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1.11-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 
-[🎮 Open Planner](https://www.starrupture-planner.com) • [🛠 Contribute](#contributing)
+[🎮 Open Planner](https://www.starrupture-planner.com) • [🛠 Contribute](https://github.com/flexsurfer/starrupture-planner/blob/main/CONTRIBUTING.md)
 
 </div>
 
