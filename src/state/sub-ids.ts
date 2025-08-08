@@ -5,6 +5,12 @@ export const SUB_IDS = {
     SELECTED_CATEGORY: 'selectedCategory',
     CATEGORIES: 'categories',
     BUILDINGS: 'buildings',
+    CORPORATIONS: 'corporations',
+    LEVELS: 'levels',
+    LEVELS_MAP: 'levelsMap',
     THEME: 'theme',
     ACTIVE_TAB: 'activeTab',
+    CORPORATIONS_STATS: 'corporationsStats',
+    CORPORATIONS_WITH_STATS: 'corporationsWithStats',
+    SELECTED_PLANNER_ITEM: 'selectedPlannerItem',
 }

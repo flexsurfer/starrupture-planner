@@ -1,0 +1,535 @@
+{
+  "Future Health Solutions": {
+    "id": "future_health_solutions",
+    "levels": [
+      {
+        "level": 1,
+        "components": [
+          {
+            "id": "bar_titanium",
+            "points": 2,
+            "cost": 200
+          },
+          {
+            "id": "block_calcium",
+            "points": 1,
+            "cost": 200
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Habitat"
+          },
+          {
+            "name": "Basic Habitat Modules"
+          },
+          {
+            "name": "Advanced Habitat Modules"
+          }
+        ]
+      },
+      {
+        "level": 2,
+        "components": [
+          {
+            "id": "wolfram_plate",
+            "points": 5,
+            "cost": 1500
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Regeneration Chamber"
+          }
+        ]
+      },
+      {
+        "level": 3,
+        "components": [
+          {
+            "id": "glass",
+            "points": 11,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Food Station"
+          }
+        ]
+      },
+      {
+        "level": 4,
+        "components": [
+          {
+            "id": "synthetic_silicon",
+            "points": 8,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "L.E.M. Station"
+          },
+          {
+            "name": "Lesser Runner LEM"
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "components": [
+          {
+            "id": "syringe",
+            "points": 22,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Lesser Endurancegiver LEM"
+          },
+          {
+            "name": "Med Tool"
+          }
+        ]
+      }
+    ]
+  },
+  "Selenian Corporation": {
+    "id": "selenian_corporation",
+    "levels": [
+      {
+        "level": 1,
+        "components": [
+          {
+            "id": "bar_wolfram",
+            "points": 2,
+            "cost": 200
+          },
+          {
+            "id": "bar_titanium",
+            "points": 1,
+            "cost": 200
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Base Core"
+          },
+          {
+            "name": "Basic Item Printer"
+          },
+          {
+            "name": "Ore Excavator"
+          },
+          {
+            "name": "Smelter"
+          },
+          {
+            "name": "Habitat"
+          }
+        ]
+      },
+      {
+        "level": 2,
+        "components": [
+          {
+            "id": "titanium_rod",
+            "points": 5,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Fabricator"
+          }
+        ]
+      },
+      {
+        "level": 3,
+        "components": [
+          {
+            "id": "tube",
+            "points": 10,
+            "cost": 6400
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Helium-3 Extractor"
+          }
+        ]
+      },
+      {
+        "level": 4,
+        "components": [
+          {
+            "id": "stabilizer",
+            "points": 15,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Furnace"
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "components": [
+          {
+            "id": "electronics",
+            "points": 26,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Mega Press"
+          }
+        ]
+      },
+      {
+        "level": 6,
+        "components": [
+          {
+            "id": "supermagnet",
+            "points": 28,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Sulfur Extractor"
+          },
+          {
+            "name": "Refinery"
+          }
+        ]
+      }
+    ]
+  },
+  "Griffith Blue Corporation": {
+    "id": "griffith_blue_corporation",
+    "levels": [
+      {
+        "level": 1,
+        "components": [
+          {
+            "id": "block_calcium",
+            "points": 2,
+            "cost": 200
+          },
+          {
+            "id": "bar_wolfram",
+            "points": 1,
+            "cost": 200
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Basic Platforms"
+          },
+          {
+            "name": "Advanced Platforms"
+          },
+          {
+            "name": "Platform Modules"
+          }
+        ]
+      },
+      {
+        "level": 2,
+        "components": [
+          {
+            "id": "calcite_sheets",
+            "points": 8,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Pistol"
+          }
+        ]
+      },
+      {
+        "level": 3,
+        "components": [
+          {
+            "id": "ceramics",
+            "points": 11,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Grenade"
+          }
+        ]
+      },
+      {
+        "level": 4,
+        "components": [
+          {
+            "id": "explosive",
+            "points": 14,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Equipment Upgrade Station"
+          },
+          {
+            "name": "War Bonds"
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "components": [
+          {
+            "id": "inductor",
+            "points": 18,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Defense Turret"
+          }
+        ]
+      }
+    ]
+  },
+  "Moon Energy Corporation": {
+    "id": "moon_energy_corporation",
+    "levels": [
+      {
+        "level": 1,
+        "components": [
+          {
+            "id": "bar_titanium",
+            "points": 2,
+            "cost": 200
+          },
+          {
+            "id": "bar_wolfram",
+            "points": 1,
+            "cost": 200
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Solar Generator v.1"
+          },
+          {
+            "name": "Analyzing Station"
+          }
+        ]
+      },
+      {
+        "level": 2,
+        "components": [
+          {
+            "id": "wolfram_wire",
+            "points": 3,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Recipe Station"
+          }
+        ]
+      },
+      {
+        "level": 3,
+        "components": [
+          {
+            "id": "rotor",
+            "points": 13,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Map"
+          },
+          {
+            "name": "Inventory Upgrade"
+          }
+        ]
+      },
+      {
+        "level": 4,
+        "components": [
+          {
+            "id": "stator",
+            "points": 14,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Wind Turbine v.1"
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "components": [
+          {
+            "id": "turbine",
+            "points": 24,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Lesser Infiltrator LEM"
+          },
+          {
+            "name": "Inventory Upgrade"
+          }
+        ]
+      }
+    ]
+  },
+  "Clever Robotics": {
+    "id": "clever_robotics",
+    "levels": [
+      {
+        "level": 1,
+        "components": [
+          {
+            "id": "bar_wolfram",
+            "points": 2,
+            "cost": 200
+          },
+          {
+            "id": "bar_titanium",
+            "points": 1,
+            "cost": 200
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Corporate Terminal"
+          },
+          {
+            "name": "Orbital Cargo Launcher"
+          },
+          {
+            "name": "Rail v.1"
+          },
+          {
+            "name": "Rail Support"
+          },
+          {
+            "name": "Rail Connector"
+          }
+        ]
+      },
+      {
+        "level": 2,
+        "components": [
+          {
+            "id": "titanium_beam",
+            "points": 7,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Personal Storage"
+          }
+        ]
+      },
+      {
+        "level": 3,
+        "components": [
+          {
+            "id": "titanium_housing",
+            "points": 10,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Storage Depot v.1"
+          }
+        ]
+      },
+      {
+        "level": 4,
+        "components": [
+          {
+            "id": "heat_sheet",
+            "points": 15,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Building Drone"
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "components": [
+          {
+            "id": "valve",
+            "points": 32,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Rail v.2"
+          },
+          {
+            "name": "Multirail 3"
+          },
+          {
+            "name": "Rail Modulator 4"
+          }
+        ]
+      },
+      {
+        "level": 6,
+        "components": [
+          {
+            "id": "nozzle",
+            "points": 35,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Storage Depot v.2"
+          }
+        ]
+      },
+      {
+        "level": 7,
+        "components": [
+          {
+            "id": "pressure_tank",
+            "points": 70,
+            "cost": null
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Large Personal Storage"
+          }
+        ]
+      }
+    ]
+  }
+}

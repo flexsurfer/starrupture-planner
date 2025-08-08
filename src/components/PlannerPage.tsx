@@ -24,14 +24,14 @@ import {
     useEdgesState,
     useReactFlow,
     ReactFlowProvider,
-    Position,
-    MiniMap,
+    Position
 } from '@xyflow/react';
 import dagre from 'dagre';
 import '@xyflow/react/dist/style.css';
 
 import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../state/sub-ids';
+import { ItemImage, BuildingImage } from './ui';
 
 import type { Item, Building } from './planner/types';
 import { buildProductionFlow, getItemName } from './planner/productionFlowBuilder';
@@ -50,6 +50,7 @@ const PlannerPageInner: React.FC = () => {
     const theme = useSubscription<'light' | 'dark'>([SUB_IDS.THEME]);
     const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
     const items = useSubscription<Item[]>([SUB_IDS.ITEMS]);
+    const selectedPlannerItem = useSubscription<string | null>([SUB_IDS.SELECTED_PLANNER_ITEM]);
 
     // Component state
     const [selectedItemId, setSelectedItemId] = useState<string>('');
@@ -172,13 +173,10 @@ const PlannerPageInner: React.FC = () => {
                                 className="w-20 h-20 mx-auto mb-2 rounded-full flex items-center justify-center"
                                 style={{ backgroundColor: getBuildingColor(node.buildingId) }}
                             >
-                                <img
-                                    src={`./icons/buildings/${node.buildingId}.jpg`}
-                                    alt={node.buildingName}
+                                <BuildingImage
+                                    buildingId={node.buildingId}
                                     className="w-19 h-19 rounded-full object-cover"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                    }}
+                                    size="medium"
                                 />
                             </div>
                             {/* Building information */}
@@ -188,14 +186,12 @@ const PlannerPageInner: React.FC = () => {
                             {/* Item image and info inline */}
                             <div className="flex items-center gap-2 justify-center">
                                 <div className="relative flex-shrink-0">
-                                    <img
-                                        src={`./icons/items/${node.outputItem}.jpg`}
-                                        alt={getItemName(node.outputItem, items)}
-                                        className="w-10 h-10 rounded border-1 shadow-sm"
+                                    <ItemImage
+                                        itemId={node.outputItem}
+                                        className="border-1 shadow-sm"
                                         style={{ borderColor: getItemColor(node.outputItem) }}
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
+                                        size="small"
+                                        showFallback={false}
                                     />
                                 </div>
                                 <div className="text-left">
@@ -281,6 +277,15 @@ const PlannerPageInner: React.FC = () => {
         }
     }, [generateReactFlowData, getDefaultOutputRate, setNodes, setEdges, fitView]);
 
+    // Handle selectedPlannerItem from global state
+    React.useEffect(() => {
+        if (selectedPlannerItem && selectedPlannerItem !== selectedItemId) {
+            const defaultOutput = getDefaultOutputRate(selectedPlannerItem);
+            setSelectedItemId(selectedPlannerItem);
+            setTargetAmount(defaultOutput);
+        }
+    }, [selectedPlannerItem, selectedItemId, getDefaultOutputRate]);
+
     // Force regeneration of the current selection when the component updates
     React.useEffect(() => {
         if (selectedItemId) {
@@ -295,14 +300,56 @@ const PlannerPageInner: React.FC = () => {
     return (
         <div className="h-full flex flex-col bg-base-100">
             {/* Header Section */}
-            <div className="p-2 bg-base-200 shadow-lg flex-shrink-0 flex flex-row items-center gap-4">
-                <div className="flex items-start gap-6 flex-wrap">
-                    <div className="form-control">
-                        <label className="label">
-                            <span className="label-text font-semibold">Select item to produce:</span>
-                        </label>
+            <div className="p-2 lg:p-4 bg-base-200 shadow-lg flex-shrink-0">
+                {/* Mobile Layout - Compact */}
+                <div className="flex flex-col gap-2 sm:hidden">
+                    <select
+                        className="select select-bordered select-sm w-full text-xs"
+                        value={selectedItemId}
+                        onChange={handleItemSelect}
+                    >
+                        <option value="">Choose an item to produce...</option>
+                        {selectableItems.map((item) => (
+                            <option key={item.id} value={item.id}>
+                                {item.name} ({item.type})
+                            </option>
+                        ))}
+                    </select>
+                    
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-base-content/70 whitespace-nowrap">Target/min:</span>
+                        <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={targetAmount === 0 ? '' : targetAmount}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === '') {
+                                    setTargetAmount(0);
+                                } else {
+                                    const numValue = Number(value);
+                                    if (numValue >= 1) {
+                                        setTargetAmount(numValue);
+                                    }
+                                }
+                            }}
+                            onBlur={(e) => {
+                                const value = Number(e.target.value);
+                                if (value < 1 || isNaN(value)) {
+                                    setTargetAmount(1);
+                                }
+                            }}
+                            className="input input-bordered input-sm w-20 text-xs"
+                        />
+                    </div>
+                </div>
+
+                {/* Desktop Layout */}
+                <div className="hidden sm:flex flex-row items-end gap-4 lg:gap-6">
+                    <div className="form-control flex-1">
                         <select
-                            className="select select-bordered w-full max-w-xs"
+                            className="select select-bordered select-sm lg:select-md w-full"
                             value={selectedItemId}
                             onChange={handleItemSelect}
                         >
@@ -315,37 +362,34 @@ const PlannerPageInner: React.FC = () => {
                         </select>
                     </div>
 
-                    <div className="form-control ">
-                        <div className="flex flex-col ">
-                            <label className="label">
-                                <span className="label-text font-semibold">Target (per min):</span>
-                            </label>
-                            <input
-                                type="number"
-                                min="1"
-                                step="1"
-                                value={targetAmount === 0 ? '' : targetAmount}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    // Allow empty input temporarily to enable proper keyboard editing
-                                    if (value === '') {
-                                        setTargetAmount(0); // Use 0 as temp placeholder
-                                    } else {
-                                        const numValue = Number(value);
-                                        if (numValue >= 1) {
-                                            setTargetAmount(numValue);
-                                        }
+                    <div className="form-control">
+                        <label className="label pb-1">
+                            <span className="label-text font-semibold text-sm lg:text-base">Target (per min):</span>
+                        </label>
+                        <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={targetAmount === 0 ? '' : targetAmount}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === '') {
+                                    setTargetAmount(0);
+                                } else {
+                                    const numValue = Number(value);
+                                    if (numValue >= 1) {
+                                        setTargetAmount(numValue);
                                     }
-                                }}
-                                onBlur={(e) => {
-                                    const value = Number(e.target.value);
-                                    if (value < 1 || isNaN(value)) {
-                                        setTargetAmount(1);
-                                    }
-                                }}
-                                className="input input-bordered w-24"
-                            />
-                        </div>
+                                }
+                            }}
+                            onBlur={(e) => {
+                                const value = Number(e.target.value);
+                                if (value < 1 || isNaN(value)) {
+                                    setTargetAmount(1);
+                                }
+                            }}
+                            className="input input-bordered input-sm lg:input-md w-24 lg:w-28"
+                        />
                     </div>
                 </div>
             </div>
@@ -364,7 +408,6 @@ const PlannerPageInner: React.FC = () => {
                             edgeTypes={edgeTypes}
                             attributionPosition="bottom-left"
                         >
-                            <MiniMap />
                             <Background />
                             <Controls />
                         </ReactFlow>

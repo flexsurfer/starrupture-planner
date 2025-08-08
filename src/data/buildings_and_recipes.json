@@ -2,6 +2,7 @@
   {
     "id": "ore_excavator",
     "name": "Ore Excavator",
+    "power": 5,
     "recipes": [
       {
         "output": {
@@ -32,6 +33,7 @@
   {
     "id": "helium_extractor",
     "name": "Helium-3 Extractor",
+    "power": 5,
     "recipes": [
       {
         "output": {
@@ -46,6 +48,7 @@
   {
     "id": "smelter",
     "name": "Smelter",
+    "power": 5,
     "recipes": [
       {
         "output": {
@@ -88,6 +91,7 @@
   {
     "id": "furnace",
     "name": "Furnace",
+    "power": 10,
     "recipes": [
       {
         "output": {
@@ -124,7 +128,7 @@
             "amount_per_minute": 30
           },
           {
-            "id": "powder_wolfram",
+            "id": "helium",
             "amount_per_minute": 60
           }
         ]
@@ -250,6 +254,7 @@
   {
     "id": "fabricator",
     "name": "Fabricator",
+    "power": 10,
     "recipes": [
       {
         "output": {
@@ -452,6 +457,7 @@
   {
     "id": "mega_press",
     "name": "Mega Press",
+    "power": 10,
     "recipes": [
       {
         "output": {

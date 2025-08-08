@@ -1,2 +1,37 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
+/* Mobile-friendly React Flow controls */
+@media (max-width: 1024px) {
+  .react-flow__controls {
+    bottom: 1rem !important;
+    right: 0.5rem !important;
+  }
+  
+  .react-flow__controls button {
+    width: 2rem !important;
+    height: 2rem !important;
+    min-height: 2rem !important;
+    font-size: 0.875rem !important;
+  }
+  
+  .react-flow__controls-button svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+}
+
+/* Ensure React Flow attribution doesn't interfere */
+.react-flow__attribution {
+  font-size: 0.6rem !important;
+  opacity: 0.5 !important;
+}
+
+/* Better touch targets for mobile */
+@media (max-width: 640px) {
+  .react-flow__controls button {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    min-height: 2.5rem !important;
+  }
+}
