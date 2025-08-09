@@ -73,6 +73,24 @@ export interface FlowNode {
 }
 
 /**
+ * Represents the Orbital Cargo Launcher node that sends items for rewards
+ */
+export interface OrbitalCargoLauncherNode extends Omit<FlowNode, 'buildingId' | 'buildingName' | 'recipeIndex'> {
+    /** Always 'orbital_cargo_launcher' for this node type */
+    buildingId: 'orbital_cargo_launcher';
+    /** Always 'Orbital Cargo Launcher' */
+    buildingName: 'Orbital Cargo Launcher';
+    /** Always -1 for launcher nodes (no recipe) */
+    recipeIndex: -1;
+    /** Points per item for this component */
+    pointsPerItem: number;
+    /** Time in minutes to send all items at 10 items/min */
+    launchTime: number;
+    /** Total points that will be earned */
+    totalPoints: number;
+}
+
+/**
  * Internal representation of a material flow edge between buildings
  * This connects the output of one building to the input of another
  */
@@ -98,11 +116,16 @@ export interface ProductionFlowParams {
 }
 
 /**
+ * Union type for all possible node types in the production flow
+ */
+export type ProductionNode = FlowNode | OrbitalCargoLauncherNode;
+
+/**
  * Result of building a production flow
  */
 export interface ProductionFlowResult {
     /** List of building nodes in the production chain */
-    nodes: FlowNode[];
+    nodes: ProductionNode[];
     /** List of material flow edges between buildings */
     edges: FlowEdge[];
 }

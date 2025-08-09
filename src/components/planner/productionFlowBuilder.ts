@@ -16,8 +16,43 @@ import type {
     FlowNode,
     FlowEdge,
     ProductionFlowParams,
-    ProductionFlowResult
+    ProductionFlowResult,
+    ProductionNode,
+    OrbitalCargoLauncherNode
 } from './types';
+import type { Corporation } from '../../state/db';
+
+/**
+ * Helper function to find corporation component data for an item
+ * 
+ * @param itemId - ID of the item to find data for
+ * @param corporations - Corporations data from subscription
+ * @returns Component data with points and level, or null if not found
+ */
+function getComponentData(itemId: string, corporations: Corporation[]): { points: number; level: number } | null {
+    for (const corporation of corporations) {
+        for (const level of corporation.levels) {
+            for (const component of level.components) {
+                if (component.id === itemId) {
+                    return { points: component.points, level: level.level };
+                }
+            }
+        }
+    }
+    return null; // Item not used in any corporation
+}
+
+/**
+ * Helper function to get level cost from levels data
+ * 
+ * @param level - Level number
+ * @param levels - Levels data from subscription
+ * @returns Cost for the level, or 0 if not found
+ */
+function getLevelCost(level: number, levels: any[]): number {
+    const levelData = levels.find(l => l.level === level);
+    return levelData ? levelData.cost : 0;
+}
 
 /**
  * Builds a complete production flow for a target item
@@ -32,11 +67,11 @@ import type {
  * @param params - Configuration for the production flow
  * @returns Complete production flow with nodes and edges
  */
-export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[]): ProductionFlowResult {
+export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[], corporations: Corporation[], levels: any[]): ProductionFlowResult {
     const { targetItemId, targetAmount = 60 } = params;
     
     // Internal state for building the flow
-    const flowNodes: FlowNode[] = [];
+    const flowNodes: ProductionNode[] = [];
     const flowEdges: FlowEdge[] = [];
     const processedItems = new Set<string>();
 
@@ -231,6 +266,53 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     
     // 3. Third step: Create consolidated edges between nodes
     createEdges();
+
+    // 4. Fourth step: Add Orbital Cargo Launcher node if the target item can be sent to corporations
+    const componentData = getComponentData(targetItemId, corporations);
+    if (componentData) {
+        const launchRate = 10; // items per minute per launcher
+        const launchersNeeded = targetAmount / launchRate; // number of launchers needed
+        const levelCost = getLevelCost(componentData.level, levels); // get actual level cost
+        const pointsPerMinute = targetAmount * componentData.points; // points earned per minute
+        const launchTime = levelCost / pointsPerMinute; // total time to earn the level cost
+
+        // Create the Orbital Cargo Launcher node
+        const launcherNode: OrbitalCargoLauncherNode = {
+            buildingId: 'orbital_cargo_launcher',
+            buildingName: 'Orbital Cargo Launcher',
+            recipeIndex: -1,
+            outputItem: targetItemId,
+            outputAmount: launchRate,
+            buildingCount: launchersNeeded, // Now shows proper multiplier like other buildings
+            x: 0,
+            y: 0,
+            pointsPerItem: componentData.points,
+            launchTime,
+            totalPoints: levelCost // Use actual level cost, not points * items
+        };
+        
+        flowNodes.push(launcherNode);
+
+        // Find the target item's production node to create an edge
+        const targetProductionNode = flowNodes.find((node): node is FlowNode => 
+            'recipeIndex' in node && 
+            node.recipeIndex >= 0 && 
+            node.outputItem === targetItemId
+        );
+        
+        if (targetProductionNode) {
+            const targetProductionNodeId = `${targetProductionNode.buildingId}_${targetProductionNode.recipeIndex}_${targetProductionNode.outputItem}`;
+            const launcherNodeId = `${launcherNode.buildingId}_${launcherNode.recipeIndex}_${launcherNode.outputItem}`;
+            
+            // Add edge from production to launcher
+            flowEdges.push({
+                from: targetProductionNodeId,
+                to: launcherNodeId,
+                itemId: targetItemId,
+                amount: targetAmount // Show the actual flow rate, not per-launcher rate
+            });
+        }
+    }
 
     return {
         nodes: flowNodes,

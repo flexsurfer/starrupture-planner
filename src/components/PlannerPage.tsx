@@ -33,7 +33,8 @@ import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../state/sub-ids';
 import { ItemImage, BuildingImage } from './ui';
 
-import type { Item, Building } from './planner/types';
+import type { Item, Building, ProductionNode, OrbitalCargoLauncherNode } from './planner/types';
+import type { Corporation } from '../state/db';
 import { buildProductionFlow, getItemName } from './planner/productionFlowBuilder';
 
 
@@ -50,6 +51,8 @@ const PlannerPageInner: React.FC = () => {
     const theme = useSubscription<'light' | 'dark'>([SUB_IDS.THEME]);
     const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
     const items = useSubscription<Item[]>([SUB_IDS.ITEMS]);
+    const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS]);
+    const levels = useSubscription<any[]>([SUB_IDS.LEVELS]);
     const selectedPlannerItem = useSubscription<string | null>([SUB_IDS.SELECTED_PLANNER_ITEM]);
 
     // Component state
@@ -122,7 +125,7 @@ const PlannerPageInner: React.FC = () => {
         const { nodes: flowNodes, edges: flowEdges } = buildProductionFlow({
             targetItemId,
             targetAmount: validAmount
-        }, buildings);
+        }, buildings, corporations, levels);
 
         // Create Dagre graph for automatic layout
         // Dagre arranges nodes in a hierarchical layout (left-to-right)
@@ -158,12 +161,73 @@ const PlannerPageInner: React.FC = () => {
         const reactFlowNodes: Node[] = flowNodes.map((node, index) => {
             const nodeWithPosition = dagreGraph.node(`node_${index}`);
 
+            // Helper function to check if node is Orbital Cargo Launcher
+            const isOrbitalCargoLauncher = (n: ProductionNode): n is OrbitalCargoLauncherNode => {
+                return n.buildingId === 'orbital_cargo_launcher';
+            };
+
+            const isLauncher = isOrbitalCargoLauncher(node);
+
             return {
                 id: `node_${index}`,
                 type: 'default',
                 position: { x: nodeWithPosition.x - 100, y: nodeWithPosition.y - 60 },
                 data: {
-                    label: (
+                    label: isLauncher ? (
+                        // Special rendering for Orbital Cargo Launcher
+                        <div className="text-center p-2">
+                            <div className="text-xs font-semibold mb-1">
+                                x{node.buildingCount.toFixed(2)}
+                            </div>
+                            {/* Launcher icon - using a rocket emoji since no image yet */}
+                            <div
+                                className="w-20 h-20 mx-auto mb-2 rounded-full flex items-center justify-center text-3xl bg-yellow-500"
+                            >
+                                <BuildingImage
+                                    buildingId={"launcher"}
+                                    className="w-19 h-19 rounded-full object-cover"
+                                    size="medium"
+                                />
+                            </div>
+                            {/* Launcher information */}
+                            <div className="text-xs font-semibold mb-1">
+                                {node.buildingName}
+                            </div>
+                            <div className="text-xs text-orange-500 mb-2">
+                                {node.outputAmount} items/min
+                            </div>
+                            {/* Item and reward info */}
+                            <div className="flex items-center gap-2 justify-center mb-2">
+                                <div className="relative flex-shrink-0">
+                                    <ItemImage
+                                        itemId={node.outputItem}
+                                        className="border-1 shadow-sm"
+                                        style={{ borderColor: getItemColor(node.outputItem) }}
+                                        size="small"
+                                        showFallback={false}
+                                    />
+                                </div>
+                                <div className="text-left">
+                                    <div className="text-xs opacity-75 leading-tight">
+                                        {getItemName(node.outputItem, items)}
+                                    </div>
+                                    <div className="text-xs leading-tight text-orange-500">
+                                        {node.pointsPerItem} pts/item
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Launch time and level cost */}
+                            <div className="text-xs space-y-1">
+                                <div className="text-green-500 font-semibold">
+                                    Level Cost: {node.totalPoints} pts
+                                </div>
+                                <div className="text-yellow-500 font-semibold">
+                                    Total Launch Time: {(node.launchTime).toFixed(1)} min
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        // Standard rendering for production buildings
                         <div className="text-center p-2">
                             <div className="text-xs font-semibold mb-1">
                                 x{node.buildingCount.toFixed(2)}
@@ -252,7 +316,7 @@ const PlannerPageInner: React.FC = () => {
         // Set the new state
         setNodes(reactFlowNodes);
         setEdges(reactFlowEdges);
-    }, [setNodes, setEdges, getItemColor, getBuildingColor, items]);
+    }, [setNodes, setEdges, getItemColor, getBuildingColor, items, buildings, corporations, levels]);
 
     /**
      * Handles item selection from the dropdown
@@ -315,7 +379,7 @@ const PlannerPageInner: React.FC = () => {
                             </option>
                         ))}
                     </select>
-                    
+
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-base-content/70 whitespace-nowrap">Target/min:</span>
                         <input
