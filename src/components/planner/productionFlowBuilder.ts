@@ -180,6 +180,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         const buildingsNeeded = totalDemand / outputRate;
 
         // Create a flow node representing this building in the production chain
+        const powerPerBuilding = building.power;
+        const totalPower = Math.ceil(buildingsNeeded) * powerPerBuilding;
+        
         const node: FlowNode = {
             buildingId: building.id,
             buildingName: building.name,
@@ -187,6 +190,8 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             outputItem: itemId,
             outputAmount: outputRate,
             buildingCount: buildingsNeeded,
+            powerPerBuilding,
+            totalPower,
             x: 0, // Will be positioned by the layout algorithm
             y: 0,
         };
@@ -277,6 +282,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         const launchTime = levelCost / pointsPerMinute; // total time to earn the level cost
 
         // Create the Orbital Cargo Launcher node
+        const launcherPowerPerBuilding = 10; // Power consumption per launcher
+        const launcherTotalPower = Math.ceil(launchersNeeded) * launcherPowerPerBuilding;
+        
         const launcherNode: OrbitalCargoLauncherNode = {
             buildingId: 'orbital_cargo_launcher',
             buildingName: 'Orbital Cargo Launcher',
@@ -284,6 +292,8 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             outputItem: targetItemId,
             outputAmount: launchRate,
             buildingCount: launchersNeeded, // Now shows proper multiplier like other buildings
+            powerPerBuilding: launcherPowerPerBuilding,
+            totalPower: launcherTotalPower,
             x: 0,
             y: 0,
             pointsPerItem: componentData.points,

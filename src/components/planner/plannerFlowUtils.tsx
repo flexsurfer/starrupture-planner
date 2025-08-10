@@ -82,6 +82,9 @@ export const generateReactFlowData = ({
     // Calculate positions using Dagre
     dagre.layout(dagreGraph);
 
+    // Calculate total power consumption across all nodes
+    const totalPowerConsumption = flowNodes.reduce((sum, node) => sum + node.totalPower, 0);
+
     // Convert flow nodes to React Flow nodes with positioning and styling
     const reactFlowNodes: Node[] = flowNodes.map((node, index) => {
         const nodeWithPosition = dagreGraph.node(`node_${index}`);
@@ -103,6 +106,11 @@ export const generateReactFlowData = ({
                     <div className="text-center p-2">
                         <div className="text-xs font-semibold mb-1">
                             x{node.buildingCount.toFixed(2)}
+                        </div>
+                        <div className="text-xs font-semibold mb-2  absolute top-[-10px] right-[-10px] bg-base-100">
+                            <div className="badge badge-sm badge-outline badge-primary">
+                                ⚡ {node.totalPower}
+                            </div>
                         </div>
                         {/* Launcher icon - using a rocket emoji since no image yet */}
                         <div
@@ -149,6 +157,9 @@ export const generateReactFlowData = ({
                             <div className="text-yellow-500 font-semibold">
                                 Total Launch Time: {(node.launchTime).toFixed(1)} min
                             </div>
+                            <div className="text-blue-500 font-semibold border-t border-base-300 pt-1 mt-2">
+                                Total ⚡: {Math.ceil(totalPowerConsumption)}
+                            </div>
                         </div>
                     </div>
                 ) : (
@@ -169,8 +180,13 @@ export const generateReactFlowData = ({
                             />
                         </div>
                         {/* Building information */}
-                        <div className="text-xs font-semibold mb-2">
+                        <div className="text-xs font-semibold mb-1">
                             {node.buildingName}
+                        </div>
+                        <div className="text-xs font-semibold mb-2  absolute top-[-10px] right-[-10px] bg-base-100">
+                            <div className="badge badge-sm badge-outline badge-primary">
+                                ⚡ {node.totalPower}
+                            </div>
                         </div>
                         {/* Item image and info inline */}
                         <div className="flex items-center gap-2 justify-center">
