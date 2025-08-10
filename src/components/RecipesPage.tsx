@@ -64,8 +64,13 @@ const RecipesPage = () => {
             <BuildingIcon building={building} />
             <div className="flex-1">
               <h2 className="card-title text-xl">{building.name}</h2>
-              <div className="badge badge-outline">
-                {building.recipes.length} recipe{building.recipes.length !== 1 ? 's' : ''}
+              <div className="flex gap-2 flex-wrap">
+                <div className="badge badge-outline">
+                  {building.recipes.length} recipe{building.recipes.length !== 1 ? 's' : ''}
+                </div>
+                <div className="badge badge-primary">
+                  ⚡ {building.power} 
+                </div>
               </div>
             </div>
             {/* Collapse Arrow */}

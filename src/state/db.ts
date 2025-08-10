@@ -28,6 +28,7 @@ export interface Recipe {
 export interface Building {
     id: string;
     name: string;
+    power: number;
     recipes: Recipe[];
 }
 

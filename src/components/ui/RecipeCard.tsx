@@ -1,5 +1,7 @@
 import type { Recipe, Item } from "../../state/db";
 import { ItemImage } from "./ItemImage";
+import { dispatch } from '@flexsurfer/reflex';
+import { EVENT_IDS } from '../../state/event-ids';
 
 interface RecipeItemIconProps {
   itemId: string;
@@ -38,10 +40,12 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, itemsMap, className = "" }: RecipeCardProps) => {
+  const outputItem = itemsMap[recipe.output.id];
+
   return (
     <div className={`card bg-base-200 shadow-sm border border-base-300 ${className}`}>
       <div className="card-body p-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mb-3">
           {/* Output */}
           <div className="flex flex-col gap-2">
             <h4 className="text-sm font-medium text-base-content/70">Output</h4>
@@ -87,6 +91,19 @@ export const RecipeCard = ({ recipe, itemsMap, className = "" }: RecipeCardProps
               )}
             </div>
           </div>
+        </div>
+
+        {/* Open in Planner button */}
+        <div className="flex">
+          <button 
+            className="btn btn-xs btn-primary"
+            onClick={() => {
+              dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, recipe.output.id]);
+            }}
+            title={`Open ${outputItem?.name || recipe.output.id} in planner`}
+          >
+            Open in Planner
+          </button>
         </div>
       </div>
     </div>
