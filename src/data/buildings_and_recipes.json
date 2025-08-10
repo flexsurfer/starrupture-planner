@@ -518,7 +518,7 @@
         },
         "inputs": [
           {
-            "id": "titanium_beam",
+            "id": "titanium_housing",
             "amount_per_minute": 40
           },
           {
