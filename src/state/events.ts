@@ -14,6 +14,10 @@ regEvent(EVENT_IDS.SET_CATEGORY, ({ draftDb }, category: string) => {
     draftDb.selectedCategory = category;
 });
 
+regEvent(EVENT_IDS.SET_SEARCH_TERM, ({ draftDb }, searchTerm: string) => {
+    draftDb.searchTerm = searchTerm;
+});
+
 regEvent(EVENT_IDS.SET_THEME, ({ draftDb }, newTheme: 'light' | 'dark') => {
     draftDb.theme = newTheme;
     return [[EFFECT_IDS.SET_THEME, newTheme]];

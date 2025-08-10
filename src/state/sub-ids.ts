@@ -3,6 +3,7 @@ export const SUB_IDS = {
     ITEMS_MAP: 'itemsMap',
     FILTERED_ITEMS: 'filteredItems',
     SELECTED_CATEGORY: 'selectedCategory',
+    SEARCH_TERM: 'searchTerm',
     CATEGORIES: 'categories',
     BUILDINGS: 'buildings',
     CORPORATIONS: 'corporations',

@@ -70,6 +70,7 @@ interface AppState {
     items: Item[];
     itemsMap: Record<string, Item>;
     selectedCategory: string;
+    searchTerm: string;
     categories: string[];
     buildings: Building[];
     corporations: Corporation[];
@@ -106,6 +107,7 @@ const appStore: AppState = {
     theme: 'dark',
     activeTab: 'items',
     selectedCategory: 'all',
+    searchTerm: '',
     categories: ['all', ...Array.from(new Set((itemsData as Item[]).map(item => item.type)))],
     selectedPlannerItem: null,
 };

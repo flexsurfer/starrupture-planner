@@ -6,6 +6,7 @@ import type { Item, Corporation, Level } from './db';
 regSub(SUB_IDS.ITEMS);
 regSub(SUB_IDS.ITEMS_MAP);
 regSub(SUB_IDS.SELECTED_CATEGORY);
+regSub(SUB_IDS.SEARCH_TERM);
 regSub(SUB_IDS.CATEGORIES);
 regSub(SUB_IDS.BUILDINGS);
 regSub(SUB_IDS.CORPORATIONS);
@@ -17,12 +18,22 @@ regSub(SUB_IDS.SELECTED_PLANNER_ITEM);
 
 // Computed subscriptions
 regSub(SUB_IDS.FILTERED_ITEMS,
-    (category, items) => {
-        return category === 'all'
+    (category, searchTerm, items) => {
+        let filtered = category === 'all' 
             ? items
             : items.filter((item: Item) => item.type === category);
+
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            filtered = filtered.filter((item: Item) => 
+                item.name.toLowerCase().includes(searchLower) ||
+                item.id.toLowerCase().includes(searchLower)
+            );
+        }
+
+        return filtered;
     },
-    () => [[SUB_IDS.SELECTED_CATEGORY], [SUB_IDS.ITEMS]]);
+    () => [[SUB_IDS.SELECTED_CATEGORY], [SUB_IDS.SEARCH_TERM], [SUB_IDS.ITEMS]]);
 
 // Corporation with computed stats
 regSub(SUB_IDS.CORPORATIONS_WITH_STATS,

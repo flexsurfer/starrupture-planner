@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useItemsData } from "./items/useItemsData";
 import { ItemsFilter } from "./items/ItemsFilter";
+import { ItemsSearch } from "./items/ItemsSearch";
 import { ItemsStats } from "./items/ItemsStats";
 import { ItemsTable } from "./items/ItemsTable";
 import { RecipeModal } from "./ui";
@@ -38,7 +39,7 @@ const ItemsPage = () => {
 
   const openRecipeModal = (item: Item) => {
     const recipeData = findItemRecipe(item.id, buildings);
-    
+
     if (recipeData) {
       setModalState({
         isOpen: true,
@@ -65,15 +66,25 @@ const ItemsPage = () => {
     <div className="p-4 lg:p-6">
       <div className="flex flex-col gap-4 lg:gap-6">
         {/* Header section - responsive */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
-          {/* Category Filter */}
-          <ItemsFilter
-            categories={categories}
-            selectedCategory={selectedCategory}
-          />
-          
-          {/* Stats */}
-          <ItemsStats totalItems={filteredItems.length} />
+        <div className="flex flex-col gap-4">
+          {/* Top row: Category Filter and Stats */}
+          <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+              {/* Category Filter */}
+              <ItemsFilter
+                categories={categories}
+                selectedCategory={selectedCategory}
+              />
+              {/* Search Input */}
+              <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                <ItemsSearch className="w-full sm:max-w-md" />
+              </div>
+            </div>
+            {/* Stats */}
+            <ItemsStats totalItems={filteredItems.length} />
+          </div>
+
+
         </div>
 
         {/* Items Table */}

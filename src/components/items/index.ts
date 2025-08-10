@@ -7,6 +7,7 @@
 // UI Components
 export { ItemIcon } from "./ItemIcon";
 export { ItemsFilter } from "./ItemsFilter";
+export { ItemsSearch } from "./ItemsSearch";
 export { ItemsStats } from "./ItemsStats";
 export { ItemsTable } from "./ItemsTable";
 export { ItemRow } from "./ItemRow";
