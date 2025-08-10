@@ -17,6 +17,7 @@ const buildings = [
     {
         id: 'ore_excavator',
         name: 'Ore Excavator',
+        power: 10,
         recipes: [
             {
                 output: { id: 'ore_titanium', amount_per_minute: 75 },
@@ -27,6 +28,7 @@ const buildings = [
     {
         id: 'smelter',
         name: 'Smelter',
+        power: 10,
         recipes: [
             {
                 output: { id: 'bar_titanium', amount_per_minute: 60 },
@@ -39,6 +41,7 @@ const buildings = [
     {
         id: 'fabricator',
         name: 'Fabricator',
+        power: 10,
         recipes: [
             {
                 output: { id: 'titanium_beam', amount_per_minute: 30 },
@@ -57,6 +60,7 @@ const buildings = [
     {
         id: 'furnace',
         name: 'Furnace',
+        power: 10,
         recipes: [
             {
                 output: { id: 'titanium_housing', amount_per_minute: 30 },
