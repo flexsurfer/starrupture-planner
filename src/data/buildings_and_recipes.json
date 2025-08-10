@@ -23,7 +23,15 @@
       {
         "output": {
           "id": "ore_calcium",
-          "amount_per_minute": 100
+          "amount_per_minute": 75
+        },
+        "inputs": [
+        ]
+      },
+      {
+        "output": {
+          "id": "ore_sulphur",
+          "amount_per_minute": 75
         },
         "inputs": [
         ]
@@ -572,6 +580,29 @@
           {
             "id": "sulphuric_acid",
             "amount_per_minute": 20
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "refinery",
+    "name": "Refinery",
+    "power": 10,
+    "recipes": [
+      {
+        "output": {
+          "id": "sulphuric_acid",
+          "amount_per_minute": 90
+        },
+        "inputs": [
+          {
+            "id": "ore_sulphur",
+            "amount_per_minute": 120
+          },
+          {
+            "id": "ceramics",
+            "amount_per_minute": 30
           }
         ]
       }

@@ -83,11 +83,11 @@ const PlannerPageInner: React.FC = () => {
 
                 {/* Desktop Layout */}
                 <div className="hidden sm:flex flex-row items-end gap-4 lg:gap-6">
-                    <div className="form-control flex-1">
+                    <div className="form-control">
                         <PlannerItemSelector
                             selectedItemId={selectedItemId}
                             onItemSelect={handleItemSelect}
-                            className="select-sm lg:select-md w-full"
+                            className="select-sm lg:select-md"
                         />
                     </div>
 
