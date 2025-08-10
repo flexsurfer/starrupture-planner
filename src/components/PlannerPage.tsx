@@ -11,7 +11,7 @@
  * - Building count calculations and material flow rates
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 
 import { useSubscription } from '@flexsurfer/reflex';
@@ -32,8 +32,8 @@ const PlannerPageInner: React.FC = () => {
     const getDefaultOutputRate = usePlannerDefaultOutput();
 
     // Component state
-    const [selectedItemId, setSelectedItemId] = useState<string>('');
-    const [targetAmount, setTargetAmount] = useState<number>(60);
+    const [selectedItemId, setSelectedItemId] = useState<string>(selectedPlannerItem || '');
+    const [targetAmount, setTargetAmount] = useState<number>(getDefaultOutputRate(selectedItemId));
 
     /**
      * Handles item selection from the dropdown
@@ -41,22 +41,9 @@ const PlannerPageInner: React.FC = () => {
     const handleItemSelect = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
         const itemId = event.target.value;
         setSelectedItemId(itemId);
-
-        if (itemId) {
-            // Set target amount to the default output rate of one building for this item
-            const defaultOutput = getDefaultOutputRate(itemId);
-            setTargetAmount(defaultOutput);
-        }
-    }, [getDefaultOutputRate]);
-
-    // Handle selectedPlannerItem from global state
-    useEffect(() => {
-        if (selectedPlannerItem && selectedPlannerItem !== selectedItemId) {
-            const defaultOutput = getDefaultOutputRate(selectedPlannerItem);
-            setSelectedItemId(selectedPlannerItem);
-            setTargetAmount(defaultOutput);
-        }
-    }, [selectedPlannerItem, selectedItemId, getDefaultOutputRate]);
+        const defaultOutput = getDefaultOutputRate(itemId);
+        setTargetAmount(defaultOutput);
+    }, []);
 
     return (
         <div className="h-full flex flex-col bg-base-100">
