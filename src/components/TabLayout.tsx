@@ -90,18 +90,18 @@ const TabLayout = () => {
   return (
       <div className="h-screen flex flex-col bg-base-100">
         {/* Header */}
-        <div className="navbar bg-base-200 shadow-lg flex-shrink-0">
+        <div className="lg:navbar flex flex-row bg-base-200 shadow-lg flex-shrink-0 p-2">
           {/* Mobile Layout */}
           <div className="navbar-start lg:hidden flex items-center">
             <img
               src="/logo_black_bg.jpg"
               alt="Rupture Planner Logo"
-              className="h-8 w-auto rounded shadow-sm"
+              className="h-4 w-auto rounded shadow-sm"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
-            <h1 className="text-lg font-bold ml-2">Rupture Planner</h1>
+            <h1 className="text-sm font-bold">Rupture Planner</h1>
           </div>
 
           {/* Desktop Layout */}
