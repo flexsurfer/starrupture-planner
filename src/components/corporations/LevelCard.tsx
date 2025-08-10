@@ -1,5 +1,7 @@
 import { ComponentIcon } from "./ComponentIcon";
 import type { CorporationComponent, Item, Level, Reward } from "../../state/db";
+import { dispatch } from '@flexsurfer/reflex';
+import { EVENT_IDS } from '../../state/event-ids';
 
 type LevelCardProps = {
   level: number;
@@ -33,6 +35,22 @@ export const LevelCard = ({ level, components, rewards, levelsMap, itemsMap }: L
             />
           ))}
         </div>
+
+        {/* Open in Planner button for levels 2+ */}
+        {components.length > 0 && (
+          <div className="mb-4">
+            <button 
+              className="btn btn-xs btn-primary"
+              onClick={() => {
+                // Open the first component of the level in the planner
+                dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, components[0].id]);
+              }}
+              title={`Open ${itemsMap[components[0].id]?.name || components[0].id} in planner`}
+            >
+              Open in Planner
+            </button>
+          </div>
+        )}
         
         {/* Rewards Section */}
         {rewards && rewards.length > 0 && (

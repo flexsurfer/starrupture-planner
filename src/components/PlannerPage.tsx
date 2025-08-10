@@ -102,10 +102,10 @@ const PlannerPageInner: React.FC = () => {
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-    // Memoized list of selectable items (excludes raw materials)
+    // Memoized list of selectable items (excludes raw materials, sorted alphabetically)
     const selectableItems = useMemo(() => {
-        return items.filter(item => item.type !== 'raw');
-    }, []);
+        return items.filter(item => item.type !== 'raw').sort((a, b) => a.name.localeCompare(b.name));
+    }, [items]);
 
     /**
      * Converts the flow builder output to React Flow format and applies layout
