@@ -24,7 +24,7 @@ export const ItemImage = ({
   style = {}
 }: ItemImageProps) => {
   const imagePath = `./icons/items/${itemId}.jpg`;
-  const baseClasses = `${sizeClasses[size]} object-cover rounded`;
+  const baseClasses = `${sizeClasses[size]} object-cover`;
   const finalClassName = className ? `${baseClasses} ${className}` : baseClasses;
   
   return (
@@ -33,23 +33,45 @@ export const ItemImage = ({
         src={imagePath}
         alt={item?.name || itemId}
         className={finalClassName}
-        style={style}
+        style={{...style, display: 'block'}} // Ensure image is visible initially
         onError={(e) => {
           if (showFallback) {
-            // Fallback to showing the item ID if image doesn't exist
+            // Fallback to showing a no-picture icon if image doesn't exist
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
             const fallback = target.nextElementSibling as HTMLElement;
             if (fallback) {
-              fallback.style.display = 'block';
+              fallback.style.display = 'flex';
             }
+          }
+        }}
+        onLoad={(e) => {
+          // Ensure fallback is hidden when image loads successfully
+          const target = e.target as HTMLImageElement;
+          target.style.display = 'block';
+          const fallback = target.nextElementSibling as HTMLElement;
+          if (fallback) {
+            fallback.style.display = 'none';
           }
         }}
       />
       {showFallback && (
-        <code className="text-xs bg-base-200 px-1 py-0.5 rounded hidden text-center">
-          {itemId}
-        </code>
+        <div className="hidden items-center justify-center rounded w-full h-full">
+          <svg
+            className="w-6 h-6 text-base-content/50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
       )}
     </div>
   );

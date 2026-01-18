@@ -1,4 +1,6 @@
 export const SUB_IDS = {
+    DATA_VERSION: 'dataVersion',
+    DATA_VERSIONS: 'dataVersions',
     ITEMS: 'items',
     ITEMS_MAP: 'itemsMap',
     FILTERED_ITEMS: 'filteredItems',

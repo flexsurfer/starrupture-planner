@@ -137,7 +137,6 @@ export const generateReactFlowData = ({
                                     className="border-1 shadow-sm"
                                     style={{ borderColor: getItemColor(node.outputItem) }}
                                     size="small"
-                                    showFallback={false}
                                 />
                             </div>
                             <div className="text-left">
@@ -196,7 +195,6 @@ export const generateReactFlowData = ({
                                     className="border-1 shadow-sm"
                                     style={{ borderColor: getItemColor(node.outputItem) }}
                                     size="small"
-                                    showFallback={false}
                                 />
                             </div>
                             <div className="text-left">

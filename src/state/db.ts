@@ -1,8 +1,43 @@
 import { initAppDb } from '@flexsurfer/reflex';
-import itemsData from '../data/items_catalog.json';
-import buildingsData from '../data/buildings_and_recipes.json';
-import corporationsData from '../data/corporations_components.json';
-import levelsData from '../data/levels.json';
+import { buildItemsMap, buildLevelsMap, parseCorporations, extractCategories, type RawCorporationsData } from './data-utils';
+
+// Import versioned data
+import itemsDataEarlyAccess from '../data/ealryaccess/items_catalog.json';
+import buildingsDataEarlyAccess from '../data/ealryaccess/buildings_and_recipes.json';
+import corporationsDataEarlyAccess from '../data/ealryaccess/corporations_components.json';
+import levelsDataEarlyAccess from '../data/ealryaccess/levels.json';
+
+import itemsDataPlaytest from '../data/playtest/items_catalog.json';
+import buildingsDataPlaytest from '../data/playtest/buildings_and_recipes.json';
+import corporationsDataPlaytest from '../data/playtest/corporations_components.json';
+import levelsDataPlaytest from '../data/playtest/levels.json';
+
+// Data version types and constants
+export type DataVersion = 'earlyaccess' | 'playtest';
+
+const DATA_VERSIONS: { id: DataVersion; label: string }[] = [
+    { id: 'earlyaccess', label: 'Early Access' },
+    { id: 'playtest', label: 'Playtest' },
+];
+
+const DEFAULT_DATA_VERSION: DataVersion = 'earlyaccess';
+
+// Versioned data maps
+const versionedData = {
+    earlyaccess: {
+        items: itemsDataEarlyAccess,
+        buildings: buildingsDataEarlyAccess,
+        corporations: corporationsDataEarlyAccess,
+        levels: levelsDataEarlyAccess,
+    },
+    playtest: {
+        items: itemsDataPlaytest,
+        buildings: buildingsDataPlaytest,
+        corporations: corporationsDataPlaytest,
+        levels: levelsDataPlaytest,
+    },
+};
+
 
 export interface Item {
     id: string;
@@ -68,6 +103,14 @@ export interface Tab {
 }
 
 interface AppState {
+    dataVersion: DataVersion;
+    dataVersions: { id: DataVersion; label: string }[];
+    versionedData: Record<DataVersion, {
+        items: Item[];
+        buildings: Building[];
+        corporations: RawCorporationsData;
+        levels: Level[];
+    }>;
     items: Item[];
     itemsMap: Record<string, Item>;
     selectedCategory: string;
@@ -82,34 +125,32 @@ interface AppState {
     selectedPlannerItem: string | null;
 }
 
+
+// Initialize with default version data
+const defaultData = versionedData[DEFAULT_DATA_VERSION];
+const defaultItems = defaultData.items as Item[];
+const defaultBuildings = defaultData.buildings as Building[];
+const defaultLevels = defaultData.levels as Level[];
+const defaultCorporations = parseCorporations(defaultData.corporations as RawCorporationsData);
+
 const appStore: AppState = {
     //Data
-    items: itemsData as Item[],
-    itemsMap: itemsData.reduce((acc, item) => {acc[item.id] = item; return acc;}, {} as Record<string, Item>), // Create a lookup map for items by ID for efficient access
-    buildings: buildingsData as Building[],
-    corporations: Object.entries(corporationsData as Record<string, { id: string; levels: { level: number; components: CorporationComponent[]; rewards: Reward[] }[] }>)
-        .map(([name, data]) => ({ 
-            id: data.id,
-            name, 
-            levels: data.levels.map(level => ({
-                level: level.level,
-                components: level.components.map(component => ({
-                    id: component.id,
-                    points: component.points,
-                    cost: component.cost
-                })),
-                rewards: level.rewards
-            }))
-        })) as Corporation[],
-    levels: levelsData as Level[],
-    levelsMap: levelsData.reduce((acc, level) => {acc[level.level] = level; return acc;}, {} as Record<number, Level>),
+    dataVersion: DEFAULT_DATA_VERSION,
+    dataVersions: DATA_VERSIONS,
+    versionedData: versionedData,
+    items: defaultItems,
+    itemsMap: buildItemsMap(defaultItems),
+    buildings: defaultBuildings,
+    corporations: defaultCorporations,
+    levels: defaultLevels,
+    levelsMap: buildLevelsMap(defaultLevels),
 
     //UI
     theme: 'dark',
     activeTab: 'items',
     selectedCategory: 'all',
     searchTerm: '',
-    categories: ['all', ...Array.from(new Set((itemsData as Item[]).map(item => item.type)))],
+    categories: extractCategories(defaultItems),
     selectedPlannerItem: null,
 };
 

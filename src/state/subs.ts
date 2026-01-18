@@ -3,6 +3,8 @@ import { SUB_IDS } from './sub-ids';
 import type { Item, Corporation, Level } from './db';
 
 // Root subscriptions
+regSub(SUB_IDS.DATA_VERSION);
+regSub(SUB_IDS.DATA_VERSIONS);
 regSub(SUB_IDS.ITEMS);
 regSub(SUB_IDS.ITEMS_MAP);
 regSub(SUB_IDS.SELECTED_CATEGORY);
@@ -19,19 +21,20 @@ regSub(SUB_IDS.SELECTED_PLANNER_ITEM);
 // Computed subscriptions
 regSub(SUB_IDS.FILTERED_ITEMS,
     (category, searchTerm, items) => {
-        let filtered = category === 'all' 
+        let filtered = category === 'all'
             ? items
             : items.filter((item: Item) => item.type === category);
 
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
-            filtered = filtered.filter((item: Item) => 
+            filtered = filtered.filter((item: Item) =>
                 item.name.toLowerCase().includes(searchLower) ||
                 item.id.toLowerCase().includes(searchLower)
             );
         }
 
-        return filtered;
+        // Sort items alphabetically by name
+        return [...filtered].sort((a: Item, b: Item) => a.name.localeCompare(b.name));
     },
     () => [[SUB_IDS.SELECTED_CATEGORY], [SUB_IDS.SEARCH_TERM], [SUB_IDS.ITEMS]]);
 

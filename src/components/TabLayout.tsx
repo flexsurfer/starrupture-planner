@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import ItemsPage from './ItemsPage';
 import RecipesPage from './RecipesPage';
 import CorporationsPage from './CorporationsPage';
-import { ThemeToggle, GitHubButton } from './ui';
+import { ThemeToggle, GitHubButton, VersionSelector } from './ui';
 import { useNavigationSync } from '../hooks/useNavigationSync';
 
 // Lazy load the PlannerPage to reduce initial bundle size
@@ -101,7 +101,8 @@ const TabLayout = () => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
-            <h1 className="text-sm font-bold">Rupture Planner</h1>
+            <h1 className="text-sm font-bold mr-2">Rupture Planner</h1>
+            <VersionSelector />
           </div>
 
           {/* Desktop Layout */}
@@ -115,6 +116,7 @@ const TabLayout = () => {
               }}
             />
             <h1 className="text-xl font-bold">Rupture Planner</h1>
+            <VersionSelector />
           </div>
 
           {/* Desktop Tab Navigation */}
