@@ -1035,7 +1035,7 @@
             "id": "applicator",
             "amount_per_minute": 50
           },{
-            "id": "elecromagnet",
+            "id": "electromagnet",
             "amount_per_minute": 20
           },
           {
