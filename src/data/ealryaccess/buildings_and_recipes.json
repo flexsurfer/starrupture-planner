@@ -128,11 +128,11 @@
         "inputs": [
           {
             "id": "calcite_sheets",
-            "amount_per_minute": 20
+            "amount_per_minute": 30
           },
           {
             "id": "powder_wolfram",
-            "amount_per_minute": 20
+            "amount_per_minute": 30
           }
         ]
       },
@@ -470,7 +470,7 @@
         },
         "inputs": [
           {
-            "id": "titanium_beam",
+            "id": "titanium_housing",
             "amount_per_minute": 40
           },
           {
