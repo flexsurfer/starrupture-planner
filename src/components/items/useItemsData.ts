@@ -29,7 +29,7 @@ export const useItemsData = () => {
   // Helper function to find which corporations use an item
   const findCorporationUsage = useCallback((itemId: string): CorporationUsage[] => {
     const usage: CorporationUsage[] = [];
-    
+
     for (const corporation of corporations) {
       for (const level of corporation.levels) {
         for (const component of level.components) {
@@ -42,7 +42,27 @@ export const useItemsData = () => {
         }
       }
     }
-    
+
+    return usage;
+  }, [corporations]);
+
+  // Helper function to find which corporations reward a building
+  const findBuildingCorporationUsage = useCallback((buildingName: string): CorporationUsage[] => {
+    const usage: CorporationUsage[] = [];
+
+    for (const corporation of corporations) {
+      for (const level of corporation.levels) {
+        for (const reward of level.rewards) {
+          if (reward.name === buildingName) {
+            usage.push({
+              corporation: corporation.name,
+              level: level.level
+            });
+          }
+        }
+      }
+    }
+
     return usage;
   }, [corporations]);
 
@@ -58,6 +78,7 @@ export const useItemsData = () => {
     categories,
     findProducingBuilding,
     findCorporationUsage,
+    findBuildingCorporationUsage,
     getCorporationId,
   };
 };

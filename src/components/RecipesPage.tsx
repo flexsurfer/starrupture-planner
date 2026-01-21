@@ -3,21 +3,47 @@ import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../state/sub-ids";
 import type { Building, Item } from "../state/db";
 import { BuildingImage, RecipeCard } from "./ui";
+import { useItemsData } from "./items/useItemsData";
+import { CorporationUsageBadge } from "./items/CorporationUsageBadge";
 
 const RecipesPage = () => {
   const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
   const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
-  
+  const { findBuildingCorporationUsage, getCorporationId } = useItemsData();
+
   // Track collapsed state for each building (collapsed by default)
   const [collapsedBuildings, setCollapsedBuildings] = useState<Set<string>>(new Set());
-  
+
   // Initialize collapsed state when buildings load
   useEffect(() => {
     if (buildings.length > 0 && collapsedBuildings.size === 0) {
       setCollapsedBuildings(new Set(buildings.map(building => building.id)));
     }
   }, [buildings, collapsedBuildings.size]);
-  
+
+  // Sort buildings by corporation level
+  const sortedBuildings = [...buildings].sort((a, b) => {
+    const usageA = findBuildingCorporationUsage(a.name);
+    const usageB = findBuildingCorporationUsage(b.name);
+
+    // Get minimum level for each building
+    const minLevelA = usageA.length > 0 ? Math.min(...usageA.map(u => u.level)) : Infinity;
+    const minLevelB = usageB.length > 0 ? Math.min(...usageB.map(u => u.level)) : Infinity;
+
+    // Buildings with corporation rewards come first
+    if (minLevelA === Infinity && minLevelB !== Infinity) return 1;
+    if (minLevelA !== Infinity && minLevelB === Infinity) return -1;
+
+    // If both have rewards, sort by level, then by name
+    if (minLevelA !== Infinity && minLevelB !== Infinity) {
+      if (minLevelA !== minLevelB) return minLevelA - minLevelB;
+      return a.name.localeCompare(b.name);
+    }
+
+    // If neither has rewards, sort by name
+    return a.name.localeCompare(b.name);
+  });
+
   const toggleBuilding = (buildingId: string) => {
     const newCollapsed = new Set(collapsedBuildings);
     if (newCollapsed.has(buildingId)) {
@@ -27,7 +53,7 @@ const RecipesPage = () => {
     }
     setCollapsedBuildings(newCollapsed);
   };
-  
+
   const BuildingIcon = ({ building }: { building: Building }) => {
     return (
       <div className="flex items-center justify-center w-30 h-30">
@@ -46,13 +72,12 @@ const RecipesPage = () => {
     );
   };
 
-
-
-  const BuildingCard = ({ building, isCollapsed, onToggle }: { 
+  const BuildingCard = ({ building, isCollapsed, onToggle }: {
     building: Building;
     isCollapsed: boolean;
     onToggle: () => void;
   }) => {
+    const corporationUsage = findBuildingCorporationUsage(building.name);
     return (
       <div className="card bg-base-100 shadow-lg border border-base-300">
         <div className="card-body">
@@ -64,21 +89,34 @@ const RecipesPage = () => {
             <BuildingIcon building={building} />
             <div className="flex-1">
               <h2 className="card-title text-xl">{building.name}</h2>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap items-center">
                 <div className="badge badge-outline">
                   {building.recipes.length} recipe{building.recipes.length !== 1 ? 's' : ''}
                 </div>
-                <div className="badge badge-primary">
-                  ⚡ {building.power} 
-                </div>
+                ⚡ {building.power}
+                {corporationUsage.length > 0 && (
+                  <div className="flex gap-1">
+                    {corporationUsage.map((usage, index) => {
+                      const corporationId = getCorporationId(usage.corporation);
+
+                      return (
+                        <CorporationUsageBadge
+                          key={index}
+                          usage={usage}
+                          corporationId={corporationId}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
             {/* Collapse Arrow */}
             <div className="flex-shrink-0">
-              <svg 
+              <svg
                 className={`w-6 h-6 text-base-content transition-transform duration-200 ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}
-                fill="none" 
-                stroke="currentColor" 
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -92,8 +130,8 @@ const RecipesPage = () => {
               <h3 className="text-lg font-semibold">Recipes</h3>
               <div className="grid gap-3">
                 {building.recipes.map((recipe, idx) => (
-                  <RecipeCard 
-                    key={`${building.id}-recipe-${idx}`} 
+                  <RecipeCard
+                    key={`${building.id}-recipe-${idx}`}
                     recipe={recipe}
                     itemsMap={itemsMap}
                   />
@@ -128,9 +166,9 @@ const RecipesPage = () => {
 
         {/* Buildings Grid */}
         <div className="grid gap-4 lg:gap-6">
-          {buildings.map((building) => (
-            <BuildingCard 
-              key={building.id} 
+          {sortedBuildings.map((building) => (
+            <BuildingCard
+              key={building.id}
               building={building}
               isCollapsed={collapsedBuildings.has(building.id)}
               onToggle={() => toggleBuilding(building.id)}
