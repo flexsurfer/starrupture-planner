@@ -2,9 +2,9 @@ import { initAppDb } from '@flexsurfer/reflex';
 import { buildItemsMap, parseCorporations, extractCategories, type RawCorporationsData } from './data-utils';
 
 // Import versioned data
-import itemsDataEarlyAccess from '../data/ealryaccess/items_catalog.json';
-import buildingsDataEarlyAccess from '../data/ealryaccess/buildings_and_recipes.json';
-import corporationsDataEarlyAccess from '../data/ealryaccess/corporations_components.json';
+import itemsDataEarlyAccess from '../data/earlyaccess/items_catalog.json';
+import buildingsDataEarlyAccess from '../data/earlyaccess/buildings_and_recipes.json';
+import corporationsDataEarlyAccess from '../data/earlyaccess/corporations_components.json';
 
 import itemsDataPlaytest from '../data/playtest/items_catalog.json';
 import buildingsDataPlaytest from '../data/playtest/buildings_and_recipes.json';
