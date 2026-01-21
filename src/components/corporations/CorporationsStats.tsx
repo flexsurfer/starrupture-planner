@@ -16,7 +16,7 @@ export const CorporationsStats = () => {
       </div>
       <div className="stat">
         <div className="stat-title">Total Cost</div>
-        <div className="stat-value text-2xl">{stats.totalCost.toLocaleString()} pts</div>
+        <div className="stat-value text-2xl">{stats.totalCost.toLocaleString()} G</div>
       </div>
     </div>
   );

@@ -56,9 +56,9 @@ const RecipesPage = () => {
     return (
       <div className="card bg-base-100 shadow-lg border border-base-300">
         <div className="card-body">
-          {/* Building Header - Clickable */}
-          <div 
-            className="flex items-center gap-4 mb-4 cursor-pointer hover:bg-base-200 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg transition-colors"
+          {/* Building Header - Clickable & Sticky */}
+          <div
+            className="flex items-center gap-4 mb-4 cursor-pointer hover:bg-base-200 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg transition-colors sticky top-0 z-10 bg-base-100"
             onClick={onToggle}
           >
             <BuildingIcon building={building} />

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../../state/sub-ids";
-import type { Corporation, Item, Level } from "../../state/db";
+import type { Corporation, Item } from "../../state/db";
 
 export type CorporationWithStats = Corporation & {
   stats: {
@@ -14,12 +14,10 @@ export type CorporationWithStats = Corporation & {
 export const useCorporations = () => {
   const corporationsWithStats = useSubscription<CorporationWithStats[]>([SUB_IDS.CORPORATIONS_WITH_STATS]);
   const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
-  const levelsMap = useSubscription<Record<number, Level>>([SUB_IDS.LEVELS_MAP]);
 
   return {
     corporationsWithStats,
     itemsMap,
-    levelsMap,
   };
 };
 

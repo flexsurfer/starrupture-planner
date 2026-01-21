@@ -64,8 +64,8 @@ const ItemsPage = () => {
 
   return (
     <div className="p-4 lg:p-6">
-      <div className="flex flex-col gap-4 lg:gap-6">
-        {/* Header section - responsive */}
+      {/* Sticky Header section */}
+      <div className="sticky top-0 z-10 bg-base-100 pb-4 mb-4 border-b border-base-300">
         <div className="flex flex-col gap-4">
           {/* Top row: Category Filter and Stats */}
           <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
@@ -80,22 +80,22 @@ const ItemsPage = () => {
                 <ItemsSearch className="w-full sm:max-w-md" />
               </div>
             </div>
-            {/* Stats */}
-            <ItemsStats totalItems={filteredItems.length} />
+            {/* Stats - hidden on mobile */}
+            <div className="hidden md:block">
+              <ItemsStats totalItems={filteredItems.length} />
+            </div>
           </div>
-
-
         </div>
-
-        {/* Items Table */}
-        <ItemsTable
-          filteredItems={filteredItems}
-          findProducingBuilding={findProducingBuilding}
-          findCorporationUsage={findCorporationUsage}
-          getCorporationId={getCorporationId}
-          openRecipeModal={openRecipeModal}
-        />
       </div>
+
+      {/* Items Table */}
+      <ItemsTable
+        filteredItems={filteredItems}
+        findProducingBuilding={findProducingBuilding}
+        findCorporationUsage={findCorporationUsage}
+        getCorporationId={getCorporationId}
+        openRecipeModal={openRecipeModal}
+      />
 
       {/* Recipe Modal */}
       <RecipeModal

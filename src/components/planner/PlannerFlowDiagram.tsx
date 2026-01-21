@@ -14,7 +14,7 @@ import '@xyflow/react/dist/style.css';
 import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../state/sub-ids';
 import type { Item, Building } from './types';
-import type { Corporation, Level } from '../../state/db';
+import type { Corporation } from '../../state/db';
 import { generateReactFlowData } from './plannerFlowUtils';
 import { usePlannerColors } from './hooks';
 
@@ -42,7 +42,6 @@ export const PlannerFlowDiagram: React.FC<PlannerFlowDiagramProps> = ({
     const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
     const items = useSubscription<Item[]>([SUB_IDS.ITEMS]);
     const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS]);
-    const levels = useSubscription<Level[]>([SUB_IDS.LEVELS]);
     
     // Color system
     const { getItemColor, getBuildingColor } = usePlannerColors();
@@ -59,7 +58,6 @@ export const PlannerFlowDiagram: React.FC<PlannerFlowDiagramProps> = ({
                 targetAmount,
                 buildings,
                 corporations,
-                levels,
                 items,
                 getItemColor,
                 getBuildingColor
@@ -76,7 +74,6 @@ export const PlannerFlowDiagram: React.FC<PlannerFlowDiagramProps> = ({
         targetAmount,
         buildings,
         corporations,
-        levels,
         items,
         getItemColor,
         getBuildingColor,

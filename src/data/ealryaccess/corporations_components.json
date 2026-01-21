@@ -4,94 +4,121 @@
     "levels": [
       {
         "level": 1,
+        "xp": 1,
         "components": [
-          {
-            "id": "bar_titanium",
-            "points": 2,
-            "cost": 200
-          },
-          {
-            "id": "block_calcium",
-            "points": 1,
-            "cost": 200
-          }
+          { "id": "bar_wolfram", "points": 1, "cost": 1 }
         ],
         "rewards": [
-          {
-            "name": "Habitat"
-          },
-          {
-            "name": "Basic Habitat Modules"
-          },
-          {
-            "name": "Advanced Habitat Modules"
-          }
+          { "name": "Habitat" },
+          { "name": "Basic Habitat Modules" },
+          { "name": "Advanced Habitat Modules" }
         ]
       },
       {
         "level": 2,
+        "xp": 200,
         "components": [
-          {
-            "id": "wolfram_plate",
-            "points": 5,
-            "cost": 1500
-          }
+          { "id": "bar_wolfram", "points": 1, "cost": 200 },
+          { "id": "wolfram_wire", "points": 5, "cost": 40 }
         ],
         "rewards": [
-          {
-            "name": "Regeneration Chamber"
-          }
+          { "name": "Regeneration Chamber" }
         ]
       },
       {
         "level": 3,
+        "xp": 1500,
         "components": [
-          {
-            "id": "glass",
-            "points": 11,
-            "cost": null
-          }
+          { "id": "titanium_rod", "points": 4, "cost": 375 },
+          { "id": "titanium_sheet", "points": 15, "cost": 100 }
         ],
         "rewards": [
-          {
-            "name": "Food Station"
-          }
+          { "name": "Medtool" }
         ]
       },
       {
         "level": 4,
+        "xp": 6400,
         "components": [
-          {
-            "id": "synthetic_silicon",
-            "points": 8,
-            "cost": null
-          }
+          { "id": "powder_calcium", "points": 12, "cost": 534 },
+          { "id": "powder_wolfram", "points": 18, "cost": 356 }
         ],
         "rewards": [
-          {
-            "name": "L.E.M. Station"
-          },
-          {
-            "name": "Lesser Runner LEM"
-          }
+          { "name": "LEM Station" }
         ]
       },
       {
         "level": 5,
+        "xp": 17600,
         "components": [
-          {
-            "id": "syringe",
-            "points": 22,
-            "cost": null
-          }
+          { "id": "ceramics", "points": 25, "cost": 704 }
         ],
         "rewards": [
-          {
-            "name": "Lesser Endurancegiver LEM"
-          },
-          {
-            "name": "Med Tool"
-          }
+          { "name": "Lesser Dietician LEM" },
+          { "name": "Lesser Irrigator LEM" }
+        ]
+      },
+      {
+        "level": 6,
+        "xp": 37800,
+        "components": [
+          { "id": "glass", "points": 46, "cost": 822 }
+        ],
+        "rewards": [
+          { "name": "Food Station" }
+        ]
+      },
+      {
+        "level": 7,
+        "xp": 69700,
+        "components": [
+          { "id": "chemicals", "points": 46, "cost": 1516 }
+        ],
+        "rewards": [
+          { "name": "Inventory Upgrade (+8)" }
+        ]
+      },
+      {
+        "level": 8,
+        "xp": 116000,
+        "components": [
+          { "id": "hardening_agent", "points": 60, "cost": 1934 },
+          { "id": "pressurized_helium", "points": 20, "cost": 5800 }
+        ],
+        "rewards": [
+          { "name": "Dietician LEM" },
+          { "name": "Irrigator LEM" }
+        ]
+      },
+      {
+        "level": 9,
+        "xp": 179400,
+        "components": [
+          { "id": "liquid_helium", "points": 120, "cost": 1495 }
+        ],
+        "rewards": [
+          { "name": "Compounder" }
+        ]
+      },
+      {
+        "level": 10,
+        "xp": 262600,
+        "components": [
+          { "id": "ion_injector", "points": 246, "cost": 1068 }
+        ],
+        "rewards": [
+          { "name": "Resister LEM" }
+        ]
+      },
+      {
+        "level": 11,
+        "xp": 368300,
+        "components": [
+          { "id": "ion_injector", "points": 1, "cost": 368300 }
+        ],
+        "rewards": [
+          { "name": "Greater Irrigator LEM" },
+          { "name": "Greater Dietician LEM" }
         ]
       }
     ]
@@ -101,112 +128,123 @@
     "levels": [
       {
         "level": 1,
+        "xp": 1,
         "components": [
-          {
-            "id": "bar_wolfram",
-            "points": 2,
-            "cost": 200
-          },
-          {
-            "id": "bar_titanium",
-            "points": 1,
-            "cost": 200
-          }
+          { "id": "bar_titanium", "points": 1, "cost": 1 }
         ],
         "rewards": [
-          {
-            "name": "Base Core"
-          },
-          {
-            "name": "Basic Item Printer"
-          },
-          {
-            "name": "Ore Excavator"
-          },
-          {
-            "name": "Smelter"
-          },
-          {
-            "name": "Habitat"
-          }
+          { "name": "Base Core" },
+          { "name": "Basic Item Printer" },
+          { "name": "Ore Excavator" },
+          { "name": "Smelter" },
+          { "name": "Habitat" }
         ]
       },
       {
         "level": 2,
+        "xp": 200,
         "components": [
-          {
-            "id": "titanium_rod",
-            "points": 5,
-            "cost": null
-          }
+          { "id": "bar_titanium", "points": 1, "cost": 200 },
+          { "id": "titanium_rod", "points": 5, "cost": 40 }
         ],
         "rewards": [
-          {
-            "name": "Fabricator"
-          }
+          { "name": "Fabricator" }
         ]
       },
       {
         "level": 3,
+        "xp": 1500,
         "components": [
-          {
-            "id": "tube",
-            "points": 10,
-            "cost": 6400
-          }
+          { "id": "titanium_rod", "points": 4, "cost": 375 },
+          { "id": "titanium_sheet", "points": 16, "cost": 94 }
         ],
         "rewards": [
-          {
-            "name": "Helium-3 Extractor"
-          }
+          { "name": "Inventory Upgrade (+8)" }
         ]
       },
       {
         "level": 4,
+        "xp": 6400,
         "components": [
-          {
-            "id": "stabilizer",
-            "points": 15,
-            "cost": null
-          }
+          { "id": "titanium_beam", "points": 35, "cost": 183 },
+          { "id": "titanium_sheet", "points": 12, "cost": 534 }
         ],
         "rewards": [
-          {
-            "name": "Furnace"
-          }
+          { "name": "Furnace" }
         ]
       },
       {
         "level": 5,
+        "xp": 17600,
         "components": [
-          {
-            "id": "electronics",
-            "points": 26,
-            "cost": null
-          }
+          { "id": "tube", "points": 25, "cost": 704 }
         ],
         "rewards": [
-          {
-            "name": "Mega Press"
-          }
+          { "name": "Greater Miner LEM" }
         ]
       },
       {
         "level": 6,
+        "xp": 37800,
         "components": [
-          {
-            "id": "supermagnet",
-            "points": 28,
-            "cost": null
-          }
+          { "id": "glass", "points": 70, "cost": 540 },
+          { "id": "synthetic_silicon", "points": 46, "cost": 822 }
         ],
         "rewards": [
-          {
-            "name": "Sulfur Extractor"
-          },
-          {
-            "name": "Refinery"
-          }
+          { "name": "Helium-3 Extractor" }
+        ]
+      },
+      {
+        "level": 7,
+        "xp": 69700,
+        "components": [
+          { "id": "electronics", "points": 116, "cost": 601 },
+          { "id": "synthetic_silicon", "points": 46, "cost": 1516 }
+        ],
+        "rewards": [
+          { "name": "Large Habitat" }
+        ]
+      },
+      {
+        "level": 8,
+        "xp": 116000,
+        "components": [
+          { "id": "impeller", "points": 120, "cost": 967 }
+        ],
+        "rewards": [
+          { "name": "Mega Press" }
+        ]
+      },
+      {
+        "level": 9,
+        "xp": 179400,
+        "components": [
+          { "id": "turbine", "points": 175, "cost": 1026 }
+        ],
+        "rewards": [
+          { "name": "Refinery" },
+          { "name": "Sulfur Extractor" }
+        ]
+      },
+      {
+        "level": 10,
+        "xp": 262600,
+        "components": [
+          { "id": "scanner", "points": 246, "cost": 1068 }
+        ],
+        "rewards": [
+          { "name": "Assembler" }
+        ]
+      },
+      {
+        "level": 11,
+        "xp": 368300,
+        "components": [
+          { "id": "scanner", "points": 1, "cost": 368300 }
+        ],
+        "rewards": [
+          { "name": "Greater Endurancegiver LEM" },
+          { "name": "Greater Lifegiver LEM" }
         ]
       }
     ]
@@ -216,91 +254,120 @@
     "levels": [
       {
         "level": 1,
+        "xp": 1,
         "components": [
-          {
-            "id": "block_calcium",
-            "points": 2,
-            "cost": 200
-          },
-          {
-            "id": "bar_wolfram",
-            "points": 1,
-            "cost": 200
-          }
+          { "id": "bar_titanium", "points": 1, "cost": 1 }
         ],
         "rewards": [
-          {
-            "name": "Basic Platforms"
-          },
-          {
-            "name": "Advanced Platforms"
-          },
-          {
-            "name": "Platform Modules"
-          }
+          { "name": "Basic Platforms" },
+          { "name": "Advanced Platforms" },
+          { "name": "Platform Modules" }
         ]
       },
       {
         "level": 2,
+        "xp": 200,
         "components": [
-          {
-            "id": "calcite_sheets",
-            "points": 8,
-            "cost": null
-          }
+          { "id": "titanium_rod", "points": 5, "cost": 40 },
+          { "id": "wolfram_wire", "points": 5, "cost": 40 }
         ],
         "rewards": [
-          {
-            "name": "Pistol"
-          }
+          { "name": "UPP-7 Pistol" }
         ]
       },
       {
         "level": 3,
+        "xp": 1500,
         "components": [
-          {
-            "id": "ceramics",
-            "points": 11,
-            "cost": null
-          }
+          { "id": "titanium_sheet", "points": 15, "cost": 100 },
+          { "id": "wolfram_plate", "points": 15, "cost": 100 }
         ],
         "rewards": [
-          {
-            "name": "Grenade"
-          }
+          { "name": "Grenade" }
         ]
       },
       {
         "level": 4,
+        "xp": 6400,
         "components": [
-          {
-            "id": "explosive",
-            "points": 14,
-            "cost": null
-          }
+          { "id": "titanium_housing", "points": 35, "cost": 183 },
+          { "id": "titanium_sheet", "points": 12, "cost": 534 }
         ],
         "rewards": [
-          {
-            "name": "Equipment Upgrade Station"
-          },
-          {
-            "name": "War Bonds"
-          }
+          { "name": "Equipment Upgrade Station" }
         ]
       },
       {
         "level": 5,
+        "xp": 17600,
         "components": [
-          {
-            "id": "inductor",
-            "points": 18,
-            "cost": null
-          }
+          { "id": "stabilizer", "points": 35, "cost": 503 }
         ],
         "rewards": [
-          {
-            "name": "Defense Turret"
-          }
+          { "name": "War Bonds (60)" }
+        ]
+      },
+      {
+        "level": 6,
+        "xp": 37800,
+        "components": [
+          { "id": "inductor", "points": 70, "cost": 540 },
+          { "id": "stabilizer", "points": 35, "cost": 1080 }
+        ],
+        "rewards": [
+          { "name": "Defense Turret" }
+        ]
+      },
+      {
+        "level": 7,
+        "xp": 69700,
+        "components": [
+          { "id": "applicator", "points": 46, "cost": 1516 }
+        ],
+        "rewards": [
+          { "name": "War Bonds (80)" }
+        ]
+      },
+      {
+        "level": 8,
+        "xp": 116000,
+        "components": [
+          { "id": "battery", "points": 120, "cost": 967 },
+          { "id": "nozzle", "points": 45, "cost": 2578 }
+        ],
+        "rewards": [
+          { "name": "Inventory Upgrade (+8)" }
+        ]
+      },
+      {
+        "level": 9,
+        "xp": 179400,
+        "components": [
+          { "id": "lens", "points": 175, "cost": 1026 }
+        ],
+        "rewards": [
+          { "name": "Defense Tower" }
+        ]
+      },
+      {
+        "level": 10,
+        "xp": 262600,
+        "components": [
+          { "id": "condenser", "points": 246, "cost": 1068 }
+        ],
+        "rewards": [
+          { "name": "War Bonds (100)" }
+        ]
+      },
+      {
+        "level": 11,
+        "xp": 368299,
+        "components": [
+          { "id": "condenser", "points": 1, "cost": 368299 }
+        ],
+        "rewards": [
+          { "name": "Greater Shieldgiver LEM" },
+          { "name": "Greater Lifegiver LEM" }
         ]
       }
     ]
@@ -310,91 +377,115 @@
     "levels": [
       {
         "level": 1,
+        "xp": 1,
         "components": [
-          {
-            "id": "bar_titanium",
-            "points": 2,
-            "cost": 200
-          },
-          {
-            "id": "bar_wolfram",
-            "points": 1,
-            "cost": 200
-          }
+          { "id": "bar_wolfram", "points": 1, "cost": 1 }
         ],
         "rewards": [
-          {
-            "name": "Solar Generator v.1"
-          },
-          {
-            "name": "Analyzing Station"
-          }
+          { "name": "Solar Generator v.1" },
+          { "name": "Analyzing Station" }
         ]
       },
       {
         "level": 2,
+        "xp": 200,
         "components": [
-          {
-            "id": "wolfram_wire",
-            "points": 3,
-            "cost": null
-          }
+          { "id": "ore_calcium", "points": 5, "cost": 40 }
         ],
         "rewards": [
-          {
-            "name": "Recipe Station"
-          }
+          { "name": "Recipe Station" }
         ]
       },
       {
         "level": 3,
+        "xp": 1500,
         "components": [
-          {
-            "id": "rotor",
-            "points": 13,
-            "cost": null
-          }
+          { "id": "calcite_sheets", "points": 15, "cost": 100 },
+          { "id": "block_calcium", "points": 4, "cost": 375 }
         ],
         "rewards": [
-          {
-            "name": "Map"
-          },
-          {
-            "name": "Inventory Upgrade"
-          }
+          { "name": "Map" }
         ]
       },
       {
         "level": 4,
+        "xp": 6400,
         "components": [
-          {
-            "id": "stator",
-            "points": 14,
-            "cost": null
-          }
+          { "id": "rotor", "points": 45, "cost": 143 }
         ],
         "rewards": [
-          {
-            "name": "Wind Turbine v.1"
-          }
+          { "name": "Lesser Infiltrator LEM" }
         ]
       },
       {
         "level": 5,
+        "xp": 17600,
         "components": [
-          {
-            "id": "turbine",
-            "points": 24,
-            "cost": null
-          }
+          { "id": "heat_sheet", "points": 25, "cost": 704 }
         ],
         "rewards": [
-          {
-            "name": "Lesser Infiltrator LEM"
-          },
-          {
-            "name": "Inventory Upgrade"
-          }
+          { "name": "Wind Turbine v.1" }
+        ]
+      },
+      {
+        "level": 6,
+        "xp": 37800,
+        "components": [
+          { "id": "chemicals", "points": 70, "cost": 540 },
+          { "id": "helium", "points": 5, "cost": 7560 }
+        ],
+        "rewards": [
+          { "name": "Base Core Amplifier v.2" }
+        ]
+      },
+      {
+        "level": 7,
+        "xp": 69700,
+        "components": [
+          { "id": "valve", "points": 100, "cost": 697 }
+        ],
+        "rewards": [
+          { "name": "Greater Infiltrator LEM" }
+        ]
+      },
+      {
+        "level": 8,
+        "xp": 116000,
+        "components": [
+          { "id": "electromagnetic_coil", "points": 120, "cost": 967 }
+        ],
+        "rewards": [
+          { "name": "Solar Generator v.2" }
+        ]
+      },
+      {
+        "level": 9,
+        "xp": 179400,
+        "components": [
+          { "id": "generator", "points": 175, "cost": 1026 }
+        ],
+        "rewards": [
+          { "name": "Base Core Amplifier v.2" }
+        ]
+      },
+      {
+        "level": 10,
+        "xp": 262600,
+        "components": [
+          { "id": "laser_emitter", "points": 246, "cost": 1068 }
+        ],
+        "rewards": [
+          { "name": "Wind Turbine v.2" }
+        ]
+      },
+      {
+        "level": 11,
+        "xp": 368300,
+        "components": [
+          { "id": "laser_emitter", "points": 1, "cost": 368300 }
+        ],
+        "rewards": [
+          { "name": "Inventory Upgrade (+8)" }
         ]
       }
     ]
@@ -404,130 +495,146 @@
     "levels": [
       {
         "level": 1,
+        "xp": 0,
         "components": [
-          {
-            "id": "bar_wolfram",
-            "points": 2,
-            "cost": 200
-          },
-          {
-            "id": "bar_titanium",
-            "points": 1,
-            "cost": 200
-          }
+          { "id": "bar_wolfram", "points": 1, "cost": null }
         ],
         "rewards": [
-          {
-            "name": "Corporate Terminal"
-          },
-          {
-            "name": "Orbital Cargo Launcher"
-          },
-          {
-            "name": "Rail v.1"
-          },
-          {
-            "name": "Rail Support"
-          },
-          {
-            "name": "Rail Connector"
-          }
+          { "name": "Corporate Terminal" },
+          { "name": "Orbital Cargo Launcher" },
+          { "name": "Rail v.1" },
+          { "name": "Rail Support" },
+          { "name": "Rail Connector" }
         ]
       },
       {
         "level": 2,
+        "xp": 200,
         "components": [
-          {
-            "id": "titanium_beam",
-            "points": 7,
-            "cost": null
-          }
+          { "id": "bar_wolfram", "points": 1, "cost": 200 },
+          { "id": "wolfram_wire", "points": 5, "cost": 40 }
         ],
         "rewards": [
-          {
-            "name": "Personal Storage"
-          }
+          { "name": "Personal Storage" }
         ]
       },
       {
         "level": 3,
+        "xp": 1500,
         "components": [
-          {
-            "id": "titanium_housing",
-            "points": 10,
-            "cost": null
-          }
+          { "id": "wolfram_plate", "points": 15, "cost": 100 },
+          { "id": "wolfram_wire", "points": 4, "cost": 375 }
         ],
         "rewards": [
-          {
-            "name": "Storage Depot v.1"
-          }
+          { "name": "Storage Depot v.1" }
         ]
       },
       {
         "level": 4,
+        "xp": 6400,
         "components": [
-          {
-            "id": "heat_sheet",
-            "points": 15,
-            "cost": null
-          }
+          { "id": "titanium_housing", "points": 35, "cost": 183 },
+          { "id": "wolfram_plate", "points": 12, "cost": 534 }
         ],
         "rewards": [
-          {
-            "name": "Building Drone"
-          }
+          { "name": "Building Drone" }
         ]
       },
       {
         "level": 5,
+        "xp": 17600,
         "components": [
-          {
-            "id": "valve",
-            "points": 32,
-            "cost": null
-          }
+          { "id": "heat_sheet", "points": 25, "cost": 704 },
+          { "id": "titanium_housing", "points": 25, "cost": 704 }
         ],
         "rewards": [
-          {
-            "name": "Rail v.2"
-          },
-          {
-            "name": "Multirail 3"
-          },
-          {
-            "name": "Rail Modulator 4"
-          }
+          { "name": "Multirail 3" },
+          { "name": "Rail Modulator 3" }
         ]
       },
       {
         "level": 6,
+        "xp": 37800,
         "components": [
-          {
-            "id": "nozzle",
-            "points": 35,
-            "cost": null
-          }
+          { "id": "stator", "points": 46, "cost": 822 }
         ],
         "rewards": [
-          {
-            "name": "Storage Depot v.2"
-          }
+          { "name": "Rail v.2" }
         ]
       },
       {
         "level": 7,
+        "xp": 69700,
         "components": [
-          {
-            "id": "pressure_tank",
-            "points": 70,
-            "cost": null
-          }
+          { "id": "nozzle", "points": 46, "cost": 1516 },
+          { "id": "supermagnet", "points": 116, "cost": 601 }
         ],
         "rewards": [
-          {
-            "name": "Large Personal Storage"
-          }
+          { "name": "Cargo Dispatcher" },
+          { "name": "Cargo Receiver" }
+        ]
+      },
+      {
+        "level": 8,
+        "xp": 116000,
+        "components": [
+          { "id": "electronics", "points": 46, "cost": 2522 },
+          { "id": "hardening_agent", "points": 70, "cost": 1658 }
+        ],
+        "rewards": [
+          { "name": "Storage Depot v.2" }
+        ]
+      },
+      {
+        "level": 9,
+        "xp": 179400,
+        "components": [
+          { "id": "pressurized_helium", "points": 10, "cost": 17940 },
+          { "id": "pump", "points": 175, "cost": 1026 }
+        ],
+        "rewards": [
+          { "name": "Large Personal Storage" }
+        ]
+      },
+      {
+        "level": 10,
+        "xp": 262600,
+        "components": [
+          { "id": "electromagnet", "points": 246, "cost": 1068 }
+        ],
+        "rewards": [
+          { "name": "Multirail 5" },
+          { "name": "Rail Modulator 5" }
+        ]
+      },
+      {
+        "level": 11,
+        "xp": 368300,
+        "components": [
+          { "id": "pressure_tank", "points": 210, "cost": 1754 }
+        ],
+        "rewards": [
+          { "name": "Rail v.3" }
+        ]
+      },
+      {
+        "level": 12,
+        "xp": 499200,
+        "components": [
+          { "id": "superconductor", "points": 400, "cost": 1248 }
+        ],
+        "rewards": [
+          { "name": "Multistorage" }
+        ]
+      },
+      {
+        "level": 13,
+        "xp": 658000,
+        "components": [
+          { "id": "superconductor", "points": 1, "cost": 658000 }
+        ],
+        "rewards": [
+          { "name": "Expandable Storage" }
         ]
       }
     ]

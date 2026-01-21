@@ -1,15 +1,14 @@
 import { regEvent } from '@flexsurfer/reflex';
 import { EVENT_IDS } from './event-ids';
 import { EFFECT_IDS } from './effect-ids';
-import type { TabType, DataVersion, Item, Building, Level } from './db';
-import { buildItemsMap, buildLevelsMap, parseCorporations, extractCategories } from './data-utils';
+import type { TabType, DataVersion, Item, Building } from './db';
+import { buildItemsMap, parseCorporations, extractCategories } from './data-utils';
 
 // Common function to update draftDb with version data
 function updateDraftDbWithVersionData(draftDb: any, version: DataVersion) {
     const data = draftDb.versionedData[version];
     const items = data.items as Item[];
     const buildings = data.buildings as Building[];
-    const levels = data.levels as Level[];
     const corporations = parseCorporations(data.corporations);
 
     draftDb.dataVersion = version;
@@ -17,8 +16,6 @@ function updateDraftDbWithVersionData(draftDb: any, version: DataVersion) {
     draftDb.itemsMap = buildItemsMap(items);
     draftDb.buildings = buildings;
     draftDb.corporations = corporations;
-    draftDb.levels = levels;
-    draftDb.levelsMap = buildLevelsMap(levels);
     draftDb.categories = extractCategories(items);
 }
 
@@ -52,9 +49,20 @@ regEvent(EVENT_IDS.SET_ACTIVE_TAB, ({ draftDb }, newTab: TabType) => {
     draftDb.activeTab = newTab;
 });
 
-regEvent(EVENT_IDS.OPEN_ITEM_IN_PLANNER, ({ draftDb }, itemId: string) => {
+regEvent(EVENT_IDS.OPEN_ITEM_IN_PLANNER, ({ draftDb }, itemId: string, corporationLevel?: { corporationId: string; level: number }) => {
     draftDb.selectedPlannerItem = itemId;
+    draftDb.selectedPlannerCorporationLevel = corporationLevel || null;
     draftDb.activeTab = 'planner';
+});
+
+regEvent(EVENT_IDS.SET_PLANNER_ITEM, ({ draftDb }, itemId: string | null) => {
+    draftDb.selectedPlannerItem = itemId;
+    // Reset corporation level when item changes
+    draftDb.selectedPlannerCorporationLevel = null;
+});
+
+regEvent(EVENT_IDS.SET_PLANNER_CORPORATION_LEVEL, ({ draftDb }, corporationLevel: { corporationId: string; level: number } | null) => {
+    draftDb.selectedPlannerCorporationLevel = corporationLevel;
 });
 
 regEvent(EVENT_IDS.SET_DATA_VERSION, ({ draftDb }, version: DataVersion) => {

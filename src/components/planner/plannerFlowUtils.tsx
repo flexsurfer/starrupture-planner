@@ -3,16 +3,16 @@ import type { Node, Edge } from '@xyflow/react';
 import { Position as ReactFlowPosition } from '@xyflow/react';
 
 import type { Item, Building, ProductionNode, OrbitalCargoLauncherNode } from './types';
-import type { Corporation, Level } from '../../state/db';
+import type { Corporation } from '../../state/db';
 import { buildProductionFlow, getItemName } from './productionFlowBuilder';
 import { ItemImage, BuildingImage } from '../ui';
+import { LauncherStatsPanel } from './LauncherStatsPanel';
 
 export interface FlowDataGenerationParams {
     targetItemId: string;
     targetAmount: number;
     buildings: Building[];
     corporations: Corporation[];
-    levels: Level[];
     items: Item[];
     getItemColor: (itemId: string) => string;
     getBuildingColor: (buildingId: string) => string;
@@ -38,7 +38,6 @@ export const generateReactFlowData = ({
     targetAmount,
     buildings,
     corporations,
-    levels,
     items,
     getItemColor,
     getBuildingColor
@@ -50,7 +49,7 @@ export const generateReactFlowData = ({
     const { nodes: flowNodes, edges: flowEdges } = buildProductionFlow({
         targetItemId,
         targetAmount: validAmount
-    }, buildings, corporations, levels);
+    }, buildings, corporations);
 
     // Create Dagre graph for automatic layout
     // Dagre arranges nodes in a hierarchical layout (left-to-right)
@@ -105,11 +104,11 @@ export const generateReactFlowData = ({
                     // Special rendering for Orbital Cargo Launcher
                     <div className="text-center p-2">
                         <div className="text-xs font-semibold mb-1">
-                            x{node.buildingCount.toFixed(2)}
+                            ⚡ {node.powerPerBuilding}
                         </div>
                         <div className="text-xs font-semibold mb-2  absolute top-[-10px] right-[-10px] bg-base-100">
-                            <div className="badge badge-sm badge-outline badge-primary">
-                                ⚡ {node.totalPower}
+                            <div className="badge badge-sm badge-primary">
+                                x{node.buildingCount.toFixed(2)}
                             </div>
                         </div>
                         {/* Launcher icon - using a rocket emoji since no image yet */}
@@ -144,28 +143,22 @@ export const generateReactFlowData = ({
                                     {getItemName(node.outputItem, items)}
                                 </div>
                                 <div className="text-xs leading-tight text-orange-500">
-                                    {node.pointsPerItem} pts/item
+                                    {node.pointsPerItem} G/item
                                 </div>
                             </div>
                         </div>
                         {/* Launch time and level cost */}
-                        <div className="text-xs space-y-1">
-                            <div className="text-green-500 font-semibold">
-                                Level Cost: {node.totalPoints} pts
-                            </div>
-                            <div className="text-yellow-500 font-semibold">
-                                Total Launch Time: {(node.launchTime).toFixed(1)} min
-                            </div>
-                            <div className="text-blue-500 font-semibold border-t border-base-300 pt-1 mt-2">
-                                Total ⚡: {Math.ceil(totalPowerConsumption)}
-                            </div>
-                        </div>
+                        <LauncherStatsPanel
+                            totalPowerConsumption={totalPowerConsumption}
+                            itemId={node.outputItem}
+                            buildingCount={node.buildingCount}
+                        />
                     </div>
                 ) : (
                     // Standard rendering for production buildings
                     <div className="text-center p-2">
                         <div className="text-xs font-semibold mb-1">
-                            x{node.buildingCount.toFixed(2)}
+                            ⚡ {node.powerPerBuilding}
                         </div>
                         {/* Building icon */}
                         <div
@@ -183,8 +176,8 @@ export const generateReactFlowData = ({
                             {node.buildingName}
                         </div>
                         <div className="text-xs font-semibold mb-2  absolute top-[-10px] right-[-10px] bg-base-100">
-                            <div className="badge badge-sm badge-outline badge-primary">
-                                ⚡ {node.totalPower}
+                            <div className="badge badge-sm badge-primary">
+                                x{node.buildingCount.toFixed(2)}
                             </div>
                         </div>
                         {/* Item image and info inline */}

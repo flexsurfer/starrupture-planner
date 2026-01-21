@@ -112,6 +112,22 @@ export interface FlowEdge {
 }
 
 /**
+ * Information about corporation level that uses a specific item
+ */
+export interface CorporationLevelInfo {
+    /** Corporation name */
+    corporationName: string;
+    /** Corporation ID */
+    corporationId: string;
+    /** Level number */
+    level: number;
+    /** Points earned per item */
+    points: number;
+    /** Cost per item in gold (optional) */
+    cost?: number | null;
+}
+
+/**
  * Parameters for building a production flow
  */
 export interface ProductionFlowParams {
@@ -119,6 +135,8 @@ export interface ProductionFlowParams {
     targetItemId: string;
     /** Desired production rate in units per minute */
     targetAmount?: number;
+    /** Selected corporation level for cargo launcher (if applicable) */
+    selectedCorporationLevel?: CorporationLevelInfo;
 }
 
 /**

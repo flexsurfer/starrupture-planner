@@ -28,7 +28,6 @@ export const BuildingImage = ({
   return (
     <div className={finalClassName}>
       <img
-        key={imagePath} // Force re-render when image path changes
         src={imagePath}
         alt={building?.name || buildingId}
         className={finalClassName}

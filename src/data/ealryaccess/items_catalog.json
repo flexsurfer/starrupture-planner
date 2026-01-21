@@ -52,57 +52,52 @@
   {
     "id": "powder_calcium",
     "name": "Calcium Powder",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "powder_wolfram",
     "name": "Wolfram Powder",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "ceramics",
     "name": "Ceramics",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "glass",
     "name": "Glass",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "titanium_housing",
     "name": "Titanium Housing",
-    "type": "processed"
-  },
-  {
-    "id": "explosive",
-    "name": "Explosive",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "heat_sheet",
     "name": "Heat Resistant Sheet",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "synthetic_silicon",
     "name": "Synthetic Silicon",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "supermagnet",
     "name": "Supermagnet",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "sulphuric_acid",
     "name": "Sulphuric Acid",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "basic_building",
     "name": "Basic Building Material",
-    "type": "component"
+    "type": "processed"
   },
   {
     "id": "calcite_sheets",
@@ -217,7 +212,7 @@
   {
     "id": "chemicals",
     "name": "Chemicals",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "condenser",
@@ -242,7 +237,7 @@
   {
     "id": "hardening_agent",
     "name": "Hardening Agent",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "heavy_ammo",
@@ -277,7 +272,7 @@
   {
     "id": "liquid_helium",
     "name": "Liquid Helium",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "nanofiber",

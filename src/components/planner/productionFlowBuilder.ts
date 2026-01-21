@@ -42,17 +42,6 @@ function getComponentData(itemId: string, corporations: Corporation[]): { points
     return null; // Item not used in any corporation
 }
 
-/**
- * Helper function to get level cost from levels data
- * 
- * @param level - Level number
- * @param levels - Levels data from subscription
- * @returns Cost for the level, or 0 if not found
- */
-function getLevelCost(level: number, levels: any[]): number {
-    const levelData = levels.find(l => l.level === level);
-    return levelData ? levelData.cost : 0;
-}
 
 /**
  * Builds a complete production flow for a target item
@@ -67,7 +56,7 @@ function getLevelCost(level: number, levels: any[]): number {
  * @param params - Configuration for the production flow
  * @returns Complete production flow with nodes and edges
  */
-export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[], corporations: Corporation[], levels: any[]): ProductionFlowResult {
+export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[], corporations: Corporation[]): ProductionFlowResult {
     const { targetItemId, targetAmount = 60 } = params;
     
     // Internal state for building the flow
@@ -277,9 +266,6 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     if (componentData) {
         const launchRate = 10; // items per minute per launcher
         const launchersNeeded = targetAmount / launchRate; // number of launchers needed
-        const levelCost = getLevelCost(componentData.level, levels); // get actual level cost
-        const pointsPerMinute = targetAmount * componentData.points; // points earned per minute
-        const launchTime = levelCost / pointsPerMinute; // total time to earn the level cost
 
         // Create the Orbital Cargo Launcher node
         const launcherPowerPerBuilding = 10; // Power consumption per launcher
@@ -297,8 +283,8 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             x: 0,
             y: 0,
             pointsPerItem: componentData.points,
-            launchTime,
-            totalPoints: levelCost // Use actual level cost, not points * items
+            launchTime: targetAmount / launchRate, // Simple time calculation
+            totalPoints: targetAmount * componentData.points // Points for all items
         };
         
         flowNodes.push(launcherNode);

@@ -5,6 +5,8 @@ export const EVENT_IDS = {
     SET_THEME: 'setTheme',
     SET_ACTIVE_TAB: 'setActiveTab',
     OPEN_ITEM_IN_PLANNER: 'openItemInPlanner',
+    SET_PLANNER_ITEM: 'setPlannerItem',
+    SET_PLANNER_CORPORATION_LEVEL: 'setPlannerCorporationLevel',
     NAVIGATE_TO_TAB: 'navigateToTab',
     SET_DATA_VERSION: 'setDataVersion',
 }

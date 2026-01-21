@@ -1,31 +1,29 @@
 import { CorporationIcon } from "./CorporationIcon";
 import { LevelCard } from "./LevelCard";
 import type { CorporationWithStats } from "./useCorporations";
-import type { Item, Level } from "../../state/db";
+import type { Item } from "../../state/db";
 
 type CorporationCardProps = {
   corporation: CorporationWithStats;
   isCollapsed: boolean;
   onToggle: () => void;
-  levelsMap: Record<number, Level>;
   itemsMap: Record<string, Item>;
 };
 
-export const CorporationCard = ({ 
-  corporation, 
-  isCollapsed, 
+export const CorporationCard = ({
+  corporation,
+  isCollapsed,
   onToggle,
-  levelsMap,
-  itemsMap 
+  itemsMap
 }: CorporationCardProps) => {
   const { totalLevels, totalComponents, totalCost } = corporation.stats;
   
   return (
     <div className="card bg-base-100 shadow-lg border border-base-300">
       <div className="card-body">
-        {/* Corporation Header - Clickable */}
+        {/* Corporation Header - Clickable & Sticky */}
         <div 
-          className="flex items-center gap-4 mb-4 cursor-pointer hover:bg-base-200 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg transition-colors"
+          className="flex items-center gap-4 mb-4 cursor-pointer hover:bg-base-200 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg transition-colors sticky top-0 z-10 bg-base-100"
           onClick={onToggle}
         >
           <CorporationIcon corporationId={corporation.id} corporationName={corporation.name} />
@@ -39,8 +37,8 @@ export const CorporationCard = ({
                 {totalComponents} component{totalComponents !== 1 ? 's' : ''}
               </div>
               {totalCost > 0 && (
-                <div className="badge badge-warning">
-                  {totalCost.toLocaleString()} pts
+                <div className="badge badge-info">
+                  {totalCost.toLocaleString()} G
                 </div>
               )}
             </div>
@@ -61,16 +59,16 @@ export const CorporationCard = ({
         {/* Levels - Collapsible */}
         {!isCollapsed && (
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold">Levels</h3>
             <div className="grid gap-3">
               {corporation.levels.map((level) => (
-                <LevelCard 
-                  key={`${corporation.name}-level-${level.level}`} 
+                <LevelCard
+                  key={`${corporation.name}-level-${level.level}`}
                   level={level.level}
+                  xp={level.xp}
                   components={level.components}
                   rewards={level.rewards}
-                  levelsMap={levelsMap}
                   itemsMap={itemsMap}
+                  corporationId={corporation.id}
                 />
               ))}
             </div>

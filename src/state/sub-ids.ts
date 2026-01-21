@@ -9,11 +9,11 @@ export const SUB_IDS = {
     CATEGORIES: 'categories',
     BUILDINGS: 'buildings',
     CORPORATIONS: 'corporations',
-    LEVELS: 'levels',
-    LEVELS_MAP: 'levelsMap',
     THEME: 'theme',
     ACTIVE_TAB: 'activeTab',
     CORPORATIONS_STATS: 'corporationsStats',
     CORPORATIONS_WITH_STATS: 'corporationsWithStats',
     SELECTED_PLANNER_ITEM: 'selectedPlannerItem',
+    SELECTED_PLANNER_CORPORATION_LEVEL: 'selectedPlannerCorporationLevel',
+    PLANNER_AVAILABLE_CORPORATION_LEVELS: 'availableCorporationLevels',
 }

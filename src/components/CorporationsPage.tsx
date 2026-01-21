@@ -1,7 +1,7 @@
 import { useCorporations, useCorporationCollapse, CorporationCard, CorporationsStats } from "./corporations";
 
 const CorporationsPage = () => {
-  const { corporationsWithStats, itemsMap, levelsMap } = useCorporations();
+  const { corporationsWithStats, itemsMap } = useCorporations();
   const { collapsedCorporations, toggleCorporation } = useCorporationCollapse(corporationsWithStats);
 
   return (
@@ -16,12 +16,11 @@ const CorporationsPage = () => {
         {/* Corporations Grid */}
         <div className="grid gap-4 lg:gap-6">
           {corporationsWithStats.map((corporation) => (
-            <CorporationCard 
-              key={corporation.name} 
+            <CorporationCard
+              key={corporation.name}
               corporation={corporation}
               isCollapsed={collapsedCorporations.has(corporation.name)}
               onToggle={() => toggleCorporation(corporation.name)}
-              levelsMap={levelsMap}
               itemsMap={itemsMap}
             />
           ))}

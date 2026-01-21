@@ -81,6 +81,7 @@ const corporations = [
         levels: [
             {
                 level: 1,
+                xp: 0,
                 components: [
                     {
                         id: 'bar_titanium',
@@ -94,6 +95,7 @@ const corporations = [
             },
             {
                 level: 2,
+                xp: 200,
                 components: [
                     {
                         id: 'titanium_housing',
@@ -107,12 +109,6 @@ const corporations = [
             }
         ]
     }
-];
-
-// Mock levels data
-const levels = [
-    { level: 1, cost: 200 },
-    { level: 2, cost: 1500 }
 ];
 
 // Import after mocking
@@ -129,7 +125,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 60
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             // Should have 2 production nodes + 1 launcher node (bar_titanium is used by corporations)
             expect(result.nodes).toHaveLength(3);
@@ -157,7 +153,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 30 // Half the default output
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             // Should have 3 nodes now: ore_excavator, smelter, orbital_cargo_launcher
             expect(result.nodes).toHaveLength(3);
@@ -178,7 +174,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             expect(result.nodes).toHaveLength(6); // 5 production nodes + 1 launcher node
 
@@ -203,7 +199,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             const fabricatorNodes = result.nodes.filter(n => n.buildingId === 'fabricator');
             expect(fabricatorNodes).toHaveLength(2);
@@ -224,7 +220,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 60 // Double amount to make calculations clearer
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             // Should only have ONE smelter node, even though both beam and sheet fabricators need titanium bars
             const smelterNodes = result.nodes.filter(n => n.buildingId === 'smelter');
@@ -246,7 +242,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             // Find edges from smelter to fabricators
             const smelterNodeId = 'smelter_0_bar_titanium';
@@ -270,7 +266,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'ore_titanium',
                 targetAmount: 150
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             expect(result.nodes).toHaveLength(1);
             expect(result.edges).toHaveLength(0);
@@ -287,7 +283,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 0
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             // The current implementation still creates nodes with zero amounts
             // This might be the expected behavior for the UI to show the chain structure
@@ -304,7 +300,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'invalid_item',
                 targetAmount: 60
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             expect(result.nodes).toHaveLength(0);
             expect(result.edges).toHaveLength(0);
@@ -314,7 +310,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 0.1
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             expect(result.nodes).toHaveLength(3); // ore_excavator, smelter, orbital_cargo_launcher
 
@@ -331,7 +327,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             const nodeIds = result.nodes.map(node =>
                 `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`
@@ -356,7 +352,7 @@ describe('buildProductionFlow', () => {
             buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 1000 // Large amount
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             const endTime = performance.now();
             const executionTime = endTime - startTime;
@@ -371,7 +367,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 60
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             result.nodes.forEach(node => {
                 expect(node).toHaveProperty('buildingId');
@@ -409,7 +405,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 60
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             result.edges.forEach(edge => {
                 expect(edge).toHaveProperty('from');
@@ -432,7 +428,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 60
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             // Should have the normal production nodes plus the launcher
             const launcherNode = result.nodes.find(n => n.buildingId === 'orbital_cargo_launcher');
@@ -442,15 +438,15 @@ describe('buildProductionFlow', () => {
             expect(launcherNode!.buildingCount).toBe(6); // 60 items / 10 items per launcher
             expect(launcherNode!.outputAmount).toBe(10); // 10 items/min per launcher
             expect((launcherNode as any).pointsPerItem).toBe(2); // From mock data
-            expect((launcherNode as any).totalPoints).toBe(200); // Level cost from mock data
-            expect((launcherNode as any).launchTime).toBeCloseTo(1.667, 2); // 200 points / (60 * 2) points per min ≈ 1.667 min
+            expect((launcherNode as any).totalPoints).toBe(120); // 60 items * 2 points per item
+            expect((launcherNode as any).launchTime).toBe(6); // 60 items / 10 items per min per launcher
         });
 
         it('should not add Orbital Cargo Launcher for items not used by corporations', () => {
             const result = buildProductionFlow({
                 targetItemId: 'ore_titanium',
                 targetAmount: 75
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             const launcherNode = result.nodes.find(n => n.buildingId === 'orbital_cargo_launcher');
             expect(launcherNode).toBeUndefined();
@@ -460,7 +456,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 60
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             // Find edge to launcher
             const launcherNodeId = 'orbital_cargo_launcher_-1_bar_titanium';
@@ -476,24 +472,23 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             const launcherNode = result.nodes.find(n => n.buildingId === 'orbital_cargo_launcher');
             expect(launcherNode).toBeDefined();
             
             expect((launcherNode as any).pointsPerItem).toBe(10); // From mock data
-            expect((launcherNode as any).totalPoints).toBe(1500); // Level 2 cost
-            
-            // 30 items/min * 10 points/item = 300 points/min
-            // 1500 points / 300 points/min = 5 minutes
-            expect((launcherNode as any).launchTime).toBe(5);
+            expect((launcherNode as any).totalPoints).toBe(300); // 30 items * 10 points per item
+
+            // 30 items / 10 items per min per launcher = 3 minutes
+            expect((launcherNode as any).launchTime).toBe(3);
         });
 
         it('should handle fractional launcher counts correctly', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 25 // Not divisible by 10
-            }, buildings, corporations, levels);
+            }, buildings, corporations);
 
             const launcherNode = result.nodes.find(n => n.buildingId === 'orbital_cargo_launcher');
             expect(launcherNode).toBeDefined();

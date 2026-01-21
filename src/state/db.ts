@@ -1,16 +1,14 @@
 import { initAppDb } from '@flexsurfer/reflex';
-import { buildItemsMap, buildLevelsMap, parseCorporations, extractCategories, type RawCorporationsData } from './data-utils';
+import { buildItemsMap, parseCorporations, extractCategories, type RawCorporationsData } from './data-utils';
 
 // Import versioned data
 import itemsDataEarlyAccess from '../data/ealryaccess/items_catalog.json';
 import buildingsDataEarlyAccess from '../data/ealryaccess/buildings_and_recipes.json';
 import corporationsDataEarlyAccess from '../data/ealryaccess/corporations_components.json';
-import levelsDataEarlyAccess from '../data/ealryaccess/levels.json';
 
 import itemsDataPlaytest from '../data/playtest/items_catalog.json';
 import buildingsDataPlaytest from '../data/playtest/buildings_and_recipes.json';
 import corporationsDataPlaytest from '../data/playtest/corporations_components.json';
-import levelsDataPlaytest from '../data/playtest/levels.json';
 
 // Data version types and constants
 export type DataVersion = 'earlyaccess' | 'playtest';
@@ -27,14 +25,12 @@ const versionedData = {
     earlyaccess: {
         items: itemsDataEarlyAccess,
         buildings: buildingsDataEarlyAccess,
-        corporations: corporationsDataEarlyAccess,
-        levels: levelsDataEarlyAccess,
+        corporations: corporationsDataEarlyAccess
     },
     playtest: {
         items: itemsDataPlaytest,
         buildings: buildingsDataPlaytest,
-        corporations: corporationsDataPlaytest,
-        levels: levelsDataPlaytest,
+        corporations: corporationsDataPlaytest
     },
 };
 
@@ -84,6 +80,7 @@ export interface Reward {
 
 export interface CorporationLevel {
     level: number;
+    xp?: number;
     components: CorporationComponent[];
     rewards: Reward[];
 }
@@ -109,7 +106,6 @@ interface AppState {
         items: Item[];
         buildings: Building[];
         corporations: RawCorporationsData;
-        levels: Level[];
     }>;
     items: Item[];
     itemsMap: Record<string, Item>;
@@ -118,11 +114,10 @@ interface AppState {
     categories: string[];
     buildings: Building[];
     corporations: Corporation[];
-    levels: Level[];
-    levelsMap: Record<number, Level>;
     theme: 'light' | 'dark';
     activeTab: TabType;
     selectedPlannerItem: string | null;
+    selectedPlannerCorporationLevel: { corporationId: string; level: number } | null;
 }
 
 
@@ -130,7 +125,6 @@ interface AppState {
 const defaultData = versionedData[DEFAULT_DATA_VERSION];
 const defaultItems = defaultData.items as Item[];
 const defaultBuildings = defaultData.buildings as Building[];
-const defaultLevels = defaultData.levels as Level[];
 const defaultCorporations = parseCorporations(defaultData.corporations as RawCorporationsData);
 
 const appStore: AppState = {
@@ -142,8 +136,6 @@ const appStore: AppState = {
     itemsMap: buildItemsMap(defaultItems),
     buildings: defaultBuildings,
     corporations: defaultCorporations,
-    levels: defaultLevels,
-    levelsMap: buildLevelsMap(defaultLevels),
 
     //UI
     theme: 'dark',
@@ -152,6 +144,7 @@ const appStore: AppState = {
     searchTerm: '',
     categories: extractCategories(defaultItems),
     selectedPlannerItem: null,
+    selectedPlannerCorporationLevel: null,
 };
 
 initAppDb(appStore);

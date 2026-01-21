@@ -1,9 +1,10 @@
-import type { Item, Level, Corporation, CorporationComponent, Reward } from './db';
+import type { Item, Corporation, CorporationComponent, Reward } from './db';
 
 export interface RawCorporationData {
     id: string;
     levels: {
         level: number;
+        xp?: number;
         components: CorporationComponent[];
         rewards: Reward[];
     }[];
@@ -18,11 +19,6 @@ export function buildItemsMap(items: Item[]): Record<string, Item> {
     return items.reduce((acc, item) => { acc[item.id] = item; return acc; }, {} as Record<string, Item>);
 }
 
-// Helper to build levels map
-export function buildLevelsMap(levels: Level[]): Record<number, Level> {
-    return levels.reduce((acc, level) => { acc[level.level] = level; return acc; }, {} as Record<number, Level>);
-}
-
 // Helper to parse corporations data
 export function parseCorporations(corporationsData: RawCorporationsData): Corporation[] {
     return Object.entries(corporationsData)
@@ -31,6 +27,7 @@ export function parseCorporations(corporationsData: RawCorporationsData): Corpor
             name,
             levels: data.levels.map(level => ({
                 level: level.level,
+                xp: level.xp ?? 0,
                 components: level.components.map(component => ({
                     id: component.id,
                     points: component.points,

@@ -1,57 +1,56 @@
 import { ComponentIcon } from "./ComponentIcon";
-import type { CorporationComponent, Item, Level, Reward } from "../../state/db";
+import type { CorporationComponent, Item, Reward } from "../../state/db";
 import { dispatch } from '@flexsurfer/reflex';
 import { EVENT_IDS } from '../../state/event-ids';
 
 type LevelCardProps = {
   level: number;
+  xp?: number;
   components: CorporationComponent[];
   rewards: Reward[];
-  levelsMap: Record<number, Level>;
   itemsMap: Record<string, Item>;
+  corporationId: string;
 };
 
-export const LevelCard = ({ level, components, rewards, levelsMap, itemsMap }: LevelCardProps) => {
-  const levelInfo = levelsMap[level];
-  const levelCost = levelInfo ? levelInfo.cost : 0;
-  
+export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporationId }: LevelCardProps) => {
   return (
     <div className="card bg-base-200 shadow-sm border border-base-300">
       <div className="card-body p-4">
-        <div className="flex items-center mb-3 gap-5">
-          <h4 className="text-sm font-medium text-base-content/70">Level {level}</h4>
-          <div className="flex gap-2">
-            {levelCost > 0 && (
-              <div className="badge badge-warning badge-sm">{levelCost.toLocaleString()} pts</div>
+        {/* Header Section */}
+        <div className="border-b border-base-300 pb-3 mb-4">
+          <div className="flex items-center gap-3">
+            <h4 className="text-lg font-bold text-white">Level {level}</h4>
+            {(xp ?? 0) > 0 && (
+              <div className="badge badge-info badge-sm">{(xp ?? 0).toLocaleString()} G</div>
             )}
           </div>
         </div>
-        <div className="flex flex-wrap gap-3 mb-4">
-          {components.map((component, idx) => (
-            <ComponentIcon 
-              key={`${component.id}-${idx}`} 
-              component={component}
-              itemsMap={itemsMap}
-            />
-          ))}
+        
+        <div className="flex flex-wrap items-center gap-4 mb-4">
+          {components.flatMap((component, idx) => [
+            <div key={`${component.id}-${idx}`} className="flex flex-col items-center gap-2">
+              <ComponentIcon
+                component={component}
+                itemsMap={itemsMap}
+              />
+              <button
+                className="btn btn-xs btn-primary"
+                onClick={() => {
+                  dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, component.id, { corporationId, level }]);
+                }}
+                title={`Open ${itemsMap[component.id]?.name || component.id} in planner`}
+              >
+                Open in Planner
+              </button>
+            </div>,
+            idx < components.length - 1 ? (
+              <div key={`or-${idx}`} className="flex items-center">
+                <span className="text-base-content/50 font-medium">OR</span>
+              </div>
+            ) : null
+          ].filter(Boolean))}
         </div>
 
-        {/* Open in Planner button for levels 2+ */}
-        {components.length > 0 && (
-          <div className="mb-4">
-            <button 
-              className="btn btn-xs btn-primary"
-              onClick={() => {
-                // Open the first component of the level in the planner
-                dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, components[0].id]);
-              }}
-              title={`Open ${itemsMap[components[0].id]?.name || components[0].id} in planner`}
-            >
-              Open in Planner
-            </button>
-          </div>
-        )}
-        
         {/* Rewards Section */}
         {rewards && rewards.length > 0 && (
           <div className="border-t border-base-300 pt-3">
