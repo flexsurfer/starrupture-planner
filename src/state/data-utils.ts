@@ -2,6 +2,7 @@ import type { Item, Corporation, CorporationComponent, Reward } from './db';
 
 export interface RawCorporationData {
     id: string;
+    description?: string;
     levels: {
         level: number;
         xp?: number;
@@ -25,6 +26,7 @@ export function parseCorporations(corporationsData: RawCorporationsData): Corpor
         .map(([name, data]) => ({
             id: data.id,
             name,
+            description: data.description,
             levels: data.levels.map(level => ({
                 level: level.level,
                 xp: level.xp ?? 0,

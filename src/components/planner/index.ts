@@ -42,4 +42,4 @@ export { PlannerItemSelector } from './PlannerItemSelector';
 export { PlannerTargetInput } from './PlannerTargetInput';
 export { PlannerFlowDiagram } from './PlannerFlowDiagram';
 export { CorporationLevelSelector } from './CorporationLevelSelector';
-export { LauncherStatsPanel } from './LauncherStatsPanel';
+export { PlannerStatsModal } from './PlannerStatsModal';

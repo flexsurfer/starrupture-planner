@@ -4,14 +4,14 @@ type CorporationIconProps = {
 };
 
 export const CorporationIcon = ({ corporationId, corporationName }: CorporationIconProps) => {
-  const imagePath = `./icons/corporations/${corporationId}.jpg`;
+  const imagePath = `./icons/corporations/${corporationId}.png`;
   
   return (
     <div className="flex items-center justify-center w-16 h-16">
       <img
         src={imagePath}
         alt={corporationName}
-        className="w-16 h-16 rounded-lg shadow-md object-cover"
+        className="w-16 h-16"
         onError={(e) => {
           // Fallback to placeholder if image fails to load
           e.currentTarget.style.display = 'none';

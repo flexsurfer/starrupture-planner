@@ -20,18 +20,8 @@
     "type": "raw"
   },
   {
-    "id": "ore_goethite",
-    "name": "Goethite Ore",
-    "type": "raw"
-  },
-  {
     "id": "helium",
     "name": "Helium",
-    "type": "raw"
-  },
-  {
-    "id": "crude_oil",
-    "name": "Crude Oil",
     "type": "raw"
   },
   {
@@ -97,7 +87,7 @@
   {
     "id": "basic_building",
     "name": "Basic Building Material",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "calcite_sheets",
@@ -282,7 +272,7 @@
   {
     "id": "pressurized_helium",
     "name": "Pressurized Helium",
-    "type": "processed"
+    "type": "component"
   },
   {
     "id": "pump",

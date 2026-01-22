@@ -15,9 +15,9 @@ import type { Tab, TabType } from '../state/db';
 
 const tabs: Tab[] = [
   { id: 'items', label: 'Items', icon: '📦' },
-  { id: 'recipes', label: 'Recipes', icon: '⚗️' },
+  { id: 'recipes', label: 'Buildings', icon: '🏭' },
   { id: 'corporations', label: 'Corporations', icon: '🏢' },
-  { id: 'planner', label: 'Planner', icon: '🏭' },
+  { id: 'planner', label: 'Planner', icon: '📐' },
 ];
 
 const TabLayout = () => {

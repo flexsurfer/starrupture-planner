@@ -61,7 +61,6 @@ const RecipesPage = () => {
           buildingId={building.id}
           building={building}
           size="large"
-          className="rounded-lg shadow-md"
         />
         <div className="hidden w-20 h-20 bg-base-300 rounded-lg shadow-md items-center justify-center">
           <span className="text-xs text-center font-medium px-2">

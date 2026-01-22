@@ -1,6 +1,7 @@
 {
   "Future Health Solutions": {
     "id": "future_health_solutions",
+    "description": "Health, food, and life support systems",
     "levels": [
       {
         "level": 1,
@@ -211,6 +212,7 @@
   },
   "Selenian Corporation": {
     "id": "selenian_corporation",
+    "description": "Factories and production facilities",
     "levels": [
       {
         "level": 1,
@@ -429,6 +431,7 @@
   },
   "Griffith Blue Corporation": {
     "id": "griffith_blue_corporation",
+    "description": "Military defense and weapons",
     "levels": [
       {
         "level": 1,
@@ -638,6 +641,7 @@
   },
   "Moon Energy Corporation": {
     "id": "moon_energy_corporation",
+    "description": "Energy generation and research",
     "levels": [
       {
         "level": 1,
@@ -826,6 +830,7 @@
   },
   "Clever Robotics": {
     "id": "clever_robotics",
+    "description": "Logistics, transportation, and automation",
     "levels": [
       {
         "level": 1,

@@ -21,7 +21,7 @@ export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporatio
           <div className="flex items-center gap-3">
             <h4 className="text-lg font-bold text-white">Level {level}</h4>
             {(xp ?? 0) > 0 && (
-              <div className="badge badge-info badge-sm">{(xp ?? 0).toLocaleString()} G</div>
+              <div className="badge badge-info badge-sm badge-outline">{(xp ?? 0).toLocaleString()} G</div>
             )}
           </div>
         </div>
@@ -57,7 +57,7 @@ export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporatio
             <h5 className="text-xs font-medium text-base-content/70 mb-2">Rewards:</h5>
             <div className="flex flex-wrap gap-1">
               {rewards.map((reward, idx) => (
-                <div key={idx} className="badge badge-success badge-sm">
+                <div key={idx} className="badge badge-success badge-sm badge-outline">
                   {reward.name}
                 </div>
               ))}

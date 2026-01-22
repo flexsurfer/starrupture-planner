@@ -2,17 +2,13 @@ import dagre from 'dagre';
 import type { Node, Edge } from '@xyflow/react';
 import { Position as ReactFlowPosition } from '@xyflow/react';
 
-import type { Item, Building, ProductionNode, OrbitalCargoLauncherNode } from './types';
-import type { Corporation } from '../../state/db';
-import { buildProductionFlow, getItemName } from './productionFlowBuilder';
+import type { Item, FlowNode, FlowEdge } from './types';
+import { getItemName } from './productionFlowBuilder';
 import { ItemImage, BuildingImage } from '../ui';
-import { LauncherStatsPanel } from './LauncherStatsPanel';
 
 export interface FlowDataGenerationParams {
-    targetItemId: string;
-    targetAmount: number;
-    buildings: Building[];
-    corporations: Corporation[];
+    flowNodes: FlowNode[];
+    flowEdges: FlowEdge[];
     items: Item[];
     getItemColor: (itemId: string) => string;
     getBuildingColor: (buildingId: string) => string;
@@ -27,29 +23,17 @@ export interface FlowData {
  * Converts the flow builder output to React Flow format and applies layout
  * 
  * This function:
- * 1. Builds the production flow using the separate flow builder
- * 2. Creates a Dagre graph for automatic layout
- * 3. Converts flow nodes to React Flow nodes with custom styling
- * 4. Converts flow edges to React Flow edges with labels
- * 5. Applies the calculated positions to all nodes
+ * 1. Creates a Dagre graph for automatic layout
+ * 2. Converts flow nodes to React Flow nodes with custom styling
+ * 3. Converts flow edges to React Flow edges with labels
+ * 4. Applies the calculated positions to all nodes
  */
 export const generateReactFlowData = ({
-    targetItemId,
-    targetAmount,
-    buildings,
-    corporations,
+    flowNodes,
+    flowEdges,
     items,
-    getItemColor,
-    getBuildingColor
+    getItemColor
 }: FlowDataGenerationParams): FlowData => {
-    // Use fallback of 1 if amount is 0 or invalid (for temporary empty input state)
-    const validAmount = targetAmount > 0 ? targetAmount : 1;
-
-    // Build the production flow using our separate module
-    const { nodes: flowNodes, edges: flowEdges } = buildProductionFlow({
-        targetItemId,
-        targetAmount: validAmount
-    }, buildings, corporations);
 
     // Create Dagre graph for automatic layout
     // Dagre arranges nodes in a hierarchical layout (left-to-right)
@@ -81,112 +65,56 @@ export const generateReactFlowData = ({
     // Calculate positions using Dagre
     dagre.layout(dagreGraph);
 
-    // Calculate total power consumption across all nodes
-    const totalPowerConsumption = flowNodes.reduce((sum, node) => sum + node.totalPower, 0);
+    // Helper functions for node type checking
 
     // Convert flow nodes to React Flow nodes with positioning and styling
     const reactFlowNodes: Node[] = flowNodes.map((node, index) => {
         const nodeWithPosition = dagreGraph.node(`node_${index}`);
-
-        // Helper function to check if node is Orbital Cargo Launcher
-        const isOrbitalCargoLauncher = (n: ProductionNode): n is OrbitalCargoLauncherNode => {
-            return n.buildingId === 'orbital_cargo_launcher';
-        };
-
-        const isLauncher = isOrbitalCargoLauncher(node);
 
         return {
             id: `node_${index}`,
             type: 'default',
             position: { x: nodeWithPosition.x - 100, y: nodeWithPosition.y - 60 },
             data: {
-                label: isLauncher ? (
-                    // Special rendering for Orbital Cargo Launcher
+                label: (
+                    // Standard rendering for production buildings
                     <div className="text-center p-2">
-                        <div className="text-xs font-semibold mb-1">
-                            ⚡ {node.powerPerBuilding}
-                        </div>
-                        <div className="text-xs font-semibold mb-2  absolute top-[-10px] right-[-10px] bg-base-100">
+
+                        {/* Fractional count badge at bottom center */}
+                        {Math.ceil(node.buildingCount) > 1 && (
+                            <div className="text-xs font-semibold absolute top-[-8px] right-[-8px]">
+                                <div className="badge badge-sm badge-secondary">
+                                    {Math.ceil(node.buildingCount)}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Building count badge in center-right (link connection area) */}
+                        <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2 z-50">
                             <div className="badge badge-sm badge-primary">
                                 x{node.buildingCount.toFixed(2)}
                             </div>
                         </div>
-                        {/* Launcher icon - using a rocket emoji since no image yet */}
-                        <div
-                            className="w-20 h-20 mx-auto mb-2 rounded-full flex items-center justify-center text-3xl bg-yellow-500"
-                        >
-                            <BuildingImage
-                                buildingId={"launcher"}
-                                className="w-19 h-19 rounded-full object-cover"
-                                size="medium"
-                            />
-                        </div>
-                        {/* Launcher information */}
+
+                        {/* Building information */}
                         <div className="text-xs font-semibold mb-1">
                             {node.buildingName}
                         </div>
-                        <div className="text-xs text-orange-500 mb-2">
-                            {node.outputAmount} items/min
-                        </div>
-                        {/* Item and reward info */}
-                        <div className="flex items-center gap-2 justify-center mb-2">
-                            <div className="relative flex-shrink-0">
-                                <ItemImage
-                                    itemId={node.outputItem}
-                                    className="border-1 shadow-sm"
-                                    style={{ borderColor: getItemColor(node.outputItem) }}
-                                    size="small"
-                                />
-                            </div>
-                            <div className="text-left">
-                                <div className="text-xs opacity-75 leading-tight">
-                                    {getItemName(node.outputItem, items)}
-                                </div>
-                                <div className="text-xs leading-tight text-orange-500">
-                                    {node.pointsPerItem} G/item
-                                </div>
-                            </div>
-                        </div>
-                        {/* Launch time and level cost */}
-                        <LauncherStatsPanel
-                            totalPowerConsumption={totalPowerConsumption}
-                            itemId={node.outputItem}
-                            buildingCount={node.buildingCount}
-                        />
-                    </div>
-                ) : (
-                    // Standard rendering for production buildings
-                    <div className="text-center p-2">
-                        <div className="text-xs font-semibold mb-1">
-                            ⚡ {node.powerPerBuilding}
-                        </div>
+
                         {/* Building icon */}
-                        <div
-                            className="w-20 h-20 mx-auto mb-2 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: getBuildingColor(node.buildingId) }}
-                        >
+                        <div className="flex items-center gap-2 justify-center">
                             <BuildingImage
                                 buildingId={node.buildingId}
                                 className="w-19 h-19 rounded-full object-cover"
                                 size="medium"
                             />
                         </div>
-                        {/* Building information */}
-                        <div className="text-xs font-semibold mb-1">
-                            {node.buildingName}
-                        </div>
-                        <div className="text-xs font-semibold mb-2  absolute top-[-10px] right-[-10px] bg-base-100">
-                            <div className="badge badge-sm badge-primary">
-                                x{node.buildingCount.toFixed(2)}
-                            </div>
-                        </div>
+
                         {/* Item image and info inline */}
                         <div className="flex items-center gap-2 justify-center">
                             <div className="relative flex-shrink-0">
                                 <ItemImage
                                     itemId={node.outputItem}
-                                    className="border-1 shadow-sm"
-                                    style={{ borderColor: getItemColor(node.outputItem) }}
                                     size="small"
                                 />
                             </div>
@@ -199,6 +127,9 @@ export const generateReactFlowData = ({
                                     {node.outputAmount.toFixed(1)}/min
                                 </div>
                             </div>
+                        </div>
+                        <div className="text-xs font-semibold absolute bottom-1 right-1">
+                            ⚡{node.powerPerBuilding}
                         </div>
                     </div>
                 ),
@@ -232,13 +163,15 @@ export const generateReactFlowData = ({
             }
             edgeIdSet.add(edgeId);
 
+            const label = `${getItemName(edge.itemId, items)} (${edge.amount.toFixed(1)}/min)`;
+
             const reactFlowEdge = {
                 id: edgeId,
                 source: fromNodeId,
                 target: toNodeId,
                 type: 'default',
                 style: { stroke: getItemColor(edge.itemId), strokeWidth: 2 },
-                label: `${getItemName(edge.itemId, items)} (${edge.amount.toFixed(1)}/min)`,
+                label: label,
                 labelStyle: { fontSize: 12, fontWeight: 'bold', color: getItemColor(edge.itemId) },
             };
             reactFlowEdges.push(reactFlowEdge);

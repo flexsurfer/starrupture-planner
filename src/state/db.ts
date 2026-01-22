@@ -88,6 +88,7 @@ export interface CorporationLevel {
 export interface Corporation {
     id: string;
     name: string;
+    description?: string;
     levels: CorporationLevel[];
 }
 

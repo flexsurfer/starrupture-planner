@@ -17,8 +17,7 @@ import type {
     FlowEdge,
     ProductionFlowParams,
     ProductionFlowResult,
-    ProductionNode,
-    OrbitalCargoLauncherNode
+    ProductionNode
 } from './types';
 import type { Corporation } from '../../state/db';
 
@@ -42,7 +41,6 @@ function getComponentData(itemId: string, corporations: Corporation[]): { points
     return null; // Item not used in any corporation
 }
 
-
 /**
  * Builds a complete production flow for a target item
  * 
@@ -54,6 +52,8 @@ function getComponentData(itemId: string, corporations: Corporation[]): { points
  * - Duplicate detection to avoid infinite loops
  * 
  * @param params - Configuration for the production flow
+ * @param buildings - List of all available buildings with their recipes
+ * @param corporations - List of corporations to check if items are used by corporations
  * @returns Complete production flow with nodes and edges
  */
 export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[], corporations: Corporation[]): ProductionFlowResult {
@@ -267,45 +267,41 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         const launchRate = 10; // items per minute per launcher
         const launchersNeeded = targetAmount / launchRate; // number of launchers needed
 
-        // Create the Orbital Cargo Launcher node
+        // Create the Orbital Cargo Launcher node as a regular FlowNode
         const launcherPowerPerBuilding = 10; // Power consumption per launcher
         const launcherTotalPower = Math.ceil(launchersNeeded) * launcherPowerPerBuilding;
         
-        const launcherNode: OrbitalCargoLauncherNode = {
+        const launcherNode: FlowNode = {
             buildingId: 'orbital_cargo_launcher',
             buildingName: 'Orbital Cargo Launcher',
-            recipeIndex: -1,
+            recipeIndex: -1, // Launcher doesn't have a recipe
             outputItem: targetItemId,
             outputAmount: launchRate,
-            buildingCount: launchersNeeded, // Now shows proper multiplier like other buildings
+            buildingCount: launchersNeeded,
             powerPerBuilding: launcherPowerPerBuilding,
             totalPower: launcherTotalPower,
             x: 0,
             y: 0,
-            pointsPerItem: componentData.points,
-            launchTime: targetAmount / launchRate, // Simple time calculation
-            totalPoints: targetAmount * componentData.points // Points for all items
         };
         
         flowNodes.push(launcherNode);
 
         // Find the target item's production node to create an edge
-        const targetProductionNode = flowNodes.find((node): node is FlowNode => 
-            'recipeIndex' in node && 
-            node.recipeIndex >= 0 && 
+        const targetProductionNode = flowNodes.find(node =>
+            node.recipeIndex >= 0 &&
             node.outputItem === targetItemId
         );
-        
+
         if (targetProductionNode) {
             const targetProductionNodeId = `${targetProductionNode.buildingId}_${targetProductionNode.recipeIndex}_${targetProductionNode.outputItem}`;
             const launcherNodeId = `${launcherNode.buildingId}_${launcherNode.recipeIndex}_${launcherNode.outputItem}`;
-            
+
             // Add edge from production to launcher
             flowEdges.push({
                 from: targetProductionNodeId,
                 to: launcherNodeId,
                 itemId: targetItemId,
-                amount: targetAmount // Show the actual flow rate, not per-launcher rate
+                amount: targetAmount // Show the actual flow rate
             });
         }
     }

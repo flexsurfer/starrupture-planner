@@ -17,6 +17,7 @@ export const CorporationCard = ({
   itemsMap
 }: CorporationCardProps) => {
   const { totalLevels, totalComponents, totalCost } = corporation.stats;
+  const totalRewards = corporation.levels.reduce((sum, level) => sum + level.rewards.length, 0);
   
   return (
     <div className="card bg-base-100 shadow-lg border border-base-300">
@@ -29,15 +30,23 @@ export const CorporationCard = ({
           <CorporationIcon corporationId={corporation.id} corporationName={corporation.name} />
           <div className="flex-1">
             <h2 className="card-title text-xl">{corporation.name}</h2>
-            <div className="flex gap-2 flex-wrap">
+            {corporation.description && (
+              <p className="text-sm text-base-content/70">{corporation.description}</p>
+            )}
+            <div className="flex gap-2 flex-wrap mt-4">
               <div className="badge badge-outline">
                 {totalLevels} level{totalLevels !== 1 ? 's' : ''}
               </div>
               <div className="badge badge-outline">
                 {totalComponents} component{totalComponents !== 1 ? 's' : ''}
               </div>
+              {totalRewards > 0 && (
+                <div className="badge badge-success badge-outline">
+                  {totalRewards} reward{totalRewards !== 1 ? 's' : ''}
+                </div>
+              )}
               {totalCost > 0 && (
-                <div className="badge badge-info">
+                <div className="badge badge-info badge-outline">
                   {totalCost.toLocaleString()} G
                 </div>
               )}

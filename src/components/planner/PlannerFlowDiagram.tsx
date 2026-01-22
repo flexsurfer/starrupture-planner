@@ -16,11 +16,14 @@ import { SUB_IDS } from '../../state/sub-ids';
 import type { Item, Building } from './types';
 import type { Corporation } from '../../state/db';
 import { generateReactFlowData } from './plannerFlowUtils';
+import { buildProductionFlow } from './productionFlowBuilder';
 import { usePlannerColors } from './hooks';
+import type { FlowNode, FlowEdge } from './types';
 
 interface PlannerFlowDiagramProps {
     selectedItemId: string;
     targetAmount: number;
+    onFlowDataChange?: (nodes: FlowNode[], edges: FlowEdge[]) => void;
 }
 
 // Define node and edge types outside component to prevent React Flow warnings
@@ -33,7 +36,8 @@ const edgeTypes = {};
  */
 export const PlannerFlowDiagram: React.FC<PlannerFlowDiagramProps> = ({
     selectedItemId,
-    targetAmount
+    targetAmount,
+    onFlowDataChange
 }) => {
     const { fitView } = useReactFlow();
     
@@ -53,11 +57,23 @@ export const PlannerFlowDiagram: React.FC<PlannerFlowDiagramProps> = ({
     // Generate flow data when inputs change
     const updateFlowData = useCallback(() => {
         if (selectedItemId) {
-            const { nodes: newNodes, edges: newEdges } = generateReactFlowData({
+            const validAmount = targetAmount > 0 ? targetAmount : 1;
+            
+            // Build the raw production flow (used for stats and diagram)
+            const { nodes: flowNodes, edges: flowEdges } = buildProductionFlow({
                 targetItemId: selectedItemId,
-                targetAmount,
-                buildings,
-                corporations,
+                targetAmount: validAmount
+            }, buildings, corporations);
+            
+            // Expose raw flow data to parent component for stats calculations
+            if (onFlowDataChange) {
+                onFlowDataChange(flowNodes, flowEdges);
+            }
+            
+            // Generate React Flow formatted data for visualization
+            const { nodes: newNodes, edges: newEdges } = generateReactFlowData({
+                flowNodes,
+                flowEdges,
                 items,
                 getItemColor,
                 getBuildingColor
@@ -68,6 +84,9 @@ export const PlannerFlowDiagram: React.FC<PlannerFlowDiagramProps> = ({
         } else {
             setNodes([]);
             setEdges([]);
+            if (onFlowDataChange) {
+                onFlowDataChange([], []);
+            }
         }
     }, [
         selectedItemId,
@@ -77,6 +96,7 @@ export const PlannerFlowDiagram: React.FC<PlannerFlowDiagramProps> = ({
         items,
         getItemColor,
         getBuildingColor,
+        onFlowDataChange,
         setNodes,
         setEdges
     ]);

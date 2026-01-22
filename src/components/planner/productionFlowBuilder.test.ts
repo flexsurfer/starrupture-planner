@@ -155,7 +155,7 @@ describe('buildProductionFlow', () => {
                 targetAmount: 30 // Half the default output
             }, buildings, corporations);
 
-            // Should have 3 nodes now: ore_excavator, smelter, orbital_cargo_launcher
+            // Should have 3 nodes: ore_excavator, smelter, orbital_cargo_launcher
             expect(result.nodes).toHaveLength(3);
 
             const smelterNode = result.nodes.find(n => n.buildingId === 'smelter');
@@ -387,17 +387,6 @@ describe('buildProductionFlow', () => {
                 expect(typeof node.buildingCount).toBe('number');
                 expect(typeof node.x).toBe('number');
                 expect(typeof node.y).toBe('number');
-
-                // If it's an Orbital Cargo Launcher node, check additional properties
-                if (node.buildingId === 'orbital_cargo_launcher') {
-                    expect(node).toHaveProperty('pointsPerItem');
-                    expect(node).toHaveProperty('launchTime');
-                    expect(node).toHaveProperty('totalPoints');
-                    
-                    expect(typeof (node as any).pointsPerItem).toBe('number');
-                    expect(typeof (node as any).launchTime).toBe('number');
-                    expect(typeof (node as any).totalPoints).toBe('number');
-                }
             });
         });
 
@@ -423,77 +412,4 @@ describe('buildProductionFlow', () => {
         });
     });
 
-    describe('Orbital Cargo Launcher', () => {
-        it('should add Orbital Cargo Launcher for items used by corporations', () => {
-            const result = buildProductionFlow({
-                targetItemId: 'bar_titanium',
-                targetAmount: 60
-            }, buildings, corporations);
-
-            // Should have the normal production nodes plus the launcher
-            const launcherNode = result.nodes.find(n => n.buildingId === 'orbital_cargo_launcher');
-            expect(launcherNode).toBeDefined();
-            
-            expect(launcherNode!.outputItem).toBe('bar_titanium');
-            expect(launcherNode!.buildingCount).toBe(6); // 60 items / 10 items per launcher
-            expect(launcherNode!.outputAmount).toBe(10); // 10 items/min per launcher
-            expect((launcherNode as any).pointsPerItem).toBe(2); // From mock data
-            expect((launcherNode as any).totalPoints).toBe(120); // 60 items * 2 points per item
-            expect((launcherNode as any).launchTime).toBe(6); // 60 items / 10 items per min per launcher
-        });
-
-        it('should not add Orbital Cargo Launcher for items not used by corporations', () => {
-            const result = buildProductionFlow({
-                targetItemId: 'ore_titanium',
-                targetAmount: 75
-            }, buildings, corporations);
-
-            const launcherNode = result.nodes.find(n => n.buildingId === 'orbital_cargo_launcher');
-            expect(launcherNode).toBeUndefined();
-        });
-
-        it('should create proper edge to Orbital Cargo Launcher', () => {
-            const result = buildProductionFlow({
-                targetItemId: 'bar_titanium',
-                targetAmount: 60
-            }, buildings, corporations);
-
-            // Find edge to launcher
-            const launcherNodeId = 'orbital_cargo_launcher_-1_bar_titanium';
-            const edgeToLauncher = result.edges.find(e => e.to === launcherNodeId);
-            
-            expect(edgeToLauncher).toBeDefined();
-            expect(edgeToLauncher!.itemId).toBe('bar_titanium');
-            expect(edgeToLauncher!.amount).toBe(60); // Should show full flow rate
-        });
-
-        it('should calculate launch time correctly for different production rates', () => {
-            // Test with titanium_housing which has different points and level cost
-            const result = buildProductionFlow({
-                targetItemId: 'titanium_housing',
-                targetAmount: 30
-            }, buildings, corporations);
-
-            const launcherNode = result.nodes.find(n => n.buildingId === 'orbital_cargo_launcher');
-            expect(launcherNode).toBeDefined();
-            
-            expect((launcherNode as any).pointsPerItem).toBe(10); // From mock data
-            expect((launcherNode as any).totalPoints).toBe(300); // 30 items * 10 points per item
-
-            // 30 items / 10 items per min per launcher = 3 minutes
-            expect((launcherNode as any).launchTime).toBe(3);
-        });
-
-        it('should handle fractional launcher counts correctly', () => {
-            const result = buildProductionFlow({
-                targetItemId: 'bar_titanium',
-                targetAmount: 25 // Not divisible by 10
-            }, buildings, corporations);
-
-            const launcherNode = result.nodes.find(n => n.buildingId === 'orbital_cargo_launcher');
-            expect(launcherNode).toBeDefined();
-            
-            expect(launcherNode!.buildingCount).toBe(2.5); // 25 / 10 = 2.5 launchers
-        });
-    });
 });

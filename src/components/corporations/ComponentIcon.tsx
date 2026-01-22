@@ -13,7 +13,7 @@ export const ComponentIcon = ({ component, itemsMap }: ComponentIconProps) => {
     <div className="flex flex-col items-center gap-1">
       {/* Points badge and Quantity label horizontally aligned */}
       <div className="flex items-center gap-2">
-        <div className="badge badge-xs text-xs badge-info">
+        <div className="badge badge-xs text-xs badge-info badge-outline">
           {component.points} G
         </div>
         {component.cost && (

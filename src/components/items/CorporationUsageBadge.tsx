@@ -6,7 +6,7 @@ interface CorporationUsageBadgeProps {
 }
 
 export const CorporationUsageBadge = ({ usage, corporationId }: CorporationUsageBadgeProps) => {
-  const imagePath = `./icons/corporations/${corporationId}.jpg`;
+  const imagePath = `./icons/corporations/${corporationId}.png`;
   
   return (
     <div 

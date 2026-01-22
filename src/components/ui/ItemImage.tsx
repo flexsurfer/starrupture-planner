@@ -23,7 +23,7 @@ export const ItemImage = ({
   showFallback = true,
   style = {}
 }: ItemImageProps) => {
-  const imagePath = `./icons/items/${itemId}.jpg`;
+  const imagePath = `./icons/items/${itemId}.png`;
   const baseClasses = `${sizeClasses[size]} object-cover`;
   const finalClassName = className ? `${baseClasses} ${className}` : baseClasses;
   

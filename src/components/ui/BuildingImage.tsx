@@ -21,8 +21,8 @@ export const BuildingImage = ({
   size = 'large',
   style = {}
 }: BuildingImageProps) => {
-  const imagePath = `./icons/buildings/${buildingId}.jpg`;
-  const baseClasses = `${sizeClasses[size]} object-cover`;
+  const imagePath = `./icons/buildings/${buildingId}.png`;
+  const baseClasses = `${sizeClasses[size]}`;
   const finalClassName = className ? `${baseClasses} ${className}` : baseClasses;
 
   return (
