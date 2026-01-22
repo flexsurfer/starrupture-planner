@@ -24,11 +24,18 @@
           "amount_per_minute": 60
         },
         "inputs": []
-      },
+      }
+    ]
+  },
+  {
+    "id": "sulfur_extractor",
+    "name": "Sulfur Extractor",
+    "power": 40,
+    "recipes": [
       {
         "output": {
           "id": "ore_sulphur",
-          "amount_per_minute": 60
+          "amount_per_minute": 240
         },
         "inputs": []
       }
@@ -37,12 +44,12 @@
   {
     "id": "helium_extractor",
     "name": "Helium-3 Extractor",
-    "power": 5,
+    "power": 15,
     "recipes": [
       {
         "output": {
           "id": "helium",
-          "amount_per_minute": 120
+          "amount_per_minute": 240
         },
         "inputs": []
       }
@@ -104,7 +111,7 @@
         "inputs": [
           {
             "id": "block_calcium",
-            "amount_per_minute": 60
+            "amount_per_minute": 20
           }
         ]
       },
@@ -116,7 +123,7 @@
         "inputs": [
           {
             "id": "bar_wolfram",
-            "amount_per_minute": 120
+            "amount_per_minute": 30
           }
         ]
       },
@@ -318,16 +325,16 @@
       {
         "output": {
           "id": "basic_building",
-          "amount_per_minute": 150
+          "amount_per_minute": 300
         },
         "inputs": [
           {
             "id": "ore_wolfram",
-            "amount_per_minute": 15
+            "amount_per_minute": 30
           },
           {
             "id": "ore_titanium",
-            "amount_per_minute": 15
+            "amount_per_minute": 30
           }
         ]
       },
@@ -394,12 +401,12 @@
       {
         "output": {
           "id": "wolfram_plate",
-          "amount_per_minute": 30
+          "amount_per_minute": 60
         },
         "inputs": [
           {
             "id": "bar_wolfram",
-            "amount_per_minute": 30
+            "amount_per_minute": 60
           }
         ]
       },
@@ -621,7 +628,7 @@
             "amount_per_minute": 30
           },
           {
-            "id": "tube",
+            "id": "titanium_rod",
             "amount_per_minute": 30
           },
           {
@@ -657,7 +664,7 @@
       {
         "output": {
           "id": "shotgun_ammo",
-          "amount_per_minute": 225
+          "amount_per_minute": 150
         },
         "inputs": [
           {
@@ -666,7 +673,7 @@
           },
           {
             "id": "powder_calcium",
-            "amount_per_minute": 20
+            "amount_per_minute": 60
           }
         ]
       },
@@ -929,20 +936,20 @@
       {
         "output": {
           "id": "scanner",
-          "amount_per_minute": 6
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "lens",
-            "amount_per_minute": 12
+            "amount_per_minute": 20
           },
           {
             "id": "generator",
-            "amount_per_minute": 12
+            "amount_per_minute": 20
           },
           {
             "id": "stabilizer",
-            "amount_per_minute": 72
+            "amount_per_minute": 120
           }
         ]
       }
