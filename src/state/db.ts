@@ -60,7 +60,7 @@ export interface Building {
     id: string;
     name: string;
     power: number;
-    heat: number;
+    heat?: number;
     recipes: Recipe[];
 }
 
