@@ -170,7 +170,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 
         // Create a flow node representing this building in the production chain
         const powerPerBuilding = building.power;
+        const heatPerBuilding = building.heat;
         const totalPower = Math.ceil(buildingsNeeded) * powerPerBuilding;
+        const totalHeat = Math.ceil(buildingsNeeded) * heatPerBuilding;
         
         const node: FlowNode = {
             buildingId: building.id,
@@ -180,7 +182,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             outputAmount: outputRate,
             buildingCount: buildingsNeeded,
             powerPerBuilding,
+            heatPerBuilding,
             totalPower,
+            totalHeat,
             x: 0, // Will be positioned by the layout algorithm
             y: 0,
         };
@@ -269,7 +273,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 
         // Create the Orbital Cargo Launcher node as a regular FlowNode
         const launcherPowerPerBuilding = 10; // Power consumption per launcher
+        const launcherHeatPerBuilding = 5; // Heat generation per launcher
         const launcherTotalPower = Math.ceil(launchersNeeded) * launcherPowerPerBuilding;
+        const launcherTotalHeat = Math.ceil(launchersNeeded) * launcherHeatPerBuilding;
         
         const launcherNode: FlowNode = {
             buildingId: 'orbital_cargo_launcher',
@@ -279,7 +285,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             outputAmount: launchRate,
             buildingCount: launchersNeeded,
             powerPerBuilding: launcherPowerPerBuilding,
+            heatPerBuilding: launcherHeatPerBuilding,
             totalPower: launcherTotalPower,
+            totalHeat: launcherTotalHeat,
             x: 0,
             y: 0,
         };
@@ -313,8 +321,11 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 }
 
 /**
- * Helper function to get item name by ID
- * Exported for use in UI components
+ * Lookup the display name for an item identifier.
+ *
+ * @param itemId - The item identifier to look up
+ * @param items - Array of available `Item` objects to search
+ * @returns The item's `name` if found, otherwise the original `itemId`
  */
 export function getItemName(itemId: string, items: Item[]): string {
     return items.find(item => item.id === itemId)?.name || itemId;
