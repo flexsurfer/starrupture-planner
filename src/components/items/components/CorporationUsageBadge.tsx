@@ -1,4 +1,4 @@
-import type { CorporationUsage } from "./types";
+import type { CorporationUsage } from "../types";
 
 interface CorporationUsageBadgeProps {
   usage: CorporationUsage;

@@ -5,6 +5,8 @@ export const SUB_IDS = {
     ITEMS_MAP: 'itemsMap',
     FILTERED_ITEMS: 'filteredItems',
     SELECTED_CATEGORY: 'selectedCategory',
+    SELECTED_BUILDING: 'selectedBuilding',
+    AVAILABLE_BUILDINGS: 'availableBuildings',
     SEARCH_TERM: 'searchTerm',
     CATEGORIES: 'categories',
     BUILDINGS: 'buildings',
@@ -21,4 +23,6 @@ export const SUB_IDS = {
     PLANNER_REACT_FLOW_DATA: 'plannerReactFlowData',
     PLANNER_STATS_SUMMARY: 'plannerStatsSummary',
     PLANNER_STATS_DETAILED: 'plannerStatsDetailed',
+    ITEMS_TABLE_DATA: 'itemsTableData',
+    ITEMS_HELPER_MAPS: 'itemsHelperMaps',
 }

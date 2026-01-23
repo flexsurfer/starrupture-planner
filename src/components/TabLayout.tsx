@@ -167,7 +167,7 @@ const TabLayout = () => {
         </div>
 
         {/* Tab Content */}
-        <main className="flex-1 min-h-0 bg-base-100 overflow-auto">
+        <main className="flex-1 min-h-0 bg-base-100">
           {renderTabContent()}
         </main>
       </div>

@@ -1,6 +1,6 @@
 import { dispatch, useSubscription } from "@flexsurfer/reflex";
-import { EVENT_IDS } from "../../state/event-ids";
-import { SUB_IDS } from "../../state/sub-ids";
+import { EVENT_IDS } from "../../../state/event-ids";
+import { SUB_IDS } from "../../../state/sub-ids";
 
 interface ItemsSearchProps {
   className?: string;
@@ -14,11 +14,11 @@ export const ItemsSearch = ({ className = "" }: ItemsSearchProps) => {
   };
 
   return (
-    <div className={`form-control w-full max-w-xs ${className}`}>
+    <div className={`form-control ${className}`}>
       <input
         type="text"
         placeholder="Search items..."
-        className="input input-bordered w-full"
+        className="input input-sm input-bordered w-full"
         value={searchTerm || ''}
         onChange={handleSearchChange}
       />

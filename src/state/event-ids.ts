@@ -1,6 +1,7 @@
 export const EVENT_IDS = {
     INIT_APP: 'initApp',
     SET_CATEGORY: 'setCategory',
+    SET_SELECTED_BUILDING: 'setSelectedBuilding',
     SET_SEARCH_TERM: 'setSearchTerm',
     SET_THEME: 'setTheme',
     SET_ACTIVE_TAB: 'setActiveTab',

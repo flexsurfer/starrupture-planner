@@ -94,7 +94,7 @@ export const RecipeCard = ({ recipe, itemsMap, className = "" }: RecipeCardProps
         </div>
 
         {/* Open in Planner button */}
-        <div className="flex">
+        <div>
           <button
             className="btn btn-xs btn-primary"
             onClick={() => {

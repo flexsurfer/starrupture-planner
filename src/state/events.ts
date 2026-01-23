@@ -51,6 +51,10 @@ regEvent(EVENT_IDS.SET_CATEGORY, ({ draftDb }, category: string) => {
     draftDb.selectedCategory = category;
 });
 
+regEvent(EVENT_IDS.SET_SELECTED_BUILDING, ({ draftDb }, building: string) => {
+    draftDb.selectedBuilding = building;
+});
+
 regEvent(EVENT_IDS.SET_SEARCH_TERM, ({ draftDb }, searchTerm: string) => {
     draftDb.searchTerm = searchTerm;
 });

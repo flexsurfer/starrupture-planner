@@ -1,9 +1,9 @@
 import { ItemIcon } from "./ItemIcon";
 import { CorporationUsageBadge } from "./CorporationUsageBadge";
-import { getCategoryDisplayName, getCategoryBadgeClass } from "./useItemsData";
-import type { Item, CorporationUsage } from "./types";
+import { getCategoryDisplayName, getCategoryBadgeClass } from "../hooks/useItemsData";
+import type { Item, CorporationUsage } from "../types";
 import { dispatch } from '@flexsurfer/reflex';
-import { EVENT_IDS } from '../../state/event-ids';
+import { EVENT_IDS } from '../../../state/event-ids';
 
 interface ItemRowProps {
   item: Item;
@@ -23,33 +23,33 @@ export const ItemRow = ({
   return (
     <tr className="hover">
       {/* Item Column - Icon + Name */}
-      <td>
-        <div className="flex items-center gap-3">
+      <td className="py-1.5">
+        <div className="flex items-center gap-2">
           <ItemIcon item={item} />
-          <div className="font-medium">{item.name}</div>
+          <div className="font-medium text-sm">{item.name}</div>
         </div>
       </td>
       
       {/* Category Column */}
-      <td>
-        <div className={`badge ${getCategoryBadgeClass(item.type)}`}>
+      <td className="py-1.5">
+        <div className={`badge badge-sm ${getCategoryBadgeClass(item.type)}`}>
           {getCategoryDisplayName(item.type)}
         </div>
       </td>
       
       {/* Production Column */}
-      <td>
-        <div className="text-sm">{producingBuilding}</div>
+      <td className="py-1.5">
+        <div className="text-xs">{producingBuilding}</div>
       </td>
       
       {/* Actions Column */}
-      <td>
-        <div className="flex gap-2">
+      <td className="py-1.5">
+        <div className="flex gap-1">
           <button 
             className="btn btn-xs btn-outline"
             onClick={() => openRecipeModal(item)}
           >
-            Show Recipe
+            Recipe
           </button>
           <button
             className="btn btn-xs btn-primary"
@@ -57,13 +57,13 @@ export const ItemRow = ({
               dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, item.id]);
             }}
           >
-            Open in Planner
+            Planner
           </button>
         </div>
       </td>
       
       {/* Corporations Column */}
-      <td>
+      <td className="py-1.5">
         <div className="flex flex-wrap gap-1">
           {corporationUsage.length > 0 ? (
             corporationUsage.map((usage, index) => {

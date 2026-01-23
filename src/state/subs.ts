@@ -1,6 +1,6 @@
 import { regSub } from '@flexsurfer/reflex';
 import { SUB_IDS } from './sub-ids';
-import type { Item, Corporation } from './db';
+import type { Item, Corporation, Building as DbBuilding } from './db';
 import type { Building, ProductionFlowResult } from '../components/planner/core/types';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import { generateReactFlowData } from '../components/planner/visualization/plannerFlowUtils';
@@ -13,6 +13,7 @@ regSub(SUB_IDS.DATA_VERSIONS);
 regSub(SUB_IDS.ITEMS);
 regSub(SUB_IDS.ITEMS_MAP);
 regSub(SUB_IDS.SELECTED_CATEGORY);
+regSub(SUB_IDS.SELECTED_BUILDING);
 regSub(SUB_IDS.SEARCH_TERM);
 regSub(SUB_IDS.CATEGORIES);
 regSub(SUB_IDS.BUILDINGS);
@@ -23,12 +24,39 @@ regSub(SUB_IDS.SELECTED_PLANNER_ITEM);
 regSub(SUB_IDS.SELECTED_PLANNER_CORPORATION_LEVEL);
 regSub(SUB_IDS.TARGET_AMOUNT);
 
+// Available buildings subscription (unique building names)
+regSub(SUB_IDS.AVAILABLE_BUILDINGS,
+    (buildings: DbBuilding[]) => {
+        const buildingNames = new Set<string>();
+        buildingNames.add('all'); // Add 'all' option
+        buildings.forEach(building => {
+            buildingNames.add(building.name);
+        });
+        return Array.from(buildingNames).sort();
+    },
+    () => [[SUB_IDS.BUILDINGS]]);
+
 // Computed subscriptions
 regSub(SUB_IDS.FILTERED_ITEMS,
-    (category, searchTerm, items) => {
+    (category, selectedBuilding, searchTerm, items, buildings) => {
         let filtered = category === 'all'
             ? items
             : items.filter((item: Item) => item.type === category);
+
+        // Filter by building
+        if (selectedBuilding !== 'all') {
+            const itemsProducedByBuilding = new Set<string>();
+            buildings.forEach((building: DbBuilding) => {
+                if (building.name === selectedBuilding) {
+                    building.recipes.forEach(recipe => {
+                        itemsProducedByBuilding.add(recipe.output.id);
+                    });
+                }
+            });
+            filtered = filtered.filter((item: Item) => 
+                itemsProducedByBuilding.has(item.id)
+            );
+        }
 
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
@@ -41,7 +69,83 @@ regSub(SUB_IDS.FILTERED_ITEMS,
         // Sort items alphabetically by name
         return [...filtered].sort((a: Item, b: Item) => a.name.localeCompare(b.name));
     },
-    () => [[SUB_IDS.SELECTED_CATEGORY], [SUB_IDS.SEARCH_TERM], [SUB_IDS.ITEMS]]);
+    () => [[SUB_IDS.SELECTED_CATEGORY], [SUB_IDS.SELECTED_BUILDING], [SUB_IDS.SEARCH_TERM], [SUB_IDS.ITEMS], [SUB_IDS.BUILDINGS]]);
+
+// Items table data with computed properties - computed directly from source data
+interface ItemTableData {
+    item: Item;
+    producingBuilding: string;
+    corporationUsage: Array<{ corporation: string; level: number }>;
+}
+
+regSub(SUB_IDS.ITEMS_TABLE_DATA,
+    (filteredItems: Item[], buildings: DbBuilding[], corporations: Corporation[]): ItemTableData[] => {
+        // Build producing buildings map
+        const producingBuildingsMap = new Map<string, string>();
+        for (const building of buildings) {
+            for (const recipe of building.recipes) {
+                producingBuildingsMap.set(recipe.output.id, building.name);
+            }
+        }
+
+        // Build corporation usage map
+        const corporationUsageMap = new Map<string, Array<{ corporation: string; level: number }>>();
+        for (const corporation of corporations) {
+            for (const level of corporation.levels) {
+                for (const component of level.components) {
+                    if (!corporationUsageMap.has(component.id)) {
+                        corporationUsageMap.set(component.id, []);
+                    }
+                    corporationUsageMap.get(component.id)!.push({
+                        corporation: corporation.name,
+                        level: level.level
+                    });
+                }
+            }
+        }
+
+        // Map filtered items to table data
+        return filteredItems.map(item => ({
+            item,
+            producingBuilding: producingBuildingsMap.get(item.id) || 'Raw Material',
+            corporationUsage: corporationUsageMap.get(item.id) || []
+        }));
+    },
+    () => [[SUB_IDS.FILTERED_ITEMS], [SUB_IDS.BUILDINGS], [SUB_IDS.CORPORATIONS]]);
+
+// Helper maps for RecipesPage and other components
+interface ItemsHelperMaps {
+    corporationNameToId: Map<string, string>;
+    buildingCorporationUsage: Map<string, Array<{ corporation: string; level: number }>>;
+}
+
+regSub(SUB_IDS.ITEMS_HELPER_MAPS,
+    (corporations: Corporation[]): ItemsHelperMaps => {
+        const corporationNameToId = new Map<string, string>();
+        const buildingCorporationUsage = new Map<string, Array<{ corporation: string; level: number }>>();
+
+        for (const corporation of corporations) {
+            corporationNameToId.set(corporation.name, corporation.id);
+            
+            for (const level of corporation.levels) {
+                for (const reward of level.rewards) {
+                    if (!buildingCorporationUsage.has(reward.name)) {
+                        buildingCorporationUsage.set(reward.name, []);
+                    }
+                    buildingCorporationUsage.get(reward.name)!.push({
+                        corporation: corporation.name,
+                        level: level.level
+                    });
+                }
+            }
+        }
+
+        return {
+            corporationNameToId,
+            buildingCorporationUsage
+        };
+    },
+    () => [[SUB_IDS.CORPORATIONS]]);
 
 // Corporation with computed stats
 regSub(SUB_IDS.CORPORATIONS_WITH_STATS,

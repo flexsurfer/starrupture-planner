@@ -1,22 +1,23 @@
 import { useState } from "react";
-import { useItemsData } from "./items/useItemsData";
-import { ItemsFilter } from "./items/ItemsFilter";
-import { ItemsSearch } from "./items/ItemsSearch";
-import { ItemsStats } from "./items/ItemsStats";
-import { ItemsTable } from "./items/ItemsTable";
+import { 
+  useItemsData, 
+  ItemsFilter, 
+  BuildingSelector, 
+  ItemsSearch, 
+  ItemsStats, 
+  ItemsTable,
+  findItemRecipe 
+} from "./items";
 import { RecipeModal } from "./ui";
-import { findItemRecipe } from "./items/recipeUtils";
 import type { Item, Recipe, Building } from "../state/db";
 import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../state/sub-ids";
 
 const ItemsPage = () => {
   const {
-    filteredItems,
+    itemsTableData,
     selectedCategory,
     categories,
-    findProducingBuilding,
-    findCorporationUsage,
     getCorporationId,
   } = useItemsData();
 
@@ -63,36 +64,29 @@ const ItemsPage = () => {
   };
 
   return (
-    <div className="p-4 lg:p-6">
+    <div className="h-full p-2 lg:p-3 flex flex-col">
       {/* Sticky Header section */}
-      <div className="sticky top-0 z-10 bg-base-100 pb-4 mb-4 border-b border-base-300">
-        <div className="flex flex-col gap-4">
-          {/* Top row: Category Filter and Stats */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
-            <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
-              {/* Category Filter */}
-              <ItemsFilter
-                categories={categories}
-                selectedCategory={selectedCategory}
-              />
-              {/* Search Input */}
-              <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
-                <ItemsSearch className="w-full sm:max-w-md" />
-              </div>
-            </div>
-            {/* Stats - hidden on mobile */}
-            <div className="hidden md:block">
-              <ItemsStats totalItems={filteredItems.length} />
-            </div>
+      <div className="sticky top-0 z-10 bg-base-100 pb-2 mb-2 border-b border-base-300">
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
+          {/* Left: Filter and Search */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center flex-1">
+            <ItemsFilter
+              categories={categories}
+              selectedCategory={selectedCategory}
+            />
+            <BuildingSelector className="w-full sm:max-w-40" />
+            <ItemsSearch className="w-full sm:max-w-40" />
+          </div>
+          {/* Right: Stats - hidden on mobile */}
+          <div className="hidden md:block">
+            <ItemsStats totalItems={itemsTableData.length} />
           </div>
         </div>
       </div>
 
       {/* Items Table */}
       <ItemsTable
-        filteredItems={filteredItems}
-        findProducingBuilding={findProducingBuilding}
-        findCorporationUsage={findCorporationUsage}
+        itemsTableData={itemsTableData}
         getCorporationId={getCorporationId}
         openRecipeModal={openRecipeModal}
       />

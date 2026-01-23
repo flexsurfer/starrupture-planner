@@ -5,16 +5,19 @@
  * It allows importing from '@/components/items' instead of individual files.
  */
 // UI Components
-export { ItemIcon } from "./ItemIcon";
-export { ItemsFilter } from "./ItemsFilter";
-export { ItemsSearch } from "./ItemsSearch";
-export { ItemsStats } from "./ItemsStats";
-export { ItemsTable } from "./ItemsTable";
-export { ItemRow } from "./ItemRow";
-export { CorporationUsageBadge } from "./CorporationUsageBadge";
+export { ItemIcon } from "./components/ItemIcon";
+export { ItemsFilter } from "./components/ItemsFilter";
+export { BuildingSelector } from "./components/BuildingSelector";
+export { ItemsSearch } from "./components/ItemsSearch";
+export { ItemsStats } from "./components/ItemsStats";
+export { ItemsTable } from "./components/ItemsTable";
+export { ItemRow } from "./components/ItemRow";
+export { CorporationUsageBadge } from "./components/CorporationUsageBadge";
 
 // Hooks and utilities
-export { useItemsData, getCategoryDisplayName, getCategoryBadgeClass } from "./useItemsData";
+export { useItemsData, getCategoryDisplayName, getCategoryBadgeClass, type ItemTableData } from "./hooks/useItemsData";
+export { findItemRecipe, hasRecipe } from "./utils/recipeUtils";
+export type { ItemRecipe } from "./utils/recipeUtils";
 
 // Types
 export type {

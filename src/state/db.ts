@@ -112,6 +112,7 @@ export interface AppState {
     items: Item[];
     itemsMap: Record<string, Item>;
     selectedCategory: string;
+    selectedBuilding: string;
     searchTerm: string;
     categories: string[];
     buildings: Building[];
@@ -144,6 +145,7 @@ const appStore: AppState = {
     theme: 'dark',
     activeTab: 'items',
     selectedCategory: 'all',
+    selectedBuilding: 'all',
     searchTerm: '',
     categories: extractCategories(defaultItems),
     selectedPlannerItem: null,

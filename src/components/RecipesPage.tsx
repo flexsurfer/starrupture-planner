@@ -3,8 +3,7 @@ import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../state/sub-ids";
 import type { Building, Item } from "../state/db";
 import { BuildingImage, RecipeCard } from "./ui";
-import { useItemsData } from "./items/useItemsData";
-import { CorporationUsageBadge } from "./items/CorporationUsageBadge";
+import { useItemsData, CorporationUsageBadge } from "./items";
 
 const RecipesPage = () => {
   const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
@@ -152,7 +151,7 @@ const RecipesPage = () => {
         {/* Header section - responsive */}
         <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
           <h1 className="text-2xl lg:text-3xl font-bold">Buildings & Recipes</h1>
-          <div className="stats shadow stats-vertical sm:stats-horizontal">
+          <div className="stats shadow stats-horizontal">
             <div className="stat">
               <div className="stat-title text-xs sm:text-sm">Total Buildings</div>
               <div className="stat-value text-lg sm:text-2xl">{buildings.length}</div>

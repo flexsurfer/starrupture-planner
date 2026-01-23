@@ -1,5 +1,5 @@
-import { ItemImage } from "../ui";
-import type { Item } from "./types";
+import { ItemImage } from "../../ui";
+import type { Item } from "../types";
 
 interface ItemIconProps {
   item: Item;

@@ -87,7 +87,7 @@
   {
     "id": "basic_building",
     "name": "Basic Building Material",
-    "type": "component"
+    "type": "material"
   },
   {
     "id": "calcite_sheets",
@@ -242,7 +242,7 @@
   {
     "id": "intermediate_building",
     "name": "Intermediate Building Material",
-    "type": "component"
+    "type": "material"
   },
   {
     "id": "ion_injector",

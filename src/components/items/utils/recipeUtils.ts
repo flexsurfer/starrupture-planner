@@ -1,4 +1,4 @@
-import type { Recipe, Building } from '../../state/db';
+import type { Recipe, Building } from '../../../state/db';
 
 export interface ItemRecipe {
   recipe: Recipe;

@@ -42,12 +42,9 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
         {/* Building Info */}
         <div className="mb-4 lg:mb-6 p-3 lg:p-4 bg-base-200 rounded-lg">
           <div className="flex items-center gap-2 lg:gap-3">
-            <BuildingImage buildingId={building.id} building={building} className="w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0" />
+            <BuildingImage buildingId={building.id} building={building} className="w-10 h-10 flex-shrink-0" />
             <div className="min-w-0 flex-1">
               <h4 className="font-semibold text-sm lg:text-base">Produced in: {building.name}</h4>
-              <p className="text-xs lg:text-sm text-base-content/70">
-                {building.recipes.length} recipe{building.recipes.length !== 1 ? 's' : ''} available
-              </p>
             </div>
           </div>
         </div>

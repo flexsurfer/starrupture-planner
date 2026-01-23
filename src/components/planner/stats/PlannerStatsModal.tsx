@@ -3,7 +3,7 @@ import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';
-import { getCategoryBadgeClass, getCategoryDisplayName } from '../../items/useItemsData';
+import { getCategoryBadgeClass, getCategoryDisplayName } from '../../items';
 
 interface PlannerStatsModalProps {
     isOpen: boolean;
