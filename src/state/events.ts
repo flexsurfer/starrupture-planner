@@ -1,11 +1,11 @@
 import { regEvent } from '@flexsurfer/reflex';
 import { EVENT_IDS } from './event-ids';
 import { EFFECT_IDS } from './effect-ids';
-import type { TabType, DataVersion, Item, Building } from './db';
+import type { TabType, DataVersion, Item, Building, AppState } from './db';
 import { buildItemsMap, parseCorporations, extractCategories } from './data-utils';
 
 // Common function to update draftDb with version data
-function updateDraftDbWithVersionData(draftDb: any, version: DataVersion) {
+function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
     const data = draftDb.versionedData[version];
     const items = data.items as Item[];
     const buildings = data.buildings as Building[];
@@ -26,7 +26,7 @@ regEvent(EVENT_IDS.INIT_APP, ({ draftDb, localStoreTheme, localStoreDataVersion 
     
     // Load saved data version if valid
     if (localStoreDataVersion && (localStoreDataVersion === 'earlyaccess' || localStoreDataVersion === 'playtest')) {
-        updateDraftDbWithVersionData(draftDb, localStoreDataVersion);
+        updateDraftDbWithVersionData(draftDb as AppState, localStoreDataVersion);
     }
     
     return [[EFFECT_IDS.SET_THEME, draftDb.theme]];
@@ -68,7 +68,7 @@ regEvent(EVENT_IDS.SET_PLANNER_CORPORATION_LEVEL, ({ draftDb }, corporationLevel
 regEvent(EVENT_IDS.SET_DATA_VERSION, ({ draftDb }, version: DataVersion) => {
     if (draftDb.dataVersion === version) return;
 
-    updateDraftDbWithVersionData(draftDb, version);
+    updateDraftDbWithVersionData(draftDb as AppState, version);
 
     return [[EFFECT_IDS.SET_DATA_VERSION, version]];
 });

@@ -74,7 +74,7 @@ export const usePlannerDefaultOutput = () => {
             }
         }
         return 60; // fallback if not found
-    }, []);
+    }, [buildings]);
 
     return getDefaultOutputRate;
 };

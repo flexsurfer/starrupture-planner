@@ -62,7 +62,7 @@ const PlannerPageInner: React.FC = () => {
     const handleItemSelect = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
         const itemId = event.target.value;
         dispatch([EVENT_IDS.SET_PLANNER_ITEM, itemId || null]);
-    }, [getDefaultOutputRate]);
+    }, []);
 
     /**
      * Callback to receive flow data from diagram component

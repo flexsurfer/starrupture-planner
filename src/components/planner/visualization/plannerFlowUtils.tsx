@@ -4,7 +4,7 @@ import { Position as ReactFlowPosition } from '@xyflow/react';
 
 import type { Item, FlowNode, FlowEdge } from '../core/types';
 import { getItemName } from '../core/productionFlowBuilder';
-import { ItemImage, BuildingImage } from '../../ui';
+import { NodeCard } from './NodeCard';
 
 export interface FlowDataGenerationParams {
     flowNodes: FlowNode[];
@@ -28,12 +28,7 @@ export interface FlowData {
  * 3. Converts flow edges to React Flow edges with labels
  * 4. Applies the calculated positions to all nodes
  */
-export const generateReactFlowData = ({
-    flowNodes,
-    flowEdges,
-    items,
-    getItemColor
-}: FlowDataGenerationParams): FlowData => {
+export const generateReactFlowData = ({ flowNodes, flowEdges, items, getItemColor }: FlowDataGenerationParams): FlowData => {
 
     // Create Dagre graph for automatic layout
     // Dagre arranges nodes in a hierarchical layout (left-to-right)
@@ -77,62 +72,11 @@ export const generateReactFlowData = ({
             position: { x: nodeWithPosition.x - 100, y: nodeWithPosition.y - 60 },
             data: {
                 label: (
-                    // Standard rendering for production buildings
-                    <div className="text-center p-2">
-
-                        {/* Fractional count badge at bottom center */}
-                        {Math.ceil(node.buildingCount) > 1 && (
-                            <div className="text-xs font-semibold absolute top-[-8px] right-[-8px]">
-                                <div className="badge badge-sm badge-secondary">
-                                    {Math.ceil(node.buildingCount)}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Building count badge in center-right (link connection area) */}
-                        <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2 z-50">
-                            <div className="badge badge-sm badge-primary">
-                                x{node.buildingCount.toFixed(2)}
-                            </div>
-                        </div>
-
-                        {/* Building information */}
-                        <div className="text-xs font-semibold mb-1">
-                            {node.buildingName}
-                        </div>
-
-                        {/* Building icon */}
-                        <div className="flex items-center gap-2 justify-center">
-                            <BuildingImage
-                                buildingId={node.buildingId}
-                                className="w-19 h-19 rounded-full object-cover"
-                                size="medium"
-                            />
-                        </div>
-
-                        {/* Item image and info inline */}
-                        <div className="flex items-center gap-2 justify-center">
-                            <div className="relative flex-shrink-0">
-                                <ItemImage
-                                    itemId={node.outputItem}
-                                    size="small"
-                                />
-                            </div>
-                            <div className="text-left">
-                                <div className="text-xs opacity-75 leading-tight">
-                                    {getItemName(node.outputItem, items)}
-                                </div>
-                                <div className="text-xs leading-tight"
-                                    style={{ color: getItemColor(node.outputItem) }}>
-                                    {node.outputAmount.toFixed(1)}/min
-                                </div>
-                            </div>
-                        </div>
-                        <div className="text-xs font-semibold absolute bottom-1 right-1">
-                            ⚡{node.powerPerBuilding}
-                            🔥{node.heatPerBuilding}
-                        </div>
-                    </div>
+                    <NodeCard
+                        node={node}
+                        items={items}
+                        getItemColor={getItemColor}
+                    />
                 ),
             },
             sourcePosition: ReactFlowPosition.Right,

@@ -101,7 +101,7 @@ export interface Tab {
     icon: string;
 }
 
-interface AppState {
+export interface AppState {
     dataVersion: DataVersion;
     dataVersions: { id: DataVersion; label: string }[];
     versionedData: Record<DataVersion, {
