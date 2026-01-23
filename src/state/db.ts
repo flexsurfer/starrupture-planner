@@ -120,6 +120,7 @@ export interface AppState {
     activeTab: TabType;
     selectedPlannerItem: string | null;
     selectedPlannerCorporationLevel: { corporationId: string; level: number } | null;
+    targetAmount: number;
 }
 
 
@@ -147,6 +148,7 @@ const appStore: AppState = {
     categories: extractCategories(defaultItems),
     selectedPlannerItem: null,
     selectedPlannerCorporationLevel: null,
+    targetAmount: 60,
 };
 
 initAppDb(appStore);

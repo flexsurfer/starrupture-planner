@@ -5,6 +5,7 @@ import { EVENT_IDS } from '../../../state/event-ids';
 import type { CorporationLevelInfo } from '../core/types';
 import type { Corporation } from '../../../state/db';
 import { CorporationUsageBadge } from '../../items';
+import { useTargetAmount } from '../hooks';
 
 interface SelectedCorporationLevel {
     corporationId: string;
@@ -17,10 +18,6 @@ interface SelectedCorporationLevel {
 interface CorporationLevelSelectorProps {
     /** CSS class name for styling */
     className?: string;
-    /** Selected item ID to calculate launcher stats */
-    selectedItemId?: string | null;
-    /** Target amount per minute to calculate building count */
-    targetAmount?: number;
 }
 
 /**
@@ -30,13 +27,13 @@ interface CorporationLevelSelectorProps {
  * Auto-selects first level when levels become available
  */
 export const CorporationLevelSelector: React.FC<CorporationLevelSelectorProps> = ({
-    className = '',
-    selectedItemId = null,
-    targetAmount = 60
+    className = ''
 }) => {
+    const selectedItemId = useSubscription<string | null>([SUB_IDS.SELECTED_PLANNER_ITEM]);
     const corporationLevels = useSubscription<CorporationLevelInfo[]>([SUB_IDS.PLANNER_AVAILABLE_CORPORATION_LEVELS]);
     const selectedLevel = useSubscription<SelectedCorporationLevel | null>([SUB_IDS.SELECTED_PLANNER_CORPORATION_LEVEL]);
     const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS]);
+    const { targetAmount } = useTargetAmount();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     // Auto-select first level when levels become available and none is selected
@@ -82,7 +79,7 @@ export const CorporationLevelSelector: React.FC<CorporationLevelSelectorProps> =
         <div className={`relative ${className}`}>
             {/* Compact one-line display with stats */}
             <div 
-                className="flex items-center gap-2 px-3 py-2 bg-base-200 border border-base-300 rounded-lg cursor-pointer hover:border-primary transition-colors"
+                className="flex items-center gap-2 px-3 h-8 bg-base-200 border border-base-300 rounded-lg cursor-pointer hover:border-primary transition-colors"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
                 {selectedLevel ? (

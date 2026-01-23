@@ -1,48 +1,8 @@
-import { useCallback, useMemo } from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
+import { useCallback, useMemo, useRef, useEffect } from 'react';
+import { useSubscription, dispatch } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
+import { EVENT_IDS } from '../../../state/event-ids';
 import type { Item, Building } from '../core/types';
-
-/**
- * Custom hook for managing planner color systems
- */
-export const usePlannerColors = () => {
-    const items = useSubscription<Item[]>([SUB_IDS.ITEMS]);
-
-    // Color system for items (matching ItemsPage badge colors)
-    const getItemColor = useCallback((itemId: string): string => {
-        const item = items.find(i => i.id === itemId);
-        if (!item) return '#6b7280'; // neutral gray
-
-        const colorMap = {
-            raw: '#3b82f6',      // blue (primary)
-            processed: '#8b5cf6', // purple (secondary)
-            component: '#06d6a0', // teal (accent)
-            ammo: '#f59e0b',     // amber (warning)
-            final: '#10b981',    // green (success)
-        };
-
-        return colorMap[item.type as keyof typeof colorMap] || '#6b7280';
-    }, [items]);
-
-    // Color system for buildings
-    const getBuildingColor = useCallback((buildingId: string): string => {
-        const colorMap = {
-            ore_excavator: '#3b82f6',    // red - extraction
-            helium_extractor: '#06b6d4', // cyan - gas extraction  
-            smelter: '#f97316',          // orange - basic processing
-            furnace: '#dc2626',          // red - high heat processing
-            fabricator: '#8b5cf6',       // purple - manufacturing
-        };
-
-        return colorMap[buildingId as keyof typeof colorMap] || '#6b7280';
-    }, []);
-
-    return {
-        getItemColor,
-        getBuildingColor
-    };
-};
 
 /**
  * Custom hook for getting selectable items for planner
@@ -77,4 +37,32 @@ export const usePlannerDefaultOutput = () => {
     }, [buildings]);
 
     return getDefaultOutputRate;
+};
+
+/**
+ * Custom hook for debounced target amount setting
+ */
+export const useTargetAmount = () => {
+    const targetAmount = useSubscription<number>([SUB_IDS.TARGET_AMOUNT]);
+    const timeoutRef = useRef<number | null>(null);
+
+    const setTargetAmount = useCallback((amount: number) => {
+        // Clear existing timeout
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+
+        // Set new timeout for debounced dispatch
+        timeoutRef.current = setTimeout(() => {
+            dispatch([EVENT_IDS.SET_TARGET_AMOUNT, amount]);
+        }, 300); // 300ms debounce
+    }, []);
+
+    // Cleanup timeout on unmount
+    useEffect(() => { return () => { if (timeoutRef.current) { clearTimeout(timeoutRef.current); } }; }, []);
+
+    return {
+        targetAmount,
+        setTargetAmount
+    };
 };

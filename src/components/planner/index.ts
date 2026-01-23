@@ -47,11 +47,12 @@ export {
 // Stats component exports
 export {
     PlannerStatsModal,
+    PlannerStatsDisplay,
 } from './stats';
 
 // Hooks exports
 export {
-    usePlannerColors,
     usePlannerSelectableItems,
     usePlannerDefaultOutput,
+    useTargetAmount,
 } from './hooks';

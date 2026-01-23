@@ -9,4 +9,5 @@ export const EVENT_IDS = {
     SET_PLANNER_CORPORATION_LEVEL: 'setPlannerCorporationLevel',
     NAVIGATE_TO_TAB: 'navigateToTab',
     SET_DATA_VERSION: 'setDataVersion',
+    SET_TARGET_AMOUNT: 'setTargetAmount',
 }

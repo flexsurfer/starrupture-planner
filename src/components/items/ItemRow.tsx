@@ -51,7 +51,7 @@ export const ItemRow = ({
           >
             Show Recipe
           </button>
-          <button 
+          <button
             className="btn btn-xs btn-primary"
             onClick={() => {
               dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, item.id]);

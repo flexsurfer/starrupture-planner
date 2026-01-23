@@ -95,7 +95,7 @@ export const RecipeCard = ({ recipe, itemsMap, className = "" }: RecipeCardProps
 
         {/* Open in Planner button */}
         <div className="flex">
-          <button 
+          <button
             className="btn btn-xs btn-primary"
             onClick={() => {
               dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, recipe.output.id]);

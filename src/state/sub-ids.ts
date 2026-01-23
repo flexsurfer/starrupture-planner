@@ -16,4 +16,9 @@ export const SUB_IDS = {
     SELECTED_PLANNER_ITEM: 'selectedPlannerItem',
     SELECTED_PLANNER_CORPORATION_LEVEL: 'selectedPlannerCorporationLevel',
     PLANNER_AVAILABLE_CORPORATION_LEVELS: 'availableCorporationLevels',
+    TARGET_AMOUNT: 'targetAmount',
+    PLANNER_PRODUCTION_FLOW: 'plannerProductionFlow',
+    PLANNER_REACT_FLOW_DATA: 'plannerReactFlowData',
+    PLANNER_STATS_SUMMARY: 'plannerStatsSummary',
+    PLANNER_STATS_DETAILED: 'plannerStatsDetailed',
 }

@@ -208,6 +208,10 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     const createEdges = (): void => {
         // Map to consolidate flows between the same producer-consumer pair
         const consolidatedFlows = new Map<string, { from: string; to: string; itemId: string; totalAmount: number }>();
+        const outputItemMap = new Map<string, FlowNode>();
+        flowNodes.forEach(node => {
+            outputItemMap.set(node.outputItem, node);
+        });
 
         flowNodes.forEach(consumerNode => {
             const recipeInfo = findRecipeForItem(consumerNode.outputItem);
@@ -219,7 +223,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             // For each input this consumer needs
             recipe.inputs.forEach(input => {
                 // Find the producer node for this input
-                const producerNode = flowNodes.find(n => n.outputItem === input.id);
+                const producerNode = outputItemMap.get(input.id);
                 if (producerNode) {
                     const producerNodeId = `${producerNode.buildingId}_${producerNode.recipeIndex}_${producerNode.outputItem}`;
                     

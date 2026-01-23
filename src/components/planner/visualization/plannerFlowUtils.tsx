@@ -10,8 +10,6 @@ export interface FlowDataGenerationParams {
     flowNodes: FlowNode[];
     flowEdges: FlowEdge[];
     items: Item[];
-    getItemColor: (itemId: string) => string;
-    getBuildingColor: (buildingId: string) => string;
 }
 
 export interface FlowData {
@@ -21,14 +19,29 @@ export interface FlowData {
 
 /**
  * Converts the flow builder output to React Flow format and applies layout
- * 
+ *
  * This function:
  * 1. Creates a Dagre graph for automatic layout
  * 2. Converts flow nodes to React Flow nodes with custom styling
  * 3. Converts flow edges to React Flow edges with labels
  * 4. Applies the calculated positions to all nodes
  */
-export const generateReactFlowData = ({ flowNodes, flowEdges, items, getItemColor }: FlowDataGenerationParams): FlowData => {
+export const generateReactFlowData = ({ flowNodes, flowEdges, items }: FlowDataGenerationParams): FlowData => {
+    // Color function for items (pure function based on items)
+    const getItemColor = (itemId: string): string => {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return '#6b7280'; // neutral gray
+
+        const colorMap = {
+            raw: '#3b82f6',      // blue (primary)
+            processed: '#8b5cf6', // purple (secondary)
+            component: '#06d6a0', // teal (accent)
+            ammo: '#f59e0b',     // amber (warning)
+            final: '#10b981',    // green (success)
+        };
+
+        return colorMap[item.type as keyof typeof colorMap] || '#6b7280';
+    };
 
     // Create Dagre graph for automatic layout
     // Dagre arranges nodes in a hierarchical layout (left-to-right)
@@ -41,19 +54,19 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items, getItemColo
         dagreGraph.setNode(`node_${index}`, { width: 200, height: 120 });
     });
 
+    // Create a mapping from internal node IDs to React Flow node IDs
+    const nodeIdMap = new Map<string, string>();
+    flowNodes.forEach((node, index) => {
+        const nodeKey = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
+        nodeIdMap.set(nodeKey, `node_${index}`);
+    });
+
     // Add edges to define the layout relationships
     flowEdges.forEach((edge) => {
-        const fromIndex = flowNodes.findIndex(node => {
-            const nodeId = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
-            return nodeId === edge.from;
-        });
-        const toIndex = flowNodes.findIndex(node => {
-            const nodeId = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
-            return nodeId === edge.to;
-        });
-
-        if (fromIndex !== -1 && toIndex !== -1) {
-            dagreGraph.setEdge(`node_${fromIndex}`, `node_${toIndex}`);
+        const fromNodeId = nodeIdMap.get(edge.from);
+        const toNodeId = nodeIdMap.get(edge.to);
+        if (fromNodeId && toNodeId) {
+            dagreGraph.setEdge(fromNodeId, toNodeId);
         }
     });
 
@@ -82,13 +95,6 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items, getItemColo
             sourcePosition: ReactFlowPosition.Right,
             targetPosition: ReactFlowPosition.Left,
         };
-    });
-
-    // Create a mapping from internal node IDs to React Flow node IDs
-    const nodeIdMap = new Map<string, string>();
-    flowNodes.forEach((node, index) => {
-        const nodeKey = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
-        nodeIdMap.set(nodeKey, `node_${index}`);
     });
 
     // Convert flow edges to React Flow edges with labels

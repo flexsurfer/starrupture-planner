@@ -13,17 +13,6 @@ import '@xyflow/react/dist/style.css';
 
 import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
-import type { Item, Building, FlowNode, FlowEdge } from '../core/types';
-import type { Corporation } from '../../../state/db';
-import { generateReactFlowData } from './plannerFlowUtils';
-import { buildProductionFlow } from '../core/productionFlowBuilder';
-import { usePlannerColors } from '../hooks';
-
-interface PlannerFlowDiagramProps {
-    selectedItemId: string;
-    targetAmount: number;
-    onFlowDataChange?: (nodes: FlowNode[], edges: FlowEdge[]) => void;
-}
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
@@ -33,48 +22,28 @@ const edgeTypes = {};
  * Flow diagram component for the production planner
  * Handles the React Flow visualization with automatic layout
  */
-export const PlannerFlowDiagram: React.FC<PlannerFlowDiagramProps> = ({ selectedItemId, targetAmount, onFlowDataChange }) => {
+export const PlannerFlowDiagram: React.FC = () => {
     const { fitView } = useReactFlow();
 
     // State subscriptions
+    const selectedItemId = useSubscription<string | null>([SUB_IDS.SELECTED_PLANNER_ITEM]);
     const theme = useSubscription<'light' | 'dark'>([SUB_IDS.THEME]);
-    const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
-    const items = useSubscription<Item[]>([SUB_IDS.ITEMS]);
-    const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS]);
-
-    // Color system
-    const { getItemColor, getBuildingColor } = usePlannerColors();
+    const reactFlowData = useSubscription<{ nodes: Node[]; edges: Edge[] }>([SUB_IDS.PLANNER_REACT_FLOW_DATA]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-    // Generate flow data when inputs change
+    // Update React Flow nodes and edges when subscription data changes
     useEffect(() => {
-        if (selectedItemId) {
-            const validAmount = targetAmount > 0 ? targetAmount : 1;
-
-            // Build the raw production flow (used for stats and diagram)
-            const { nodes: flowNodes, edges: flowEdges } = buildProductionFlow({ targetItemId: selectedItemId, targetAmount: validAmount }, buildings, corporations);
-
-            // Expose raw flow data to parent component for stats calculations
-            if (onFlowDataChange) {
-                onFlowDataChange(flowNodes, flowEdges);
-            }
-
-            // Generate React Flow formatted data for visualization
-            const { nodes: newNodes, edges: newEdges } = generateReactFlowData({ flowNodes, flowEdges, items, getItemColor, getBuildingColor });
-
-            setNodes(newNodes);
-            setEdges(newEdges);
+        if (reactFlowData) {
+            setNodes(reactFlowData.nodes);
+            setEdges(reactFlowData.edges);
         } else {
             setNodes([]);
             setEdges([]);
-            if (onFlowDataChange) {
-                onFlowDataChange([], []);
-            }
         }
-    }, [selectedItemId, targetAmount, buildings, corporations, items, onFlowDataChange]);
+    }, [reactFlowData, setNodes, setEdges]);
 
     // Auto-fit view when item changes
     useEffect(() => {

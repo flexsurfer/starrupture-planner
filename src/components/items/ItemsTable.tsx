@@ -80,7 +80,7 @@ export const ItemsTable = ({
           >
             Show Recipe
           </button>
-          <button 
+          <button
             className="btn btn-sm btn-primary flex-1"
             onClick={() => {
               dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, item.id]);

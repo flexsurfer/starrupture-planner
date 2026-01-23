@@ -19,6 +19,21 @@ function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
     draftDb.categories = extractCategories(items);
 }
 
+// Helper function to set target amount to default output rate for an item
+function setTargetAmountToDefault(draftDb: AppState, itemId: string) {
+    // Find the default output rate for the item (same logic as usePlannerDefaultOutput)
+    for (const building of draftDb.buildings) {
+        for (const recipe of building.recipes) {
+            if (recipe.output.id === itemId) {
+                draftDb.targetAmount = recipe.output.amount_per_minute;
+                return;
+            }
+        }
+    }
+    // fallback if not found
+    draftDb.targetAmount = 60;
+}
+
 regEvent(EVENT_IDS.INIT_APP, ({ draftDb, localStoreTheme, localStoreDataVersion }) => {
     if (localStoreTheme) {
         draftDb.theme = localStoreTheme;
@@ -53,12 +68,14 @@ regEvent(EVENT_IDS.OPEN_ITEM_IN_PLANNER, ({ draftDb }, itemId: string, corporati
     draftDb.selectedPlannerItem = itemId;
     draftDb.selectedPlannerCorporationLevel = corporationLevel || null;
     draftDb.activeTab = 'planner';
+    setTargetAmountToDefault(draftDb as AppState, itemId);
 });
 
 regEvent(EVENT_IDS.SET_PLANNER_ITEM, ({ draftDb }, itemId: string | null) => {
     draftDb.selectedPlannerItem = itemId;
     // Reset corporation level when item changes
     draftDb.selectedPlannerCorporationLevel = null;
+    setTargetAmountToDefault(draftDb as AppState, itemId || '');
 });
 
 regEvent(EVENT_IDS.SET_PLANNER_CORPORATION_LEVEL, ({ draftDb }, corporationLevel: { corporationId: string; level: number } | null) => {
@@ -71,4 +88,8 @@ regEvent(EVENT_IDS.SET_DATA_VERSION, ({ draftDb }, version: DataVersion) => {
     updateDraftDbWithVersionData(draftDb as AppState, version);
 
     return [[EFFECT_IDS.SET_DATA_VERSION, version]];
+});
+
+regEvent(EVENT_IDS.SET_TARGET_AMOUNT, ({ draftDb }, targetAmount: number) => {
+    draftDb.targetAmount = targetAmount;
 });
