@@ -3,9 +3,16 @@
  * 
  * This module provides clean exports for all planner-related functionality.
  * It allows importing from '@/components/planner' instead of individual files.
+ * 
+ * The planner package is organized into subpackages:
+ * - core: Types and flow building logic
+ * - visualization: React Flow utilities and diagram component
+ * - ui: Form components (selectors, inputs)
+ * - stats: Statistics display components
+ * - hooks: Shared React hooks
  */
 
-// Types
+// Core exports (types and flow builder)
 export type {
     Item,
     Recipe,
@@ -15,31 +22,36 @@ export type {
     ProductionFlowParams,
     ProductionFlowResult,
     CorporationLevelInfo,
-} from './types';
+} from './core';
 
-// Flow builder functions
 export {
     buildProductionFlow,
     getItemName,
-} from './productionFlowBuilder';
+} from './core';
 
-// Flow utilities
+// Visualization exports
 export {
     generateReactFlowData,
     type FlowDataGenerationParams,
     type FlowData,
-} from './plannerFlowUtils';
+    PlannerFlowDiagram,
+} from './visualization';
 
-// Hooks
+// UI component exports
+export {
+    PlannerItemSelector,
+    PlannerTargetInput,
+    CorporationLevelSelector,
+} from './ui';
+
+// Stats component exports
+export {
+    PlannerStatsModal,
+} from './stats';
+
+// Hooks exports
 export {
     usePlannerColors,
     usePlannerSelectableItems,
     usePlannerDefaultOutput,
 } from './hooks';
-
-// Components
-export { PlannerItemSelector } from './PlannerItemSelector';
-export { PlannerTargetInput } from './PlannerTargetInput';
-export { PlannerFlowDiagram } from './PlannerFlowDiagram';
-export { CorporationLevelSelector } from './CorporationLevelSelector';
-export { PlannerStatsModal } from './PlannerStatsModal';

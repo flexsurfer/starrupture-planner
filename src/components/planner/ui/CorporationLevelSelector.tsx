@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useSubscription, dispatch } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../state/sub-ids';
-import { EVENT_IDS } from '../../state/event-ids';
-import type { CorporationLevelInfo } from './types';
-import type { Corporation } from '../../state/db';
-import { CorporationUsageBadge } from '../items';
+import { SUB_IDS } from '../../../state/sub-ids';
+import { EVENT_IDS } from '../../../state/event-ids';
+import type { CorporationLevelInfo } from '../core/types';
+import type { Corporation } from '../../../state/db';
+import { CorporationUsageBadge } from '../../items';
 
 interface SelectedCorporationLevel {
     corporationId: string;
@@ -25,7 +25,7 @@ interface CorporationLevelSelectorProps {
 
 /**
  * Component for selecting which corporation level to use for cargo launcher
- * Shows compact stats from LauncherStatsPanel inline with the selector
+ * Shows compact stats inline with the selector
  * Uses subscriptions for both available levels and selected level
  * Auto-selects first level when levels become available
  */

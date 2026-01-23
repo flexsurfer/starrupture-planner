@@ -2,9 +2,9 @@ import dagre from 'dagre';
 import type { Node, Edge } from '@xyflow/react';
 import { Position as ReactFlowPosition } from '@xyflow/react';
 
-import type { Item, FlowNode, FlowEdge } from './types';
-import { getItemName } from './productionFlowBuilder';
-import { ItemImage, BuildingImage } from '../ui';
+import type { Item, FlowNode, FlowEdge } from '../core/types';
+import { getItemName } from '../core/productionFlowBuilder';
+import { ItemImage, BuildingImage } from '../../ui';
 
 export interface FlowDataGenerationParams {
     flowNodes: FlowNode[];

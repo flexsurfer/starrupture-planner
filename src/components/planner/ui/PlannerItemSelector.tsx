@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePlannerSelectableItems } from './hooks';
+import { usePlannerSelectableItems } from '../hooks';
 
 interface PlannerItemSelectorProps {
     selectedItemId: string;

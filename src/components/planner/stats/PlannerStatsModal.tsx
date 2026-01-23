@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import type { FlowNode, FlowEdge, Item } from './types';
-import { BuildingImage } from '../ui/BuildingImage';
-import { ItemImage } from '../ui/ItemImage';
-import { getItemName } from './productionFlowBuilder';
-import { getCategoryBadgeClass, getCategoryDisplayName } from '../items/useItemsData';
+import type { FlowNode, FlowEdge, Item } from '../core/types';
+import { BuildingImage } from '../../ui/BuildingImage';
+import { ItemImage } from '../../ui/ItemImage';
+import { getItemName } from '../core/productionFlowBuilder';
+import { getCategoryBadgeClass, getCategoryDisplayName } from '../../items/useItemsData';
 
 interface PlannerStatsModalProps {
     isOpen: boolean;

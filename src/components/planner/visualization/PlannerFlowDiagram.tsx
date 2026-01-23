@@ -12,13 +12,12 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../state/sub-ids';
-import type { Item, Building } from './types';
-import type { Corporation } from '../../state/db';
+import { SUB_IDS } from '../../../state/sub-ids';
+import type { Item, Building, FlowNode, FlowEdge } from '../core/types';
+import type { Corporation } from '../../../state/db';
 import { generateReactFlowData } from './plannerFlowUtils';
-import { buildProductionFlow } from './productionFlowBuilder';
-import { usePlannerColors } from './hooks';
-import type { FlowNode, FlowEdge } from './types';
+import { buildProductionFlow } from '../core/productionFlowBuilder';
+import { usePlannerColors } from '../hooks';
 
 interface PlannerFlowDiagramProps {
     selectedItemId: string;

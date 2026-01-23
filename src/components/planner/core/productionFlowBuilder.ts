@@ -19,7 +19,7 @@ import type {
     ProductionFlowResult,
     ProductionNode
 } from './types';
-import type { Corporation } from '../../state/db';
+import type { Corporation } from '../../../state/db';
 
 /**
  * Helper function to find corporation component data for an item
