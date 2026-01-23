@@ -3,6 +3,7 @@
     "id": "ore_excavator",
     "name": "Ore Excavator",
     "power": 5,
+    "heat": 3,
     "recipes": [
       {
         "output": {
@@ -31,6 +32,7 @@
     "id": "sulfur_extractor",
     "name": "Sulfur Extractor",
     "power": 40,
+    "heat": 60,
     "recipes": [
       {
         "output": {
@@ -45,6 +47,7 @@
     "id": "helium_extractor",
     "name": "Helium-3 Extractor",
     "power": 15,
+    "heat": 60,
     "recipes": [
       {
         "output": {
@@ -59,6 +62,7 @@
     "id": "smelter",
     "name": "Smelter",
     "power": 5,
+    "heat": 3,
     "recipes": [
       {
         "output": {
@@ -102,6 +106,7 @@
     "id": "furnace",
     "name": "Furnace",
     "power": 20,
+    "heat": 8,
     "recipes": [
       {
         "output": {
@@ -321,6 +326,7 @@
     "id": "fabricator",
     "name": "Fabricator",
     "power": 10,
+    "heat": 5,
     "recipes": [
       {
         "output": {
@@ -508,6 +514,7 @@
     "id": "mega_press",
     "name": "Mega Press",
     "power": 30,
+    "heat": 15,
     "recipes": [
       {
         "output": {
@@ -747,6 +754,7 @@
     "id": "refinery",
     "name": "Refinery",
     "power": 40,
+    "heat": 60,
     "recipes": [
       {
         "output": {
@@ -785,6 +793,7 @@
     "id": "assembler",
     "name": "Assembler",
     "power": 60,
+    "heat": 150,
     "recipes": [
       {
         "output": {
@@ -959,6 +968,7 @@
     "id": "compounder",
     "name": "Compounder",
     "power": 60,
+    "heat": 150,
     "recipes": [
       {
         "output": {

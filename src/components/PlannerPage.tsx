@@ -77,11 +77,12 @@ const PlannerPageInner: React.FC = () => {
      */
     const statsForButton = useMemo(() => {
         if (!selectedItemId || flowNodes.length === 0) {
-            return { totalBuildings: 0, totalEnergy: 0 };
+            return { totalBuildings: 0, totalEnergy: 0, totalHotness: 0 };
         }
         const totalBuildings = flowNodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0);
         const totalEnergy = flowNodes.reduce((sum, node) => sum + node.totalPower, 0);
-        return { totalBuildings, totalEnergy };
+        const totalHotness = flowNodes.reduce((sum, node) => sum + node.totalHeat, 0);
+        return { totalBuildings, totalEnergy, totalHotness };
     }, [selectedItemId, flowNodes]);
 
     return (
@@ -115,6 +116,8 @@ const PlannerPageInner: React.FC = () => {
                                 🏭{statsForButton.totalBuildings}
                                 <span className="text-xs text-base-content/40">|</span>
                                 ⚡{statsForButton.totalEnergy.toFixed(0)}
+                                <span className="text-xs text-base-content/40">|</span>
+                                🔥{statsForButton.totalHotness.toFixed(0)}
                                 <button
                                     className="btn btn-sm"
                                     onClick={() => setIsStatsModalOpen(true)}
@@ -152,6 +155,8 @@ const PlannerPageInner: React.FC = () => {
                             🏭{statsForButton.totalBuildings}
                             <span className="text-xs text-base-content/40">|</span>
                             ⚡{statsForButton.totalEnergy.toFixed(0)}
+                            <span className="text-xs text-base-content/40">|</span>
+                            🔥{statsForButton.totalHotness.toFixed(0)}
                             <button
                                 className="btn btn-sm lg:btn-md"
                                 onClick={() => setIsStatsModalOpen(true)}

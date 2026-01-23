@@ -11,6 +11,8 @@ interface SelectedCorporationLevel {
 interface LauncherStatsPanelProps {
     /** Total power consumption from the flow calculation */
     totalPowerConsumption: number;
+    /** Total heat generation from the flow calculation */
+    totalHeatGeneration: number;
     /** Selected item ID to find the component data */
     itemId: string;
 }
@@ -21,8 +23,9 @@ interface LauncherStatsPanelProps {
  * - Level Cost (XP required for the level)
  * - Launch Time (items needed / 10 items per minute)
  * - Total Power consumption
+ * - Total Heat generation
  */
-export const LauncherStatsPanel = ({ totalPowerConsumption, itemId }: LauncherStatsPanelProps) => {
+export const LauncherStatsPanel = ({ totalPowerConsumption, totalHeatGeneration, itemId }: LauncherStatsPanelProps) => {
     const selectedLevel = useSubscription<SelectedCorporationLevel | null>([SUB_IDS.SELECTED_PLANNER_CORPORATION_LEVEL]);
     const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS]);
 
@@ -78,7 +81,8 @@ export const LauncherStatsPanel = ({ totalPowerConsumption, itemId }: LauncherSt
                 Total Launch Time: {launchTime.toFixed(1)} min
             </div>
             <div className="text-blue-500 font-semibold border-t border-base-300 pt-1 mt-2">
-                Total ⚡: {Math.ceil(totalPowerConsumption)}
+                Total ⚡: {Math.ceil(totalPowerConsumption)}<br />
+                Total 🔥: {Math.ceil(totalHeatGeneration)}
             </div>
         </div>
     );
