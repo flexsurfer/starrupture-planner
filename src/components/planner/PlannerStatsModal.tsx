@@ -18,6 +18,7 @@ interface BuildingStats {
     buildingName: string;
     count: number;
     totalPower: number;
+    totalHeat: number;
 }
 
 /**
@@ -41,12 +42,14 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({
             if (existing) {
                 existing.count += Math.ceil(node.buildingCount);
                 existing.totalPower += node.totalPower;
+                existing.totalHeat += node.totalHeat;
             } else {
                 buildingMap.set(node.buildingId, {
                     buildingId: node.buildingId,
                     buildingName: node.buildingName,
                     count: Math.ceil(node.buildingCount),
-                    totalPower: node.totalPower
+                    totalPower: node.totalPower,
+                    totalHeat: node.totalHeat
                 });
             }
         });
@@ -57,6 +60,9 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({
 
         // Calculate total energy (sum of all totalPower)
         const totalEnergy = nodes.reduce((sum, node) => sum + node.totalPower, 0);
+
+        // Calculate total hotness (sum of all totalHeat)
+        const totalHotness = nodes.reduce((sum, node) => sum + node.totalHeat, 0);
 
         // Calculate total buildings (sum of all buildingCount, rounded up)
         const totalBuildings = nodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0);
@@ -114,6 +120,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({
         return {
             buildingStats,
             totalEnergy,
+            totalHotness,
             totalBuildings,
             itemsByType,
             sortedTypes
@@ -149,6 +156,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold">Energy:</span>
                         <span className="text-base font-bold">⚡ {stats.totalEnergy.toFixed(0)}</span>
+                        <span className="text-base font-bold">🔥 {stats.totalHotness.toFixed(0)}</span>
                     </div>
                 </div>
 
@@ -162,6 +170,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({
                                     <th>Building</th>
                                     <th className="text-right">Count</th>
                                     <th className="text-right">Power</th>
+                                    <th className="text-right">Heat</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -182,6 +191,9 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({
                                         </td>
                                         <td className="text-right">
                                             ⚡ {building.totalPower.toFixed(0)}
+                                        </td>
+                                        <td className="text-right">
+                                            🔥 {building.totalHeat.toFixed(0)}
                                         </td>
                                     </tr>
                                 ))}

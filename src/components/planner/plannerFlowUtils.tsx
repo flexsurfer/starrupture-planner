@@ -130,6 +130,7 @@ export const generateReactFlowData = ({
                         </div>
                         <div className="text-xs font-semibold absolute bottom-1 right-1">
                             ⚡{node.powerPerBuilding}
+                            🔥{node.heatPerBuilding}
                         </div>
                     </div>
                 ),

@@ -47,6 +47,8 @@ export interface Building {
     name: string;
     /** Power consumption per building */
     power: number;
+    /** Heat generation per building */
+    heat: number;
     /** List of recipes this building can execute */
     recipes: Recipe[];
 }
@@ -70,8 +72,12 @@ export interface FlowNode {
     buildingCount: number;
     /** Power consumption per building */
     powerPerBuilding: number;
+    /** Heat generation per building */
+    heatPerBuilding: number;
     /** Total power consumption (buildingCount * powerPerBuilding) */
     totalPower: number;
+    /** Total heat generation (buildingCount * heatPerBuilding) */
+    totalHeat: number;
     /** X coordinate for layout (set by dagre) */
     x: number;
     /** Y coordinate for layout (set by dagre) */

@@ -93,6 +93,7 @@ const RecipesPage = () => {
                   {building.recipes.length} recipe{building.recipes.length !== 1 ? 's' : ''}
                 </div>
                 ⚡ {building.power}
+                🔥 {building.heat}
                 {corporationUsage.length > 0 && (
                   <div className="flex gap-1">
                     {corporationUsage.map((usage, index) => {
