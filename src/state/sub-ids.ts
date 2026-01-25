@@ -40,4 +40,5 @@ export const SUB_IDS = {
     BUILDING_SECTION_BUILDINGS: 'buildingSectionBuildings',
     PLANNER_SELECTABLE_ITEMS: 'plannerSelectableItems',
     AVAILABLE_BUILDINGS_FOR_SECTION: 'availableBuildingsForSection',
+    MY_BASES_STATS: 'myBasesStats',
 }

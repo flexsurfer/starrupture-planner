@@ -32,6 +32,7 @@ export {
   BaseCoreInfo,
   BuildingSection,
   BuildingSectionCard,
+  MyBasesStats,
 } from './components';
 
 // Modals

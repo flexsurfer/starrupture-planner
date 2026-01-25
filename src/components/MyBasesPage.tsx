@@ -9,6 +9,7 @@ import {
   CreateBaseModal,
   RenameBaseModal,
   BaseDetailView,
+  MyBasesStats,
 } from './mybases';
 
 const MyBasesPage = () => {
@@ -75,6 +76,11 @@ const MyBasesPage = () => {
         >
           Create Base
         </button>
+      </div>
+
+      {/* Stats Panel */}
+      <div className="mb-4">
+        <MyBasesStats />
       </div>
 
       {/* Content */}

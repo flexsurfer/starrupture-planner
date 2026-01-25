@@ -15,6 +15,7 @@ import type {
   BaseOutputItem,
   BaseDefenseBuilding,
   BuildingSectionType,
+  MyBasesStats,
 } from '../components/mybases/types';
 
 // Root subscriptions
@@ -684,3 +685,37 @@ regSub(SUB_IDS.AVAILABLE_BUILDINGS_FOR_SECTION,
         return getAvailableBuildingsForSection(buildings, sectionType);
     },
     () => [[SUB_IDS.BUILDINGS]]);
+
+// Aggregated stats for all bases
+regSub(SUB_IDS.MY_BASES_STATS,
+    (bases: Base[], buildings: DbBuilding[]): MyBasesStats => {
+        let totalBuildings = 0;
+        let totalHeat = 0;
+        let totalEnergyUsed = 0;
+
+        bases.forEach((base: Base) => {
+            totalBuildings += base.buildings.length;
+
+            base.buildings.forEach((baseBuilding: BaseBuilding) => {
+                const buildingType = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+                if (buildingType) {
+                    // Exclude amplifiers from heat calculation (they increase capacity but don't generate heat)
+                    if (!isAmplifierBuilding(buildingType.id)) {
+                        totalHeat += buildingType.heat || 0;
+                    }
+                    // Energy consumption (only count consumption, not generation)
+                    if (buildingType.type !== 'generator') {
+                        totalEnergyUsed += buildingType.power || 0;
+                    }
+                }
+            });
+        });
+
+        return {
+            totalBases: bases.length,
+            totalBuildings,
+            totalHeat,
+            totalEnergyUsed,
+        };
+    },
+    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS]]);

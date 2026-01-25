@@ -63,3 +63,14 @@ export interface BaseDefenseBuilding {
   building: Building;
   count: number;
 }
+
+/**
+ * Aggregated stats for all bases.
+ * Used in the MyBasesStats component and MY_BASES_STATS subscription.
+ */
+export interface MyBasesStats {
+  totalBases: number;
+  totalBuildings: number;
+  totalHeat: number;
+  totalEnergyUsed: number;
+}
