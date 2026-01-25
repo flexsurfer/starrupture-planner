@@ -10,6 +10,7 @@ function App() {
         <Route path="/recipes" element={<RouteWrapper />} />
         <Route path="/corporations" element={<RouteWrapper />} />
         <Route path="/planner" element={<RouteWrapper />} />
+        <Route path="/mybases" element={<RouteWrapper />} />
         <Route path="*" element={<Navigate to="/items" replace />} />
       </Routes>
     </BrowserRouter>

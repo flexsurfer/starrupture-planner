@@ -13,6 +13,7 @@ export const useNavigationSync = (activeTab: TabType) => {
     'recipes': '/recipes', 
     'corporations': '/corporations',
     'planner': '/planner',
+    'mybases': '/mybases',
   }), []);
 
   const pathToTab = useMemo<Record<string, TabType>>(() => ({
@@ -20,6 +21,7 @@ export const useNavigationSync = (activeTab: TabType) => {
     '/recipes': 'recipes',
     '/corporations': 'corporations', 
     '/planner': 'planner',
+    '/mybases': 'mybases',
   }), []);
 
   useEffect(() => {

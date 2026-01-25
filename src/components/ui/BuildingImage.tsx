@@ -4,11 +4,12 @@ export interface BuildingImageProps {
   buildingId: string;
   building?: Building;
   className?: string;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'xsmall' | 'small' | 'medium' | 'large';
   style?: React.CSSProperties;
 }
 
 const sizeClasses = {
+  xsmall: 'w-5 h-5',
   small: 'w-10 h-10',
   medium: 'w-15 h-15',
   large: 'w-30 h-30'

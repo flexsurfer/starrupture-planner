@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../state/sub-ids";
-import type { Building, Item } from "../state/db";
+import type { Building } from "../state/db";
 import { BuildingImage, RecipeCard } from "./ui";
 import { useItemsData, CorporationUsageBadge } from "./items";
 
 const RecipesPage = () => {
-  const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
+  const sortedBuildings = useSubscription<Building[]>([SUB_IDS.SORTED_PRODUCTION_BUILDINGS]);
   const { findBuildingCorporationUsage, getCorporationId } = useItemsData();
 
   // Track collapsed state for each building (collapsed by default)
@@ -15,33 +14,10 @@ const RecipesPage = () => {
 
   // Initialize collapsed state when buildings load
   useEffect(() => {
-    if (buildings.length > 0 && collapsedBuildings.size === 0) {
-      setCollapsedBuildings(new Set(buildings.map(building => building.id)));
+    if (sortedBuildings.length > 0 && collapsedBuildings.size === 0) {
+      setCollapsedBuildings(new Set(sortedBuildings.map(building => building.id)));
     }
-  }, [buildings, collapsedBuildings.size]);
-
-  // Sort buildings by corporation level
-  const sortedBuildings = [...buildings].sort((a, b) => {
-    const usageA = findBuildingCorporationUsage(a.name);
-    const usageB = findBuildingCorporationUsage(b.name);
-
-    // Get minimum level for each building
-    const minLevelA = usageA.length > 0 ? Math.min(...usageA.map(u => u.level)) : Infinity;
-    const minLevelB = usageB.length > 0 ? Math.min(...usageB.map(u => u.level)) : Infinity;
-
-    // Buildings with corporation rewards come first
-    if (minLevelA === Infinity && minLevelB !== Infinity) return 1;
-    if (minLevelA !== Infinity && minLevelB === Infinity) return -1;
-
-    // If both have rewards, sort by level, then by name
-    if (minLevelA !== Infinity && minLevelB !== Infinity) {
-      if (minLevelA !== minLevelB) return minLevelA - minLevelB;
-      return a.name.localeCompare(b.name);
-    }
-
-    // If neither has rewards, sort by name
-    return a.name.localeCompare(b.name);
-  });
+  }, [sortedBuildings, collapsedBuildings.size]);
 
   const toggleBuilding = (buildingId: string) => {
     const newCollapsed = new Set(collapsedBuildings);
@@ -89,7 +65,7 @@ const RecipesPage = () => {
               <h2 className="card-title text-xl">{building.name}</h2>
               <div className="flex gap-2 flex-wrap items-center">
                 <div className="badge badge-outline">
-                  {building.recipes.length} recipe{building.recipes.length !== 1 ? 's' : ''}
+                  {building.recipes?.length || 0} recipe{building.recipes?.length !== 1 ? 's' : ''}
                 </div>
                 ⚡ {building.power}
                 <span className="text-xs text-base-content/40">|</span>
@@ -130,11 +106,10 @@ const RecipesPage = () => {
             <div className="space-y-3">
               <h3 className="text-lg font-semibold">Recipes</h3>
               <div className="grid gap-3">
-                {building.recipes.map((recipe, idx) => (
+                {building.recipes?.map((recipe, idx) => (
                   <RecipeCard
                     key={`${building.id}-recipe-${idx}`}
                     recipe={recipe}
-                    itemsMap={itemsMap}
                   />
                 ))}
               </div>
@@ -146,7 +121,7 @@ const RecipesPage = () => {
   };
 
   return (
-    <div className="p-4 lg:p-6">
+    <div className="h-full p-4 lg:p-6">
       <div className="flex flex-col gap-4 lg:gap-6">
         {/* Header section - responsive */}
         <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
@@ -154,12 +129,12 @@ const RecipesPage = () => {
           <div className="stats shadow stats-horizontal">
             <div className="stat">
               <div className="stat-title text-xs sm:text-sm">Total Buildings</div>
-              <div className="stat-value text-lg sm:text-2xl">{buildings.length}</div>
+              <div className="stat-value text-lg sm:text-2xl">{sortedBuildings.length}</div>
             </div>
             <div className="stat">
               <div className="stat-title text-xs sm:text-sm">Total Recipes</div>
               <div className="stat-value text-lg sm:text-2xl">
-                {buildings.reduce((total, building) => total + building.recipes.length, 0)}
+                {sortedBuildings.reduce((total, building) => total + (building.recipes?.length || 0), 0)}
               </div>
             </div>
           </div>
@@ -177,9 +152,9 @@ const RecipesPage = () => {
           ))}
         </div>
 
-        {buildings.length === 0 && (
+        {sortedBuildings.length === 0 && (
           <div className="text-center py-8">
-            <div className="text-base-content/60">No buildings data available</div>
+            <div className="text-base-content/60">No production buildings available</div>
           </div>
         )}
       </div>

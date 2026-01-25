@@ -1,7 +1,8 @@
 import type { Recipe, Item } from "../../state/db";
 import { ItemImage } from "./ItemImage";
-import { dispatch } from '@flexsurfer/reflex';
+import { dispatch, useSubscription } from '@flexsurfer/reflex';
 import { EVENT_IDS } from '../../state/event-ids';
+import { SUB_IDS } from "../../state/sub-ids";
 
 interface RecipeItemIconProps {
   itemId: string;
@@ -35,11 +36,11 @@ const RecipeItemIcon = ({ itemId, amount, isOutput = false, item }: RecipeItemIc
 
 interface RecipeCardProps {
   recipe: Recipe;
-  itemsMap: Record<string, Item>;
   className?: string;
 }
 
-export const RecipeCard = ({ recipe, itemsMap, className = "" }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
   const outputItem = itemsMap[recipe.output.id];
 
   return (

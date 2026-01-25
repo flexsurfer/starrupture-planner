@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import ItemsPage from './ItemsPage';
 import RecipesPage from './RecipesPage';
 import CorporationsPage from './CorporationsPage';
-import { ThemeToggle, GitHubButton, VersionSelector } from './ui';
+import MyBasesPage from './MyBasesPage';
+import { ThemeToggle, GitHubButton, VersionSelector, ConfirmationDialog } from './ui';
 import { useNavigationSync } from '../hooks/useNavigationSync';
 
 // Lazy load the PlannerPage to reduce initial bundle size
@@ -14,6 +15,7 @@ import { EVENT_IDS } from '../state/event-ids';
 import type { Tab, TabType } from '../state/db';
 
 const tabs: Tab[] = [
+  { id: 'mybases', label: 'My Bases', icon: '🏗️' },
   { id: 'items', label: 'Items', icon: '📦' },
   { id: 'recipes', label: 'Buildings', icon: '🏭' },
   { id: 'corporations', label: 'Corporations', icon: '🏢' },
@@ -34,6 +36,7 @@ const TabLayout = () => {
     '/recipes': 'recipes', 
     '/corporations': 'corporations',
     '/planner': 'planner',
+    '/mybases': 'mybases',
   }), []);
 
   const tabToPath = useMemo<Record<TabType, string>>(() => ({
@@ -41,6 +44,7 @@ const TabLayout = () => {
     'recipes': '/recipes',
     'corporations': '/corporations', 
     'planner': '/planner',
+    'mybases': '/mybases',
   }), []);
 
   // Sync URL changes with state (only when URL changes externally)
@@ -81,7 +85,9 @@ const TabLayout = () => {
           }>
             <PlannerPage />
           </Suspense>
-        );     
+        );
+      case 'mybases':
+        return <MyBasesPage />;
       default:
         return null;
     }
@@ -167,9 +173,12 @@ const TabLayout = () => {
         </div>
 
         {/* Tab Content */}
-        <main className="flex-1 min-h-0 bg-base-100">
+        <main className="flex-1 min-h-0 overflow-y-auto bg-base-100">
           {renderTabContent()}
         </main>
+
+        {/* Global Confirmation Dialog */}
+        <ConfirmationDialog />
       </div>
   );
 };

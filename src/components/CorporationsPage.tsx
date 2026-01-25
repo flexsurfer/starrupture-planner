@@ -5,7 +5,7 @@ const CorporationsPage = () => {
   const { collapsedCorporations, toggleCorporation } = useCorporationCollapse(corporationsWithStats);
 
   return (
-    <div className="p-4 lg:p-6">
+    <div className="h-full p-4 lg:p-6">
       <div className="flex flex-col gap-4 lg:gap-6">
         {/* Header section - responsive */}
         <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">

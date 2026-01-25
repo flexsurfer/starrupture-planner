@@ -52,7 +52,6 @@ export {
 
 // Hooks exports
 export {
-    usePlannerSelectableItems,
     usePlannerDefaultOutput,
     useTargetAmount,
 } from './hooks';

@@ -2,6 +2,7 @@
   {
     "id": "ore_excavator",
     "name": "Ore Excavator",
+    "type": "production",
     "power": 5,
     "heat": 3,
     "recipes": [
@@ -29,23 +30,9 @@
     ]
   },
   {
-    "id": "sulfur_extractor",
-    "name": "Sulfur Extractor",
-    "power": 40,
-    "heat": 60,
-    "recipes": [
-      {
-        "output": {
-          "id": "ore_sulphur",
-          "amount_per_minute": 240
-        },
-        "inputs": []
-      }
-    ]
-  },
-  {
     "id": "helium_extractor",
     "name": "Helium-3 Extractor",
+    "type": "production",
     "power": 15,
     "heat": 60,
     "recipes": [
@@ -59,8 +46,25 @@
     ]
   },
   {
+    "id": "sulfur_extractor",
+    "name": "Sulfur Extractor",
+    "type": "production",
+    "power": 40,
+    "heat": 60,
+    "recipes": [
+      {
+        "output": {
+          "id": "ore_sulphur",
+          "amount_per_minute": 240
+        },
+        "inputs": []
+      }
+    ]
+  },
+  {
     "id": "smelter",
     "name": "Smelter",
+    "type": "production",
     "power": 5,
     "heat": 3,
     "recipes": [
@@ -105,6 +109,7 @@
   {
     "id": "furnace",
     "name": "Furnace",
+    "type": "production",
     "power": 20,
     "heat": 8,
     "recipes": [
@@ -325,6 +330,7 @@
   {
     "id": "fabricator",
     "name": "Fabricator",
+    "type": "production",
     "power": 10,
     "heat": 5,
     "recipes": [
@@ -513,6 +519,7 @@
   {
     "id": "mega_press",
     "name": "Mega Press",
+    "type": "production",
     "power": 30,
     "heat": 15,
     "recipes": [
@@ -753,6 +760,7 @@
   {
     "id": "refinery",
     "name": "Refinery",
+    "type": "production",
     "power": 40,
     "heat": 60,
     "recipes": [
@@ -792,6 +800,7 @@
   }, {
     "id": "assembler",
     "name": "Assembler",
+    "type": "production",
     "power": 60,
     "heat": 150,
     "recipes": [
@@ -967,6 +976,7 @@
   {
     "id": "compounder",
     "name": "Compounder",
+    "type": "production",
     "power": 60,
     "heat": 150,
     "recipes": [
@@ -1081,5 +1091,96 @@
         ]
       }
     ]
+  },
+  {
+    "id": "solar_generator_v1",
+    "name": "Solar Generator V1",
+    "type": "generator",
+    "power": 10,
+    "heat": 5
+  },
+  {
+    "id": "solar_generator_v2",
+    "name": "Solar Generator V2",
+    "type": "generator",
+    "power": 1000,
+    "heat": 250
+  },
+  {
+    "id": "wind_turbine_v1",
+    "name": "Wind Turbine V1",
+    "type": "generator",
+    "power": 200,
+    "heat": 20
+  },
+  {
+    "id": "wind_turbine_v2",
+    "name": "Wind Turbine V2",
+    "type": "generator",
+    "power": 2000,
+    "heat": 200
+  },
+  {
+    "id": "package_dispatcher",
+    "name": "Cargo Dispatcher",
+    "type": "transport",
+    "power": 40,
+    "heat": 40
+  },
+  {
+    "id": "package_receiver",
+    "name": "Cargo Receiver",
+    "type": "transport",
+    "power": 40,
+    "heat": 40
+  },
+  {
+    "id": "orbital_cargo_launcher",
+    "name": "Orbital Cargo Launcher",
+    "type": "transport",
+    "power": 10,
+    "heat": 5
+  },
+  {
+    "id": "storage_depot_v1",
+    "name": "Storage Depot V1",
+    "type": "transport",
+    "power": 5,
+    "heat": 5
+  },
+  {
+    "id": "base_core_amplifier_v1",
+    "name": "Base Core Amplifier V1",
+    "type": "temperature",
+    "power": 0,
+    "heat": 20
+  },
+  {
+    "id": "base_core_amplifier_v2",
+    "name": "Base Core Amplifier V2",
+    "type": "temperature",
+    "power": 0,
+    "heat": 250
+  },
+  {
+    "id": "habitat",
+    "name": "Habitat",
+    "type": "habitat",
+    "power": 0,
+    "heat": 5
+  },
+  {
+    "id": "habitat_large",
+    "name": "Habitat Large",
+    "type": "habitat",
+    "power": 0,
+    "heat": 20
+  },
+  {
+    "id": "turret_v1",
+    "name": "Turret V1",
+    "type": "defense",
+    "power": 20,
+    "heat": 20
   }
 ]

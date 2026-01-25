@@ -9,17 +9,10 @@ interface RecipeModalProps {
   item: Item | null;
   recipe: Recipe | null;
   building: Building | null;
-  itemsMap: Record<string, Item>;
 }
 
-export const RecipeModal: React.FC<RecipeModalProps> = ({
-  isOpen,
-  onClose,
-  item,
-  recipe,
-  building,
-  itemsMap
-}) => {
+export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item, recipe, building }) => {
+
   if (!isOpen || !item || !recipe || !building) {
     return null;
   }
@@ -30,8 +23,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between mb-4 lg:mb-6">
           <h3 className="text-lg lg:text-xl font-bold pr-4">Recipe for {item.name}</h3>
-          <button 
-            className="btn btn-sm btn-circle btn-ghost flex-shrink-0" 
+          <button
+            className="btn btn-sm btn-circle btn-ghost flex-shrink-0"
             onClick={onClose}
             aria-label="Close modal"
           >
@@ -50,9 +43,8 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({
         </div>
 
         {/* Recipe Card */}
-        <RecipeCard 
+        <RecipeCard
           recipe={recipe}
-          itemsMap={itemsMap}
           className="mb-4 lg:mb-6"
         />
 

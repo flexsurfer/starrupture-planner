@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { useSubscription, dispatch } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { EVENT_IDS } from '../../../state/event-ids';
-import { usePlannerSelectableItems } from '../hooks';
+import type { Item } from '../core/types';
 
 interface PlannerItemSelectorProps {
     className?: string;
@@ -13,7 +13,7 @@ interface PlannerItemSelectorProps {
  */
 export const PlannerItemSelector: React.FC<PlannerItemSelectorProps> = ({ className = '' }) => {
     const selectedItemId = useSubscription<string | null>([SUB_IDS.SELECTED_PLANNER_ITEM]);
-    const selectableItems = usePlannerSelectableItems();
+    const selectableItems = useSubscription<Item[]>([SUB_IDS.PLANNER_SELECTABLE_ITEMS]);
 
     const onItemSelect = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
         const itemId = event.target.value;

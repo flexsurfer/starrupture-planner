@@ -11,4 +11,13 @@ export const EVENT_IDS = {
     NAVIGATE_TO_TAB: 'navigateToTab',
     SET_DATA_VERSION: 'setDataVersion',
     SET_TARGET_AMOUNT: 'setTargetAmount',
+    CREATE_BASE: 'createBase',
+    UPDATE_BASE_NAME: 'updateBaseName',
+    DELETE_BASE: 'deleteBase',
+    SET_SELECTED_BASE: 'setSelectedBase',
+    ADD_BUILDING_TO_BASE: 'addBuildingToBase',
+    REMOVE_BUILDING_FROM_BASE: 'removeBuildingFromBase',
+    UPDATE_BUILDING_ITEM_SELECTION: 'updateBuildingItemSelection',
+    SHOW_CONFIRMATION_DIALOG: 'showConfirmationDialog',
+    CLOSE_CONFIRMATION_DIALOG: 'closeConfirmationDialog',
 }

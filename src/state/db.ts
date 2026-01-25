@@ -59,9 +59,10 @@ export interface Recipe {
 export interface Building {
     id: string;
     name: string;
+    type?: string;
     power: number;
     heat?: number;
-    recipes: Recipe[];
+    recipes?: Recipe[];
 }
 
 export interface Level {
@@ -93,12 +94,48 @@ export interface Corporation {
     levels: CorporationLevel[];
 }
 
-export type TabType = 'items' | 'recipes' | 'corporations' | 'planner';
+export type TabType = 'items' | 'recipes' | 'corporations' | 'planner' | 'mybases';
 
 export interface Tab {
     id: TabType;
     label: string;
     icon: string;
+}
+
+// Base-related types
+export interface Core {
+    id: string;
+    baseId: string;
+    // Core defines buildable area - can be extended with position/size data later
+}
+
+export interface BaseBuilding {
+    id: string;
+    baseId: string;
+    buildingTypeId: string; // References Building.id from buildings data
+    sectionType: string; // Section where this building was added (e.g., 'inputs', 'production', 'outputs')
+    selectedItemId?: string; // Selected item for input buildings
+    ratePerMinute?: number; // Rate per minute for the selected item
+}
+
+export interface Base {
+    id: string;
+    name: string;
+    core: Core;
+    buildings: BaseBuilding[];
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface ConfirmationDialog {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    confirmButtonClass?: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
 }
 
 export interface AppState {
@@ -122,6 +159,9 @@ export interface AppState {
     selectedPlannerItem: string | null;
     selectedPlannerCorporationLevel: { corporationId: string; level: number } | null;
     targetAmount: number;
+    bases: Base[];
+    selectedBaseId: string | null;
+    confirmationDialog: ConfirmationDialog;
 }
 
 
@@ -138,8 +178,10 @@ const appStore: AppState = {
     versionedData: versionedData,
     items: defaultItems,
     itemsMap: buildItemsMap(defaultItems),
+    categories: extractCategories(defaultItems),
     buildings: defaultBuildings,
     corporations: defaultCorporations,
+    bases: [],
 
     //UI
     theme: 'dark',
@@ -147,10 +189,20 @@ const appStore: AppState = {
     selectedCategory: 'all',
     selectedBuilding: 'all',
     searchTerm: '',
-    categories: extractCategories(defaultItems),
     selectedPlannerItem: null,
     selectedPlannerCorporationLevel: null,
     targetAmount: 60,
+    selectedBaseId: null,
+    confirmationDialog: {
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmLabel: 'Confirm',
+        cancelLabel: 'Cancel',
+        confirmButtonClass: 'btn-primary',
+        onConfirm: () => {},
+        onCancel: undefined,
+    },
 };
 
 initAppDb(appStore);

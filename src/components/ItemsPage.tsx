@@ -36,7 +36,6 @@ const ItemsPage = () => {
 
   // Get data for modal
   const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
 
   const openRecipeModal = (item: Item) => {
     const recipeData = findItemRecipe(item.id, buildings);
@@ -98,7 +97,6 @@ const ItemsPage = () => {
         item={modalState.item}
         recipe={modalState.recipe}
         building={modalState.building}
-        itemsMap={itemsMap}
       />
     </div>
   );

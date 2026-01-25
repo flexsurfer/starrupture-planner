@@ -7,7 +7,7 @@ interface BuildingSelectorProps {
 }
 
 export const BuildingSelector = ({ className = "" }: BuildingSelectorProps) => {
-  const availableBuildings = useSubscription<string[]>([SUB_IDS.AVAILABLE_BUILDINGS]);
+  const availableBuildings = useSubscription<string[]>([SUB_IDS.AVAILABLE_PRODUCTION_BUILDINGS]);
   const selectedBuilding = useSubscription<string>([SUB_IDS.SELECTED_BUILDING]);
 
   const handleBuildingChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

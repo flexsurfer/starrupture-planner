@@ -3,4 +3,6 @@ export const EFFECT_IDS = {
     SET_THEME: 'setTheme',
     GET_DATA_VERSION: 'getDataVersion',
     SET_DATA_VERSION: 'setDataVersion',
+    GET_BASES: 'getBases',
+    SET_BASES: 'setBases',
 }

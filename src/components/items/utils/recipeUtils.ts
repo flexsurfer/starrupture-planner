@@ -13,7 +13,7 @@ export const findItemRecipe = (
   buildings: Building[]
 ): ItemRecipe | null => {
   for (const building of buildings) {
-    for (const recipe of building.recipes) {
+    for (const recipe of building.recipes || []) {
       if (recipe.output.id === itemId) {
         return {
           recipe,

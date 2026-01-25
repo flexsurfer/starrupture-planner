@@ -1,11 +1,21 @@
 import { regSub } from '@flexsurfer/reflex';
 import { SUB_IDS } from './sub-ids';
-import type { Item, Corporation, Building as DbBuilding } from './db';
+import type { Item, Corporation, Building as DbBuilding, Base, BaseBuilding } from './db';
 import type { Building, ProductionFlowResult } from '../components/planner/core/types';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import { generateReactFlowData } from '../components/planner/visualization/plannerFlowUtils';
 import { getItemName } from '../components/planner/core/productionFlowBuilder';
 import type { Node, Edge } from '@xyflow/react';
+import { calculateBaseCoreHeatCapacity, isAmplifierBuilding } from '../components/mybases/utils/baseCoreUtils';
+import { getAvailableBuildingsForSection } from '../components/mybases/utils/buildingSectionUtils';
+import type {
+  BaseDetailStats,
+  BuildingSectionStats,
+  BaseInputItem,
+  BaseOutputItem,
+  BaseDefenseBuilding,
+  BuildingSectionType,
+} from '../components/mybases/types';
 
 // Root subscriptions
 regSub(SUB_IDS.DATA_VERSION);
@@ -23,14 +33,21 @@ regSub(SUB_IDS.ACTIVE_TAB);
 regSub(SUB_IDS.SELECTED_PLANNER_ITEM);
 regSub(SUB_IDS.SELECTED_PLANNER_CORPORATION_LEVEL);
 regSub(SUB_IDS.TARGET_AMOUNT);
+regSub(SUB_IDS.BASES);
+regSub(SUB_IDS.SELECTED_BASE_ID);
+regSub(SUB_IDS.CONFIRMATION_DIALOG);
 
 // Available buildings subscription (unique building names)
-regSub(SUB_IDS.AVAILABLE_BUILDINGS,
+// Only includes production type buildings
+regSub(SUB_IDS.AVAILABLE_PRODUCTION_BUILDINGS,
     (buildings: DbBuilding[]) => {
         const buildingNames = new Set<string>();
         buildingNames.add('all'); // Add 'all' option
         buildings.forEach(building => {
-            buildingNames.add(building.name);
+            // Only include production type buildings
+            if (building.type === 'production') {
+                buildingNames.add(building.name);
+            }
         });
         return Array.from(buildingNames).sort();
     },
@@ -48,7 +65,7 @@ regSub(SUB_IDS.FILTERED_ITEMS,
             const itemsProducedByBuilding = new Set<string>();
             buildings.forEach((building: DbBuilding) => {
                 if (building.name === selectedBuilding) {
-                    building.recipes.forEach(recipe => {
+                    building.recipes?.forEach(recipe => {
                         itemsProducedByBuilding.add(recipe.output.id);
                     });
                 }
@@ -83,7 +100,7 @@ regSub(SUB_IDS.ITEMS_TABLE_DATA,
         // Build producing buildings map
         const producingBuildingsMap = new Map<string, string>();
         for (const building of buildings) {
-            for (const recipe of building.recipes) {
+            for (const recipe of building.recipes || []) {
                 producingBuildingsMap.set(recipe.output.id, building.name);
             }
         }
@@ -375,3 +392,295 @@ regSub(SUB_IDS.PLANNER_STATS_DETAILED,
         };
     },
     () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS]]);
+
+// Selected base subscription - computed from selectedBaseId and bases
+regSub(SUB_IDS.SELECTED_BASE,
+    (selectedBaseId: string | null, bases: Base[]): Base | null => {
+        if (!selectedBaseId) return null;
+        return bases.find(b => b.id === selectedBaseId) || null;
+    },
+    () => [[SUB_IDS.SELECTED_BASE_ID], [SUB_IDS.BASES]]);
+
+// Helper function to calculate stats for a base
+function calculateBaseDetailStats(base: Base, buildings: DbBuilding[]): BaseDetailStats {
+    let totalHeat = 0;
+    let energyGeneration = 0;
+    let energyConsumption = 0;
+    
+    base.buildings.forEach((baseBuilding: BaseBuilding) => {
+        const buildingType = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+        if (buildingType) {
+            totalHeat += buildingType.heat || 0;
+            
+            // Generators produce energy, other buildings consume it
+            if (buildingType.type === 'generator') {
+                energyGeneration += buildingType.power || 0;
+            } else {
+                energyConsumption += buildingType.power || 0;
+            }
+        }
+    });
+    
+    const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(base.buildings, buildings);
+    const heatPercentage = Math.min((totalHeat / baseCoreHeatCapacity) * 100, 100);
+    // Calculate energy percentage: used / available (similar to heat)
+    // If no generation, show full red bar (100%)
+    const energyPercentage = energyGeneration > 0
+        ? Math.min((energyConsumption / energyGeneration) * 100, 100)
+        : energyConsumption > 0
+            ? 100 // Full red bar when consuming but no generation
+            : 0;
+    
+    const isHeatOverCapacity = totalHeat > baseCoreHeatCapacity;
+    const isEnergyInsufficient = energyGeneration === 0 || energyConsumption > energyGeneration;
+    
+    return {
+        buildingCount: base.buildings.length,
+        totalHeat,
+        energyGeneration,
+        energyConsumption,
+        baseCoreHeatCapacity,
+        heatPercentage,
+        energyPercentage,
+        isHeatOverCapacity,
+        isEnergyInsufficient,
+    };
+}
+
+regSub(SUB_IDS.SELECTED_BASE_DETAIL_STATS,
+    (selectedBase: Base | null, buildings: DbBuilding[]): BaseDetailStats | null => {
+        if (!selectedBase) return null;
+        return calculateBaseDetailStats(selectedBase, buildings);
+    },
+    () => [[SUB_IDS.SELECTED_BASE], [SUB_IDS.BUILDINGS]]);
+
+// Parameterized subscription for base detail stats by base ID
+regSub(SUB_IDS.BASE_DETAIL_STATS,
+    (bases: Base[], buildings: DbBuilding[], baseId: string): BaseDetailStats | null => {
+        const base = bases.find(b => b.id === baseId);
+        if (!base) return null;
+        return calculateBaseDetailStats(base, buildings);
+    },
+    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS]]);
+
+// Parameterized subscription for base input items by base ID
+regSub(SUB_IDS.BASE_INPUT_ITEMS,
+    (bases: Base[], buildings: DbBuilding[], itemsMap: Record<string, Item>, baseId: string): BaseInputItem[] => {
+        const base = bases.find(b => b.id === baseId);
+        if (!base) return [];
+        
+        const items: BaseInputItem[] = [];
+        
+        base.buildings.forEach((baseBuilding: BaseBuilding) => {
+            const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+            if (!building || !baseBuilding.selectedItemId || !baseBuilding.ratePerMinute) return;
+            
+            // Check if building is in inputs section
+            const isInputBuilding = baseBuilding.sectionType === 'inputs';
+            
+            if (isInputBuilding) {
+                const item = itemsMap[baseBuilding.selectedItemId];
+                if (item) {
+                    items.push({
+                        item,
+                        ratePerMinute: baseBuilding.ratePerMinute,
+                        building,
+                    });
+                }
+            }
+        });
+        
+        return items;
+    },
+    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS], [SUB_IDS.ITEMS_MAP]]);
+
+// Parameterized subscription for base output items by base ID
+regSub(SUB_IDS.BASE_OUTPUT_ITEMS,
+    (bases: Base[], buildings: DbBuilding[], itemsMap: Record<string, Item>, baseId: string): BaseOutputItem[] => {
+        const base = bases.find(b => b.id === baseId);
+        if (!base) return [];
+        
+        const items: BaseOutputItem[] = [];
+        
+        base.buildings.forEach((baseBuilding: BaseBuilding) => {
+            const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+            if (!building || !baseBuilding.selectedItemId || !baseBuilding.ratePerMinute) return;
+            
+            // Check if building is in outputs section
+            const isOutputBuilding = baseBuilding.sectionType === 'outputs';
+            
+            if (isOutputBuilding) {
+                const item = itemsMap[baseBuilding.selectedItemId];
+                if (item) {
+                    items.push({
+                        item,
+                        ratePerMinute: baseBuilding.ratePerMinute,
+                        building,
+                    });
+                }
+            }
+        });
+        
+        return items;
+    },
+    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS], [SUB_IDS.ITEMS_MAP]]);
+
+// Parameterized subscription for base defense buildings by base ID
+regSub(SUB_IDS.BASE_DEFENSE_BUILDINGS,
+    (bases: Base[], buildings: DbBuilding[], baseId: string): BaseDefenseBuilding[] => {
+        const base = bases.find(b => b.id === baseId);
+        if (!base) return [];
+        
+        const defenseMap = new Map<string, BaseDefenseBuilding>();
+        
+        base.buildings.forEach((baseBuilding: BaseBuilding) => {
+            const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+            if (building && building.type === 'defense') {
+                const existing = defenseMap.get(building.id);
+                if (existing) {
+                    existing.count += 1;
+                } else {
+                    defenseMap.set(building.id, { building, count: 1 });
+                }
+            }
+        });
+        
+        return Array.from(defenseMap.values());
+    },
+    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS]]);
+
+// Sorted production buildings subscription
+regSub(SUB_IDS.SORTED_PRODUCTION_BUILDINGS,
+    (buildings: DbBuilding[], helperMaps: ItemsHelperMaps): DbBuilding[] => {
+        // Filter buildings by type="production"
+        const productionBuildings = buildings.filter(building => building.type === 'production');
+        
+        // Sort buildings by corporation level
+        return [...productionBuildings].sort((a, b) => {
+            const usageA = helperMaps.buildingCorporationUsage.get(a.name) || [];
+            const usageB = helperMaps.buildingCorporationUsage.get(b.name) || [];
+
+            // Get minimum level for each building
+            const minLevelA = usageA.length > 0 ? Math.min(...usageA.map(u => u.level)) : Infinity;
+            const minLevelB = usageB.length > 0 ? Math.min(...usageB.map(u => u.level)) : Infinity;
+
+            // Buildings with corporation rewards come first
+            if (minLevelA === Infinity && minLevelB !== Infinity) return 1;
+            if (minLevelA !== Infinity && minLevelB === Infinity) return -1;
+
+            // If both have rewards, sort by level, then by name
+            if (minLevelA !== Infinity && minLevelB !== Infinity) {
+                if (minLevelA !== minLevelB) return minLevelA - minLevelB;
+                return a.name.localeCompare(b.name);
+            }
+
+            // If neither has rewards, sort by name
+            return a.name.localeCompare(b.name);
+        });
+    },
+    () => [[SUB_IDS.BUILDINGS], [SUB_IDS.ITEMS_HELPER_MAPS]]);
+
+// Parameterized subscription for available items for a building
+regSub(SUB_IDS.AVAILABLE_ITEMS_FOR_BUILDING,
+    (items: Item[], buildings: DbBuilding[], buildingId: string): Item[] => {
+        const building = buildings.find(b => b.id === buildingId);
+        if (!building) return [];
+        
+        if (building.id === 'package_receiver' || building.id === 'package_dispatcher' || building.id === 'orbital_cargo_launcher' || building.id === 'storage_depot_v1') {
+            // For package_receiver and output buildings, all items are available
+            return [...items].sort((a, b) => a.name.localeCompare(b.name));
+        } else {
+            // For other input buildings, get items from recipe outputs
+            const itemIds = new Set<string>();
+            building.recipes?.forEach(recipe => {
+                itemIds.add(recipe.output.id);
+            });
+            
+            return [...items]
+                .filter(item => itemIds.has(item.id))
+                .sort((a, b) => a.name.localeCompare(b.name));
+        }
+    },
+    () => [[SUB_IDS.ITEMS], [SUB_IDS.BUILDINGS]]);
+
+// Parameterized subscription for buildings in a specific section
+regSub(SUB_IDS.BUILDING_SECTION_BUILDINGS,
+    (bases: Base[], baseId: string, sectionType: string): BaseBuilding[] => {
+        const base = bases.find(b => b.id === baseId);
+        if (!base) {
+            return [];
+        }
+        
+        // Filter base buildings by the section type they were added to
+        return base.buildings.filter((baseBuilding: BaseBuilding) => {
+            return baseBuilding.sectionType === sectionType;
+        });
+    },
+    () => [[SUB_IDS.BASES]]);
+
+regSub(SUB_IDS.BUILDING_SECTION_STATS,
+    (bases: Base[], buildings: DbBuilding[], baseId: string, sectionType: string): BuildingSectionStats => {
+        const base = bases.find(b => b.id === baseId);
+        if (!base) {
+            return {
+                buildingCount: 0,
+                totalHeat: 0,
+                totalPowerGeneration: 0,
+                totalPowerConsumption: 0,
+                hasGenerators: false,
+            };
+        }
+        
+        // Create a map for quick building lookup
+        const buildingMap = new Map(buildings.map(b => [b.id, b]));
+        
+        // Filter base buildings by the section type they were added to
+        const baseBuildings = base.buildings.filter((baseBuilding: BaseBuilding) => {
+            return baseBuilding.sectionType === sectionType;
+        });
+        
+        let totalHeat = 0;
+        let totalPowerGeneration = 0;
+        let totalPowerConsumption = 0;
+        let hasGenerators = false;
+
+        baseBuildings.forEach((baseBuilding: BaseBuilding) => {
+            const building = buildingMap.get(baseBuilding.buildingTypeId);
+            if (building) {
+                // Exclude amplifiers from heat calculation (they increase capacity but don't generate heat)
+                if (!isAmplifierBuilding(building.id)) {
+                    totalHeat += building.heat || 0;
+                }
+                // Generators produce power, other buildings consume it
+                if (building.type === 'generator') {
+                    hasGenerators = true;
+                    totalPowerGeneration += building.power || 0;
+                } else {
+                    totalPowerConsumption += building.power || 0;
+                }
+            }
+        });
+
+        return {
+            buildingCount: baseBuildings.length,
+            totalHeat,
+            totalPowerGeneration,
+            totalPowerConsumption,
+            hasGenerators,
+        };
+    },
+    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS]]);
+
+// Planner selectable items (excludes raw materials, sorted alphabetically)
+regSub(SUB_IDS.PLANNER_SELECTABLE_ITEMS,
+    (items: Item[]): Item[] => {
+        return items.filter(item => item.type !== 'raw').sort((a, b) => a.name.localeCompare(b.name));
+    },
+    () => [[SUB_IDS.ITEMS]]);
+
+// Parameterized subscription for available buildings for a specific section
+regSub(SUB_IDS.AVAILABLE_BUILDINGS_FOR_SECTION,
+    (buildings: DbBuilding[], sectionType: BuildingSectionType): DbBuilding[] => {
+        return getAvailableBuildingsForSection(buildings, sectionType);
+    },
+    () => [[SUB_IDS.BUILDINGS]]);

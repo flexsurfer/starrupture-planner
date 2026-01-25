@@ -11,3 +11,4 @@ export { ItemImage } from './ItemImage';
 export { BuildingImage } from './BuildingImage';
 export { RecipeCard } from './RecipeCard';
 export { RecipeModal } from './RecipeModal';
+export { ConfirmationDialog } from './ConfirmationDialog';

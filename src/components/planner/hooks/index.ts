@@ -1,22 +1,9 @@
-import { useCallback, useMemo, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useSubscription, dispatch } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { EVENT_IDS } from '../../../state/event-ids';
-import type { Item, Building } from '../core/types';
+import type { Building } from '../core/types';
 
-/**
- * Custom hook for getting selectable items for planner
- */
-export const usePlannerSelectableItems = () => {
-    const items = useSubscription<Item[]>([SUB_IDS.ITEMS]);
-
-    // Memoized list of selectable items (excludes raw materials, sorted alphabetically)
-    const selectableItems = useMemo(() => {
-        return items.filter(item => item.type !== 'raw').sort((a, b) => a.name.localeCompare(b.name));
-    }, [items]);
-
-    return selectableItems;
-};
 
 /**
  * Custom hook for getting default output rate for an item
