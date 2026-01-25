@@ -6,7 +6,7 @@
 export interface CorporationComponent {
   id: string;
   points: number;
-  cost: number | null;
+  cost?: number | null;
 }
 
 export interface CorporationLevel {

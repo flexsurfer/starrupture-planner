@@ -33,7 +33,7 @@ export function parseCorporations(corporationsData: RawCorporationsData): Corpor
                 components: level.components.map(component => ({
                     id: component.id,
                     points: component.points,
-                    cost: component.cost
+                    cost: component.points > 0 && level.xp ? Math.round(level.xp / component.points) : null
                 })),
                 rewards: level.rewards
             }))

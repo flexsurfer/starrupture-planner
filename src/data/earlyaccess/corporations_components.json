@@ -25,8 +25,7 @@
         "components": [
           {
             "id": "bar_wolfram",
-            "points": 1,
-            "cost": 1
+            "points": 1
           }
         ],
         "rewards": [
@@ -41,13 +40,11 @@
         "components": [
           {
             "id": "bar_wolfram",
-            "points": 1,
-            "cost": 200
+            "points": 1
           },
           {
             "id": "wolfram_wire",
-            "points": 5,
-            "cost": 40
+            "points": 5
           }
         ],
         "rewards": [
@@ -62,13 +59,11 @@
         "components": [
           {
             "id": "titanium_rod",
-            "points": 4,
-            "cost": 375
+            "points": 4
           },
           {
             "id": "titanium_sheet",
-            "points": 15,
-            "cost": 100
+            "points": 15
           }
         ],
         "rewards": [
@@ -83,13 +78,11 @@
         "components": [
           {
             "id": "powder_calcium",
-            "points": 12,
-            "cost": 534
+            "points": 12
           },
           {
             "id": "powder_wolfram",
-            "points": 18,
-            "cost": 356
+            "points": 18
           }
         ],
         "rewards": [
@@ -107,8 +100,7 @@
         "components": [
           {
             "id": "ceramics",
-            "points": 25,
-            "cost": 704
+            "points": 25
           }
         ],
         "rewards": [
@@ -123,8 +115,7 @@
         "components": [
           {
             "id": "glass",
-            "points": 46,
-            "cost": 822
+            "points": 46
           }
         ],
         "rewards": [
@@ -139,8 +130,7 @@
         "components": [
           {
             "id": "chemicals",
-            "points": 46,
-            "cost": 1516
+            "points": 46
           }
         ],
         "rewards": [
@@ -158,13 +148,11 @@
         "components": [
           {
             "id": "hardening_agent",
-            "points": 60,
-            "cost": 1934
+            "points": 60
           },
           {
             "id": "pressurized_helium",
-            "points": 20,
-            "cost": 5800
+            "points": 20
           }
         ],
         "rewards": [
@@ -179,8 +167,7 @@
         "components": [
           {
             "id": "liquid_helium",
-            "points": 120,
-            "cost": 1495
+            "points": 120
           }
         ],
         "rewards": [
@@ -195,8 +182,7 @@
         "components": [
           {
             "id": "ion_injector",
-            "points": 246,
-            "cost": 1068
+            "points": 246
           }
         ],
         "rewards": [
@@ -242,8 +228,7 @@
         "components": [
           {
             "id": "bar_titanium",
-            "points": 1,
-            "cost": 1
+            "points": 1
           }
         ],
         "rewards": [
@@ -258,13 +243,11 @@
         "components": [
           {
             "id": "bar_titanium",
-            "points": 1,
-            "cost": 200
+            "points": 1
           },
           {
             "id": "titanium_rod",
-            "points": 5,
-            "cost": 40
+            "points": 5
           }
         ],
         "rewards": [
@@ -279,13 +262,11 @@
         "components": [
           {
             "id": "titanium_rod",
-            "points": 4,
-            "cost": 375
+            "points": 4
           },
           {
             "id": "titanium_sheet",
-            "points": 16,
-            "cost": 94
+            "points": 16
           }
         ],
         "rewards": [
@@ -300,13 +281,11 @@
         "components": [
           {
             "id": "titanium_beam",
-            "points": 35,
-            "cost": 183
+            "points": 35
           },
           {
             "id": "titanium_sheet",
-            "points": 12,
-            "cost": 534
+            "points": 12
           }
         ],
         "rewards": [
@@ -321,8 +300,7 @@
         "components": [
           {
             "id": "tube",
-            "points": 25,
-            "cost": 704
+            "points": 25
           }
         ],
         "rewards": [
@@ -337,13 +315,11 @@
         "components": [
           {
             "id": "glass",
-            "points": 70,
-            "cost": 540
+            "points": 70
           },
           {
             "id": "synthetic_silicon",
-            "points": 46,
-            "cost": 822
+            "points": 46
           }
         ],
         "rewards": [
@@ -358,13 +334,11 @@
         "components": [
           {
             "id": "electronics",
-            "points": 116,
-            "cost": 601
+            "points": 116
           },
           {
             "id": "synthetic_silicon",
-            "points": 46,
-            "cost": 1516
+            "points": 46
           }
         ],
         "rewards": [
@@ -379,8 +353,7 @@
         "components": [
           {
             "id": "impeller",
-            "points": 120,
-            "cost": 967
+            "points": 120
           }
         ],
         "rewards": [
@@ -398,8 +371,7 @@
         "components": [
           {
             "id": "turbine",
-            "points": 175,
-            "cost": 1026
+            "points": 175
           }
         ],
         "rewards": [
@@ -414,8 +386,7 @@
         "components": [
           {
             "id": "scanner",
-            "points": 246,
-            "cost": 1068
+            "points": 246
           }
         ],
         "rewards": [
@@ -455,8 +426,7 @@
         "components": [
           {
             "id": "bar_titanium",
-            "points": 1,
-            "cost": 1
+            "points": 1
           }
         ],
         "rewards": [
@@ -471,13 +441,11 @@
         "components": [
           {
             "id": "titanium_rod",
-            "points": 5,
-            "cost": 40
+            "points": 5
           },
           {
             "id": "wolfram_wire",
-            "points": 5,
-            "cost": 40
+            "points": 5
           }
         ],
         "rewards": [
@@ -492,13 +460,11 @@
         "components": [
           {
             "id": "titanium_sheet",
-            "points": 15,
-            "cost": 100
+            "points": 15
           },
           {
             "id": "wolfram_plate",
-            "points": 15,
-            "cost": 100
+            "points": 15
           }
         ],
         "rewards": [
@@ -513,13 +479,11 @@
         "components": [
           {
             "id": "titanium_housing",
-            "points": 35,
-            "cost": 183
+            "points": 35
           },
           {
             "id": "titanium_sheet",
-            "points": 12,
-            "cost": 534
+            "points": 12
           }
         ],
         "rewards": [
@@ -534,8 +498,7 @@
         "components": [
           {
             "id": "stabilizer",
-            "points": 35,
-            "cost": 503
+            "points": 35
           }
         ],
         "rewards": [
@@ -550,13 +513,11 @@
         "components": [
           {
             "id": "inductor",
-            "points": 70,
-            "cost": 540
+            "points": 70
           },
           {
             "id": "stabilizer",
-            "points": 35,
-            "cost": 1080
+            "points": 35
           }
         ],
         "rewards": [
@@ -571,8 +532,7 @@
         "components": [
           {
             "id": "applicator",
-            "points": 46,
-            "cost": 1516
+            "points": 46
           }
         ],
         "rewards": [
@@ -587,13 +547,11 @@
         "components": [
           {
             "id": "battery",
-            "points": 120,
-            "cost": 967
+            "points": 120
           },
           {
             "id": "nozzle",
-            "points": 45,
-            "cost": 2578
+            "points": 45
           }
         ],
         "rewards": [
@@ -608,8 +566,7 @@
         "components": [
           {
             "id": "lens",
-            "points": 175,
-            "cost": 1026
+            "points": 175
           }
         ],
         "rewards": [
@@ -624,8 +581,7 @@
         "components": [
           {
             "id": "condenser",
-            "points": 246,
-            "cost": 1068
+            "points": 246
           }
         ],
         "rewards": [
@@ -662,8 +618,7 @@
         "components": [
           {
             "id": "bar_wolfram",
-            "points": 1,
-            "cost": 1
+            "points": 1
           }
         ],
         "rewards": [
@@ -678,8 +633,7 @@
         "components": [
           {
             "id": "ore_calcium",
-            "points": 5,
-            "cost": 40
+            "points": 5
           }
         ],
         "rewards": [
@@ -694,13 +648,11 @@
         "components": [
           {
             "id": "calcite_sheets",
-            "points": 15,
-            "cost": 100
+            "points": 15
           },
           {
             "id": "block_calcium",
-            "points": 4,
-            "cost": 375
+            "points": 4
           }
         ],
         "rewards": [
@@ -715,8 +667,7 @@
         "components": [
           {
             "id": "rotor",
-            "points": 45,
-            "cost": 143
+            "points": 45
           }
         ],
         "rewards": [
@@ -731,8 +682,7 @@
         "components": [
           {
             "id": "heat_sheet",
-            "points": 25,
-            "cost": 704
+            "points": 25
           }
         ],
         "rewards": [
@@ -747,13 +697,11 @@
         "components": [
           {
             "id": "chemicals",
-            "points": 70,
-            "cost": 540
+            "points": 70
           },
           {
             "id": "helium",
-            "points": 5,
-            "cost": 7560
+            "points": 5
           }
         ],
         "rewards": [
@@ -768,8 +716,7 @@
         "components": [
           {
             "id": "valve",
-            "points": 100,
-            "cost": 697
+            "points": 100
           }
         ],
         "rewards": [
@@ -784,8 +731,7 @@
         "components": [
           {
             "id": "electromagnetic_coil",
-            "points": 120,
-            "cost": 967
+            "points": 120
           }
         ],
         "rewards": [
@@ -800,8 +746,7 @@
         "components": [
           {
             "id": "generator",
-            "points": 175,
-            "cost": 1026
+            "points": 175
           }
         ],
         "rewards": [
@@ -816,8 +761,7 @@
         "components": [
           {
             "id": "laser_emitter",
-            "points": 246,
-            "cost": 1068
+            "points": 246
           }
         ],
         "rewards": [
@@ -860,8 +804,7 @@
         "components": [
           {
             "id": "bar_wolfram",
-            "points": 1,
-            "cost": null
+            "points": 1
           }
         ],
         "rewards": [
@@ -876,13 +819,11 @@
         "components": [
           {
             "id": "bar_wolfram",
-            "points": 1,
-            "cost": 200
+            "points": 1
           },
           {
             "id": "wolfram_wire",
-            "points": 5,
-            "cost": 40
+            "points": 5
           }
         ],
         "rewards": [
@@ -897,13 +838,11 @@
         "components": [
           {
             "id": "wolfram_plate",
-            "points": 15,
-            "cost": 100
+            "points": 15
           },
           {
             "id": "wolfram_wire",
-            "points": 4,
-            "cost": 375
+            "points": 4
           }
         ],
         "rewards": [
@@ -918,13 +857,11 @@
         "components": [
           {
             "id": "titanium_housing",
-            "points": 35,
-            "cost": 183
+            "points": 35
           },
           {
             "id": "wolfram_plate",
-            "points": 12,
-            "cost": 534
+            "points": 12
           }
         ],
         "rewards": [
@@ -942,13 +879,11 @@
         "components": [
           {
             "id": "heat_sheet",
-            "points": 25,
-            "cost": 704
+            "points": 25
           },
           {
             "id": "titanium_housing",
-            "points": 25,
-            "cost": 704
+            "points": 25
           }
         ],
         "rewards": [
@@ -963,8 +898,7 @@
         "components": [
           {
             "id": "stator",
-            "points": 46,
-            "cost": 822
+            "points": 46
           }
         ],
         "rewards": [
@@ -982,13 +916,11 @@
         "components": [
           {
             "id": "nozzle",
-            "points": 46,
-            "cost": 1516
+            "points": 46
           },
           {
             "id": "supermagnet",
-            "points": 116,
-            "cost": 601
+            "points": 116
           }
         ],
         "rewards": [
@@ -1003,13 +935,11 @@
         "components": [
           {
             "id": "electronics",
-            "points": 46,
-            "cost": 2522
+            "points": 46
           },
           {
             "id": "hardening_agent",
-            "points": 70,
-            "cost": 1658
+            "points": 70
           }
         ],
         "rewards": [
@@ -1024,13 +954,11 @@
         "components": [
           {
             "id": "pressurized_helium",
-            "points": 10,
-            "cost": 17940
+            "points": 10
           },
           {
             "id": "pump",
-            "points": 175,
-            "cost": 1026
+            "points": 175
           }
         ],
         "rewards": [
@@ -1048,8 +976,7 @@
         "components": [
           {
             "id": "electromagnet",
-            "points": 246,
-            "cost": 1068
+            "points": 246
           }
         ],
         "rewards": [
@@ -1064,8 +991,7 @@
         "components": [
           {
             "id": "pressure_tank",
-            "points": 210,
-            "cost": 1754
+            "points": 210
           }
         ],
         "rewards": [
@@ -1080,8 +1006,7 @@
         "components": [
           {
             "id": "superconductor",
-            "points": 400,
-            "cost": 1248
+            "points": 400
           }
         ],
         "rewards": [

@@ -89,8 +89,7 @@ const corporations = [
                 components: [
                     {
                         id: 'bar_titanium',
-                        points: 2,
-                        cost: 200
+                        points: 2
                     }
                 ],
                 rewards: [
@@ -103,8 +102,7 @@ const corporations = [
                 components: [
                     {
                         id: 'titanium_housing',
-                        points: 10,
-                        cost: 1500
+                        points: 10
                     }
                 ],
                 rewards: [
