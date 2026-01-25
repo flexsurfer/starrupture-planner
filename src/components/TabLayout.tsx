@@ -4,7 +4,7 @@ import ItemsPage from './ItemsPage';
 import RecipesPage from './RecipesPage';
 import CorporationsPage from './CorporationsPage';
 import MyBasesPage from './MyBasesPage';
-import { ThemeToggle, GitHubButton, VersionSelector, ConfirmationDialog } from './ui';
+import { ThemeToggle, GitHubButton, DiscordButton, VersionSelector, ConfirmationDialog } from './ui';
 import { useNavigationSync } from '../hooks/useNavigationSync';
 
 // Lazy load the PlannerPage to reduce initial bundle size
@@ -143,6 +143,7 @@ const TabLayout = () => {
 
           {/* Controls - always visible but compact on mobile */}
           <div className="navbar-end flex items-center gap-1 lg:gap-2">
+            <DiscordButton />
             <GitHubButton />
             <ThemeToggle />
           </div>

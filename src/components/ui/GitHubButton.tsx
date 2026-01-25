@@ -27,7 +27,6 @@ const GitHubButton = ({
           clipRule="evenodd"
         />
       </svg>
-      <span className="hidden sm:inline">GitHub</span>
     </a>
   );
 };
