@@ -143,12 +143,7 @@
     "id": "electronics",
     "name": "Electronics",
     "type": "component"
-  },
-  {
-    "id": "syringe",
-    "name": "Syringe",
-    "type": "component"
-  },    
+  }, 
   {
     "id": "inductor",
     "name": "Inductor",
