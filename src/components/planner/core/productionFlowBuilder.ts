@@ -54,9 +54,10 @@ function getComponentData(itemId: string, corporations: Corporation[]): { points
  * @param params - Configuration for the production flow
  * @param buildings - List of all available buildings with their recipes
  * @param corporations - List of corporations to check if items are used by corporations
+ * @param includeLauncher - Whether to include the Orbital Cargo Launcher node (default: true)
  * @returns Complete production flow with nodes and edges
  */
-export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[], corporations: Corporation[]): ProductionFlowResult {
+export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[], corporations: Corporation[], includeLauncher: boolean = false): ProductionFlowResult {
     const { targetItemId, targetAmount = 60 } = params;
     
     // Internal state for building the flow
@@ -270,7 +271,8 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     createEdges();
 
     // 4. Fourth step: Add Orbital Cargo Launcher node if the target item can be sent to corporations
-    const componentData = getComponentData(targetItemId, corporations);
+    // Only include launcher if includeLauncher is true
+    const componentData = includeLauncher ? getComponentData(targetItemId, corporations) : null;
     if (componentData) {
         const launchRate = 10; // items per minute per launcher
         const launchersNeeded = targetAmount / launchRate; // number of launchers needed

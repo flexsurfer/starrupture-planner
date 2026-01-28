@@ -118,11 +118,21 @@ export interface BaseBuilding {
     ratePerMinute?: number; // Rate per minute for the selected item
 }
 
+export interface ProductionPlanSection {
+    id: string;
+    name: string;
+    selectedItemId: string;
+    targetAmount: number;
+    active?: boolean;
+    corporationLevel?: { corporationId: string; level: number } | null;
+}
+
 export interface Base {
     id: string;
     name: string;
     core: Core;
     buildings: BaseBuilding[];
+    productionPlanSections: ProductionPlanSection[];
     createdAt: number;
     updatedAt: number;
 }
@@ -136,6 +146,14 @@ export interface ConfirmationDialog {
     confirmButtonClass?: string;
     onConfirm: () => void;
     onCancel?: () => void;
+}
+
+export interface ActivatePlanDialog {
+    isOpen?: boolean;
+    planName?: string;
+    baseId?: string;
+    sectionId?: string;
+    allRequirementsSatisfied?: boolean;
 }
 
 export interface AppState {
@@ -161,7 +179,9 @@ export interface AppState {
     targetAmount: number;
     bases: Base[];
     selectedBaseId: string | null;
+    baseDetailActiveTab: 'plans' | 'buildings';
     confirmationDialog: ConfirmationDialog;
+    activatePlanDialog: ActivatePlanDialog;
 }
 
 
@@ -193,6 +213,7 @@ const appStore: AppState = {
     selectedPlannerCorporationLevel: null,
     targetAmount: 60,
     selectedBaseId: null,
+    baseDetailActiveTab: 'plans',
     confirmationDialog: {
         isOpen: false,
         title: '',
@@ -202,6 +223,12 @@ const appStore: AppState = {
         confirmButtonClass: 'btn-primary',
         onConfirm: () => {},
         onCancel: undefined,
+    },
+    activatePlanDialog: {
+        isOpen: false,
+        planName: '',
+        baseId: undefined,
+        sectionId: undefined,
     },
 };
 

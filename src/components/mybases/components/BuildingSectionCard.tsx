@@ -10,12 +10,14 @@ interface BuildingSectionCardProps {
   baseBuilding: BaseBuilding;
   building: DbBuilding;
   baseId: string;
+  activePlanNames?: string[];
 }
 
 export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
   baseBuilding,
   building,
   baseId,
+  activePlanNames = [],
 }) => {
   const [showSelectItemModal, setShowSelectItemModal] = useState(false);
 
@@ -25,6 +27,9 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
   // Use the stored sectionType - item selection is only for inputs and outputs
   const isInputBuilding = baseBuilding.sectionType === 'inputs';
   const isOutputBuilding = baseBuilding.sectionType === 'outputs';
+  
+  // Check if this building is part of any active plan
+  const isInActivePlan = activePlanNames.length > 0;
 
   const handleRemoveClick = () => {
     dispatch([EVENT_IDS.REMOVE_BUILDING_FROM_BASE, baseBuilding.id]);
@@ -41,12 +46,27 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
 
   return (
     <>
-      <div className="card bg-base-200 shadow-md border border-base-300 relative">
+      <div className={`card bg-base-200 shadow-md relative ${isInActivePlan ? 'border-2 border-primary ring-1 ring-primary/30' : 'border border-base-300'}`}>
         <div className="card-body p-3">
           <div className="flex flex-col gap-3">
-            {/* Building name */}
-            <div className="text-xs font-semibold mb-2">
-              {building.name}
+            {/* Building name and active plan badge */}
+            <div className="flex flex-col gap-1">
+              <div className="text-xs font-semibold">
+                {building.name}
+              </div>
+              {isInActivePlan && (
+                <div className="flex flex-wrap gap-1">
+                  {activePlanNames.map((planName) => (
+                    <span
+                      key={planName}
+                      className="badge badge-primary badge-xs text-[10px] text-left inline-block truncate max-w-[100px]"
+                      title={planName}
+                    >
+                      {planName}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-row flex-1 justify-between">

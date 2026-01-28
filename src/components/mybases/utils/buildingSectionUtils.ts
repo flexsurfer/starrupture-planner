@@ -58,3 +58,41 @@ export function getAvailableBuildingsForSection(allBuildings: Building[],section
   
   return allBuildings.filter(building => isBuildingAvailableForSection(building, sectionType));
 }
+
+/**
+ * Determines the appropriate section type for a building based on its characteristics.
+ * This is the inverse of isBuildingAvailableForSection - given a building, determine its section.
+ * 
+ * Iterates through section types in priority order and returns the first match.
+ * This reuses isBuildingAvailableForSection to maintain a single source of truth.
+ * 
+ * Priority order:
+ * 1. 'inputs' - Extractors and receivers
+ * 2. 'energy' - Generators and temperature
+ * 3. 'infrastructure' - Habitat and defense
+ * 4. 'production' - Production buildings (not extractors) and storage
+ * 5. 'outputs' - Dispatchers and storage
+ * 
+ * Note: Storage can be in both 'production' and 'outputs', but we default to 'production'
+ * by checking it earlier in the priority order.
+ */
+export function getSectionTypeForBuilding(building: Building): BuildingSectionType {
+  // Section types in priority order
+  const sectionTypes: BuildingSectionType[] = [
+    'inputs',
+    'energy',
+    'infrastructure',
+    'production',
+    'outputs',
+  ];
+  
+  // Return the first section type that matches the building
+  for (const sectionType of sectionTypes) {
+    if (isBuildingAvailableForSection(building, sectionType)) {
+      return sectionType;
+    }
+  }
+  
+  // Default fallback (shouldn't happen with valid buildings)
+  return 'production';
+}

@@ -7,6 +7,7 @@
 export {
   isBuildingAvailableForSection,
   getAvailableBuildingsForSection,
+  getSectionTypeForBuilding,
 } from './buildingSectionUtils';
 
 export {

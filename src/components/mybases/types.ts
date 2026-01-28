@@ -74,3 +74,25 @@ export interface MyBasesStats {
   totalHeat: number;
   totalEnergyUsed: number;
 }
+
+/**
+ * Stats for a production plan section.
+ * Calculated from the production flow for the selected item.
+ */
+export interface ProductionPlanSectionStats {
+  buildingCount: number;
+  totalHeat: number;
+  totalPowerConsumption: number;
+}
+
+/**
+ * Represents a building requirement for a production plan section.
+ * Used to track which buildings are needed and whether they're available in the base.
+ */
+export interface BuildingRequirement {
+  buildingId: string;
+  buildingName: string;
+  required: number;
+  available: number;
+  isSatisfied: boolean;
+}

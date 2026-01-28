@@ -1,8 +1,11 @@
 import { regEvent, current } from '@flexsurfer/reflex';
 import { EVENT_IDS } from './event-ids';
 import { EFFECT_IDS } from './effect-ids';
-import type { TabType, DataVersion, Item, Building, AppState, Base, BaseBuilding, Core } from './db';
+import type { TabType, DataVersion, Item, Building, AppState, Base, BaseBuilding, Core, ProductionPlanSection } from './db';
 import { buildItemsMap, parseCorporations, extractCategories } from './data-utils';
+import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
+import type { Building as PlannerBuilding } from '../components/planner/core/types';
+import { getSectionTypeForBuilding } from '../components/mybases/utils';
 
 // Common function to update draftDb with version data
 function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
@@ -111,7 +114,7 @@ function validateAndNormalizeBases(rawBases: unknown): Base[] {
         return true;
     };
     
-    // Filter valid bases and normalize timestamps
+    // Filter valid bases and normalize timestamps and productionPlanSections
     return rawBases
         .filter(isValidBase)
         .map((base) => ({
@@ -120,6 +123,8 @@ function validateAndNormalizeBases(rawBases: unknown): Base[] {
             // This handles data migration scenarios where timestamps were added later
             createdAt: typeof base.createdAt === 'number' ? base.createdAt : now,
             updatedAt: typeof base.updatedAt === 'number' ? base.updatedAt : now,
+            // Ensure productionPlanSections exists - use empty array as fallback for migration
+            productionPlanSections: Array.isArray(base.productionPlanSections) ? base.productionPlanSections : [],
         }));
 }
 
@@ -218,6 +223,7 @@ regEvent(EVENT_IDS.CREATE_BASE, ({ draftDb }, name: string) => {
             baseId: baseId,
         },
         buildings: [],
+        productionPlanSections: [],
         createdAt: now,
         updatedAt: now,
     };
@@ -247,6 +253,14 @@ regEvent(EVENT_IDS.DELETE_BASE, ({ draftDb }, baseId: string) => {
 
 regEvent(EVENT_IDS.SET_SELECTED_BASE, ({ draftDb }, baseId: string | null) => {
     draftDb.selectedBaseId = baseId;
+    // Reset to plans tab when switching bases
+    if (baseId) {
+        draftDb.baseDetailActiveTab = 'plans';
+    }
+});
+
+regEvent(EVENT_IDS.SET_BASE_DETAIL_ACTIVE_TAB, ({ draftDb }, tab: 'plans' | 'buildings') => {
+    draftDb.baseDetailActiveTab = tab;
 });
 
 regEvent(EVENT_IDS.ADD_BUILDING_TO_BASE, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string) => {
@@ -312,3 +326,188 @@ regEvent(EVENT_IDS.SHOW_CONFIRMATION_DIALOG, ({ draftDb }, title: string, messag
 regEvent(EVENT_IDS.CLOSE_CONFIRMATION_DIALOG, ({ draftDb }) => {
     draftDb.confirmationDialog = {};
 });
+
+// Production Plan Section events
+regEvent(EVENT_IDS.CREATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, name: string, selectedItemId: string, targetAmount: number, corporationLevel?: { corporationId: string; level: number } | null) => {
+    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+    if (base) {
+        const sectionId = `pps_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newSection: ProductionPlanSection = {
+            id: sectionId,
+            name,
+            selectedItemId,
+            targetAmount,
+            active: false,
+            corporationLevel: corporationLevel || null,
+        };
+        base.productionPlanSections.push(newSection);
+        base.updatedAt = Date.now();
+        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+    }
+});
+
+regEvent(EVENT_IDS.UPDATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, sectionId: string, name: string, selectedItemId: string, targetAmount: number, corporationLevel?: { corporationId: string; level: number } | null) => {
+    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+    if (base) {
+        const section = base.productionPlanSections.find((s: ProductionPlanSection) => s.id === sectionId);
+        if (section) {
+            section.name = name;
+            section.selectedItemId = selectedItemId;
+            section.targetAmount = targetAmount;
+            section.corporationLevel = corporationLevel || null;
+            base.updatedAt = Date.now();
+            return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+        }
+    }
+});
+
+regEvent(EVENT_IDS.DELETE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
+    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+    if (base) {
+        base.productionPlanSections = base.productionPlanSections.filter((s: ProductionPlanSection) => s.id !== sectionId);
+        base.updatedAt = Date.now();
+        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+    }
+});
+
+regEvent(EVENT_IDS.SHOW_ACTIVATE_PLAN_DIALOG, ({ draftDb }, planName: string, baseId: string, sectionId: string, allRequirementsSatisfied: boolean) => {
+    draftDb.activatePlanDialog = {
+        isOpen: true,
+        planName,
+        baseId,
+        sectionId,
+        allRequirementsSatisfied,
+    };
+});
+
+regEvent(EVENT_IDS.CLOSE_ACTIVATE_PLAN_DIALOG, ({ draftDb }) => {
+    draftDb.activatePlanDialog = {
+        isOpen: false,
+        planName: '',
+        baseId: undefined,
+        sectionId: undefined,
+    };
+});
+
+regEvent(EVENT_IDS.ACTIVATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, sectionId: string, flag: 'addall' | 'missing' | 'dontadd') => {
+    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+    if (!base) return;
+
+    const section = base.productionPlanSections.find((s: ProductionPlanSection) => s.id === sectionId);
+    if (!section) return;
+
+    // Mark as active first - this happens regardless of flag
+    section.active = true;
+
+    // For 'dontadd' flag, skip building addition
+    if (flag === 'dontadd') {
+        base.updatedAt = Date.now();
+        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+    }
+
+    // Build production flow to determine required buildings
+    const validAmount = section.targetAmount > 0 ? section.targetAmount : 1;
+    const includeLauncher = section.corporationLevel !== null && section.corporationLevel !== undefined;
+    const productionFlow = buildProductionFlow(
+        { targetItemId: section.selectedItemId, targetAmount: validAmount },
+        draftDb.buildings as PlannerBuilding[],
+        draftDb.corporations,
+        includeLauncher
+    );
+
+    // Build list of required building instances from flow nodes
+    // Filter out special nodes (recipeIndex < 0, e.g., orbital_cargo_launcher)
+    const requiredBuildings: Array<{ buildingTypeId: string; outputItem: string; outputAmount: number }> = [];
+    for (const node of productionFlow.nodes) {
+        
+        const buildingCount = Math.ceil(node.buildingCount);
+        for (let i = 0; i < buildingCount; i++) {
+            requiredBuildings.push({
+                buildingTypeId: node.buildingId,
+                outputItem: node.outputItem,
+                outputAmount: node.outputAmount,
+            });
+        }
+    }
+
+    // Helper to create a BaseBuilding with unique ID
+    // Uses counter to ensure uniqueness when creating multiple buildings in same millisecond
+    let buildingCounter = 0;
+    const createBaseBuilding = (
+        buildingTypeId: string,
+        outputItem: string,
+        outputAmount: number
+    ): BaseBuilding => {
+        const building = draftDb.buildings.find((b: Building) => b.id === buildingTypeId);
+        const sectionType = building ? getSectionTypeForBuilding(building) : 'production';
+        const buildingId = `building_${Date.now()}_${buildingCounter++}_${Math.random().toString(36).substr(2, 9)}`;
+        return {
+            id: buildingId,
+            baseId,
+            buildingTypeId,
+            sectionType,
+            selectedItemId: outputItem,
+            ratePerMinute: outputAmount,
+        };
+    };
+
+    if (flag === 'addall') {
+        // Add all required buildings
+        for (const { buildingTypeId, outputItem, outputAmount } of requiredBuildings) {
+            base.buildings.push(createBaseBuilding(buildingTypeId, outputItem, outputAmount));
+        }
+    } else if (flag === 'missing') {
+        // Count existing buildings by type
+        const existingCountByType = new Map<string, number>();
+        for (const baseBuilding of base.buildings) {
+            const count = existingCountByType.get(baseBuilding.buildingTypeId) || 0;
+            existingCountByType.set(baseBuilding.buildingTypeId, count + 1);
+        }
+
+        // Count how many of each building type we need
+        const requiredCountByType = new Map<string, number>();
+        for (const { buildingTypeId } of requiredBuildings) {
+            const count = requiredCountByType.get(buildingTypeId) || 0;
+            requiredCountByType.set(buildingTypeId, count + 1);
+        }
+
+        // Calculate how many of each type are missing
+        const missingCountByType = new Map<string, number>();
+        for (const [buildingTypeId, requiredCount] of requiredCountByType) {
+            const existingCount = existingCountByType.get(buildingTypeId) || 0;
+            const missingCount = Math.max(0, requiredCount - existingCount);
+            if (missingCount > 0) {
+                missingCountByType.set(buildingTypeId, missingCount);
+            }
+        }
+
+        // Add only the missing buildings, tracking how many we've added
+        const addedCountByType = new Map<string, number>();
+        for (const { buildingTypeId, outputItem, outputAmount } of requiredBuildings) {
+            const missingCount = missingCountByType.get(buildingTypeId) || 0;
+            const addedCount = addedCountByType.get(buildingTypeId) || 0;
+
+            // Only add if we still have missing buildings of this type
+            if (addedCount < missingCount) {
+                base.buildings.push(createBaseBuilding(buildingTypeId, outputItem, outputAmount));
+                addedCountByType.set(buildingTypeId, addedCount + 1);
+            }
+        }
+    }
+
+    base.updatedAt = Date.now();
+    return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+});
+
+regEvent(EVENT_IDS.DEACTIVATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
+    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+    if (base) {
+        const section = base.productionPlanSections.find((s: ProductionPlanSection) => s.id === sectionId);
+        if (section) {
+            section.active = false;
+            base.updatedAt = Date.now();
+            return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+        }
+    }
+});
+

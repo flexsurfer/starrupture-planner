@@ -19,10 +19,14 @@ export type {
   BaseInputItem,
   BaseOutputItem,
   BaseDefenseBuilding,
+  ProductionPlanSectionStats,
+  BuildingRequirement,
 } from './types';
 
-// Main view component
+// Main view components
 export { BaseDetailView } from './BaseDetailView';
+export { BaseBuildingsView } from './BaseBuildingsView';
+export { BasePlansView } from './BasePlansView';
 
 // Components
 export {
@@ -33,6 +37,8 @@ export {
   BuildingSection,
   BuildingSectionCard,
   MyBasesStats,
+  EmbeddedFlowDiagram,
+  ProductionPlanSection,
 } from './components';
 
 // Modals
@@ -40,6 +46,9 @@ export {
   AddBuildingCardModal,
   CreateBaseModal,
   RenameBaseModal,
+  CreateProductionPlanModal,
+  ActivatePlanDialog,
+  BuildingRequirementsModal,
 } from './modals';
 
 // Utils

@@ -127,7 +127,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 60
-            }, buildings, corporations);
+            }, buildings, corporations, true);
 
             // Should have 2 production nodes + 1 launcher node (bar_titanium is used by corporations)
             expect(result.nodes).toHaveLength(3);
@@ -155,7 +155,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 30 // Half the default output
-            }, buildings, corporations);
+            }, buildings, corporations, true);
 
             // Should have 3 nodes: ore_excavator, smelter, orbital_cargo_launcher
             expect(result.nodes).toHaveLength(3);
@@ -176,7 +176,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations);
+            }, buildings, corporations, true);
 
             expect(result.nodes).toHaveLength(6); // 5 production nodes + 1 launcher node
 
@@ -312,7 +312,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 0.1
-            }, buildings, corporations);
+            }, buildings, corporations, true);
 
             expect(result.nodes).toHaveLength(3); // ore_excavator, smelter, orbital_cargo_launcher
 

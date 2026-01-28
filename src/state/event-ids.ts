@@ -20,4 +20,12 @@ export const EVENT_IDS = {
     UPDATE_BUILDING_ITEM_SELECTION: 'updateBuildingItemSelection',
     SHOW_CONFIRMATION_DIALOG: 'showConfirmationDialog',
     CLOSE_CONFIRMATION_DIALOG: 'closeConfirmationDialog',
+    CREATE_PRODUCTION_PLAN_SECTION: 'createProductionPlanSection',
+    UPDATE_PRODUCTION_PLAN_SECTION: 'updateProductionPlanSection',
+    DELETE_PRODUCTION_PLAN_SECTION: 'deleteProductionPlanSection',
+    ACTIVATE_PRODUCTION_PLAN_SECTION: 'activateProductionPlanSection',
+    DEACTIVATE_PRODUCTION_PLAN_SECTION: 'deactivateProductionPlanSection',
+    SHOW_ACTIVATE_PLAN_DIALOG: 'showActivatePlanDialog',
+    CLOSE_ACTIVATE_PLAN_DIALOG: 'closeActivatePlanDialog',
+    SET_BASE_DETAIL_ACTIVE_TAB: 'setBaseDetailActiveTab',
 }

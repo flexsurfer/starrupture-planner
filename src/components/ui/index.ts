@@ -13,3 +13,5 @@ export { BuildingImage } from './BuildingImage';
 export { RecipeCard } from './RecipeCard';
 export { RecipeModal } from './RecipeModal';
 export { ConfirmationDialog } from './ConfirmationDialog';
+export { CorporationLevelSelector } from './CorporationLevelSelector';
+export type { SelectedCorporationLevel } from './CorporationLevelSelector';

@@ -41,7 +41,7 @@ export {
 export {
     PlannerItemSelector,
     PlannerTargetInput,
-    CorporationLevelSelector,
+    PlannerCorporationLevelSelector,
 } from './ui';
 
 // Stats component exports

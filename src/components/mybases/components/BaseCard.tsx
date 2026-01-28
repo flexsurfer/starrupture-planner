@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
-import type { Base } from '../../../state/db';
+import type { Base, Corporation, Item } from '../../../state/db';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { ItemImage, BuildingImage } from '../../ui';
 import type {
@@ -23,6 +23,10 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
   const inputItems = useSubscription<BaseInputItem[]>([SUB_IDS.BASE_INPUT_ITEMS, base.id]);
   const outputItems = useSubscription<BaseOutputItem[]>([SUB_IDS.BASE_OUTPUT_ITEMS, base.id]);
   const defenseBuildings = useSubscription<BaseDefenseBuilding[]>([SUB_IDS.BASE_DEFENSE_BUILDINGS, base.id]);
+  
+  // Get data for plans
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
+  const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS]);
 
   // Early return if stats not available
   if (!stats) {
@@ -30,6 +34,22 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
   }
 
   const {totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient} = stats;
+  
+  // Calculate plan counts and prepare plan data
+  const planSections = base.productionPlanSections || [];
+  
+  // Helper function to get corporation name
+  const getCorporationName = (corporationId: string): string | null => {
+    if (!corporationId || !corporations) return null;
+    const corporation = corporations.find(c => c.id === corporationId);
+    return corporation?.name || null;
+  };
+  
+  // Helper function to get item name
+  const getItemName = (itemId: string): string => {
+    if (!itemsMap || !itemId) return itemId;
+    return itemsMap[itemId]?.name || itemId;
+  };
   
   return (
     <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow">
@@ -84,7 +104,61 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
           </div>
         </div>
 
-        {/* Row 2: Input Items, Output Items, and Defense */}
+        {/* Row 2: Production Plans */}
+        {planSections.length > 0 && (
+          <div className="mb-4 space-y-2">
+            <div className="text-sm text-base-content/70 mb-1">Production Plans</div>
+            <div className="space-y-2">
+              {planSections.map((plan) => {
+                const itemName = getItemName(plan.selectedItemId);
+                const corporationName = plan.corporationLevel 
+                  ? getCorporationName(plan.corporationLevel.corporationId)
+                  : null;
+                const isActive = plan.active || false;
+                
+                return (
+                  <div
+                    key={plan.id}
+                    className="bg-base-300 rounded-lg px-3 py-2 border border-base-content/10"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm">{plan.name}</span>
+                          <span className={`badge badge-sm ${isActive ? 'badge-success' : 'badge-ghost'}`}>
+                            {isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <div className="flex items-center gap-1">
+                            <ItemImage
+                              itemId={plan.selectedItemId}
+                              item={itemsMap?.[plan.selectedItemId]}
+                              size="small"
+                              className="w-4 h-4"
+                            />
+                            <span className="text-xs text-base-content/80">{itemName}</span>
+                            <span className="text-xs text-base-content/60">{plan.targetAmount}/min</span>
+                          </div>
+                          {corporationName && (
+                            <>
+                              <span className="text-xs text-base-content/40">•</span>
+                              <span className="text-xs text-base-content/70">
+                                {corporationName} Lv.{plan.corporationLevel?.level}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Row 3: Input Items, Output Items, and Defense */}
         {(inputItems.length > 0 || outputItems.length > 0 || defenseBuildings.length > 0) && (
           <div className="mb-4 space-y-3">
             {inputItems.length > 0 && (
@@ -160,7 +234,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
           </div>
         )}
 
-        {/* Row 3: Controls (always at bottom) */}
+        {/* Row 4: Controls (always at bottom) */}
         <div className="card-actions justify-end gap-2 mt-auto">
           <button
             className="btn btn-sm btn-primary"

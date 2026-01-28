@@ -4,6 +4,7 @@ import type { BaseBuilding, Building as DbBuilding } from '../../../state/db';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { BuildingSectionCard } from './BuildingSectionCard';
 import type { BuildingSectionType, BuildingSectionStats } from '../types';
+import type { ActivePlansBuildingsMap } from '../../../state/subs';
 
 interface BuildingSectionProps {
   title: string;
@@ -21,6 +22,7 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
   const baseBuildings = useSubscription<BaseBuilding[]>([SUB_IDS.BUILDING_SECTION_BUILDINGS, baseId, sectionType]);
   const buildings = useSubscription<DbBuilding[]>([SUB_IDS.BUILDINGS]);
   const stats = useSubscription<BuildingSectionStats>([SUB_IDS.BUILDING_SECTION_STATS, baseId, sectionType]);
+  const activePlansBuildingsMap = useSubscription<ActivePlansBuildingsMap>([SUB_IDS.ACTIVE_PLANS_BUILDINGS_MAP]);
 
   const isEmpty = baseBuildings.length === 0;
 
@@ -110,6 +112,8 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
                 {baseBuildings.map((baseBuilding) => {
                   const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
                   if (!building) return null;
+                  
+                  const activePlanNames = activePlansBuildingsMap[baseBuilding.buildingTypeId] || [];
 
                   return (
                     <BuildingSectionCard
@@ -117,6 +121,7 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
                       baseBuilding={baseBuilding}
                       building={building}
                       baseId={baseBuilding.baseId}
+                      activePlanNames={activePlanNames}
                     />
                   );
                 })}

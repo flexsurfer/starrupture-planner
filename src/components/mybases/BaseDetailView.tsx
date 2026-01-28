@@ -1,41 +1,20 @@
-import { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import type { Base } from '../../state/db';
 import { EVENT_IDS } from '../../state/event-ids';
 import { SUB_IDS } from '../../state/sub-ids';
-import type { BuildingSectionType } from './types';
-import {
-  BuildingSection,
-  BaseCoreInfo,
-  AddBuildingCardModal,
-} from './index';
+import type { Base } from '../../state/db';
+import { BaseCoreInfo, BaseBuildingsView, BasePlansView } from './index';
 
 export const BaseDetailView: React.FC = () => {
-  const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
-  const [addBuildingSection, setAddBuildingSection] = useState<BuildingSectionType | null>(null);
-
-  // Get data from subscriptions
   const selectedBase = useSubscription<Base | null>([SUB_IDS.SELECTED_BASE]);
+  const activeTab = useSubscription<'plans' | 'buildings'>([SUB_IDS.BASE_DETAIL_ACTIVE_TAB]);
 
   const onBack = useCallback(() => {
     dispatch([EVENT_IDS.SET_SELECTED_BASE, null]);
   }, []);
 
-  const handleAddBuilding = useCallback((buildingTypeId: string) => {
-    if (selectedBase && addBuildingSection) {
-      dispatch([EVENT_IDS.ADD_BUILDING_TO_BASE, selectedBase.id, buildingTypeId, addBuildingSection]);
-      setAddBuildingSection(null);
-    }
-  }, [selectedBase, addBuildingSection]);
-
-  const handleOpenAddModal = useCallback((sectionType: BuildingSectionType) => {
-    setAddBuildingSection(sectionType);
-    setShowAddBuildingModal(true);
-  }, []);
-
-  const handleCloseAddModal = useCallback(() => {
-    setShowAddBuildingModal(false);
-    setAddBuildingSection(null);
+  const handleTabChange = useCallback((tab: 'plans' | 'buildings') => {
+    dispatch([EVENT_IDS.SET_BASE_DETAIL_ACTIVE_TAB, tab]);
   }, []);
 
   // Early return if no base selected
@@ -61,61 +40,33 @@ export const BaseDetailView: React.FC = () => {
         <BaseCoreInfo />
       </div>
 
-      {/* Scrollable Content: Building Sections */}
-      <div className="flex-1 overflow-auto">
-        <div className="space-y-4 lg:space-y-6">
-          {/* Building Sections */}
-          <BuildingSection
-            title="Inputs"
-            description="Buildings that extract resources or receive packages from other bases."
-            baseId={selectedBase.id}
-            sectionType="inputs"
-            onAdd={() => handleOpenAddModal('inputs')}
-          />
-
-          <BuildingSection
-            title="Energy"
-            description="Generators that produce energy for your base, and amplifiers that increase core heat capacity."
-            baseId={selectedBase.id}
-            sectionType="energy"
-            onAdd={() => handleOpenAddModal('energy')}
-          />
-
-          <BuildingSection
-            title="Infrastructure"
-            description="Habitat buildings for population and defense structures."
-            baseId={selectedBase.id}
-            sectionType="infrastructure"
-            onAdd={() => handleOpenAddModal('infrastructure')}
-          />
-
-          <BuildingSection
-            title="Production"
-            description="Buildings that process materials and produce items."
-            baseId={selectedBase.id}
-            sectionType="production"
-            onAdd={() => handleOpenAddModal('production')}
-          />
-
-          <BuildingSection
-            title="Outputs"
-            description="Buildings that send items to other bases or launch cargo to orbit."
-            baseId={selectedBase.id}
-            sectionType="outputs"
-            onAdd={() => handleOpenAddModal('outputs')}
-          />
-        </div>
+      {/* Tabs */}
+      <div className="tabs tabs-bordered mb-4 flex-shrink-0">
+        <button
+          className={`tab ${activeTab === 'plans' ? 'tab-active' : ''}`}
+          onClick={() => handleTabChange('plans')}
+        >
+          Plans
+          {selectedBase.productionPlanSections && selectedBase.productionPlanSections.length > 0 && (
+            <span className="badge badge-sm badge-primary ml-2">{selectedBase.productionPlanSections.length}</span>
+          )}
+        </button>
+        <button
+          className={`tab ${activeTab === 'buildings' ? 'tab-active' : ''}`}
+          onClick={() => handleTabChange('buildings')}
+        >
+          Buildings
+          {selectedBase.buildings && selectedBase.buildings.length > 0 && (
+            <span className="badge badge-sm badge-secondary ml-2">{selectedBase.buildings.length}</span>
+          )}
+        </button>
       </div>
 
-      {/* Modals */}
-      {addBuildingSection && (
-        <AddBuildingCardModal
-          isOpen={showAddBuildingModal}
-          sectionType={addBuildingSection}
-          onClose={handleCloseAddModal}
-          onAdd={handleAddBuilding}
-        />
-      )}
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto">
+        {activeTab === 'plans' && <BasePlansView />}
+        {activeTab === 'buildings' && <BaseBuildingsView />}
+      </div>
     </div>
   );
 };
