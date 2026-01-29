@@ -51,6 +51,7 @@ export const CreateProductionPlanModal: React.FC<CreateProductionPlanModalProps>
     const [name, setName] = useState('');
     const [selectedItemId, setSelectedItemId] = useState<string>('');
     const [targetAmount, setTargetAmount] = useState<number>(60);
+    const [targetAmountInputValue, setTargetAmountInputValue] = useState<string>('60');
     const [selectedCorporationLevel, setSelectedCorporationLevel] = useState<SelectedCorporationLevel | null>(null);
     const [corporationLevels, setCorporationLevels] = useState<CorporationLevelInfo[]>([]);
 
@@ -68,14 +69,21 @@ export const CreateProductionPlanModal: React.FC<CreateProductionPlanModalProps>
             setName(editSection.name);
             setSelectedItemId(editSection.selectedItemId);
             setTargetAmount(editSection.targetAmount);
+            setTargetAmountInputValue(editSection.targetAmount === 0 ? '' : editSection.targetAmount.toString());
             setSelectedCorporationLevel(editSection.corporationLevel || null);
         } else {
             setName('');
             setSelectedItemId('');
             setTargetAmount(60);
+            setTargetAmountInputValue('60');
             setSelectedCorporationLevel(null);
         }
     }, [editSection, isOpen]);
+
+    // Sync input value with targetAmount when it changes externally
+    useEffect(() => {
+        setTargetAmountInputValue(targetAmount === 0 ? '' : targetAmount.toString());
+    }, [targetAmount]);
 
     // Get default output rate for selected item
     const getDefaultOutputRate = useCallback((itemId: string): number => {
@@ -97,6 +105,7 @@ export const CreateProductionPlanModal: React.FC<CreateProductionPlanModalProps>
         if (itemId) {
             const defaultRate = getDefaultOutputRate(itemId);
             setTargetAmount(defaultRate);
+            setTargetAmountInputValue(defaultRate.toString());
             
             // Auto-set plan name if empty
             if (!name.trim()) {
@@ -136,7 +145,35 @@ export const CreateProductionPlanModal: React.FC<CreateProductionPlanModalProps>
         setName('');
         setSelectedItemId('');
         setTargetAmount(60);
+        setTargetAmountInputValue('60');
         setSelectedCorporationLevel(null);
+    };
+
+    const handleTargetAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setTargetAmountInputValue(value); // Update input instantly
+
+        if (value === '') {
+            setTargetAmount(0);
+        } else {
+            const numValue = Number(value);
+            if (numValue >= 1) {
+                setTargetAmount(numValue);
+            }
+        }
+    };
+
+    const handleTargetAmountBlur = () => {
+        const value = Number(targetAmountInputValue);
+        if (value < 1 || isNaN(value)) {
+            if (targetAmount >= 1 && !isNaN(targetAmount)) {
+                // Ensure input reflects the valid targetAmount
+                setTargetAmountInputValue(targetAmount.toString());
+            } else {
+                setTargetAmountInputValue('1');
+                setTargetAmount(1);
+            }
+        }
     };
 
     const handleCancel = () => {
@@ -233,8 +270,9 @@ export const CreateProductionPlanModal: React.FC<CreateProductionPlanModalProps>
                                 <input
                                     type="number"
                                     className="input input-bordered input-sm w-20"
-                                    value={targetAmount}
-                                    onChange={(e) => setTargetAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                                    value={targetAmountInputValue}
+                                    onChange={handleTargetAmountChange}
+                                    onBlur={handleTargetAmountBlur}
                                     min={1}
                                     required
                                 />
