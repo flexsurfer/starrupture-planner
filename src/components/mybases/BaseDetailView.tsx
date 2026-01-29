@@ -7,20 +7,18 @@ import { BaseCoreInfo, BaseBuildingsView, BasePlansView } from './index';
 
 export const BaseDetailView: React.FC = () => {
   const selectedBase = useSubscription<Base | null>([SUB_IDS.SELECTED_BASE]);
-  const activeTab = useSubscription<'plans' | 'buildings'>([SUB_IDS.BASE_DETAIL_ACTIVE_TAB]);
 
   const onBack = useCallback(() => {
     dispatch([EVENT_IDS.SET_SELECTED_BASE, null]);
-  }, []);
-
-  const handleTabChange = useCallback((tab: 'plans' | 'buildings') => {
-    dispatch([EVENT_IDS.SET_BASE_DETAIL_ACTIVE_TAB, tab]);
   }, []);
 
   // Early return if no base selected
   if (!selectedBase) {
     return null;
   }
+
+  const plansCount = selectedBase.productionPlanSections?.length || 0;
+  const buildingsCount = selectedBase.buildings?.length || 0;
 
   return (
     <div className="h-full p-2 lg:p-3 flex flex-col">
@@ -40,32 +38,29 @@ export const BaseDetailView: React.FC = () => {
         <BaseCoreInfo />
       </div>
 
-      {/* Tabs */}
-      <div className="tabs tabs-bordered mb-4 flex-shrink-0">
-        <button
-          className={`tab ${activeTab === 'plans' ? 'tab-active' : ''}`}
-          onClick={() => handleTabChange('plans')}
-        >
-          Plans
-          {selectedBase.productionPlanSections && selectedBase.productionPlanSections.length > 0 && (
-            <span className="badge badge-sm badge-primary ml-2">{selectedBase.productionPlanSections.length}</span>
-          )}
-        </button>
-        <button
-          className={`tab ${activeTab === 'buildings' ? 'tab-active' : ''}`}
-          onClick={() => handleTabChange('buildings')}
-        >
-          Buildings
-          {selectedBase.buildings && selectedBase.buildings.length > 0 && (
-            <span className="badge badge-sm badge-secondary ml-2">{selectedBase.buildings.length}</span>
-          )}
-        </button>
-      </div>
-
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-auto">
-        {activeTab === 'plans' && <BasePlansView />}
-        {activeTab === 'buildings' && <BaseBuildingsView />}
+      <div className="flex-1 overflow-auto space-y-6">
+        {/* Plans Section */}
+        <div>
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            Plans
+            {plansCount > 0 && (
+              <span className="badge badge-sm badge-primary">{plansCount}</span>
+            )}
+          </h2>
+          <BasePlansView />
+        </div>
+
+        {/* Buildings Section */}
+        <div>
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            Buildings
+            {buildingsCount > 0 && (
+              <span className="badge badge-sm badge-secondary">{buildingsCount}</span>
+            )}
+          </h2>
+          <BaseBuildingsView />
+        </div>
       </div>
     </div>
   );

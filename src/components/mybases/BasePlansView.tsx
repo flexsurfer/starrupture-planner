@@ -60,6 +60,13 @@ export const BasePlansView: React.FC = () => {
           />
         ))}
 
+        {/* Empty state when no plans */}
+        {(!selectedBase.productionPlanSections || selectedBase.productionPlanSections.length === 0) && (
+          <div className="text-center text-base-content/60">
+            <p className="text-sm">No production plans yet. Create a production plan to calculate the buildings needed to produce items at a specific rate.</p>
+          </div>
+        )}
+
         {/* Add Production Plan Button */}
         <div className="card bg-base-200 border border-dashed border-base-300 hover:border-primary cursor-pointer transition-colors"
           onClick={handleOpenProductionPlanModal}
@@ -85,14 +92,7 @@ export const BasePlansView: React.FC = () => {
           </div>
         </div>
 
-        {/* Empty state when no plans */}
-        {(!selectedBase.productionPlanSections || selectedBase.productionPlanSections.length === 0) && (
-          <div className="text-center py-8 text-base-content/60">
-            <div className="text-4xl mb-4">📐</div>
-            <p className="text-lg font-medium mb-2">No production plans yet</p>
-            <p className="text-sm">Create a production plan to calculate the buildings needed to produce items at a specific rate.</p>
-          </div>
-        )}
+
       </div>
 
       {/* Modals */}

@@ -625,8 +625,8 @@ regSub(SUB_IDS.AVAILABLE_ITEMS_FOR_BUILDING,
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return [];
         
-        if (building.id === 'package_receiver' || building.id === 'package_dispatcher' || building.id === 'orbital_cargo_launcher' || building.id === 'storage_depot_v1') {
-            // For package_receiver and output buildings, all items are available
+        if (building.id === 'package_receiver' || building.id === 'package_dispatcher' || building.id === 'orbital_cargo_launcher' || building.id === 'storage_depot_v1' || building.id === 'drone_merger_3_to_1') {
+            // For package_receiver, output buildings, and drone_merger_3_to_1, all items are available
             return [...items].sort((a, b) => a.name.localeCompare(b.name));
         } else {
             // For other input buildings, get items from recipe outputs

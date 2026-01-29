@@ -13,6 +13,7 @@ const isExtractor = (b: Building) => EXTRACTOR_IDS.has(b.id);
 const isReceiver = (b: Building) => b.id === 'package_receiver';
 const isDispatcher = (b: Building) => b.id === 'orbital_cargo_launcher' || b.id === 'package_dispatcher';
 const isStorage = (b: Building) => b.id === 'storage_depot_v1';
+const isDroneMerger = (b: Building) => b.id === 'drone_merger_3_to_1';
 
 // ============================================================================
 // Section Classification
@@ -28,7 +29,8 @@ export function isBuildingAvailableForSection(building: Building, section: Build
   switch (section) {
     case 'inputs':
       // Extractors and receivers bring resources into the base
-      return isExtractor(building) || isReceiver(building);
+      // Drone merger can be used for input
+      return isExtractor(building) || isReceiver(building) || isDroneMerger(building);
 
     case 'energy':
       // Generators produce power, amplifiers increase heat capacity
@@ -40,7 +42,8 @@ export function isBuildingAvailableForSection(building: Building, section: Build
 
     case 'outputs':
       // Dispatchers send items out, storage can also be used for output staging
-      return isDispatcher(building) || isStorage(building);
+      // Drone merger can be used for output
+      return isDispatcher(building) || isStorage(building) || isDroneMerger(building);
 
     case 'infrastructure':
       // Habitat and defense buildings
@@ -67,13 +70,15 @@ export function getAvailableBuildingsForSection(allBuildings: Building[],section
  * This reuses isBuildingAvailableForSection to maintain a single source of truth.
  * 
  * Priority order:
- * 1. 'inputs' - Extractors and receivers
+ * 1. 'inputs' - Extractors, receivers, and drone_merger_3_to_1
  * 2. 'energy' - Generators and temperature
  * 3. 'infrastructure' - Habitat and defense
  * 4. 'production' - Production buildings (not extractors) and storage
- * 5. 'outputs' - Dispatchers and storage
+ * 5. 'outputs' - Dispatchers, storage, and drone_merger_3_to_1
  * 
  * Note: Storage can be in both 'production' and 'outputs', but we default to 'production'
+ * by checking it earlier in the priority order.
+ * Note: drone_merger_3_to_1 can be in both 'inputs' and 'outputs', but we default to 'inputs'
  * by checking it earlier in the priority order.
  */
 export function getSectionTypeForBuilding(building: Building): BuildingSectionType {

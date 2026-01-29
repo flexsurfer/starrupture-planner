@@ -1182,5 +1182,10 @@
     "type": "defense",
     "power": 20,
     "heat": 20
+  },
+  {
+    "id": "drone_merger_3_to_1",
+    "name": "Drone Merger 3-to-1",
+    "type": "transport"
   }
 ]
