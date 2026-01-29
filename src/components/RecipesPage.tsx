@@ -67,9 +67,9 @@ const RecipesPage = () => {
                 <div className="badge badge-outline">
                   {building.recipes?.length || 0} recipe{building.recipes?.length !== 1 ? 's' : ''}
                 </div>
-                ⚡ {building.power}
+                ⚡ {building.power || 0}
                 <span className="text-xs text-base-content/40">|</span>
-                🔥 {building.heat}
+                🔥 {building.heat || 0}
                 <span className="text-xs text-base-content/40">|</span>
                 {corporationUsage.length > 0 && (
                   <div className="flex gap-1">

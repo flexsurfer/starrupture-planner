@@ -170,8 +170,8 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         const buildingsNeeded = totalDemand / outputRate;
 
         // Create a flow node representing this building in the production chain
-        const powerPerBuilding = building.power;
-        const heatPerBuilding = building.heat;
+        const powerPerBuilding = building.power || 0;
+        const heatPerBuilding = building.heat || 0;
         const totalPower = Math.ceil(buildingsNeeded) * powerPerBuilding;
         const totalHeat = Math.ceil(buildingsNeeded) * heatPerBuilding;
         
