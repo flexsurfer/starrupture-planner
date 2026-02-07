@@ -1,11 +1,7 @@
 import React from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../../../state/sub-ids';
-import type { RawMaterialDeficit } from '../../../../planner/core/types';
-
-interface RawMaterialDeficitWithName extends RawMaterialDeficit {
-    itemName: string;
-}
+import type { RawMaterialDeficitWithName } from '../../../../planner/core/types';
 
 export const DeficitsAlert: React.FC = () => {
     const deficits = useSubscription<RawMaterialDeficitWithName[]>([SUB_IDS.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS]);

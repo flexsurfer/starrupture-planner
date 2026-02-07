@@ -12,10 +12,17 @@ export type {
     Building,
     FlowNode,
     FlowEdge,
+    PlannerBuildingStats,
+    PlannerDetailedStatsItem,
+    PlannerDetailedStats,
     ProductionFlowParams,
     ProductionFlowResult,
     CorporationLevelInfo,
     RawMaterialDeficit,
+    RawMaterialDeficitWithName,
+    CorporationLevelSelection,
+    CustomInputAllocation,
+    AllocationPlan,
 } from './types';
 
 export {

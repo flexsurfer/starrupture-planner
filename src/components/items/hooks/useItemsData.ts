@@ -1,15 +1,6 @@
 import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../../../state/sub-ids";
-import type { CorporationUsage } from "../types";
-
-/**
- * Item table data with computed properties
- */
-export interface ItemTableData {
-  item: import("../../../state/db").Item;
-  producingBuilding: string;
-  corporationUsage: CorporationUsage[];
-}
+import type { CorporationUsage, ItemTableData, ItemsHelperLookups } from "../types";
 
 /**
  * Custom hook for items data and utilities
@@ -19,10 +10,7 @@ export const useItemsData = () => {
   const itemsTableData = useSubscription<ItemTableData[]>([SUB_IDS.ITEMS_TABLE_ROWS]);
   const selectedCategory = useSubscription<string>([SUB_IDS.ITEMS_SELECTED_CATEGORY]);
   const categories = useSubscription<string[]>([SUB_IDS.ITEMS_CATEGORIES]);
-  const helperMaps = useSubscription<{
-    corporationNameToId: Map<string, string>;
-    buildingCorporationUsage: Map<string, CorporationUsage[]>;
-  }>([SUB_IDS.ITEMS_HELPER_LOOKUPS]);
+  const helperMaps = useSubscription<ItemsHelperLookups>([SUB_IDS.ITEMS_HELPER_LOOKUPS]);
 
   // Helper function to get corporation ID from corporation name
   const getCorporationId = (corporationName: string): string => {

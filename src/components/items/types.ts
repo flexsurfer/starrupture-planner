@@ -2,23 +2,17 @@
  * Items Package Type Definitions
  */
 
-// Type definitions for corporation data
-export interface CorporationComponent {
-  id: string;
-  points: number;
-  cost?: number | null;
-}
+import type {
+  Corporation as DbCorporation,
+  CorporationComponent as DbCorporationComponent,
+  CorporationLevel as DbCorporationLevel,
+  Item as DbItem,
+} from '../../state/db';
 
-export interface CorporationLevel {
-  level: number;
-  components: CorporationComponent[];
-  rewards: Array<{ name: string }>;
-}
-
-export interface CorporationData {
-  id: string;
-  levels: CorporationLevel[];
-}
+export type Item = DbItem;
+export type CorporationComponent = DbCorporationComponent;
+export type CorporationLevel = DbCorporationLevel;
+export type CorporationData = Pick<DbCorporation, 'id' | 'levels'>;
 
 export type CorporationsData = Record<string, CorporationData>;
 
@@ -28,5 +22,15 @@ export interface CorporationUsage {
   level: number;
 }
 
-// Item-related types from the main db
-export type { Item } from "../../state/db";
+/** Item row view-model used by item table subscriptions/components. */
+export interface ItemTableData {
+  item: Item;
+  producingBuilding: string;
+  corporationUsage: CorporationUsage[];
+}
+
+/** Shared helper lookups used in item/corporation views. */
+export interface ItemsHelperLookups {
+  corporationNameToId: Map<string, string>;
+  buildingCorporationUsage: Map<string, CorporationUsage[]>;
+}

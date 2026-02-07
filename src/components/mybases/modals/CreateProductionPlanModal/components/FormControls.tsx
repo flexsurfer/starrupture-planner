@@ -2,8 +2,8 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useSubscription, dispatch } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../../../state/sub-ids';
 import { EVENT_IDS } from '../../../../../state/event-ids';
-import type { Item } from '../../../../../state/db';
-import { CorporationLevelSelector, type SelectedCorporationLevel } from '../../../../ui/CorporationLevelSelector';
+import type { Item, CorporationLevelSelection } from '../../../../../state/db';
+import { CorporationLevelSelector } from '../../../../ui/CorporationLevelSelector';
 import type { CorporationLevelInfo } from '../../../../planner';
 import { useDebouncedCallback } from '../../../../../hooks/useDebouncedCallback';
 
@@ -11,7 +11,7 @@ const DEBOUNCE_DELAY = 300;
 
 interface FormControlsInitialValues {
     defaultName: string;
-    defaultSelectedCorporationLevel: SelectedCorporationLevel | null;
+    defaultSelectedCorporationLevel: CorporationLevelSelection | null;
     currentSelectedItemId: string;
     currentTargetAmount: number;
     selectedItemName: string;
@@ -106,7 +106,7 @@ export const FormControls: React.FC = () => {
         }
     }, [userChangedName, selectableItems, debouncedSetName]);
 
-    const handleCorporationLevelChange = useCallback((level: SelectedCorporationLevel | null) => {
+    const handleCorporationLevelChange = useCallback((level: CorporationLevelSelection | null) => {
         setLocalCorporationLevel(level);
         dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, level]);
     }, []);

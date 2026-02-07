@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
+import type { PlannerDetailedStats } from '../core/types';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';
 import { getCategoryBadgeClass, getCategoryDisplayName } from '../../items';
@@ -16,20 +17,7 @@ interface PlannerStatsModalProps {
  */
 export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, onClose }) => {
     // Get detailed stats from subscription
-    const stats = useSubscription<{
-        buildingStats: Array<{
-            buildingId: string;
-            buildingName: string;
-            count: number;
-            totalPower: number;
-            totalHeat: number;
-        }>;
-        totalEnergy: number;
-        totalHotness: number;
-        totalBuildings: number;
-        itemsByType: Map<string, Array<{ id: string; name: string; type: string }>>;
-        sortedTypes: string[];
-    }>([SUB_IDS.PLANNER_STATS_DETAILED]);
+    const stats = useSubscription<PlannerDetailedStats>([SUB_IDS.PLANNER_STATS_DETAILED]);
 
     if (!isOpen) {
         return null;

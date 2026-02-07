@@ -5,53 +5,20 @@
  * including game data structures and internal flow representation.
  */
 
-/**
- * Represents a game item from the catalog
- */
-export interface Item {
-    /** Unique identifier for the item */
-    id: string;
-    /** Human-readable name of the item */
-    name: string;
-    /** Category of the item: 'raw', 'processed', 'component', or 'ammo' */
-    type: string;
-}
+import type {
+    Item as DbItem,
+    Recipe as DbRecipe,
+    Building as DbBuilding,
+    BaseBuilding,
+    CorporationLevelSelection,
+} from '../../../state/db';
 
-/**
- * Represents a recipe that describes how to produce an item
- */
-export interface Recipe {
-    /** The output item and production rate */
-    output: {
-        /** ID of the item being produced */
-        id: string;
-        /** Production rate in units per minute */
-        amount_per_minute: number;
-    };
-    /** List of input materials required for production */
-    inputs: {
-        /** ID of the required input item */
-        id: string;
-        /** Consumption rate in units per minute */
-        amount_per_minute: number;
-    }[];
-}
-
-/**
- * Represents a building that can execute recipes
- */
-export interface Building {
-    /** Unique identifier for the building */
-    id: string;
-    /** Human-readable name of the building */
-    name: string;
-    /** Power consumption per building */
-    power: number;
-    /** Heat generation per building */
-    heat: number;
-    /** List of recipes this building can execute */
-    recipes: Recipe[];
-}
+/** Canonical item model from the app state layer. */
+export type Item = DbItem;
+/** Canonical recipe model from the app state layer. */
+export type Recipe = DbRecipe;
+/** Canonical building model from the app state layer. */
+export type Building = DbBuilding;
 
 /**
  * Internal representation of a building node in the production flow
@@ -103,6 +70,32 @@ export interface FlowEdge {
     amount: number;
 }
 
+/** Aggregated per-building row used in planner detailed stats. */
+export interface PlannerBuildingStats {
+    buildingId: string;
+    buildingName: string;
+    count: number;
+    totalPower: number;
+    totalHeat: number;
+}
+
+/** Item descriptor used in grouped planner detailed stats. */
+export interface PlannerDetailedStatsItem {
+    id: string;
+    name: string;
+    type: string;
+}
+
+/** Full planner detailed stats payload for the stats modal. */
+export interface PlannerDetailedStats {
+    buildingStats: PlannerBuildingStats[];
+    totalEnergy: number;
+    totalHotness: number;
+    totalBuildings: number;
+    itemsByType: Map<string, PlannerDetailedStatsItem[]>;
+    sortedTypes: string[];
+}
+
 /**
  * Information about corporation level that uses a specific item
  */
@@ -119,23 +112,11 @@ export interface CorporationLevelInfo {
     cost?: number | null;
 }
 
-/**
- * Snapshot of a base input building used as an external material source.
- * This mirrors the fields needed from BaseBuilding without coupling planner core
- * to the state layer types.
- */
-export interface InputBuildingSnapshot {
-    /** Unique ID of the base building instance */
-    id: string;
-    /** Building type ID from game data */
-    buildingTypeId: string;
-    /** Building section type, must be 'inputs' to be considered as external supply */
-    sectionType: string;
-    /** Selected item produced by this input building */
-    selectedItemId?: string;
-    /** Production rate in units per minute */
-    ratePerMinute?: number;
-}
+/** Subset of base-building data used by planner as external material source. */
+export type InputBuildingSnapshot = Pick<
+    BaseBuilding,
+    'id' | 'buildingTypeId' | 'sectionType' | 'selectedItemId' | 'ratePerMinute'
+>;
 
 /**
  * Parameters for building a production flow
@@ -170,6 +151,11 @@ export interface RawMaterialDeficit {
     available: number;
     /** Missing amount (required - available) */
     missing: number;
+}
+
+/** Raw material deficit enriched with display name for UI usage. */
+export interface RawMaterialDeficitWithName extends RawMaterialDeficit {
+    itemName: string;
 }
 
 /**
@@ -213,3 +199,6 @@ export interface AllocationPlan {
     /** Amount used per custom input tracker (keyed by baseBuildingId) */
     usedByTracker: Map<string, number>;
 }
+
+/** Re-export selection type used across planner and modal forms. */
+export type { CorporationLevelSelection };

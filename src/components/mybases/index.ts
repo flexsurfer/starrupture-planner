@@ -21,6 +21,9 @@ export type {
   BaseDefenseBuilding,
   ProductionPlanSectionStats,
   BuildingRequirement,
+  InputRequirement,
+  ProductionPlanSectionViewModel,
+  ProductionPlanRequirementsStatus,
 } from './types';
 
 // Main view components

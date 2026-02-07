@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import type { CorporationLevelInfo } from '../planner/core/types';
+import type { CorporationLevelSelection } from '../../state/db';
 import { CorporationUsageBadge } from '../items';
 
-export interface SelectedCorporationLevel {
-    corporationId: string;
-    level: number;
-}
+export type SelectedCorporationLevel = CorporationLevelSelection;
 
 /**
  * Props for the CorporationLevelSelector component

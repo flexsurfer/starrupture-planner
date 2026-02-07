@@ -19,9 +19,14 @@ export type {
     Building,
     FlowNode,
     FlowEdge,
+    PlannerBuildingStats,
+    PlannerDetailedStatsItem,
+    PlannerDetailedStats,
     ProductionFlowParams,
     ProductionFlowResult,
     CorporationLevelInfo,
+    RawMaterialDeficitWithName,
+    CorporationLevelSelection,
 } from './core';
 
 export {

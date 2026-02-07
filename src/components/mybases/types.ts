@@ -4,7 +4,7 @@
  * Central location for all shared types used across mybases components and subscriptions.
  */
 
-import type { BaseBuilding, Building, Item } from '../../state/db';
+import type { BaseBuilding, Building, Item, Production } from '../../state/db';
 
 /**
  * Section types for categorizing buildings in a base.
@@ -128,4 +128,28 @@ export interface InputRequirement {
   itemName: string;
   ratePerMinute: number;
   isSatisfied: boolean;
+}
+
+/** Combined data model used by the ProductionPlanSection component subscription. */
+export interface ProductionPlanSectionViewModel {
+  selectedBaseId: string;
+  section: Production;
+  itemName: string;
+  corporationName: string | null;
+  stats: ProductionPlanSectionStats;
+  buildingRequirements: BuildingRequirement[];
+  inputRequirements: InputRequirement[];
+  allRequirementsSatisfied: boolean;
+  planStatus: string;
+  hasError: boolean;
+  showManageButton: boolean;
+}
+
+/** Lightweight requirements status payload used by plan badges/previews. */
+export interface ProductionPlanRequirementsStatus {
+  allRequirementsSatisfied: boolean;
+  planStatus: string;
+  hasError: boolean;
+  itemName: string;
+  corporationName: string | null;
 }

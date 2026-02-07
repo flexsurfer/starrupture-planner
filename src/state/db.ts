@@ -103,6 +103,12 @@ export interface Tab {
     icon: string;
 }
 
+/** Selected corporation level in planner and production plan forms. */
+export interface CorporationLevelSelection {
+    corporationId: string;
+    level: number;
+}
+
 // Base-related types
 export interface BaseBuilding {
     id: string;
@@ -132,7 +138,7 @@ export interface Production {
     selectedItemId: string;
     targetAmount: number;
     active?: boolean;
-    corporationLevel?: { corporationId: string; level: number } | null;
+    corporationLevel?: CorporationLevelSelection | null;
     inputs?: BaseBuilding[]; // Snapshot of BaseBuilding inputs (not linked to base)
     status?: 'active' | 'inactive' | 'error'; // Plan status: active when running, inactive when stopped, error when inputs insufficient
     requiredBuildings?: PlanRequiredBuilding[]; // Aggregated building requirements, populated on save
@@ -144,6 +150,9 @@ export interface Base {
     buildings: BaseBuilding[];
     productions: Production[];
 }
+
+/** Indexed bases collection keyed by base id. */
+export type BasesById = Record<string, Base>;
 
 export interface ConfirmationDialog {
     isOpen: boolean;
@@ -164,7 +173,7 @@ export interface CreateProductionPlanModalState {
     name: string;
     selectedItemId: string;
     targetAmount: number;
-    selectedCorporationLevel: { corporationId: string; level: number } | null;
+    selectedCorporationLevel: CorporationLevelSelection | null;
     selectedInputIds: string[];
 }
 
@@ -187,7 +196,7 @@ export interface AppState {
     uiTheme: 'light' | 'dark';
     uiActiveTab: TabType;
     plannerSelectedItemId: string | null;
-    plannerSelectedCorporationLevel: { corporationId: string; level: number } | null;
+    plannerSelectedCorporationLevel: CorporationLevelSelection | null;
     plannerTargetAmount: number;
     basesList: Base[];
     basesSelectedBaseId: string | null;

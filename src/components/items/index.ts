@@ -15,7 +15,7 @@ export { ItemRow } from "./components/ItemRow";
 export { CorporationUsageBadge } from "./components/CorporationUsageBadge";
 
 // Hooks and utilities
-export { useItemsData, getCategoryDisplayName, getCategoryBadgeClass, type ItemTableData } from "./hooks/useItemsData";
+export { useItemsData, getCategoryDisplayName, getCategoryBadgeClass } from "./hooks/useItemsData";
 export { findItemRecipe, hasRecipe } from "./utils/recipeUtils";
 export type { ItemRecipe } from "./utils/recipeUtils";
 
@@ -26,5 +26,7 @@ export type {
   CorporationData,
   CorporationsData,
   CorporationUsage,
+  ItemTableData,
+  ItemsHelperLookups,
   Item,
 } from "./types";

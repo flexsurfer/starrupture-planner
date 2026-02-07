@@ -22,27 +22,14 @@ import type {
     ProductionFlowResult,
     ProductionNode,
     RawMaterialDeficit,
-    InputBuildingSnapshot
+    InputBuildingSnapshot,
+    CustomInputAllocation,
+    AllocationPlan,
 } from './types';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface CustomInputAllocation {
-    baseBuildingId: string;
-    buildingId: string;
-    buildingName: string;
-    consumerNodeId: string;
-    itemId: string;
-    amount: number;
-}
-
-interface AllocationResult {
-    allocations: CustomInputAllocation[];
-    totalByItem: Map<string, number>;
-    usedBySource: Map<string, number>;
-}
 
 interface ConsumerDemand {
     nodeId: string;
@@ -219,12 +206,12 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     const sources = normalizeInputBuildings(inputBuildings)
         .filter((source) => source.itemId !== targetItemId && source.available > 0);
 
-    const allocate = (consumers: Map<string, ConsumerDemand[]>): AllocationResult => {
+    const allocate = (consumers: Map<string, ConsumerDemand[]>): AllocationPlan => {
         const allocations: CustomInputAllocation[] = [];
-        const totalByItem = new Map<string, number>();
-        const usedBySource = new Map<string, number>();
+        const totalAllocatedByItem = new Map<string, number>();
+        const usedByTracker = new Map<string, number>();
         
-        if (sources.length === 0) return { allocations, totalByItem, usedBySource };
+        if (sources.length === 0) return { allocations, totalAllocatedByItem, usedByTracker };
 
         // Build demand tracking: itemId -> sorted list of { nodeId, remaining }
         const demandByItem = new Map<string, Array<{ nodeId: string; remaining: number }>>();
@@ -267,12 +254,12 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
                 available -= amount;
                 demand.remaining -= amount;
                 supply.set(source.baseBuildingId, available);
-                totalByItem.set(source.itemId, (totalByItem.get(source.itemId) ?? 0) + amount);
-                usedBySource.set(source.baseBuildingId, (usedBySource.get(source.baseBuildingId) ?? 0) + amount);
+                totalAllocatedByItem.set(source.itemId, (totalAllocatedByItem.get(source.itemId) ?? 0) + amount);
+                usedByTracker.set(source.baseBuildingId, (usedByTracker.get(source.baseBuildingId) ?? 0) + amount);
             }
         }
 
-        return { allocations, totalByItem, usedBySource };
+        return { allocations, totalAllocatedByItem, usedByTracker };
     };
 
     const prodAllocation = allocate(itemConsumers);
@@ -280,7 +267,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     // Compute remaining demand after allocation
     const remainingDemand = new Map<string, number>();
     itemDemand.forEach((demand, itemId) => {
-        remainingDemand.set(itemId, Math.max(demand - (prodAllocation.totalByItem.get(itemId) ?? 0), 0));
+        remainingDemand.set(itemId, Math.max(demand - (prodAllocation.totalAllocatedByItem.get(itemId) ?? 0), 0));
     });
 
     // -------------------------------------------------------------------------
@@ -350,14 +337,16 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     // -------------------------------------------------------------------------
     // STEP 5: Allocate custom inputs to raw materials
     // -------------------------------------------------------------------------
-    const rawAllocation = rawDemand.size > 0 ? allocate(rawConsumers) : { allocations: [], totalByItem: new Map(), usedBySource: new Map() };
+    const rawAllocation = rawDemand.size > 0
+        ? allocate(rawConsumers)
+        : { allocations: [], totalAllocatedByItem: new Map(), usedByTracker: new Map() };
 
     // -------------------------------------------------------------------------
     // STEP 6: Create raw production nodes (if allowed)
     // -------------------------------------------------------------------------
     if (!rawProductionDisabled) {
         rawDemand.forEach((required, itemId) => {
-            const allocated = rawAllocation.totalByItem.get(itemId) ?? 0;
+            const allocated = rawAllocation.totalAllocatedByItem.get(itemId) ?? 0;
             const remaining = required - allocated;
             if (remaining <= EPSILON) return;
 
@@ -516,7 +505,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 
     if (rawProductionDisabled) {
         rawDemand.forEach((required, itemId) => {
-            const available = rawAllocation.totalByItem.get(itemId) ?? 0;
+            const available = rawAllocation.totalAllocatedByItem.get(itemId) ?? 0;
             const missing = required - available;
             if (missing > EPSILON) {
                 rawMaterialDeficits.push({ itemId, required, available, missing });

@@ -1,7 +1,8 @@
 import { ItemRow } from "./ItemRow";
 import { ItemIcon } from "./ItemIcon";
 import { CorporationUsageBadge } from "./CorporationUsageBadge";
-import { getCategoryDisplayName, getCategoryBadgeClass, type ItemTableData } from "../hooks/useItemsData";
+import { getCategoryDisplayName, getCategoryBadgeClass } from "../hooks/useItemsData";
+import type { ItemTableData } from "../types";
 import { dispatch } from '@flexsurfer/reflex';
 import { EVENT_IDS } from '../../../state/event-ids';
 

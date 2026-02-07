@@ -4,4 +4,4 @@ export { LevelCard } from "./LevelCard";
 export { CorporationCard } from "./CorporationCard";
 export { CorporationsStats } from "./CorporationsStats";
 export { useCorporations, useCorporationCollapse } from "./useCorporations";
-export type { CorporationWithStats } from "./useCorporations";
+export type { CorporationWithStats, CorporationStats } from "./types";

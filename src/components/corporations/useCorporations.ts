@@ -1,15 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../../state/sub-ids";
-import type { Corporation, Item } from "../../state/db";
-
-export type CorporationWithStats = Corporation & {
-  stats: {
-    totalLevels: number;
-    totalComponents: number;
-    totalCost: number;
-  };
-};
+import type { Item } from "../../state/db";
+import type { CorporationWithStats } from "./types";
 
 export const useCorporations = () => {
   const corporationsWithStats = useSubscription<CorporationWithStats[]>([SUB_IDS.CORPORATIONS_LIST_WITH_STATS]);

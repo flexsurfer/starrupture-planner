@@ -2,8 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useSubscription, dispatch } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { EVENT_IDS } from '../../../state/event-ids';
-import type { Production as ProductionType } from '../../../state/db';
-import type { BuildingRequirement, InputRequirement, ProductionPlanSectionStats } from '../types';
+import type { ProductionPlanSectionViewModel } from '../types';
 import type { ProductionFlowResult } from '../../planner/core/types';
 import { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
 import { BuildingRequirementsModal } from '../modals';
@@ -35,28 +34,13 @@ const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, s
     );
 };
 
-/** All data needed by ProductionPlanSection, delivered via a single subscription. */
-interface ProductionPlanSectionData {
-    selectedBaseId: string;
-    section: ProductionType;
-    itemName: string;
-    corporationName: string | null;
-    stats: ProductionPlanSectionStats;
-    buildingRequirements: BuildingRequirement[];
-    inputRequirements: InputRequirement[];
-    allRequirementsSatisfied: boolean;
-    planStatus: string;
-    hasError: boolean;
-    showManageButton: boolean;
-}
-
 export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ baseId, sectionId }) => {
 
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [showRequirementsModal, setShowRequirementsModal] = useState(false);
 
     // Single subscription for all component data
-    const data = useSubscription<ProductionPlanSectionData>([SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId]);
+    const data = useSubscription<ProductionPlanSectionViewModel>([SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId]);
 
     // Extract values for useCallback dependencies (use safe defaults)
     // These must be extracted before any early returns to satisfy React hooks rules

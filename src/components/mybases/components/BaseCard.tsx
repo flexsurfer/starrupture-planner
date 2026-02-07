@@ -8,6 +8,7 @@ import type {
   BaseInputItem,
   BaseOutputItem,
   BaseDefenseBuilding,
+  ProductionPlanRequirementsStatus,
 } from '../types';
 
 interface BaseCardProps {
@@ -20,23 +21,15 @@ interface BaseCardProps {
 interface PlanItemProps {
   plan: Production;
   itemsMap: Record<string, Item>;
-}
-
-interface PlanItemProps {
-  plan: Production;
-  itemsMap: Record<string, Item>;
   baseId: string;
 }
 
 const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId }) => {
-
-  const planData = useSubscription<{
-    allRequirementsSatisfied: boolean;
-    planStatus: string;
-    hasError: boolean;
-    itemName: string;
-    corporationName: string | null;
-  }>([SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID, baseId, plan.id]);
+  const planData = useSubscription<ProductionPlanRequirementsStatus>([
+    SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
+    baseId,
+    plan.id,
+  ]);
 
   const { allRequirementsSatisfied, hasError, itemName, corporationName } = planData;
 

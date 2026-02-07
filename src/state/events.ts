@@ -1,10 +1,21 @@
 import { regEvent, current } from '@flexsurfer/reflex';
 import { EVENT_IDS } from './event-ids';
 import { EFFECT_IDS } from './effect-ids';
-import type { TabType, DataVersion, Item, Building, AppState, Base, BaseBuilding, Production, PlanRequiredBuilding } from './db';
+import type {
+    TabType,
+    DataVersion,
+    Item,
+    Building,
+    AppState,
+    Base,
+    BaseBuilding,
+    Production,
+    PlanRequiredBuilding,
+    CorporationLevelSelection,
+} from './db';
 import { buildItemsMap, parseCorporations, extractCategories } from './data-utils';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
-import type { Building as PlannerBuilding, ProductionFlowResult } from '../components/planner/core/types';
+import type { ProductionFlowResult } from '../components/planner/core/types';
 import { getSectionTypeForBuilding } from '../components/mybases/utils';
 import { getProductionInputIds, getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
 
@@ -212,7 +223,7 @@ regEvent(EVENT_IDS.UI_SET_ACTIVE_TAB, ({ draftDb }, newTab: TabType) => {
     draftDb.uiActiveTab = newTab;
 });
 
-regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftDb }, itemId: string, corporationLevel?: { corporationId: string; level: number }) => {
+regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftDb }, itemId: string, corporationLevel?: CorporationLevelSelection) => {
     draftDb.plannerSelectedItemId = itemId;
     draftDb.plannerSelectedCorporationLevel = corporationLevel || null;
     draftDb.uiActiveTab = 'planner';
@@ -226,7 +237,7 @@ regEvent(EVENT_IDS.PLANNER_SET_SELECTED_ITEM, ({ draftDb }, itemId: string | nul
     setTargetAmountToDefault(draftDb as AppState, itemId || '');
 });
 
-regEvent(EVENT_IDS.PLANNER_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, corporationLevel: { corporationId: string; level: number } | null) => {
+regEvent(EVENT_IDS.PLANNER_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, corporationLevel: CorporationLevelSelection | null) => {
     draftDb.plannerSelectedCorporationLevel = corporationLevel;
 });
 
@@ -493,7 +504,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
             rawProductionDisabled: true,
             includeLauncher
         },
-        draftDb.buildingsList as PlannerBuilding[]
+        draftDb.buildingsList
     );
     
     // Extract used inputs from the production flow nodes
@@ -579,7 +590,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, ({ draftDb }, amount
     draftDb.productionPlanModalState.targetAmount = amount;
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, level: { corporationId: string; level: number } | null) => {
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, level: CorporationLevelSelection | null) => {
     draftDb.productionPlanModalState.selectedCorporationLevel = level;
 });
 
