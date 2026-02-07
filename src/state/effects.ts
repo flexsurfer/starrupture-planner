@@ -1,15 +1,17 @@
 import { regCoeffect, regEffect } from "@flexsurfer/reflex";
 import { EFFECT_IDS } from "./effect-ids";
 import type { DataVersion, Base } from "./db";
+import { readBasesFromStorage, writeBasesToStorage } from "./bases-storage";
 
 const BASES_PERSIST_DEBOUNCE_MS = 500;
+
 let pendingBasesForPersist: Base[] | null = null;
 let pendingPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
 const flushPendingBasesPersist = () => {
     if (pendingBasesForPersist === null) return;
     try {
-        localStorage.setItem('bases', JSON.stringify(pendingBasesForPersist));
+        writeBasesToStorage(pendingBasesForPersist);
     } catch (e) {
         console.error('Error saving bases to local storage:', e);
     } finally {
@@ -45,10 +47,7 @@ regEffect(EFFECT_IDS.SET_BASES, (bases: Base[]) => {
 
 regCoeffect(EFFECT_IDS.GET_BASES, (coeffects) => {
     try {
-        const stored = localStorage.getItem('bases');
-        if (stored) {
-            coeffects.localStoreBases = JSON.parse(stored);
-        }
+        coeffects.localStoreBases = readBasesFromStorage();
     } catch (e) {
         console.error('Error loading bases from local storage:', e);
         coeffects.localStoreBases = null;

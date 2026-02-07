@@ -80,80 +80,6 @@ function computeRequiredBuildings(flow: ProductionFlowResult): PlanRequiredBuild
     return Array.from(map.values());
 }
 
-/**
- * Validates and normalizes bases data loaded from localStorage.
- * 
- * WHY THIS IS NEEDED:
- * Even though our app always saves valid data, we cannot trust localStorage because:
- * 1. **Untrusted External Storage**: localStorage can be modified by:
- *    - Browser extensions
- *    - Users via DevTools
- *    - Browser bugs or corruption
- *    - Other tabs/scripts
- *    - Storage quota issues
- * 
- * 2. **No Runtime Type Safety**: TypeScript types are erased at runtime.
- *    JSON.parse() returns `any`, so there's no guarantee the parsed data
- *    matches our Base type structure.
- * 
- * 3. **Schema Evolution**: If the Base type structure changes over time,
- *    old localStorage data may not match the new structure.
- * 
- * 4. **Defensive Programming**: Validating external data prevents crashes
- *    from unexpected data shapes and provides graceful degradation.
- * 
- * HOW IT WORKS:
- * 1. Uses a type guard function to validate each base object structure
- * 2. Checks for required fields (id, name, buildings)
- * 3. Ensures buildings is an array
- * 4. Normalizes productions (adds missing productions with fallback)
- * 5. Filters out any invalid bases, returning only valid ones
- * 
- * @param rawBases - Raw data from localStorage (unknown type, could be anything)
- * @returns Array of validated and normalized Base objects
- */
-function validateAndNormalizeBases(rawBases: unknown): Base[] {
-    if (!Array.isArray(rawBases)) {
-        return [];
-    }
-    
-    // Type guard: validates that an unknown value is a valid Base structure
-    const isValidBase = (base: unknown): base is Base => {
-        // Basic structure checks
-        if (typeof base !== 'object' || base === null) {
-            return false;
-        }
-        
-        // Check required top-level fields exist
-        if (!('id' in base) || !('name' in base) || !('buildings' in base)) {
-            return false;
-        }
-        
-        // Validate id and name are strings
-        if (typeof (base as Base).id !== 'string' || typeof (base as Base).name !== 'string') {
-            return false;
-        }
-        
-        // Validate buildings is an array
-        if (!Array.isArray((base as Base).buildings)) {
-            return false;
-        }
-        
-        return true;
-    };
-    
-    // Filter valid bases and normalize productions
-    return rawBases
-        .filter(isValidBase)
-        .map((base) => {
-            return {
-                ...base,
-                // Ensure productions exists - use empty array as fallback
-                productions: Array.isArray(base.productions) ? base.productions : [],
-            };
-        });
-}
-
 regEvent(EVENT_IDS.UI_SET_THEME, ({ draftDb }, newTheme: 'light' | 'dark') => {
     draftDb.uiTheme = newTheme;
     return [[EFFECT_IDS.SET_THEME, newTheme]];
@@ -187,22 +113,8 @@ regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion,
         updateDraftDbWithVersionData(draftDb as AppState, localStoreDataVersion);
     }
     
-    // Load saved bases if valid
-    if (localStoreBases) {
-        try {
-            // Validate and normalize bases data from localStorage
-            // Invalid bases are filtered out, ensuring we only load valid data
-            draftDb.basesList = validateAndNormalizeBases(localStoreBases);
-        } catch (e) {
-            console.error('Error loading bases from local storage:', e);
-            // On error, keep empty array (don't use potentially corrupted data)
-            draftDb.basesList = [];
-        }
-    } else {
-        // If no saved bases, ensure we start with empty array
-        draftDb.basesList = [];
-    }
-    
+    draftDb.basesList = Array.isArray(localStoreBases) ? localStoreBases : [];
+
     return [[EFFECT_IDS.SET_THEME, draftDb.uiTheme]];
 }, [[EFFECT_IDS.GET_THEME], [EFFECT_IDS.GET_DATA_VERSION], [EFFECT_IDS.GET_BASES]]);
 
@@ -555,7 +467,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
         };
         base.productions.push(newSection);
     }
- 
+
     return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
 });
 
