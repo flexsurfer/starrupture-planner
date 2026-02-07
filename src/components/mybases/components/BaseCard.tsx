@@ -83,7 +83,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
   const defenseBuildings = useSubscription<BaseDefenseBuilding[]>([SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID, base.id]);
 
   // Get data for plans
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID]);
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
 
   // Early return if stats not available
   if (!stats) {

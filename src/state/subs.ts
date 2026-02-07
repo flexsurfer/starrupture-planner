@@ -4,6 +4,7 @@ import type {
     Item,
     Corporation,
     Building as DbBuilding,
+    BuildingsByIdMap,
     Base,
     BasesById,
     BaseBuilding,
@@ -49,7 +50,7 @@ import type {
 regSub(SUB_IDS.APP_DATA_VERSION, "appDataVersion");
 regSub(SUB_IDS.APP_DATA_VERSIONS, "appDataVersions");
 regSub(SUB_IDS.ITEMS_LIST, "itemsList");
-regSub(SUB_IDS.ITEMS_BY_ID, "itemsById");
+regSub(SUB_IDS.ITEMS_BY_ID_MAP, "itemsById");
 regSub(SUB_IDS.ITEMS_SELECTED_CATEGORY, "itemsSelectedCategory");
 regSub(SUB_IDS.ITEMS_SELECTED_BUILDING, "itemsSelectedBuilding");
 regSub(SUB_IDS.ITEMS_SEARCH_TERM, "itemsSearchTerm");
@@ -69,6 +70,16 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, "productionPlanModalState");
 //============================================================
 // Items, buildings, corporations subscriptions
 //============================================================
+regSub(SUB_IDS.BUILDINGS_BY_ID_MAP,
+    (buildings: DbBuilding[]): BuildingsByIdMap => {
+        const byId: BuildingsByIdMap = {};
+        for (const building of buildings) {
+            byId[building.id] = building;
+        }
+        return byId;
+    },
+    () => [[SUB_IDS.BUILDINGS_LIST]]);
+
 regSub(SUB_IDS.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS,
     (buildings: DbBuilding[]) => {
         const buildingNames = new Set<string>();
@@ -445,6 +456,42 @@ regSub(SUB_IDS.PLANNER_SELECTABLE_ITEMS,
 //============================================================
 // Bases subscriptions
 //============================================================
+interface ConfiguredSectionItem {
+    baseBuildingId: string;
+    item: Item;
+    ratePerMinute: number;
+    building: DbBuilding;
+}
+
+function collectConfiguredSectionItems(
+    base: Base,
+    buildingsById: BuildingsByIdMap,
+    itemsMap: Record<string, Item>,
+    sectionType: 'inputs' | 'outputs'
+): ConfiguredSectionItem[] {
+    const items: ConfiguredSectionItem[] = [];
+
+    for (const baseBuilding of base.buildings) {
+        if (baseBuilding.sectionType !== sectionType) continue;
+        if (!baseBuilding.selectedItemId || !baseBuilding.ratePerMinute) continue;
+
+        const building = buildingsById[baseBuilding.buildingTypeId];
+        if (!building) continue;
+
+        const item = itemsMap[baseBuilding.selectedItemId];
+        if (!item) continue;
+
+        items.push({
+            baseBuildingId: baseBuilding.id,
+            item,
+            ratePerMinute: baseBuilding.ratePerMinute,
+            building,
+        });
+    }
+
+    return items;
+}
+
 regSub(SUB_IDS.BASES_BY_ID_MAP,
     (bases: Base[]): BasesById => {
         const basesById: BasesById = {};
@@ -470,13 +517,13 @@ regSub(SUB_IDS.BASES_BASE_BY_ID,
     () => [[SUB_IDS.BASES_BY_ID_MAP]]);
 
 // Helper function to calculate stats for a base
-function calculateBaseDetailStats(base: Base, buildings: DbBuilding[]): BaseDetailStats {
+function calculateBaseDetailStats(base: Base, buildingsById: BuildingsByIdMap): BaseDetailStats {
     let totalHeat = 0;
     let energyGeneration = 0;
     let energyConsumption = 0;
 
     base.buildings.forEach((baseBuilding: BaseBuilding) => {
-        const buildingType = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+        const buildingType = buildingsById[baseBuilding.buildingTypeId];
         if (buildingType) {
             totalHeat += buildingType.heat || 0;
 
@@ -489,7 +536,7 @@ function calculateBaseDetailStats(base: Base, buildings: DbBuilding[]): BaseDeta
         }
     });
 
-    const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(base.buildings, buildings);
+    const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(base.buildings, buildingsById);
     const heatPercentage = Math.min((totalHeat / baseCoreHeatCapacity) * 100, 100);
     // Calculate energy percentage: used / available (similar to heat)
     // If no generation, show full red bar (100%)
@@ -517,90 +564,56 @@ function calculateBaseDetailStats(base: Base, buildings: DbBuilding[]): BaseDeta
 }
 
 regSub(SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS,
-    (selectedBase: Base | null, buildings: DbBuilding[]): BaseDetailStats | null => {
+    (selectedBase: Base | null, buildingsById: BuildingsByIdMap): BaseDetailStats | null => {
         if (!selectedBase) return null;
-        return calculateBaseDetailStats(selectedBase, buildings);
+        return calculateBaseDetailStats(selectedBase, buildingsById);
     },
-    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_LIST]]);
+    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID,
-    (basesById: BasesById, buildings: DbBuilding[], baseId: string): BaseDetailStats | null => {
+    (basesById: BasesById, buildingsById: BuildingsByIdMap, baseId: string): BaseDetailStats | null => {
         const base = basesById[baseId];
         if (!base) return null;
-        return calculateBaseDetailStats(base, buildings);
+        return calculateBaseDetailStats(base, buildingsById);
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID,
-    (basesById: BasesById, buildings: DbBuilding[], itemsMap: Record<string, Item>, baseId: string): BaseInputItem[] => {
+    (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, baseId: string): BaseInputItem[] => {
         const base = basesById[baseId];
         if (!base) return [];
 
-        const items: BaseInputItem[] = [];
-
-        base.buildings.forEach((baseBuilding: BaseBuilding) => {
-            const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
-            if (!building || !baseBuilding.selectedItemId || !baseBuilding.ratePerMinute) return;
-
-            // Check if building is in inputs section
-            const isInputBuilding = baseBuilding.sectionType === 'inputs';
-
-            if (isInputBuilding) {
-                const item = itemsMap[baseBuilding.selectedItemId];
-                if (item) {
-                    items.push({
-                        baseBuildingId: baseBuilding.id,
-                        item,
-                        ratePerMinute: baseBuilding.ratePerMinute,
-                        building,
-                    });
-                }
-            }
-        });
-
-        return items;
+        return collectConfiguredSectionItems(base, buildingsById, itemsMap, 'inputs').map((entry) => ({
+            baseBuildingId: entry.baseBuildingId,
+            item: entry.item,
+            ratePerMinute: entry.ratePerMinute,
+            building: entry.building,
+        }));
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID,
-    (basesById: BasesById, buildings: DbBuilding[], itemsMap: Record<string, Item>, baseId: string): BaseOutputItem[] => {
+    (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, baseId: string): BaseOutputItem[] => {
         const base = basesById[baseId];
         if (!base) return [];
 
-        const items: BaseOutputItem[] = [];
-
-        base.buildings.forEach((baseBuilding: BaseBuilding) => {
-            const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
-            if (!building || !baseBuilding.selectedItemId || !baseBuilding.ratePerMinute) return;
-
-            // Check if building is in outputs section
-            const isOutputBuilding = baseBuilding.sectionType === 'outputs';
-
-            if (isOutputBuilding) {
-                const item = itemsMap[baseBuilding.selectedItemId];
-                if (item) {
-                    items.push({
-                        item,
-                        ratePerMinute: baseBuilding.ratePerMinute,
-                        building,
-                    });
-                }
-            }
-        });
-
-        return items;
+        return collectConfiguredSectionItems(base, buildingsById, itemsMap, 'outputs').map((entry) => ({
+            item: entry.item,
+            ratePerMinute: entry.ratePerMinute,
+            building: entry.building,
+        }));
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID,
-    (basesById: BasesById, buildings: DbBuilding[], baseId: string): BaseDefenseBuilding[] => {
+    (basesById: BasesById, buildingsById: BuildingsByIdMap, baseId: string): BaseDefenseBuilding[] => {
         const base = basesById[baseId];
         if (!base) return [];
 
         const defenseMap = new Map<string, BaseDefenseBuilding>();
 
         base.buildings.forEach((baseBuilding: BaseBuilding) => {
-            const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+            const building = buildingsById[baseBuilding.buildingTypeId];
             if (building && building.type === 'defense') {
                 const existing = defenseMap.get(building.id);
                 if (existing) {
@@ -613,10 +626,10 @@ regSub(SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID,
 
         return Array.from(defenseMap.values());
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS,
-    (base: Base | null, dbBuildings: DbBuilding[], _baseId: string, sectionType: string): BuildingSectionBuilding[] => {
+    (base: Base | null, buildingsById: BuildingsByIdMap, _baseId: string, sectionType: string): BuildingSectionBuilding[] => {
         if (!base) return [];
 
         const sectionBuildings = base.buildings.filter(b => b.sectionType === sectionType);
@@ -624,49 +637,74 @@ regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS,
 
         // Build active-plan highlight map for the entire base
         const activePlans = base.productions?.filter(p => p.active) || [];
-        const planNamesMap: Record<string, string[]> = {};
+        const planNamesMap = new Map<string, Set<string>>();
+
+        const addPlanName = (buildingId: string, planName: string) => {
+            let set = planNamesMap.get(buildingId);
+            if (!set) {
+                set = new Set<string>();
+                planNamesMap.set(buildingId, set);
+            }
+            set.add(planName);
+        };
+
+        const baseBuildingIds = new Set(base.buildings.map(b => b.id));
+        const withItemByType = new Map<string, BaseBuilding[]>();
+        const withoutItemByType = new Map<string, BaseBuilding[]>();
+        for (const baseBuilding of base.buildings) {
+            if (baseBuilding.selectedItemId !== undefined) {
+                const list = withItemByType.get(baseBuilding.buildingTypeId) || [];
+                list.push(baseBuilding);
+                withItemByType.set(baseBuilding.buildingTypeId, list);
+            } else {
+                const list = withoutItemByType.get(baseBuilding.buildingTypeId) || [];
+                list.push(baseBuilding);
+                withoutItemByType.set(baseBuilding.buildingTypeId, list);
+            }
+        }
+        const prioritizedBuildingsByType = new Map<string, BaseBuilding[]>();
+        const allBuildingTypeIds = new Set<string>([
+            ...withItemByType.keys(),
+            ...withoutItemByType.keys(),
+        ]);
+        for (const buildingTypeId of allBuildingTypeIds) {
+            prioritizedBuildingsByType.set(buildingTypeId, [
+                ...(withItemByType.get(buildingTypeId) || []),
+                ...(withoutItemByType.get(buildingTypeId) || []),
+            ]);
+        }
 
         activePlans.forEach(plan => {
             // Required production buildings (stored on plan save)
             (plan.requiredBuildings || []).forEach(({ buildingId, count }) => {
-                const withItem = base.buildings.filter(b =>
-                    b.buildingTypeId === buildingId && b.selectedItemId !== undefined);
-                const withoutItem = base.buildings.filter(b =>
-                    b.buildingTypeId === buildingId && b.selectedItemId === undefined);
-                [...withItem, ...withoutItem].slice(0, count).forEach(b => {
-                    if (!planNamesMap[b.id]) planNamesMap[b.id] = [];
-                    if (!planNamesMap[b.id].includes(plan.name)) planNamesMap[b.id].push(plan.name);
-                });
+                const prioritized = prioritizedBuildingsByType.get(buildingId) || [];
+                prioritized.slice(0, count).forEach(b => addPlanName(b.id, plan.name));
             });
 
             // Input building snapshots
             (plan.inputs || []).forEach(inputBuilding => {
-                if (inputBuilding.id && base.buildings.some(b => b.id === inputBuilding.id)) {
-                    if (!planNamesMap[inputBuilding.id]) planNamesMap[inputBuilding.id] = [];
-                    if (!planNamesMap[inputBuilding.id].includes(plan.name)) planNamesMap[inputBuilding.id].push(plan.name);
+                if (inputBuilding.id && baseBuildingIds.has(inputBuilding.id)) {
+                    addPlanName(inputBuilding.id, plan.name);
                 }
             });
         });
 
-        // Build lookup for building types
-        const buildingsById = new Map(dbBuildings.map(b => [b.id, b]));
-
         return sectionBuildings
             .map(baseBuilding => {
-                const building = buildingsById.get(baseBuilding.buildingTypeId);
+                const building = buildingsById[baseBuilding.buildingTypeId];
                 if (!building) return null;
                 return {
                     baseBuilding,
                     building,
-                    activePlanNames: planNamesMap[baseBuilding.id] || [],
+                    activePlanNames: Array.from(planNamesMap.get(baseBuilding.id) || []),
                 };
             })
             .filter((b): b is BuildingSectionBuilding => b !== null);
     },
-    (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId], [SUB_IDS.BUILDINGS_LIST]]);
+    (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_BUILDING_SECTION_STATS,
-    (basesById: BasesById, buildings: DbBuilding[], baseId: string, sectionType: string): BuildingSectionStats => {
+    (basesById: BasesById, buildingsById: BuildingsByIdMap, baseId: string, sectionType: string): BuildingSectionStats => {
         const base = basesById[baseId];
         if (!base) {
             return {
@@ -677,9 +715,6 @@ regSub(SUB_IDS.BASES_BUILDING_SECTION_STATS,
                 hasGenerators: false,
             };
         }
-
-        // Create a map for quick building lookup
-        const buildingMap = new Map(buildings.map(b => [b.id, b]));
 
         // Filter base buildings by the section type they were added to
         const baseBuildings = base.buildings.filter((baseBuilding: BaseBuilding) => {
@@ -692,7 +727,7 @@ regSub(SUB_IDS.BASES_BUILDING_SECTION_STATS,
         let hasGenerators = false;
 
         baseBuildings.forEach((baseBuilding: BaseBuilding) => {
-            const building = buildingMap.get(baseBuilding.buildingTypeId);
+            const building = buildingsById[baseBuilding.buildingTypeId];
             if (building) {
                 // Exclude amplifiers from heat calculation (they increase capacity but don't generate heat)
                 if (!isAmplifierBuilding(building.id)) {
@@ -716,7 +751,7 @@ regSub(SUB_IDS.BASES_BUILDING_SECTION_STATS,
             hasGenerators,
         };
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_AVAILABLE_BUILDINGS_FOR_SECTION,
     (buildings: DbBuilding[], sectionType: BuildingSectionType): DbBuilding[] => {
@@ -725,7 +760,7 @@ regSub(SUB_IDS.BASES_AVAILABLE_BUILDINGS_FOR_SECTION,
     () => [[SUB_IDS.BUILDINGS_LIST]]);
 
 regSub(SUB_IDS.BASES_STATS_SUMMARY,
-    (bases: Base[], buildings: DbBuilding[]): MyBasesStats => {
+    (bases: Base[], buildingsById: BuildingsByIdMap): MyBasesStats => {
         let totalBuildings = 0;
         let totalHeat = 0;
         let totalHeatCapacity = 0;
@@ -736,10 +771,10 @@ regSub(SUB_IDS.BASES_STATS_SUMMARY,
             totalBuildings += base.buildings.length;
 
             // Calculate heat capacity for this base
-            totalHeatCapacity += calculateBaseCoreHeatCapacity(base.buildings, buildings);
+            totalHeatCapacity += calculateBaseCoreHeatCapacity(base.buildings, buildingsById);
 
             base.buildings.forEach((baseBuilding: BaseBuilding) => {
-                const buildingType = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+                const buildingType = buildingsById[baseBuilding.buildingTypeId];
                 if (buildingType) {
                     // Exclude amplifiers from heat calculation (they increase capacity but don't generate heat)
                     if (!isAmplifierBuilding(buildingType.id)) {
@@ -781,7 +816,7 @@ regSub(SUB_IDS.BASES_STATS_SUMMARY,
             isEnergyInsufficient,
         };
     },
-    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_LIST]]);
+    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 //============================================================
 // Production Plan subscriptions
@@ -920,7 +955,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
         section: Production | null,
         base: Base | null,
         itemsMap: Record<string, Item>,
-        buildings: DbBuilding[],
+        buildingsById: BuildingsByIdMap,
         corporations: Corporation[]
     ): ProductionPlanSectionViewModel | null => {
 
@@ -941,13 +976,12 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
         // Stats — calculated from buildings map by looking up building types
         const requiredBuildings = section.requiredBuildings || [];
         const sectionInputs = section.inputs || [];
-        const buildingsById = new Map(buildings.map(b => [b.id, b]));
 
         // Calculate heat/power from required buildings
         let totalHeat = 0;
         let totalPowerConsumption = 0;
         requiredBuildings.forEach(({ buildingId, count }) => {
-            const building = buildingsById.get(buildingId);
+            const building = buildingsById[buildingId];
             if (building) {
                 totalHeat += (building.heat || 0) * count;
                 totalPowerConsumption += (building.power || 0) * count;
@@ -956,7 +990,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
 
         // Also account for input buildings
         sectionInputs.forEach((inputBuilding: BaseBuilding) => {
-            const building = buildingsById.get(inputBuilding.buildingTypeId);
+            const building = buildingsById[inputBuilding.buildingTypeId];
             if (building) {
                 totalHeat += building.heat || 0;
                 totalPowerConsumption += building.power || 0;
@@ -985,7 +1019,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
             const available = availableBuildingsMap.get(buildingId) || 0;
             const isSatisfied = available >= count;
             if (!isSatisfied) allRequirementsSatisfied = false;
-            const building = buildingsById.get(buildingId);
+            const building = buildingsById[buildingId];
 
             buildingRequirements.push({
                 buildingId,
@@ -1010,7 +1044,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
 
             sectionInputs.forEach((inputBuilding: BaseBuilding) => {
                 const matchingBaseBuilding = baseBuildingsById.get(inputBuilding.id);
-                const building = buildingsById.get(inputBuilding.buildingTypeId) || null;
+                const building = buildingsById[inputBuilding.buildingTypeId] || null;
                 const item = inputBuilding.selectedItemId ? itemsMap[inputBuilding.selectedItemId] : null;
 
                 const isSatisfied = !!(
@@ -1059,8 +1093,8 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
     (baseId: string, sectionId: string) => [
         [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId],
         [SUB_IDS.BASES_BASE_BY_ID, baseId],
-        [SUB_IDS.ITEMS_BY_ID],
-        [SUB_IDS.BUILDINGS_LIST],
+        [SUB_IDS.ITEMS_BY_ID_MAP],
+        [SUB_IDS.BUILDINGS_BY_ID_MAP],
         [SUB_IDS.CORPORATIONS_LIST],
     ]);
 
@@ -1093,7 +1127,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID,
         const item = itemsMap[selectedItemId];
         return item?.name || selectedItemId;
     },
-    () => [[SUB_IDS.ITEMS_BY_ID]]);
+    () => [[SUB_IDS.ITEMS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_OPEN_STATE,
     (modalState: CreateProductionPlanModalState): { isOpen: boolean } => {
@@ -1136,7 +1170,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES,
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
     (
         basesById: BasesById,
-        buildings: DbBuilding[],
+        buildingsById: BuildingsByIdMap,
         itemsMap: Record<string, Item>,
         modalState: CreateProductionPlanModalState
     ): { inputItems: BaseInputItem[]; selectedInputIds: string[] } => {
@@ -1146,31 +1180,16 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
         const base = basesById[baseId];
         if (!base) return { inputItems: [], selectedInputIds: [] };
 
-        const inputItems: BaseInputItem[] = [];
-
-        base.buildings.forEach((baseBuilding: BaseBuilding) => {
-            const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
-            if (!building || !baseBuilding.selectedItemId || !baseBuilding.ratePerMinute) return;
-
-            // Check if building is in inputs section
-            const isInputBuilding = baseBuilding.sectionType === 'inputs';
-
-            if (isInputBuilding) {
-                const item = itemsMap[baseBuilding.selectedItemId];
-                if (item) {
-                    inputItems.push({
-                        baseBuildingId: baseBuilding.id,
-                        item,
-                        ratePerMinute: baseBuilding.ratePerMinute,
-                        building,
-                    });
-                }
-            }
-        });
+        const inputItems = collectConfiguredSectionItems(base, buildingsById, itemsMap, 'inputs').map((entry) => ({
+            baseBuildingId: entry.baseBuildingId,
+            item: entry.item,
+            ratePerMinute: entry.ratePerMinute,
+            building: entry.building,
+        }));
 
         return { inputItems, selectedInputIds };
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
 
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID,
     (modalState: CreateProductionPlanModalState): string => {

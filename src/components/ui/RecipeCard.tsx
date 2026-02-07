@@ -40,7 +40,7 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID]);
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
   const outputItem = itemsMap[recipe.output.id];
 
   return (

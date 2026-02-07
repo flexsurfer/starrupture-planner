@@ -21,7 +21,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
 }) => {
   const [showSelectItemModal, setShowSelectItemModal] = useState(false);
 
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID]);
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
   const selectedItem = baseBuilding.selectedItemId ? itemsMap[baseBuilding.selectedItemId] : null;
   
   // Use the stored sectionType - item selection is only for inputs and outputs

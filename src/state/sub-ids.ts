@@ -7,6 +7,7 @@ export const SUB_IDS = {
     UI_CONFIRMATION_DIALOG: 'uiConfirmationDialog',
 
     BUILDINGS_LIST: 'buildingsList',
+    BUILDINGS_BY_ID_MAP: 'buildingsByIdMap',
     BUILDINGS_SORTED_PRODUCTION_LIST: 'buildingsSortedProductionList',
     
     CORPORATIONS_LIST: 'corporationsList',
@@ -14,7 +15,7 @@ export const SUB_IDS = {
     CORPORATIONS_LIST_WITH_STATS: 'corporationsListWithStats',
 
     ITEMS_LIST: 'itemsList',
-    ITEMS_BY_ID: 'itemsById',
+    ITEMS_BY_ID_MAP: 'itemsByIdMap',
     ITEMS_FILTERED_LIST: 'itemsFilteredList',
     ITEMS_SELECTED_CATEGORY: 'itemsSelectedCategory',
     ITEMS_SELECTED_BUILDING: 'itemsSelectedBuilding',

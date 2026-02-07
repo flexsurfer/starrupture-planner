@@ -1,4 +1,4 @@
-import type { BaseBuilding, Building } from '../../../state/db';
+import type { BaseBuilding, BuildingsByIdMap } from '../../../state/db';
 
 /** Base heat capacity without amplifiers */
 const BASE_CORE_HEAT_CAPACITY = 1000;
@@ -22,12 +22,12 @@ export function isAmplifierBuilding(buildingId: string): boolean {
  */
 export function calculateBaseCoreHeatCapacity(
   baseBuildings: BaseBuilding[],
-  buildings: Building[]
+  buildingsById: BuildingsByIdMap
 ): number {
   let amplifierHeat = 0;
 
   for (const baseBuilding of baseBuildings) {
-    const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+    const building = buildingsById[baseBuilding.buildingTypeId];
     if (building && AMPLIFIER_BUILDING_IDS.has(building.id)) {
       amplifierHeat += building.coreHeatCapacity || 0;
     }

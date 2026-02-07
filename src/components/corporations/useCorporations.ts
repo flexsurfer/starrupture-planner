@@ -6,7 +6,7 @@ import type { CorporationWithStats } from "./types";
 
 export const useCorporations = () => {
   const corporationsWithStats = useSubscription<CorporationWithStats[]>([SUB_IDS.CORPORATIONS_LIST_WITH_STATS]);
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID]);
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
 
   return {
     corporationsWithStats,

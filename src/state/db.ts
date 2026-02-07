@@ -66,6 +66,9 @@ export interface Building {
     recipes?: Recipe[];
 }
 
+/** Indexed buildings collection keyed by building id. */
+export type BuildingsByIdMap = Record<string, Building>;
+
 export interface Level {
     level: number;
     cost: number;
