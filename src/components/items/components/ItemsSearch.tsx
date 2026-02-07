@@ -7,10 +7,10 @@ interface ItemsSearchProps {
 }
 
 export const ItemsSearch = ({ className = "" }: ItemsSearchProps) => {
-  const searchTerm = useSubscription<string>([SUB_IDS.SEARCH_TERM]);
+  const searchTerm = useSubscription<string>([SUB_IDS.ITEMS_SEARCH_TERM]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch([EVENT_IDS.SET_SEARCH_TERM, event.target.value]);
+    dispatch([EVENT_IDS.ITEMS_SET_SEARCH_TERM, event.target.value]);
   };
 
   return (

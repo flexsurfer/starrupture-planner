@@ -15,9 +15,9 @@ export type {
     ProductionFlowParams,
     ProductionFlowResult,
     CorporationLevelInfo,
+    RawMaterialDeficit,
 } from './types';
 
 export {
     buildProductionFlow,
-    getItemName,
 } from './productionFlowBuilder';

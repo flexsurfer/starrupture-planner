@@ -35,7 +35,7 @@ const ItemsPage = () => {
   });
 
   // Get data for modal
-  const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
+  const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_LIST]);
 
   const openRecipeModal = (item: Item) => {
     const recipeData = findItemRecipe(item.id, buildings);

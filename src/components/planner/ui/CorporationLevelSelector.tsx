@@ -10,11 +10,11 @@ import { CorporationLevelSelector, type SelectedCorporationLevel } from '../../u
  */
 export const PlannerCorporationLevelSelector: React.FC<{ className?: string }> = ({ className }) => {
     const corporationLevels = useSubscription<CorporationLevelInfo[]>([SUB_IDS.PLANNER_AVAILABLE_CORPORATION_LEVELS]);
-    const selectedLevel = useSubscription<SelectedCorporationLevel | null>([SUB_IDS.SELECTED_PLANNER_CORPORATION_LEVEL]);
-    const targetAmount = useSubscription<number>([SUB_IDS.TARGET_AMOUNT]);
+    const selectedLevel = useSubscription<SelectedCorporationLevel | null>([SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL]);
+    const targetAmount = useSubscription<number>([SUB_IDS.PLANNER_TARGET_AMOUNT]);
 
     const handleChange = (level: SelectedCorporationLevel | null) => {
-        dispatch([EVENT_IDS.SET_PLANNER_CORPORATION_LEVEL, level]);
+        dispatch([EVENT_IDS.PLANNER_SET_SELECTED_CORPORATION_LEVEL, level]);
     };
 
     return (

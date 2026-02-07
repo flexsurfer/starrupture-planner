@@ -6,7 +6,7 @@ import { BuildingImage, RecipeCard } from "./ui";
 import { useItemsData, CorporationUsageBadge } from "./items";
 
 const RecipesPage = () => {
-  const sortedBuildings = useSubscription<Building[]>([SUB_IDS.SORTED_PRODUCTION_BUILDINGS]);
+  const sortedBuildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST]);
   const { findBuildingCorporationUsage, getCorporationId } = useItemsData();
 
   // Track collapsed state for each building (collapsed by default)

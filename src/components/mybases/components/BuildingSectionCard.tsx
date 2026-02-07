@@ -21,7 +21,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
 }) => {
   const [showSelectItemModal, setShowSelectItemModal] = useState(false);
 
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID]);
   const selectedItem = baseBuilding.selectedItemId ? itemsMap[baseBuilding.selectedItemId] : null;
   
   // Use the stored sectionType - item selection is only for inputs and outputs
@@ -32,7 +32,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
   const isInActivePlan = activePlanNames.length > 0;
 
   const handleRemoveClick = () => {
-    dispatch([EVENT_IDS.REMOVE_BUILDING_FROM_BASE, baseBuilding.id]);
+    dispatch([EVENT_IDS.BASES_REMOVE_BUILDING, baseBuilding.id]);
   };
 
   const handleItemSelectClick = () => {
@@ -40,7 +40,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
   };
 
   const handleConfirmItemSelection = (itemId: string, ratePerMinute: number) => {
-    dispatch([EVENT_IDS.UPDATE_BUILDING_ITEM_SELECTION, baseId, baseBuilding.id, itemId, ratePerMinute]);
+    dispatch([EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, baseId, baseBuilding.id, itemId, ratePerMinute]);
     setShowSelectItemModal(false);
   };
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
-import type { Base, Corporation, Item } from '../../../state/db';
+import type { Base, Item, Production } from '../../../state/db';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { ItemImage, BuildingImage } from '../../ui';
 import type {
@@ -17,40 +17,91 @@ interface BaseCardProps {
   onDelete: (baseId: string) => void;
 }
 
+interface PlanItemProps {
+  plan: Production;
+  itemsMap: Record<string, Item>;
+}
+
+interface PlanItemProps {
+  plan: Production;
+  itemsMap: Record<string, Item>;
+  baseId: string;
+}
+
+const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId }) => {
+
+  const planData = useSubscription<{
+    allRequirementsSatisfied: boolean;
+    planStatus: string;
+    hasError: boolean;
+    itemName: string;
+    corporationName: string | null;
+  }>([SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID, baseId, plan.id]);
+
+  const { allRequirementsSatisfied, hasError, itemName, corporationName } = planData;
+
+  const badgeClass = hasError
+    ? 'badge-error'
+    : plan.active
+      ? (allRequirementsSatisfied ? 'badge-success' : 'badge-warning')
+      : 'badge-dash';
+
+  return (
+    <div className="bg-base-300 rounded-lg px-3 py-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-sm">{plan.name}</span>
+            <span className={`badge badge-sm ${badgeClass}`}>
+              {plan.active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <div className="flex items-center gap-1">
+              <ItemImage
+                itemId={plan.selectedItemId}
+                item={itemsMap?.[plan.selectedItemId]}
+                size="small"
+                className="w-4 h-4"
+              />
+              <span className="text-xs text-base-content/80">{itemName}</span>
+              <span className="text-xs text-base-content/60">{plan.targetAmount}/min</span>
+            </div>
+            {corporationName && (
+              <>
+                <span className="text-xs text-base-content/40">•</span>
+                <span className="text-xs text-base-content/70">
+                  {corporationName} Lv.{plan.corporationLevel?.level}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDelete }) => {
   // Use parameterized subscriptions
-  const stats = useSubscription<BaseDetailStats | null>([SUB_IDS.BASE_DETAIL_STATS, base.id]);
-  const inputItems = useSubscription<BaseInputItem[]>([SUB_IDS.BASE_INPUT_ITEMS, base.id]);
-  const outputItems = useSubscription<BaseOutputItem[]>([SUB_IDS.BASE_OUTPUT_ITEMS, base.id]);
-  const defenseBuildings = useSubscription<BaseDefenseBuilding[]>([SUB_IDS.BASE_DEFENSE_BUILDINGS, base.id]);
-  
+  const stats = useSubscription<BaseDetailStats | null>([SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID, base.id]);
+  const inputItems = useSubscription<BaseInputItem[]>([SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID, base.id]);
+  const outputItems = useSubscription<BaseOutputItem[]>([SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID, base.id]);
+  const defenseBuildings = useSubscription<BaseDefenseBuilding[]>([SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID, base.id]);
+
   // Get data for plans
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
-  const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS]);
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID]);
 
   // Early return if stats not available
   if (!stats) {
     return null;
   }
 
-  const {totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient} = stats;
-  
+  const { totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient } = stats;
+
   // Calculate plan counts and prepare plan data
-  const planSections = base.productionPlanSections || [];
-  
-  // Helper function to get corporation name
-  const getCorporationName = (corporationId: string): string | null => {
-    if (!corporationId || !corporations) return null;
-    const corporation = corporations.find(c => c.id === corporationId);
-    return corporation?.name || null;
-  };
-  
-  // Helper function to get item name
-  const getItemName = (itemId: string): string => {
-    if (!itemsMap || !itemId) return itemId;
-    return itemsMap[itemId]?.name || itemId;
-  };
-  
+  const planSections = base.productions || [];
+
   return (
     <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow">
       <div className="card-body p-4 flex flex-col">
@@ -109,51 +160,14 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
           <div className="mb-4 space-y-2">
             <div className="text-sm text-base-content/70 mb-1">Production Plans</div>
             <div className="space-y-2">
-              {planSections.map((plan) => {
-                const itemName = getItemName(plan.selectedItemId);
-                const corporationName = plan.corporationLevel 
-                  ? getCorporationName(plan.corporationLevel.corporationId)
-                  : null;
-                const isActive = plan.active || false;
-                
-                return (
-                  <div
-                    key={plan.id}
-                    className="bg-base-300 rounded-lg px-3 py-2 border border-base-content/10"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-sm">{plan.name}</span>
-                          <span className={`badge badge-sm ${isActive ? 'badge-success' : 'badge-ghost'}`}>
-                            {isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <div className="flex items-center gap-1">
-                            <ItemImage
-                              itemId={plan.selectedItemId}
-                              item={itemsMap?.[plan.selectedItemId]}
-                              size="small"
-                              className="w-4 h-4"
-                            />
-                            <span className="text-xs text-base-content/80">{itemName}</span>
-                            <span className="text-xs text-base-content/60">{plan.targetAmount}/min</span>
-                          </div>
-                          {corporationName && (
-                            <>
-                              <span className="text-xs text-base-content/40">•</span>
-                              <span className="text-xs text-base-content/70">
-                                {corporationName} Lv.{plan.corporationLevel?.level}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {planSections.map((plan) => (
+                <PlanItem
+                  key={plan.id}
+                  plan={plan}
+                  itemsMap={itemsMap}
+                  baseId={base.id}
+                />
+              ))}
             </div>
           </div>
         )}
@@ -165,10 +179,10 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
               <div className="space-y-1">
                 <div className="text-sm text-base-content/70 mb-1">Input Items</div>
                 <div className="flex flex-wrap gap-2">
-                  {inputItems.map(({ item, ratePerMinute }) => (
+                  {inputItems.map(({ item, ratePerMinute, baseBuildingId }) => (
                     <div
-                      key={item.id}
-                      className="flex items-center gap-1 bg-base-300 rounded-lg px-2 py-1"
+                      key={`input-${baseBuildingId}-${item.id}`}
+                      className="flex items-center gap-1 px-2 py-1"
                       title={`${item.name} - ${ratePerMinute}/min`}
                     >
                       <ItemImage
@@ -188,10 +202,10 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
               <div className="space-y-1">
                 <div className="text-sm text-base-content/70 mb-1">Output Items</div>
                 <div className="flex flex-wrap gap-2">
-                  {outputItems.map(({ item, ratePerMinute }) => (
+                  {outputItems.map(({ item, ratePerMinute, building }, index) => (
                     <div
-                      key={item.id}
-                      className="flex items-center gap-1 bg-base-300 rounded-lg px-2 py-1"
+                      key={`output-${building.id}-${item.id}-${index}`}
+                      className="flex items-center gap-1 px-2 py-1"
                       title={`${item.name} - ${ratePerMinute}/min`}
                     >
                       <ItemImage
@@ -237,7 +251,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
         {/* Row 4: Controls (always at bottom) */}
         <div className="card-actions justify-end gap-2 mt-auto">
           <button
-            className="btn btn-sm btn-primary"
+            className="btn btn-sm btn-primary btn-outline"
             onClick={() => onOpen(base.id)}
           >
             Open
@@ -249,7 +263,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
             Rename
           </button>
           <button
-            className="btn btn-sm btn-error btn-outline"
+            className="btn btn-sm btn-error btn-dash"
             onClick={() => onDelete(base.id)}
           >
             Delete

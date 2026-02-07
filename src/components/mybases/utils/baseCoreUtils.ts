@@ -18,7 +18,7 @@ export function isAmplifierBuilding(buildingId: string): boolean {
 
 /**
  * Calculate the base core heat capacity.
- * Base capacity is 1000, plus the heat value of any amplifier buildings.
+ * Base capacity is 1000, plus the coreHeatCapacity value of any amplifier buildings.
  */
 export function calculateBaseCoreHeatCapacity(
   baseBuildings: BaseBuilding[],
@@ -29,7 +29,7 @@ export function calculateBaseCoreHeatCapacity(
   for (const baseBuilding of baseBuildings) {
     const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
     if (building && AMPLIFIER_BUILDING_IDS.has(building.id)) {
-      amplifierHeat += building.heat || 0;
+      amplifierHeat += building.coreHeatCapacity || 0;
     }
   }
 

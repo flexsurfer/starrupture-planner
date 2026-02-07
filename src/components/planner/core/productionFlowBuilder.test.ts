@@ -77,42 +77,6 @@ const buildings = [
     }
 ];
 
-// Mock corporations data
-const corporations = [
-    {
-        id: 'test_corp',
-        name: 'Test Corporation',
-        levels: [
-            {
-                level: 1,
-                xp: 0,
-                components: [
-                    {
-                        id: 'bar_titanium',
-                        points: 2
-                    }
-                ],
-                rewards: [
-                    { name: 'Test Reward' }
-                ]
-            },
-            {
-                level: 2,
-                xp: 200,
-                components: [
-                    {
-                        id: 'titanium_housing',
-                        points: 10
-                    }
-                ],
-                rewards: [
-                    { name: 'Advanced Test Reward' }
-                ]
-            }
-        ]
-    }
-];
-
 // Import after mocking
 import { buildProductionFlow } from './productionFlowBuilder';
 
@@ -126,10 +90,11 @@ describe('buildProductionFlow', () => {
         it('should build a simple chain from raw material to processed material', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
-                targetAmount: 60
-            }, buildings, corporations, true);
+                targetAmount: 60,
+                includeLauncher: true
+            }, buildings);
 
-            // Should have 2 production nodes + 1 launcher node (bar_titanium is used by corporations)
+            // Should have 2 production nodes + 1 launcher node
             expect(result.nodes).toHaveLength(3);
             expect(result.edges).toHaveLength(2); // 1 production edge + 1 edge to launcher
 
@@ -154,8 +119,9 @@ describe('buildProductionFlow', () => {
         it('should handle fractional building counts correctly', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
-                targetAmount: 30 // Half the default output
-            }, buildings, corporations, true);
+                targetAmount: 30, // Half the default output
+                includeLauncher: true
+            }, buildings);
 
             // Should have 3 nodes: ore_excavator, smelter, orbital_cargo_launcher
             expect(result.nodes).toHaveLength(3);
@@ -175,8 +141,9 @@ describe('buildProductionFlow', () => {
         it('should build a complex chain with multiple inputs', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
-                targetAmount: 30
-            }, buildings, corporations, true);
+                targetAmount: 30,
+                includeLauncher: true
+            }, buildings);
 
             expect(result.nodes).toHaveLength(6); // 5 production nodes + 1 launcher node
 
@@ -201,7 +168,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations);
+            }, buildings);
 
             const fabricatorNodes = result.nodes.filter(n => n.buildingId === 'fabricator');
             expect(fabricatorNodes).toHaveLength(2);
@@ -222,7 +189,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 60 // Double amount to make calculations clearer
-            }, buildings, corporations);
+            }, buildings);
 
             // Should only have ONE smelter node, even though both beam and sheet fabricators need titanium bars
             const smelterNodes = result.nodes.filter(n => n.buildingId === 'smelter');
@@ -244,7 +211,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations);
+            }, buildings);
 
             // Find edges from smelter to fabricators
             const smelterNodeId = 'smelter_0_bar_titanium';
@@ -264,19 +231,16 @@ describe('buildProductionFlow', () => {
     });
 
     describe('Raw Material Handling', () => {
-        it('should handle raw materials without creating extra nodes', () => {
+        it('returns an empty result when the target item is raw', () => {
             const result = buildProductionFlow({
                 targetItemId: 'ore_titanium',
                 targetAmount: 150
-            }, buildings, corporations);
+            }, buildings);
 
-            expect(result.nodes).toHaveLength(1);
+            expect(result.nodes).toHaveLength(0);
             expect(result.edges).toHaveLength(0);
-
-            const node = result.nodes[0];
-            expect(node.buildingId).toBe('ore_excavator');
-            expect(node.outputItem).toBe('ore_titanium');
-            expect(node.buildingCount).toBe(2); // 150/75
+            expect(result.rawMaterialDeficits).toBeDefined();
+            expect(result.rawMaterialDeficits!.length).toBe(0);
         });
     });
 
@@ -285,7 +249,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 0
-            }, buildings, corporations);
+            }, buildings);
 
             // The current implementation still creates nodes with zero amounts
             // This might be the expected behavior for the UI to show the chain structure
@@ -302,7 +266,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'invalid_item',
                 targetAmount: 60
-            }, buildings, corporations);
+            }, buildings);
 
             expect(result.nodes).toHaveLength(0);
             expect(result.edges).toHaveLength(0);
@@ -311,8 +275,9 @@ describe('buildProductionFlow', () => {
         it('should handle very small amounts correctly', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
-                targetAmount: 0.1
-            }, buildings, corporations, true);
+                targetAmount: 0.1,
+                includeLauncher: true
+            }, buildings);
 
             expect(result.nodes).toHaveLength(3); // ore_excavator, smelter, orbital_cargo_launcher
 
@@ -324,12 +289,425 @@ describe('buildProductionFlow', () => {
         });
     });
 
+    describe('Custom Inputs and Raw Deficits', () => {
+        it('returns an empty result when the target item is raw, even with input buildings', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'imported_crystal',
+                    targetAmount: 60,
+                    inputBuildings: [
+                        {
+                            id: 'import_line_1',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'imported_crystal',
+                            ratePerMinute: 20
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            expect(result.nodes).toHaveLength(0);
+            expect(result.edges).toHaveLength(0);
+            expect(result.rawMaterialDeficits).toBeDefined();
+            expect(result.rawMaterialDeficits!.length).toBe(0);
+        });
+
+        it('returns an empty result when the target item is raw without input buildings', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'imported_crystal',
+                    targetAmount: 30
+                },
+                buildings
+            );
+
+            expect(result.rawMaterialDeficits).toBeDefined();
+            expect(result.rawMaterialDeficits!.length).toBe(0);
+            expect(result.nodes).toHaveLength(0);
+            expect(result.edges).toHaveLength(0);
+        });
+
+        it('uses input building snapshots as external sources without custom input conversion', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'bar_titanium',
+                    targetAmount: 60,
+                    inputBuildings: [
+                        {
+                            id: 'input_snapshot_1',
+                            buildingTypeId: 'ore_excavator',
+                            sectionType: 'inputs',
+                            selectedItemId: 'ore_titanium',
+                            ratePerMinute: 100
+                        }
+                    ],
+                    rawProductionDisabled: false
+                },
+                buildings
+            );
+
+            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'ore_titanium');
+            expect(customInputNode).toBeDefined();
+            expect(customInputNode!.outputAmount).toBe(90);
+
+            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput);
+            expect(oreNode).toBeUndefined();
+
+            const edgeFromCustom = result.edges.find(e => e.from.includes('input_snapshot_1') && e.to.includes('bar_titanium'));
+            expect(edgeFromCustom).toBeDefined();
+            expect(edgeFromCustom!.amount).toBe(90);
+        });
+
+        it('uses input buildings for raw materials even when rawProductionDisabled is false', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'bar_titanium',
+                    targetAmount: 60,
+                    inputBuildings: [
+                        {
+                            id: 'input_1',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'ore_titanium',
+                            ratePerMinute: 100
+                        }
+                    ],
+                    rawProductionDisabled: false
+                },
+                buildings
+            );
+
+            // Raw input building should be used to satisfy demand
+            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'ore_titanium');
+            expect(customInputNode).toBeDefined();
+            expect(customInputNode!.outputAmount).toBe(90); // smelter needs 90 ore
+
+            // Raw production node should be omitted when custom input fully satisfies demand
+            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput);
+            expect(oreNode).toBeUndefined();
+
+            const edgeFromCustom = result.edges.find(e => e.from.includes('input_1') && e.to.includes('bar_titanium'));
+            expect(edgeFromCustom).toBeDefined();
+            expect(edgeFromCustom!.amount).toBe(90);
+            
+            // No deficits should be reported when flag is false
+            expect(result.rawMaterialDeficits).toBeDefined();
+            expect(result.rawMaterialDeficits!.length).toBe(0);
+        });
+
+        it('ignores input buildings for the target item and still builds production', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'bar_titanium',
+                    targetAmount: 60,
+                    inputBuildings: [
+                        {
+                            id: 'input_1',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 60
+                        }
+                    ],
+                    rawProductionDisabled: false
+                },
+                buildings
+            );
+
+            // Custom input node should NOT exist because target inputs are ignored
+            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'bar_titanium');
+            expect(customInputNode).toBeUndefined();
+
+            const smelterNode = result.nodes.find(n => n.buildingId === 'smelter');
+            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput);
+            expect(smelterNode).toBeDefined();
+            expect(oreNode).toBeDefined();
+            expect(result.edges).toHaveLength(1);
+        });
+
+        it('should show input node when it is actually consumed by another node', () => {
+            // Verify that input snapshots ARE shown when they're consumed by production nodes
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_beam',
+                    targetAmount: 30,
+                    inputBuildings: [
+                        {
+                            id: 'input_1',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 30
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            // Input node SHOULD exist because it's consumed by the fabricator
+            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'bar_titanium');
+            expect(customInputNode).toBeDefined();
+            expect(customInputNode!.outputAmount).toBe(30);
+            
+            // Should have production node for titanium_beam
+            const fabricatorNode = result.nodes.find(n => n.buildingId === 'fabricator' && n.outputItem === 'titanium_beam');
+            expect(fabricatorNode).toBeDefined();
+            
+            // Should have edge from custom input to fabricator
+            const edge = result.edges.find(e => 
+                e.from.includes('bar_titanium') && 
+                e.from.includes('input_1') &&
+                e.to.includes('titanium_beam')
+            );
+            expect(edge).toBeDefined();
+            expect(edge!.amount).toBe(30);
+        });
+    });
+
+    describe('Deterministic Input Allocation', () => {
+        it('should allocate input buildings deterministically in source order', () => {
+            // Test that allocation order is deterministic based on input order
+            const result1 = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_beam',
+                    targetAmount: 30,
+                    inputBuildings: [
+                        {
+                            id: 'source_a',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 20
+                        },
+                        {
+                            id: 'source_b',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 40
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            const result2 = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_beam',
+                    targetAmount: 30,
+                    inputBuildings: [
+                        {
+                            id: 'source_a',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 20
+                        },
+                        {
+                            id: 'source_b',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 40
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            // Results should be identical for same inputs
+            expect(result1.nodes.length).toBe(result2.nodes.length);
+            expect(result1.edges.length).toBe(result2.edges.length);
+
+            // Input buildings should be used in source order (source_a first)
+            // Total demand is 60 (beam needs 60 bar_titanium per minute for 30 beams)
+            // source_a provides 20, source_b provides remaining 40
+            const customNodesR1 = result1.nodes.filter(n => n.isCustomInput);
+            expect(customNodesR1.length).toBe(2);
+            
+            const sourceA = customNodesR1.find(n => n.baseBuildingId === 'source_a');
+            const sourceB = customNodesR1.find(n => n.baseBuildingId === 'source_b');
+            
+            expect(sourceA).toBeDefined();
+            expect(sourceB).toBeDefined();
+            expect(sourceA!.outputAmount).toBe(20); // All of source_a used first
+            expect(sourceB!.outputAmount).toBe(40); // Then source_b
+        });
+
+        it('should not double-count input supply across multiple consumers', () => {
+            // Both titanium_beam and titanium_sheet need bar_titanium
+            // If one input building only provides 30, it should be split correctly
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_housing',
+                    targetAmount: 30,
+                    inputBuildings: [
+                        {
+                            id: 'source_1',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 30 // Less than total needed (60 for beam + 30 for sheet = 90)
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            // Check input node shows correct used amount
+            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'bar_titanium');
+            expect(customInputNode).toBeDefined();
+            expect(customInputNode!.outputAmount).toBe(30); // Should only show 30, not more
+
+            // Should still have production node for smelter to produce remaining bars
+            const smelterNode = result.nodes.find(n => n.buildingId === 'smelter');
+            expect(smelterNode).toBeDefined();
+            // Smelter should produce 60 bars (90 needed - 30 from custom = 60)
+            expect(smelterNode!.buildingCount).toBe(1); // 60/60 = 1
+
+            // Total edges from input should sum to exactly 30
+            const edgesFromCustom = result.edges.filter(e => e.from.includes('source_1'));
+            const totalFromCustom = edgesFromCustom.reduce((sum, e) => sum + e.amount, 0);
+            expect(totalFromCustom).toBe(30);
+        });
+
+        it('should handle partial input satisfaction correctly', () => {
+            // Provide 30 bars, but 60 are needed for titanium_beam
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_beam',
+                    targetAmount: 30, // Needs 60 bar_titanium (30 beams * 2 bars per beam)
+                    inputBuildings: [
+                        {
+                            id: 'partial_source',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 30
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            // Input should provide 30
+            const customNode = result.nodes.find(n => n.isCustomInput);
+            expect(customNode).toBeDefined();
+            expect(customNode!.outputAmount).toBe(30);
+
+            // Smelter should produce remaining 30
+            const smelterNode = result.nodes.find(n => n.buildingId === 'smelter');
+            expect(smelterNode).toBeDefined();
+            expect(smelterNode!.buildingCount).toBe(0.5); // 30/60 = 0.5
+
+            // Fabricator should receive from both input and smelter
+            const fabricatorNodeId = 'fabricator_0_titanium_beam';
+            const edgesToFabricator = result.edges.filter(e => e.to === fabricatorNodeId);
+            
+            expect(edgesToFabricator.length).toBe(2); // One from input, one from smelter
+            
+            const totalToFabricator = edgesToFabricator.reduce((sum, e) => sum + e.amount, 0);
+            expect(totalToFabricator).toBe(60); // Total should be exactly 60
+        });
+    });
+
+    describe('Pure Demand Calculation', () => {
+        it('should not mutate input buildings during flow building', () => {
+            const inputBuildings = [
+                {
+                    id: 'input_1',
+                    buildingTypeId: 'importer',
+                    sectionType: 'inputs',
+                    selectedItemId: 'bar_titanium',
+                    ratePerMinute: 30
+                }
+            ];
+
+            // Deep copy to verify no mutation
+            const originalInputBuildings = JSON.parse(JSON.stringify(inputBuildings));
+
+            buildProductionFlow(
+                {
+                    targetItemId: 'titanium_beam',
+                    targetAmount: 30,
+                    inputBuildings,
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            // Original input snapshots should not be mutated
+            expect(inputBuildings).toEqual(originalInputBuildings);
+        });
+
+        it('should produce identical results for identical inputs (determinism)', () => {
+            const params = {
+                targetItemId: 'titanium_housing',
+                targetAmount: 60,
+                inputBuildings: [
+                    {
+                        id: 'input_1',
+                        buildingTypeId: 'importer',
+                        sectionType: 'inputs',
+                        selectedItemId: 'bar_titanium',
+                        ratePerMinute: 45
+                    }
+                ],
+                rawProductionDisabled: true
+            };
+
+            const result1 = buildProductionFlow(params, buildings);
+            const result2 = buildProductionFlow(params, buildings);
+            const result3 = buildProductionFlow(params, buildings);
+
+            // All results should be identical
+            expect(result1.nodes.length).toBe(result2.nodes.length);
+            expect(result1.nodes.length).toBe(result3.nodes.length);
+            expect(result1.edges.length).toBe(result2.edges.length);
+            expect(result1.edges.length).toBe(result3.edges.length);
+
+            // Check specific node values match
+            for (let i = 0; i < result1.nodes.length; i++) {
+                expect(result1.nodes[i].buildingCount).toBe(result2.nodes[i].buildingCount);
+                expect(result1.nodes[i].buildingCount).toBe(result3.nodes[i].buildingCount);
+            }
+        });
+    });
+
+    describe('O(1) Lookup Optimization', () => {
+        it('should handle large chains efficiently with map lookups', () => {
+            const startTime = performance.now();
+
+            // Run multiple iterations to test performance
+            for (let i = 0; i < 100; i++) {
+                buildProductionFlow({
+                    targetItemId: 'titanium_housing',
+                    targetAmount: 1000
+                }, buildings);
+            }
+
+            const endTime = performance.now();
+            const executionTime = endTime - startTime;
+
+            // 100 iterations should complete in under 500ms with O(1) lookups
+            expect(executionTime).toBeLessThan(500);
+        });
+    });
+
     describe('Node ID Generation', () => {
         it('should generate consistent and unique node IDs', () => {
             const result = buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 30
-            }, buildings, corporations);
+            }, buildings);
 
             const nodeIds = result.nodes.map(node =>
                 `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`
@@ -354,7 +732,7 @@ describe('buildProductionFlow', () => {
             buildProductionFlow({
                 targetItemId: 'titanium_housing',
                 targetAmount: 1000 // Large amount
-            }, buildings, corporations);
+            }, buildings);
 
             const endTime = performance.now();
             const executionTime = endTime - startTime;
@@ -369,7 +747,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 60
-            }, buildings, corporations);
+            }, buildings);
 
             result.nodes.forEach(node => {
                 expect(node).toHaveProperty('buildingId');
@@ -396,7 +774,7 @@ describe('buildProductionFlow', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 60
-            }, buildings, corporations);
+            }, buildings);
 
             result.edges.forEach(edge => {
                 expect(edge).toHaveProperty('from');

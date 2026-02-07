@@ -16,13 +16,13 @@ export interface ItemTableData {
  * All computations are done in subscriptions, this hook just returns ready-to-use data
  */
 export const useItemsData = () => {
-  const itemsTableData = useSubscription<ItemTableData[]>([SUB_IDS.ITEMS_TABLE_DATA]);
-  const selectedCategory = useSubscription<string>([SUB_IDS.SELECTED_CATEGORY]);
-  const categories = useSubscription<string[]>([SUB_IDS.CATEGORIES]);
+  const itemsTableData = useSubscription<ItemTableData[]>([SUB_IDS.ITEMS_TABLE_ROWS]);
+  const selectedCategory = useSubscription<string>([SUB_IDS.ITEMS_SELECTED_CATEGORY]);
+  const categories = useSubscription<string[]>([SUB_IDS.ITEMS_CATEGORIES]);
   const helperMaps = useSubscription<{
     corporationNameToId: Map<string, string>;
     buildingCorporationUsage: Map<string, CorporationUsage[]>;
-  }>([SUB_IDS.ITEMS_HELPER_MAPS]);
+  }>([SUB_IDS.ITEMS_HELPER_LOOKUPS]);
 
   // Helper function to get corporation ID from corporation name
   const getCorporationId = (corporationName: string): string => {

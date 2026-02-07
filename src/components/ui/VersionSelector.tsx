@@ -14,15 +14,15 @@ interface VersionSelectorProps {
 }
 
 const VersionSelector: React.FC<VersionSelectorProps> = ({ className = "" }) => {
-  const currentVersion = useSubscription<DataVersion>([SUB_IDS.DATA_VERSION]);
-  const dataVersions = useSubscription<{ id: DataVersion; label: string }[]>([SUB_IDS.DATA_VERSIONS]);
+  const currentVersion = useSubscription<DataVersion>([SUB_IDS.APP_DATA_VERSION]);
+  const dataVersions = useSubscription<{ id: DataVersion; label: string }[]>([SUB_IDS.APP_DATA_VERSIONS]);
 
   return (
     <select
       className={`select select-bordered select-xs ${className}`}
       style={{ width: 'auto', minWidth: '100px' }}
       value={currentVersion}
-      onChange={(e) => dispatch([EVENT_IDS.SET_DATA_VERSION, e.target.value as DataVersion])}
+      onChange={(e) => dispatch([EVENT_IDS.APP_SET_DATA_VERSION, e.target.value as DataVersion])}
     >
       {dataVersions.map((version) => (
         <option key={version.id} value={version.id}>

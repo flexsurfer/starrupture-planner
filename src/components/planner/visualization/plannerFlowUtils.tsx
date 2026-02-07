@@ -3,7 +3,7 @@ import type { Node, Edge } from '@xyflow/react';
 import { Position as ReactFlowPosition } from '@xyflow/react';
 
 import type { Item, FlowNode, FlowEdge } from '../core/types';
-import { getItemName } from '../core/productionFlowBuilder';
+import { getItemName } from '../../../utils/itemUtils';
 import { NodeCard } from './NodeCard';
 
 export interface FlowDataGenerationParams {
@@ -57,7 +57,10 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items }: FlowDataG
     // Create a mapping from internal node IDs to React Flow node IDs
     const nodeIdMap = new Map<string, string>();
     flowNodes.forEach((node, index) => {
-        const nodeKey = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
+        // For custom input nodes, include baseBuildingId to make them unique
+        const nodeKey = node.isCustomInput && node.baseBuildingId
+            ? `${node.buildingId}_${node.recipeIndex}_${node.outputItem}_${node.baseBuildingId}`
+            : `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
         nodeIdMap.set(nodeKey, `node_${index}`);
     });
 

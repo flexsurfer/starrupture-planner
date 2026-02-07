@@ -13,11 +13,11 @@ export const BaseBuildingsView: React.FC = () => {
   const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
   const [addBuildingSection, setAddBuildingSection] = useState<BuildingSectionType | null>(null);
 
-  const selectedBase = useSubscription<Base | null>([SUB_IDS.SELECTED_BASE]);
+  const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
 
   const handleAddBuilding = useCallback((buildingTypeId: string) => {
     if (selectedBase && addBuildingSection) {
-      dispatch([EVENT_IDS.ADD_BUILDING_TO_BASE, selectedBase.id, buildingTypeId, addBuildingSection]);
+      dispatch([EVENT_IDS.BASES_ADD_BUILDING, selectedBase.id, buildingTypeId, addBuildingSection]);
       setAddBuildingSection(null);
     }
   }, [selectedBase, addBuildingSection]);

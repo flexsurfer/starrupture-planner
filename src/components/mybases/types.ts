@@ -4,7 +4,7 @@
  * Central location for all shared types used across mybases components and subscriptions.
  */
 
-import type { Building, Item } from '../../state/db';
+import type { BaseBuilding, Building, Item } from '../../state/db';
 
 /**
  * Section types for categorizing buildings in a base.
@@ -16,6 +16,7 @@ export type BuildingSectionType = 'inputs' | 'energy' | 'production' | 'outputs'
  * Used in both the detail view (BaseCoreInfo) and the card view (BaseCard).
  */
 export interface BaseDetailStats {
+  baseName: string;
   buildingCount: number;
   totalHeat: number;
   energyGeneration: number;
@@ -25,6 +26,16 @@ export interface BaseDetailStats {
   energyPercentage: number;
   isHeatOverCapacity: boolean;
   isEnergyInsufficient: boolean;
+}
+
+/**
+ * Enriched building entry for a building section.
+ * Combines the base building instance, building type info, and active plan names.
+ */
+export interface BuildingSectionBuilding {
+  baseBuilding: BaseBuilding;
+  building: Building;
+  activePlanNames: string[];
 }
 
 /**
@@ -42,6 +53,8 @@ export interface BuildingSectionStats {
  * Represents an input item configured on a base building.
  */
 export interface BaseInputItem {
+  /** Unique ID of this building instance in the base */
+  baseBuildingId: string;
   item: Item;
   ratePerMinute: number;
   building: Building;
@@ -72,7 +85,13 @@ export interface MyBasesStats {
   totalBases: number;
   totalBuildings: number;
   totalHeat: number;
+  totalHeatCapacity: number;
   totalEnergyUsed: number;
+  totalEnergyProduced: number;
+  heatPercentage: number;
+  energyPercentage: number;
+  isHeatOverCapacity: boolean;
+  isEnergyInsufficient: boolean;
 }
 
 /**
@@ -94,5 +113,19 @@ export interface BuildingRequirement {
   buildingName: string;
   required: number;
   available: number;
+  isSatisfied: boolean;
+}
+
+/**
+ * Represents an input requirement for a production plan section.
+ * Used to track which input buildings are needed and whether they exist in the base.
+ */
+export interface InputRequirement {
+  baseBuildingId: string;
+  buildingId: string;
+  buildingName: string;
+  itemId: string;
+  itemName: string;
+  ratePerMinute: number;
   isSatisfied: boolean;
 }

@@ -25,7 +25,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   const [ratePerMinute, setRatePerMinute] = useState<number>(currentRatePerMinute || 60);
 
   // Get available items from subscription
-  const availableItems = useSubscription<Item[]>([SUB_IDS.AVAILABLE_ITEMS_FOR_BUILDING, building.id]);
+  const availableItems = useSubscription<Item[]>([SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, building.id]);
 
   // Sync state with props when modal opens or props change
   useEffect(() => {

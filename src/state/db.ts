@@ -62,6 +62,7 @@ export interface Building {
     type?: string;
     power?: number;
     heat?: number;
+    coreHeatCapacity?: number; // Used by base core amplifiers to increase base heat capacity
     recipes?: Recipe[];
 }
 
@@ -103,12 +104,6 @@ export interface Tab {
 }
 
 // Base-related types
-export interface Core {
-    id: string;
-    baseId: string;
-    // Core defines buildable area - can be extended with position/size data later
-}
-
 export interface BaseBuilding {
     id: string;
     baseId: string;
@@ -118,23 +113,36 @@ export interface BaseBuilding {
     ratePerMinute?: number; // Rate per minute for the selected item
 }
 
-export interface ProductionPlanSection {
+export interface BasePlanBuilding {
+    buildingTypeId: string; // References Building.id from buildings data
+    selectedItemId: string; // Selected item for input buildings
+    ratePerMinute: number; // Rate per minute for the selected item
+}
+
+/** A single building requirement entry stored on a production plan. */
+export interface PlanRequiredBuilding {
+    buildingId: string;
+    buildingName: string;
+    count: number;
+}
+
+export interface Production {
     id: string;
     name: string;
     selectedItemId: string;
     targetAmount: number;
     active?: boolean;
     corporationLevel?: { corporationId: string; level: number } | null;
+    inputs?: BaseBuilding[]; // Snapshot of BaseBuilding inputs (not linked to base)
+    status?: 'active' | 'inactive' | 'error'; // Plan status: active when running, inactive when stopped, error when inputs insufficient
+    requiredBuildings?: PlanRequiredBuilding[]; // Aggregated building requirements, populated on save
 }
 
 export interface Base {
     id: string;
     name: string;
-    core: Core;
     buildings: BaseBuilding[];
-    productionPlanSections: ProductionPlanSection[];
-    createdAt: number;
-    updatedAt: number;
+    productions: Production[];
 }
 
 export interface ConfirmationDialog {
@@ -148,40 +156,43 @@ export interface ConfirmationDialog {
     onCancel?: () => void;
 }
 
-export interface ActivatePlanDialog {
-    isOpen?: boolean;
-    planName?: string;
-    baseId?: string;
-    sectionId?: string;
-    allRequirementsSatisfied?: boolean;
+export interface CreateProductionPlanModalState {
+    isOpen: boolean;
+    baseId: string | null;
+    editSectionId: string | null;
+    // Form state
+    name: string;
+    selectedItemId: string;
+    targetAmount: number;
+    selectedCorporationLevel: { corporationId: string; level: number } | null;
+    selectedInputIds: string[];
 }
 
 export interface AppState {
-    dataVersion: DataVersion;
-    dataVersions: { id: DataVersion; label: string }[];
-    versionedData: Record<DataVersion, {
+    appDataVersion: DataVersion;
+    appDataVersions: { id: DataVersion; label: string }[];
+    appVersionedData: Record<DataVersion, {
         items: Item[];
         buildings: Building[];
         corporations: RawCorporationsData;
     }>;
-    items: Item[];
-    itemsMap: Record<string, Item>;
-    selectedCategory: string;
-    selectedBuilding: string;
-    searchTerm: string;
-    categories: string[];
-    buildings: Building[];
-    corporations: Corporation[];
-    theme: 'light' | 'dark';
-    activeTab: TabType;
-    selectedPlannerItem: string | null;
-    selectedPlannerCorporationLevel: { corporationId: string; level: number } | null;
-    targetAmount: number;
-    bases: Base[];
-    selectedBaseId: string | null;
-    baseDetailActiveTab: 'plans' | 'buildings';
-    confirmationDialog: ConfirmationDialog;
-    activatePlanDialog: ActivatePlanDialog;
+    itemsList: Item[];
+    itemsById: Record<string, Item>;
+    itemsSelectedCategory: string;
+    itemsSelectedBuilding: string;
+    itemsSearchTerm: string;
+    itemsCategories: string[];
+    buildingsList: Building[];
+    corporationsList: Corporation[];
+    uiTheme: 'light' | 'dark';
+    uiActiveTab: TabType;
+    plannerSelectedItemId: string | null;
+    plannerSelectedCorporationLevel: { corporationId: string; level: number } | null;
+    plannerTargetAmount: number;
+    basesList: Base[];
+    basesSelectedBaseId: string | null;
+    uiConfirmationDialog: ConfirmationDialog;
+    productionPlanModalState: CreateProductionPlanModalState;
 }
 
 
@@ -191,30 +202,29 @@ const defaultItems = defaultData.items as Item[];
 const defaultBuildings = defaultData.buildings as Building[];
 const defaultCorporations = parseCorporations(defaultData.corporations as RawCorporationsData);
 
-const appStore: AppState = {
+const appState: AppState = {
     //Data
-    dataVersion: DEFAULT_DATA_VERSION,
-    dataVersions: DATA_VERSIONS,
-    versionedData: versionedData,
-    items: defaultItems,
-    itemsMap: buildItemsMap(defaultItems),
-    categories: extractCategories(defaultItems),
-    buildings: defaultBuildings,
-    corporations: defaultCorporations,
-    bases: [],
+    appDataVersion: DEFAULT_DATA_VERSION,
+    appDataVersions: DATA_VERSIONS,
+    appVersionedData: versionedData,
+    itemsList: defaultItems,
+    itemsById: buildItemsMap(defaultItems),
+    itemsCategories: extractCategories(defaultItems),
+    buildingsList: defaultBuildings,
+    corporationsList: defaultCorporations,
+    basesList: [],
 
     //UI
-    theme: 'dark',
-    activeTab: 'items',
-    selectedCategory: 'all',
-    selectedBuilding: 'all',
-    searchTerm: '',
-    selectedPlannerItem: null,
-    selectedPlannerCorporationLevel: null,
-    targetAmount: 60,
-    selectedBaseId: null,
-    baseDetailActiveTab: 'plans',
-    confirmationDialog: {
+    uiTheme: 'dark',
+    uiActiveTab: 'items',
+    itemsSelectedCategory: 'all',
+    itemsSelectedBuilding: 'all',
+    itemsSearchTerm: '',
+    plannerSelectedItemId: null,
+    plannerSelectedCorporationLevel: null,
+    plannerTargetAmount: 60,
+    basesSelectedBaseId: null,
+    uiConfirmationDialog: {
         isOpen: false,
         title: '',
         message: '',
@@ -224,12 +234,16 @@ const appStore: AppState = {
         onConfirm: () => {},
         onCancel: undefined,
     },
-    activatePlanDialog: {
+    productionPlanModalState: {
         isOpen: false,
-        planName: '',
-        baseId: undefined,
-        sectionId: undefined,
+        baseId: null,
+        editSectionId: null,
+        name: '',
+        selectedItemId: '',
+        targetAmount: 60,
+        selectedCorporationLevel: null,
+        selectedInputIds: [],
     },
 };
 
-initAppDb(appStore);
+initAppDb(appState);

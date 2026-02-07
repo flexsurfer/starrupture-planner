@@ -36,7 +36,7 @@ export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporatio
               <button
                 className="btn btn-xs btn-primary"
                 onClick={() => {
-                  dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, component.id, { corporationId, level }]);
+                  dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, component.id, { corporationId, level }]);
                 }}
                 title={`Open ${itemsMap[component.id]?.name || component.id} in planner`}
               >

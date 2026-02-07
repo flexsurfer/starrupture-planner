@@ -16,7 +16,7 @@ export const ItemsFilter = ({ categories, selectedCategory }: ItemsFilterProps) 
           className={`btn btn-xs ${
             selectedCategory === category ? 'btn-primary' : 'btn-outline'
           }`}
-          onClick={() => dispatch([EVENT_IDS.SET_CATEGORY, category])}
+          onClick={() => dispatch([EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, category])}
         >
           {getCategoryDisplayName(category)}
         </button>

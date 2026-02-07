@@ -8,7 +8,7 @@ import { PlannerStatsModal } from './PlannerStatsModal';
  * Handles both mobile and desktop layouts responsively
  */
 export const PlannerStatsDisplay: React.FC = () => {
-    const selectedItemId = useSubscription<string | null>([SUB_IDS.SELECTED_PLANNER_ITEM]);
+    const selectedItemId = useSubscription<string | null>([SUB_IDS.PLANNER_SELECTED_ITEM_ID]);
     const statsForButton = useSubscription<{ totalBuildings: number; totalEnergy: number; totalHotness: number }>([SUB_IDS.PLANNER_STATS_SUMMARY]);
 
     // Stats modal state

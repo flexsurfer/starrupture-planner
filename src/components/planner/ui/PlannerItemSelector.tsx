@@ -12,12 +12,12 @@ interface PlannerItemSelectorProps {
  * Item selector dropdown for the production planner
  */
 export const PlannerItemSelector: React.FC<PlannerItemSelectorProps> = ({ className = '' }) => {
-    const selectedItemId = useSubscription<string | null>([SUB_IDS.SELECTED_PLANNER_ITEM]);
+    const selectedItemId = useSubscription<string | null>([SUB_IDS.PLANNER_SELECTED_ITEM_ID]);
     const selectableItems = useSubscription<Item[]>([SUB_IDS.PLANNER_SELECTABLE_ITEMS]);
 
     const onItemSelect = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
         const itemId = event.target.value;
-        dispatch([EVENT_IDS.SET_PLANNER_ITEM, itemId || null]);
+        dispatch([EVENT_IDS.PLANNER_SET_SELECTED_ITEM, itemId || null]);
     }, []);
 
     return (

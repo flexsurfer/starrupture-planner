@@ -26,7 +26,6 @@ export type {
 
 export {
     buildProductionFlow,
-    getItemName,
 } from './core';
 
 // Visualization exports

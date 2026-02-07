@@ -26,9 +26,9 @@ export const PlannerFlowDiagram: React.FC = () => {
     const { fitView } = useReactFlow();
 
     // State subscriptions
-    const selectedItemId = useSubscription<string | null>([SUB_IDS.SELECTED_PLANNER_ITEM]);
-    const theme = useSubscription<'light' | 'dark'>([SUB_IDS.THEME]);
-    const reactFlowData = useSubscription<{ nodes: Node[]; edges: Edge[] }>([SUB_IDS.PLANNER_REACT_FLOW_DATA]);
+    const selectedItemId = useSubscription<string | null>([SUB_IDS.PLANNER_SELECTED_ITEM_ID]);
+    const theme = useSubscription<'light' | 'dark'>([SUB_IDS.UI_THEME]);
+    const reactFlowData = useSubscription<{ nodes: Node[]; edges: Edge[] }>([SUB_IDS.PLANNER_FLOW_GRAPH]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);

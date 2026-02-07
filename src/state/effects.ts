@@ -2,6 +2,22 @@ import { regCoeffect, regEffect } from "@flexsurfer/reflex";
 import { EFFECT_IDS } from "./effect-ids";
 import type { DataVersion, Base } from "./db";
 
+const BASES_PERSIST_DEBOUNCE_MS = 500;
+let pendingBasesForPersist: Base[] | null = null;
+let pendingPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+const flushPendingBasesPersist = () => {
+    if (pendingBasesForPersist === null) return;
+    try {
+        localStorage.setItem('bases', JSON.stringify(pendingBasesForPersist));
+    } catch (e) {
+        console.error('Error saving bases to local storage:', e);
+    } finally {
+        pendingBasesForPersist = null;
+        pendingPersistTimer = null;
+    }
+};
+
 regEffect(EFFECT_IDS.SET_THEME, ( newTheme: 'light' | 'dark') => {
     localStorage.setItem('theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
@@ -22,11 +38,9 @@ regCoeffect(EFFECT_IDS.GET_DATA_VERSION, (coeffects) => {
 });
 
 regEffect(EFFECT_IDS.SET_BASES, (bases: Base[]) => {
-    try {
-        localStorage.setItem('bases', JSON.stringify(bases));
-    } catch (e) {
-        console.error('Error saving bases to local storage:', e);
-    }
+    pendingBasesForPersist = bases;
+    if (pendingPersistTimer !== null) return;
+    pendingPersistTimer = setTimeout(flushPendingBasesPersist, BASES_PERSIST_DEBOUNCE_MS);
 });
 
 regCoeffect(EFFECT_IDS.GET_BASES, (coeffects) => {

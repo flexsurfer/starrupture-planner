@@ -47,7 +47,6 @@ export {
   CreateBaseModal,
   RenameBaseModal,
   CreateProductionPlanModal,
-  ActivatePlanDialog,
   BuildingRequirementsModal,
 } from './modals';
 

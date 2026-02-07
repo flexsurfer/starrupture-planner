@@ -18,7 +18,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   onClose,
   onAdd,
 }) => {
-  const buildings = useSubscription<Building[]>([SUB_IDS.AVAILABLE_BUILDINGS_FOR_SECTION, sectionType]);
+  const buildings = useSubscription<Building[]>([SUB_IDS.BASES_AVAILABLE_BUILDINGS_FOR_SECTION, sectionType]);
   if (!isOpen) {
     return null;
   }

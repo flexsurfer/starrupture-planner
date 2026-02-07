@@ -14,14 +14,14 @@ interface ThemeToggleProps {
 }
 
 const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = "" }) => {
-  const theme = useSubscription<'light' | 'dark'>([SUB_IDS.THEME]);
+  const theme = useSubscription<'light' | 'dark'>([SUB_IDS.UI_THEME]);
 
   return (
     <label className={`swap swap-rotate ${className}`}>
       <input
         type="checkbox"
         checked={theme === 'dark'}
-        onChange={(e) => dispatch([EVENT_IDS.SET_THEME, e.target.checked ? 'dark' : 'light'])}
+        onChange={(e) => dispatch([EVENT_IDS.UI_SET_THEME, e.target.checked ? 'dark' : 'light'])}
       />
       {/* Sun icon - shown in light mode */}
       <svg

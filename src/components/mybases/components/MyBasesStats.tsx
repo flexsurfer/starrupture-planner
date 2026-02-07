@@ -3,51 +3,46 @@ import { SUB_IDS } from "../../../state/sub-ids";
 import type { MyBasesStats as MyBasesStatsType } from "../types";
 
 export const MyBasesStats = () => {
-  const stats = useSubscription<MyBasesStatsType>([SUB_IDS.MY_BASES_STATS]);
+  const stats = useSubscription<MyBasesStatsType>([SUB_IDS.BASES_STATS_SUMMARY]);
 
   return (
-    <>
-      {/* Mobile Layout - 2x2 Grid */}
-      <div className="grid grid-cols-2 gap-2 sm:hidden">
-        <div className="stat bg-base-200 rounded-lg shadow p-3">
-          <div className="stat-title text-xs">Bases</div>
-          <div className="stat-value text-lg">{stats.totalBases}</div>
+    <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-base bg-base-200 rounded-lg px-2 sm:px-4 py-2 sm:py-2.5 min-w-0 w-full sm:w-auto">
+      <div className="flex items-center gap-1 whitespace-nowrap">
+        <span className="text-base-content/60">Bases:</span>
+        <span className="font-semibold">{stats.totalBases}</span>
+      </div>
+      <div className="flex items-center gap-1 whitespace-nowrap">
+        <span className="text-base-content/60">Buildings:</span>
+        <span className="font-semibold">{stats.totalBuildings}</span>
+      </div>
+      <div className="flex flex-col gap-1 min-w-[120px] sm:min-w-[140px]">
+        <div className="flex items-center justify-between gap-2">
+          <span className={stats.isHeatOverCapacity ? 'text-error text-xs sm:text-sm' : 'text-base-content/60 text-xs sm:text-sm'}>Heat:</span>
+          <span className={`font-semibold text-xs sm:text-sm ${stats.isHeatOverCapacity ? 'text-error' : ''}`}>
+            {stats.totalHeat.toLocaleString()}/{stats.totalHeatCapacity.toLocaleString()}
+          </span>
         </div>
-        <div className="stat bg-base-200 rounded-lg shadow p-3">
-          <div className="stat-title text-xs">Buildings</div>
-          <div className="stat-value text-lg">{stats.totalBuildings}</div>
-        </div>
-        <div className="stat bg-base-200 rounded-lg shadow p-3">
-          <div className="stat-title text-xs">Heat</div>
-          <div className="stat-value text-lg">{stats.totalHeat.toLocaleString()}</div>
-        </div>
-        <div className="stat bg-base-200 rounded-lg shadow p-3">
-          <div className="stat-title text-xs">Energy</div>
-          <div className="stat-value text-lg">{stats.totalEnergyUsed.toLocaleString()}</div>
+        <div className="w-full bg-base-300 rounded-full h-1.5 sm:h-2">
+          <div
+            className={`h-1.5 sm:h-2 rounded-full transition-all ${stats.isHeatOverCapacity ? 'bg-error' : 'bg-sky-400'}`}
+            style={{ width: `${stats.heatPercentage}%` }}
+          ></div>
         </div>
       </div>
-
-      {/* Desktop Layout - Horizontal Stats */}
-      <div className="hidden sm:block">
-        <div className="stats shadow stats-horizontal">
-          <div className="stat">
-            <div className="stat-title">Total Bases</div>
-            <div className="stat-value text-2xl">{stats.totalBases}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title">Total Buildings</div>
-            <div className="stat-value text-2xl">{stats.totalBuildings}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title">Total Heat</div>
-            <div className="stat-value text-2xl">{stats.totalHeat.toLocaleString()}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title">Total Energy Used</div>
-            <div className="stat-value text-2xl">{stats.totalEnergyUsed.toLocaleString()}</div>
-          </div>
+      <div className="flex flex-col gap-1 min-w-[120px] sm:min-w-[140px]">
+        <div className="flex items-center justify-between gap-2">
+          <span className={stats.isEnergyInsufficient ? 'text-error text-xs sm:text-sm' : 'text-base-content/60 text-xs sm:text-sm'}>Energy:</span>
+          <span className={`font-semibold text-xs sm:text-sm ${stats.isEnergyInsufficient ? 'text-error' : ''}`}>
+            {stats.totalEnergyUsed.toLocaleString()}/{stats.totalEnergyProduced.toLocaleString()}
+          </span>
+        </div>
+        <div className="w-full bg-base-300 rounded-full h-1.5 sm:h-2">
+          <div
+            className={`h-1.5 sm:h-2 rounded-full transition-all ${stats.isEnergyInsufficient ? 'bg-error' : 'bg-success'}`}
+            style={{ width: `${stats.energyPercentage}%` }}
+          ></div>
         </div>
       </div>
-    </>
+    </div>
   );
 };

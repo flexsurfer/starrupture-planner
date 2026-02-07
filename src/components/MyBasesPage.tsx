@@ -13,8 +13,8 @@ import {
 } from './mybases';
 
 const MyBasesPage = () => {
-  const bases = useSubscription<Base[]>([SUB_IDS.BASES]);
-  const selectedBase = useSubscription<Base | null>([SUB_IDS.SELECTED_BASE]);
+  const bases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]);
+  const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -22,11 +22,11 @@ const MyBasesPage = () => {
 
   // Handlers
   const handleCreateBase = useCallback((name: string) => {
-    dispatch([EVENT_IDS.CREATE_BASE, name]);
+    dispatch([EVENT_IDS.BASES_CREATE_BASE, name]);
   }, []);
 
   const handleOpenBase = useCallback((baseId: string) => {
-    dispatch([EVENT_IDS.SET_SELECTED_BASE, baseId]);
+    dispatch([EVENT_IDS.BASES_SET_SELECTED_BASE, baseId]);
   }, []);
 
   const handleRenameBase = useCallback((baseId: string) => {
@@ -34,18 +34,18 @@ const MyBasesPage = () => {
   }, []);
 
   const handleConfirmRename = useCallback((baseId: string, newName: string) => {
-    dispatch([EVENT_IDS.UPDATE_BASE_NAME, baseId, newName]);
+    dispatch([EVENT_IDS.BASES_UPDATE_BASE_NAME, baseId, newName]);
     setRenameBaseId(null);
   }, []);
 
   const handleDeleteBase = useCallback((baseId: string) => {
     const base = bases.find(b => b.id === baseId);
     if (base) {
-      dispatch([EVENT_IDS.SHOW_CONFIRMATION_DIALOG,
+      dispatch([EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG,
         'Delete Base',
         `Are you sure you want to delete ${base.name}? This action cannot be undone.`,
         () => {
-          dispatch([EVENT_IDS.DELETE_BASE, baseId]);
+          dispatch([EVENT_IDS.BASES_DELETE_BASE, baseId]);
         },
         {
           confirmLabel: 'Delete',
@@ -68,19 +68,24 @@ const MyBasesPage = () => {
   return (
     <div className="h-full p-2 lg:p-3 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">My Bases</h1>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowCreateModal(true)}
-        >
-          Create Base
-        </button>
-      </div>
-
-      {/* Stats Panel */}
       <div className="mb-4">
-        <MyBasesStats />
+        <div className="flex items-center justify-between gap-4 mb-2 sm:mb-0">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <h1 className="text-2xl font-bold whitespace-nowrap">My Bases</h1>
+            <div className="hidden sm:block">
+              <MyBasesStats />
+            </div>
+          </div>
+          <button
+            className="btn btn-outline btn-sm whitespace-nowrap"
+            onClick={() => setShowCreateModal(true)}
+          >
+            Create Base
+          </button>
+        </div>
+        <div className="sm:hidden">
+          <MyBasesStats />
+        </div>
       </div>
 
       {/* Content */}

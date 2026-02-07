@@ -40,7 +40,7 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_MAP]);
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID]);
   const outputItem = itemsMap[recipe.output.id];
 
   return (
@@ -99,7 +99,7 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
           <button
             className="btn btn-xs btn-primary"
             onClick={() => {
-              dispatch([EVENT_IDS.OPEN_ITEM_IN_PLANNER, recipe.output.id]);
+              dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, recipe.output.id]);
             }}
             title={`Open ${outputItem?.name || recipe.output.id} in planner`}
           >

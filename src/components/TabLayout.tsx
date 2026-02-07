@@ -5,6 +5,7 @@ import RecipesPage from './RecipesPage';
 import CorporationsPage from './CorporationsPage';
 import MyBasesPage from './MyBasesPage';
 import { ThemeToggle, GitHubButton, DiscordButton, VersionSelector, ConfirmationDialog } from './ui';
+import { CreateProductionPlanModal } from './mybases/modals/CreateProductionPlanModal';
 import { useNavigationSync } from '../hooks/useNavigationSync';
 
 // Lazy load the PlannerPage to reduce initial bundle size
@@ -23,7 +24,7 @@ const tabs: Tab[] = [
 ];
 
 const TabLayout = () => {
-  const activeTab = useSubscription<TabType>([SUB_IDS.ACTIVE_TAB]);
+  const activeTab = useSubscription<TabType>([SUB_IDS.UI_ACTIVE_TAB]);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -51,7 +52,7 @@ const TabLayout = () => {
   useEffect(() => {
     const currentTab = pathToTab[location.pathname];
     if (currentTab && currentTab !== activeTab) {
-      dispatch([EVENT_IDS.SET_ACTIVE_TAB, currentTab]);
+      dispatch([EVENT_IDS.UI_SET_ACTIVE_TAB, currentTab]);
     }
     // NOTE: activeTab is intentionally omitted from deps to prevent feedback loop
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -64,7 +65,7 @@ const TabLayout = () => {
     const path = tabToPath[tabId];
     if (path) {
       navigate(path);
-      dispatch([EVENT_IDS.SET_ACTIVE_TAB, tabId]);
+      dispatch([EVENT_IDS.UI_SET_ACTIVE_TAB, tabId]);
     }
   };
 
@@ -178,8 +179,9 @@ const TabLayout = () => {
           {renderTabContent()}
         </main>
 
-        {/* Global Confirmation Dialog */}
+        {/* Global Modals */}
         <ConfirmationDialog />
+        <CreateProductionPlanModal />
       </div>
   );
 };

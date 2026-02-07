@@ -6,7 +6,7 @@ import { EVENT_IDS } from '../../state/event-ids';
 import type { ConfirmationDialog as ConfirmationDialogType } from '../../state/db';
 
 export const ConfirmationDialog: React.FC = () => {
-  const dialog = useSubscription<ConfirmationDialogType>([SUB_IDS.CONFIRMATION_DIALOG]);
+  const dialog = useSubscription<ConfirmationDialogType>([SUB_IDS.UI_CONFIRMATION_DIALOG]);
 
   if (!dialog.isOpen) {
     return null;
@@ -14,14 +14,14 @@ export const ConfirmationDialog: React.FC = () => {
 
   const handleConfirm = () => {
     dialog.onConfirm();
-    dispatch([EVENT_IDS.CLOSE_CONFIRMATION_DIALOG]);
+    dispatch([EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG]);
   };
 
   const handleCancel = () => {
     if (dialog.onCancel) {
       dialog.onCancel();
     }
-    dispatch([EVENT_IDS.CLOSE_CONFIRMATION_DIALOG]);
+    dispatch([EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG]);
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {

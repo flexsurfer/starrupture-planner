@@ -1,40 +1,73 @@
 import { regEvent, current } from '@flexsurfer/reflex';
 import { EVENT_IDS } from './event-ids';
 import { EFFECT_IDS } from './effect-ids';
-import type { TabType, DataVersion, Item, Building, AppState, Base, BaseBuilding, Core, ProductionPlanSection } from './db';
+import type { TabType, DataVersion, Item, Building, AppState, Base, BaseBuilding, Production, PlanRequiredBuilding } from './db';
 import { buildItemsMap, parseCorporations, extractCategories } from './data-utils';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
-import type { Building as PlannerBuilding } from '../components/planner/core/types';
+import type { Building as PlannerBuilding, ProductionFlowResult } from '../components/planner/core/types';
 import { getSectionTypeForBuilding } from '../components/mybases/utils';
+import { getProductionInputIds, getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
 
 // Common function to update draftDb with version data
 function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
-    const data = draftDb.versionedData[version];
+    const data = draftDb.appVersionedData[version];
     const items = data.items as Item[];
     const buildings = data.buildings as Building[];
     const corporations = parseCorporations(data.corporations);
 
-    draftDb.dataVersion = version;
-    draftDb.items = items;
-    draftDb.itemsMap = buildItemsMap(items);
-    draftDb.buildings = buildings;
-    draftDb.corporations = corporations;
-    draftDb.categories = extractCategories(items);
+    draftDb.appDataVersion = version;
+    draftDb.itemsList = items;
+    draftDb.itemsById = buildItemsMap(items);
+    draftDb.buildingsList = buildings;
+    draftDb.corporationsList = corporations;
+    draftDb.itemsCategories = extractCategories(items);
+}
+
+function getBaseById(bases: Base[], baseId: string): Base | undefined {
+    for (const base of bases) {
+        if (base.id === baseId) {
+            return base;
+        }
+    }
+    return undefined;
 }
 
 // Helper function to set target amount to default output rate for an item
 function setTargetAmountToDefault(draftDb: AppState, itemId: string) {
     // Find the default output rate for the item (same logic as usePlannerDefaultOutput)
-    for (const building of draftDb.buildings) {
+    for (const building of draftDb.buildingsList) {
         for (const recipe of building.recipes || []) {
             if (recipe.output.id === itemId) {
-                draftDb.targetAmount = recipe.output.amount_per_minute;
+                draftDb.plannerTargetAmount = recipe.output.amount_per_minute;
                 return;
             }
         }
     }
     // fallback if not found
-    draftDb.targetAmount = 60;
+    draftDb.plannerTargetAmount = 60;
+}
+
+/**
+ * Aggregates the building requirements from a production flow.
+ * Stored on the plan so that subscriptions can check requirements
+ * without recomputing the full flow.
+ */
+function computeRequiredBuildings(flow: ProductionFlowResult): PlanRequiredBuilding[] {
+    const map = new Map<string, PlanRequiredBuilding>();
+    flow.nodes.forEach(node => {
+        if (node.isCustomInput) return;
+        const existing = map.get(node.buildingId);
+        if (existing) {
+            existing.count += Math.ceil(node.buildingCount);
+        } else {
+            map.set(node.buildingId, {
+                buildingId: node.buildingId,
+                buildingName: node.buildingName,
+                count: Math.ceil(node.buildingCount),
+            });
+        }
+    });
+    return Array.from(map.values());
 }
 
 /**
@@ -61,11 +94,10 @@ function setTargetAmountToDefault(draftDb: AppState, itemId: string) {
  * 
  * HOW IT WORKS:
  * 1. Uses a type guard function to validate each base object structure
- * 2. Checks for required fields (id, name, core, buildings)
- * 3. Validates nested core object structure
- * 4. Ensures buildings is an array
- * 5. Normalizes timestamps (adds missing createdAt/updatedAt with fallback)
- * 6. Filters out any invalid bases, returning only valid ones
+ * 2. Checks for required fields (id, name, buildings)
+ * 3. Ensures buildings is an array
+ * 4. Normalizes productions (adds missing productions with fallback)
+ * 5. Filters out any invalid bases, returning only valid ones
  * 
  * @param rawBases - Raw data from localStorage (unknown type, could be anything)
  * @returns Array of validated and normalized Base objects
@@ -74,8 +106,6 @@ function validateAndNormalizeBases(rawBases: unknown): Base[] {
     if (!Array.isArray(rawBases)) {
         return [];
     }
-
-    const now = Date.now();
     
     // Type guard: validates that an unknown value is a valid Base structure
     const isValidBase = (base: unknown): base is Base => {
@@ -85,24 +115,12 @@ function validateAndNormalizeBases(rawBases: unknown): Base[] {
         }
         
         // Check required top-level fields exist
-        if (!('id' in base) || !('name' in base) || !('core' in base) || !('buildings' in base)) {
+        if (!('id' in base) || !('name' in base) || !('buildings' in base)) {
             return false;
         }
         
         // Validate id and name are strings
         if (typeof (base as Base).id !== 'string' || typeof (base as Base).name !== 'string') {
-            return false;
-        }
-        
-        // Validate core is a non-null object with required fields
-        const core = (base as Base).core;
-        if (typeof core !== 'object' || core === null) {
-            return false;
-        }
-        if (!('id' in core) || !('baseId' in core)) {
-            return false;
-        }
-        if (typeof (core as Core).id !== 'string' || typeof (core as Core).baseId !== 'string') {
             return false;
         }
         
@@ -114,23 +132,44 @@ function validateAndNormalizeBases(rawBases: unknown): Base[] {
         return true;
     };
     
-    // Filter valid bases and normalize timestamps and productionPlanSections
+    // Filter valid bases and normalize productions
     return rawBases
         .filter(isValidBase)
-        .map((base) => ({
-            ...base,
-            // Ensure timestamps exist - use current time as fallback for missing values
-            // This handles data migration scenarios where timestamps were added later
-            createdAt: typeof base.createdAt === 'number' ? base.createdAt : now,
-            updatedAt: typeof base.updatedAt === 'number' ? base.updatedAt : now,
-            // Ensure productionPlanSections exists - use empty array as fallback for migration
-            productionPlanSections: Array.isArray(base.productionPlanSections) ? base.productionPlanSections : [],
-        }));
+        .map((base) => {
+            return {
+                ...base,
+                // Ensure productions exists - use empty array as fallback
+                productions: Array.isArray(base.productions) ? base.productions : [],
+            };
+        });
 }
 
-regEvent(EVENT_IDS.INIT_APP, ({ draftDb, localStoreTheme, localStoreDataVersion, localStoreBases }) => {
+regEvent(EVENT_IDS.UI_SET_THEME, ({ draftDb }, newTheme: 'light' | 'dark') => {
+    draftDb.uiTheme = newTheme;
+    return [[EFFECT_IDS.SET_THEME, newTheme]];
+});
+
+regEvent(EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG, ({ draftDb }, title: string, message: string, onConfirm: () => void, options?: { confirmLabel?: string; cancelLabel?: string; confirmButtonClass?: string; onCancel?: () => void }) => {
+    draftDb.uiConfirmationDialog = {
+        isOpen: true,
+        title,
+        message,
+        confirmLabel: options?.confirmLabel || 'Confirm',
+        cancelLabel: options?.cancelLabel || 'Cancel',
+        confirmButtonClass: options?.confirmButtonClass || 'btn-primary',
+        onConfirm,
+        onCancel: options?.onCancel,
+    };
+});
+
+regEvent(EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG, ({ draftDb }) => {
+    draftDb.uiConfirmationDialog = {};
+});
+
+/** Initialization event */
+regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion, localStoreBases }) => {
     if (localStoreTheme) {
-        draftDb.theme = localStoreTheme;
+        draftDb.uiTheme = localStoreTheme;
     }
     
     // Load saved data version if valid
@@ -143,156 +182,138 @@ regEvent(EVENT_IDS.INIT_APP, ({ draftDb, localStoreTheme, localStoreDataVersion,
         try {
             // Validate and normalize bases data from localStorage
             // Invalid bases are filtered out, ensuring we only load valid data
-            draftDb.bases = validateAndNormalizeBases(localStoreBases);
+            draftDb.basesList = validateAndNormalizeBases(localStoreBases);
         } catch (e) {
             console.error('Error loading bases from local storage:', e);
             // On error, keep empty array (don't use potentially corrupted data)
-            draftDb.bases = [];
+            draftDb.basesList = [];
         }
     } else {
         // If no saved bases, ensure we start with empty array
-        draftDb.bases = [];
+        draftDb.basesList = [];
     }
     
-    return [[EFFECT_IDS.SET_THEME, draftDb.theme]];
+    return [[EFFECT_IDS.SET_THEME, draftDb.uiTheme]];
 }, [[EFFECT_IDS.GET_THEME], [EFFECT_IDS.GET_DATA_VERSION], [EFFECT_IDS.GET_BASES]]);
 
-regEvent(EVENT_IDS.SET_CATEGORY, ({ draftDb }, category: string) => {
-    draftDb.selectedCategory = category;
+regEvent(EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, ({ draftDb }, category: string) => {
+    draftDb.itemsSelectedCategory = category;
 });
 
-regEvent(EVENT_IDS.SET_SELECTED_BUILDING, ({ draftDb }, building: string) => {
-    draftDb.selectedBuilding = building;
+regEvent(EVENT_IDS.ITEMS_SET_SELECTED_BUILDING, ({ draftDb }, building: string) => {
+    draftDb.itemsSelectedBuilding = building;
 });
 
-regEvent(EVENT_IDS.SET_SEARCH_TERM, ({ draftDb }, searchTerm: string) => {
-    draftDb.searchTerm = searchTerm;
+regEvent(EVENT_IDS.ITEMS_SET_SEARCH_TERM, ({ draftDb }, searchTerm: string) => {
+    draftDb.itemsSearchTerm = searchTerm;
 });
 
-regEvent(EVENT_IDS.SET_THEME, ({ draftDb }, newTheme: 'light' | 'dark') => {
-    draftDb.theme = newTheme;
-    return [[EFFECT_IDS.SET_THEME, newTheme]];
+regEvent(EVENT_IDS.UI_SET_ACTIVE_TAB, ({ draftDb }, newTab: TabType) => {
+    draftDb.uiActiveTab = newTab;
 });
 
-regEvent(EVENT_IDS.SET_ACTIVE_TAB, ({ draftDb }, newTab: TabType) => {
-    draftDb.activeTab = newTab;
-});
-
-regEvent(EVENT_IDS.OPEN_ITEM_IN_PLANNER, ({ draftDb }, itemId: string, corporationLevel?: { corporationId: string; level: number }) => {
-    draftDb.selectedPlannerItem = itemId;
-    draftDb.selectedPlannerCorporationLevel = corporationLevel || null;
-    draftDb.activeTab = 'planner';
+regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftDb }, itemId: string, corporationLevel?: { corporationId: string; level: number }) => {
+    draftDb.plannerSelectedItemId = itemId;
+    draftDb.plannerSelectedCorporationLevel = corporationLevel || null;
+    draftDb.uiActiveTab = 'planner';
     setTargetAmountToDefault(draftDb as AppState, itemId);
 });
 
-regEvent(EVENT_IDS.SET_PLANNER_ITEM, ({ draftDb }, itemId: string | null) => {
-    draftDb.selectedPlannerItem = itemId;
+regEvent(EVENT_IDS.PLANNER_SET_SELECTED_ITEM, ({ draftDb }, itemId: string | null) => {
+    draftDb.plannerSelectedItemId = itemId;
     // Reset corporation level when item changes
-    draftDb.selectedPlannerCorporationLevel = null;
+    draftDb.plannerSelectedCorporationLevel = null;
     setTargetAmountToDefault(draftDb as AppState, itemId || '');
 });
 
-regEvent(EVENT_IDS.SET_PLANNER_CORPORATION_LEVEL, ({ draftDb }, corporationLevel: { corporationId: string; level: number } | null) => {
-    draftDb.selectedPlannerCorporationLevel = corporationLevel;
+regEvent(EVENT_IDS.PLANNER_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, corporationLevel: { corporationId: string; level: number } | null) => {
+    draftDb.plannerSelectedCorporationLevel = corporationLevel;
 });
 
-regEvent(EVENT_IDS.SET_DATA_VERSION, ({ draftDb }, version: DataVersion) => {
-    if (draftDb.dataVersion === version) return;
+regEvent(EVENT_IDS.APP_SET_DATA_VERSION, ({ draftDb }, version: DataVersion) => {
+    if (draftDb.appDataVersion === version) return;
 
     updateDraftDbWithVersionData(draftDb as AppState, version);
 
     return [[EFFECT_IDS.SET_DATA_VERSION, version]];
 });
 
-regEvent(EVENT_IDS.SET_TARGET_AMOUNT, ({ draftDb }, targetAmount: number) => {
-    draftDb.targetAmount = targetAmount;
+regEvent(EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, ({ draftDb }, targetAmount: number) => {
+    draftDb.plannerTargetAmount = targetAmount;
 });
 
-// Base management events
-regEvent(EVENT_IDS.CREATE_BASE, ({ draftDb }, name: string) => {
-    //TODO there is now coeffect in reflex
-    const now = Date.now();
-    const baseId = `base_${now}_${Math.random().toString(36).substr(2, 9)}`;
-    const coreId = `core_${now}_${Math.random().toString(36).substr(2, 9)}`;
+//===============================================
+// Base management
+//===============================================
+
+regEvent(EVENT_IDS.BASES_CREATE_BASE, ({ draftDb }, name: string) => {
+    //TODO there is "now" coeffect in reflex
+    const baseId = `base_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const newBase: Base = {
         id: baseId,
         name,
-        core: {
-            id: coreId,
-            baseId: baseId,
-        },
         buildings: [],
-        productionPlanSections: [],
-        createdAt: now,
-        updatedAt: now,
+        productions: [],
     };
     
-    draftDb.bases.push(newBase);
-    draftDb.selectedBaseId = baseId;
+    draftDb.basesList.push(newBase);
+    draftDb.basesSelectedBaseId = baseId;
     
-    return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
 });
 
-regEvent(EVENT_IDS.UPDATE_BASE_NAME, ({ draftDb }, baseId: string, newName: string) => {
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+regEvent(EVENT_IDS.BASES_UPDATE_BASE_NAME, ({ draftDb }, baseId: string, newName: string) => {
+    const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.name = newName;
-        base.updatedAt = Date.now();
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
     }
 });
 
-regEvent(EVENT_IDS.DELETE_BASE, ({ draftDb }, baseId: string) => {
-    draftDb.bases = draftDb.bases.filter((b: Base) => b.id !== baseId);
-    if (draftDb.selectedBaseId === baseId) {
-        draftDb.selectedBaseId = null;
+regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftDb }, baseId: string) => {
+    draftDb.basesList = draftDb.basesList.filter((b: Base) => b.id !== baseId);
+    if (draftDb.basesSelectedBaseId === baseId) {
+        draftDb.basesSelectedBaseId = null;
     }
-    return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
 });
 
-regEvent(EVENT_IDS.SET_SELECTED_BASE, ({ draftDb }, baseId: string | null) => {
-    draftDb.selectedBaseId = baseId;
-    // Reset to plans tab when switching bases
-    if (baseId) {
-        draftDb.baseDetailActiveTab = 'plans';
-    }
+regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null) => {
+    draftDb.basesSelectedBaseId = baseId;
 });
 
-regEvent(EVENT_IDS.SET_BASE_DETAIL_ACTIVE_TAB, ({ draftDb }, tab: 'plans' | 'buildings') => {
-    draftDb.baseDetailActiveTab = tab;
-});
+/** Creates a new BaseBuilding object with a unique ID. */
+function createBaseBuilding(baseId: string, buildingTypeId: string, sectionType: string): BaseBuilding {
+    return {
+        id: `building_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        baseId,
+        buildingTypeId,
+        sectionType,
+    };
+}
 
-regEvent(EVENT_IDS.ADD_BUILDING_TO_BASE, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string) => {
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string) => {
+    const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
-        const buildingId = `building_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const newBuilding: BaseBuilding = {
-            id: buildingId,
-            baseId: baseId,
-            buildingTypeId: buildingTypeId,
-            sectionType: sectionType,
-        };
-        base.buildings.push(newBuilding);
-        base.updatedAt = Date.now();
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+        base.buildings.push(createBaseBuilding(baseId, buildingTypeId, sectionType));
+        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
     }
 });
 
-regEvent(EVENT_IDS.REMOVE_BUILDING_FROM_BASE, ({ draftDb }, buildingId: string) => {
-    const baseId = draftDb.selectedBaseId;
+regEvent(EVENT_IDS.BASES_REMOVE_BUILDING, ({ draftDb }, buildingId: string) => {
+    const baseId = draftDb.basesSelectedBaseId;
     if (!baseId) return;
     
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+    const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.buildings = base.buildings.filter((b: BaseBuilding) => b.id !== buildingId);
-        base.updatedAt = Date.now();
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
     }
 });
 
-regEvent(EVENT_IDS.UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: string, buildingId: string, itemId: string | null, ratePerMinute: number | null) => {
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: string, buildingId: string, itemId: string | null, ratePerMinute: number | null) => {
+    const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         const building = base.buildings.find((b: BaseBuilding) => b.id === buildingId);
         if (building) {
@@ -303,158 +324,76 @@ regEvent(EVENT_IDS.UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: string,
                 building.selectedItemId = undefined;
                 building.ratePerMinute = undefined;
             }
-            base.updatedAt = Date.now();
-            return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+            return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
         }
     }
 });
 
-// Confirmation dialog events
-regEvent(EVENT_IDS.SHOW_CONFIRMATION_DIALOG, ({ draftDb }, title: string, message: string, onConfirm: () => void, options?: { confirmLabel?: string; cancelLabel?: string; confirmButtonClass?: string; onCancel?: () => void }) => {
-    draftDb.confirmationDialog = {
-        isOpen: true,
-        title,
-        message,
-        confirmLabel: options?.confirmLabel || 'Confirm',
-        cancelLabel: options?.cancelLabel || 'Cancel',
-        confirmButtonClass: options?.confirmButtonClass || 'btn-primary',
-        onConfirm,
-        onCancel: options?.onCancel,
-    };
-});
+//===============================================
+//  PRODUCTION PLAN SECTIONS
+//===============================================
 
-regEvent(EVENT_IDS.CLOSE_CONFIRMATION_DIALOG, ({ draftDb }) => {
-    draftDb.confirmationDialog = {};
-});
+/** Production Plan Section events */
 
-// Production Plan Section events
-regEvent(EVENT_IDS.CREATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, name: string, selectedItemId: string, targetAmount: number, corporationLevel?: { corporationId: string; level: number } | null) => {
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
-    if (base) {
-        const sectionId = `pps_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const newSection: ProductionPlanSection = {
-            id: sectionId,
-            name,
-            selectedItemId,
-            targetAmount,
-            active: false,
-            corporationLevel: corporationLevel || null,
-        };
-        base.productionPlanSections.push(newSection);
-        base.updatedAt = Date.now();
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
-    }
-});
-
-regEvent(EVENT_IDS.UPDATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, sectionId: string, name: string, selectedItemId: string, targetAmount: number, corporationLevel?: { corporationId: string; level: number } | null) => {
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
-    if (base) {
-        const section = base.productionPlanSections.find((s: ProductionPlanSection) => s.id === sectionId);
-        if (section) {
-            section.name = name;
-            section.selectedItemId = selectedItemId;
-            section.targetAmount = targetAmount;
-            section.corporationLevel = corporationLevel || null;
-            base.updatedAt = Date.now();
-            return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
-        }
-    }
-});
-
-regEvent(EVENT_IDS.DELETE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
-    if (base) {
-        base.productionPlanSections = base.productionPlanSections.filter((s: ProductionPlanSection) => s.id !== sectionId);
-        base.updatedAt = Date.now();
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
-    }
-});
-
-regEvent(EVENT_IDS.SHOW_ACTIVATE_PLAN_DIALOG, ({ draftDb }, planName: string, baseId: string, sectionId: string, allRequirementsSatisfied: boolean) => {
-    draftDb.activatePlanDialog = {
-        isOpen: true,
-        planName,
-        baseId,
-        sectionId,
-        allRequirementsSatisfied,
-    };
-});
-
-regEvent(EVENT_IDS.CLOSE_ACTIVATE_PLAN_DIALOG, ({ draftDb }) => {
-    draftDb.activatePlanDialog = {
-        isOpen: false,
-        planName: '',
-        baseId: undefined,
-        sectionId: undefined,
-    };
-});
-
-regEvent(EVENT_IDS.ACTIVATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, sectionId: string, flag: 'addall' | 'missing' | 'dontadd') => {
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
+regEvent(EVENT_IDS.PRODUCTION_PLAN_ACTIVATE_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
+    const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
-    const section = base.productionPlanSections.find((s: ProductionPlanSection) => s.id === sectionId);
+    const section = base.productions.find((s: Production) => s.id === sectionId);
     if (!section) return;
 
-    // Mark as active first - this happens regardless of flag
     section.active = true;
+    section.status = 'active';
 
-    // For 'dontadd' flag, skip building addition
-    if (flag === 'dontadd') {
-        base.updatedAt = Date.now();
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
-    }
+    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+});
 
-    // Build production flow to determine required buildings
-    const validAmount = section.targetAmount > 0 ? section.targetAmount : 1;
-    const includeLauncher = section.corporationLevel !== null && section.corporationLevel !== undefined;
-    const productionFlow = buildProductionFlow(
-        { targetItemId: section.selectedItemId, targetAmount: validAmount },
-        draftDb.buildings as PlannerBuilding[],
-        draftDb.corporations,
-        includeLauncher
-    );
-
-    // Build list of required building instances from flow nodes
-    // Filter out special nodes (recipeIndex < 0, e.g., orbital_cargo_launcher)
-    const requiredBuildings: Array<{ buildingTypeId: string; outputItem: string; outputAmount: number }> = [];
-    for (const node of productionFlow.nodes) {
-        
-        const buildingCount = Math.ceil(node.buildingCount);
-        for (let i = 0; i < buildingCount; i++) {
-            requiredBuildings.push({
-                buildingTypeId: node.buildingId,
-                outputItem: node.outputItem,
-                outputAmount: node.outputAmount,
-            });
+regEvent(EVENT_IDS.PRODUCTION_PLAN_DEACTIVATE_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (base) {
+        const section = base.productions.find((s: Production) => s.id === sectionId);
+        if (section) {
+            section.active = false;
+            section.status = 'inactive';
+            return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
         }
     }
+});
 
-    // Helper to create a BaseBuilding with unique ID
-    // Uses counter to ensure uniqueness when creating multiple buildings in same millisecond
-    let buildingCounter = 0;
-    const createBaseBuilding = (
-        buildingTypeId: string,
-        outputItem: string,
-        outputAmount: number
-    ): BaseBuilding => {
-        const building = draftDb.buildings.find((b: Building) => b.id === buildingTypeId);
-        const sectionType = building ? getSectionTypeForBuilding(building) : 'production';
-        const buildingId = `building_${Date.now()}_${buildingCounter++}_${Math.random().toString(36).substr(2, 9)}`;
-        return {
-            id: buildingId,
-            baseId,
-            buildingTypeId,
-            sectionType,
-            selectedItemId: outputItem,
-            ratePerMinute: outputAmount,
-        };
+regEvent(EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (base) {
+        base.productions = base.productions.filter((s: Production) => s.id !== sectionId);
+        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+    }
+});
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_SECTION, ({ draftDb }, baseId: string, sectionId: string, flag: 'all' | 'missing') => {
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (!base) return;
+
+    const section = base.productions.find((s: Production) => s.id === sectionId);
+    if (!section) return;
+
+    const requiredBuildings = section.requiredBuildings || [];
+    if (requiredBuildings.length === 0) return;
+
+    // Build a lookup for building type data to resolve section types
+    const buildingsById = new Map(
+        (draftDb.buildingsList as Building[]).map((b: Building) => [b.id, b])
+    );
+
+    const resolveSectionType = (buildingId: string): string => {
+        const building = buildingsById.get(buildingId);
+        return building ? getSectionTypeForBuilding(building) : 'production';
     };
 
-    if (flag === 'addall') {
-        // Add all required buildings
-        for (const { buildingTypeId, outputItem, outputAmount } of requiredBuildings) {
-            base.buildings.push(createBaseBuilding(buildingTypeId, outputItem, outputAmount));
+    if (flag === 'all') {
+        for (const { buildingId, count } of requiredBuildings) {
+            const sectionType = resolveSectionType(buildingId);
+            for (let i = 0; i < count; i++) {
+                base.buildings.push(createBaseBuilding(baseId, buildingId, sectionType));
+            }
         }
     } else if (flag === 'missing') {
         // Count existing buildings by type
@@ -464,50 +403,192 @@ regEvent(EVENT_IDS.ACTIVATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: strin
             existingCountByType.set(baseBuilding.buildingTypeId, count + 1);
         }
 
-        // Count how many of each building type we need
-        const requiredCountByType = new Map<string, number>();
-        for (const { buildingTypeId } of requiredBuildings) {
-            const count = requiredCountByType.get(buildingTypeId) || 0;
-            requiredCountByType.set(buildingTypeId, count + 1);
-        }
-
-        // Calculate how many of each type are missing
-        const missingCountByType = new Map<string, number>();
-        for (const [buildingTypeId, requiredCount] of requiredCountByType) {
-            const existingCount = existingCountByType.get(buildingTypeId) || 0;
-            const missingCount = Math.max(0, requiredCount - existingCount);
+        // Add only the missing ones
+        for (const { buildingId, count } of requiredBuildings) {
+            const existingCount = existingCountByType.get(buildingId) || 0;
+            const missingCount = Math.max(0, count - existingCount);
             if (missingCount > 0) {
-                missingCountByType.set(buildingTypeId, missingCount);
-            }
-        }
-
-        // Add only the missing buildings, tracking how many we've added
-        const addedCountByType = new Map<string, number>();
-        for (const { buildingTypeId, outputItem, outputAmount } of requiredBuildings) {
-            const missingCount = missingCountByType.get(buildingTypeId) || 0;
-            const addedCount = addedCountByType.get(buildingTypeId) || 0;
-
-            // Only add if we still have missing buildings of this type
-            if (addedCount < missingCount) {
-                base.buildings.push(createBaseBuilding(buildingTypeId, outputItem, outputAmount));
-                addedCountByType.set(buildingTypeId, addedCount + 1);
+                const sectionType = resolveSectionType(buildingId);
+                for (let i = 0; i < missingCount; i++) {
+                    base.buildings.push(createBaseBuilding(baseId, buildingId, sectionType));
+                }
             }
         }
     }
 
-    base.updatedAt = Date.now();
-    return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
 });
 
-regEvent(EVENT_IDS.DEACTIVATE_PRODUCTION_PLAN_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
-    const base = draftDb.bases.find((b: Base) => b.id === baseId);
-    if (base) {
-        const section = base.productionPlanSections.find((s: ProductionPlanSection) => s.id === sectionId);
+/** Create Production Plan Modal events */
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftDb }, editSectionId?: string | null) => {
+    const baseId = draftDb.basesSelectedBaseId;
+    if (!baseId) return; // No selected base, cannot open modal
+    
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (!base) return; // Base not found
+    
+    const editSection = base.productions?.find((p: Production) => p.id === editSectionId);
+    
+    // Initialize form state from edit section or defaults
+    if (editSection) {
+        draftDb.productionPlanModalState = {
+            isOpen: true,
+            baseId,
+            editSectionId: editSectionId || null,
+            name: editSection.name,
+            selectedItemId: editSection.selectedItemId,
+            targetAmount: editSection.targetAmount,
+            selectedCorporationLevel: editSection.corporationLevel || null,
+            selectedInputIds: getProductionInputIds(editSection.inputs),
+        };
+    } else {
+        draftDb.productionPlanModalState = {
+            isOpen: true,
+            baseId,
+            editSectionId: null,
+            name: '',
+            selectedItemId: '',
+            targetAmount: 60,
+            selectedCorporationLevel: null,
+            selectedInputIds: [],
+        };
+    }
+});
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE, ({ draftDb }) => {
+    draftDb.productionPlanModalState = {
+        isOpen: false,
+        baseId: null,
+        editSectionId: null,
+        name: '',
+        selectedItemId: '',
+        targetAmount: 60,
+        selectedCorporationLevel: null,
+        selectedInputIds: [],
+    };
+});
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
+    const modal = draftDb.productionPlanModalState;
+    const { baseId, editSectionId, name, selectedItemId, targetAmount, selectedCorporationLevel } = modal;
+    
+    if (!baseId || !name.trim() || !selectedItemId || targetAmount <= 0) {
+        return;
+    }
+    
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (!base) return;
+    
+    // Get production flow to extract used inputs
+    const validAmount = targetAmount > 0 ? targetAmount : 1;
+    const includeLauncher = selectedCorporationLevel !== null;
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modal.selectedInputIds);
+    
+    const flow = buildProductionFlow(
+        { 
+            targetItemId: selectedItemId, 
+            targetAmount: validAmount, 
+            inputBuildings: selectedInputBuildings,
+            rawProductionDisabled: true,
+            includeLauncher
+        },
+        draftDb.buildingsList as PlannerBuilding[]
+    );
+    
+    // Extract used inputs from the production flow nodes
+    const usedInputIdSet = new Set<string>();
+    flow.nodes.forEach(node => {
+        if (node.isCustomInput && node.baseBuildingId) {
+            usedInputIdSet.add(node.baseBuildingId);
+        }
+    });
+    const usedInputSnapshots: BaseBuilding[] = [];
+    const baseBuildingsById = new Map<string, BaseBuilding>(
+        base.buildings.map((building: BaseBuilding) => [building.id, building])
+    );
+    const selectedInputBuildingsById = new Map<string, BaseBuilding>(
+        selectedInputBuildings.map((building: BaseBuilding) => [building.id, building])
+    );
+    usedInputIdSet.forEach((baseBuildingId) => {
+        const baseBuilding = baseBuildingsById.get(baseBuildingId) || selectedInputBuildingsById.get(baseBuildingId);
+        if (baseBuilding) {
+            usedInputSnapshots.push({ ...baseBuilding });
+        }
+    });
+    
+    const requiredBuildings = computeRequiredBuildings(flow);
+
+    if (editSectionId) {
+        // Update existing section
+        const section = base.productions.find((s: Production) => s.id === editSectionId);
         if (section) {
-            section.active = false;
-            base.updatedAt = Date.now();
-            return [[EFFECT_IDS.SET_BASES, current(draftDb.bases)]];
+            section.name = name.trim();
+            section.selectedItemId = selectedItemId;
+            section.targetAmount = targetAmount;
+            section.corporationLevel = selectedCorporationLevel;
+            section.inputs = usedInputSnapshots;
+            section.requiredBuildings = requiredBuildings;
+        }
+    } else {
+        // Create new section
+        const sectionId = `pps_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newSection: Production = {
+            id: sectionId,
+            name: name.trim(),
+            selectedItemId,
+            targetAmount,
+            active: false,
+            corporationLevel: selectedCorporationLevel,
+            inputs: usedInputSnapshots,
+            status: 'inactive',
+            requiredBuildings,
+        };
+        base.productions.push(newSection);
+    }
+ 
+    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+});
+
+/** Production Plan Modal Form events */
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_NAME, ({ draftDb }, name: string) => {
+    draftDb.productionPlanModalState.name = name;
+});
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftDb }, itemId: string) => {
+    draftDb.productionPlanModalState.selectedItemId = itemId;
+    // Reset corporation level when item changes
+    draftDb.productionPlanModalState.selectedCorporationLevel = null;
+    
+    // Set target amount to default output rate for the item
+    if (itemId) {
+        for (const building of draftDb.buildingsList) {
+            for (const recipe of building.recipes || []) {
+                if (recipe.output.id === itemId) {
+                    const rate = recipe.output.amount_per_minute;
+                    draftDb.productionPlanModalState.targetAmount = rate;
+                    return;
+                }
+            }
         }
     }
 });
 
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, ({ draftDb }, amount: number) => {
+    draftDb.productionPlanModalState.targetAmount = amount;
+});
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, level: { corporationId: string; level: number } | null) => {
+    draftDb.productionPlanModalState.selectedCorporationLevel = level;
+});
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftDb }, baseBuildingId: string) => {
+    const selectedInputIds = draftDb.productionPlanModalState.selectedInputIds;
+    const index = selectedInputIds.indexOf(baseBuildingId);
+    if (index >= 0) {
+        selectedInputIds.splice(index, 1);
+    } else {
+        selectedInputIds.push(baseBuildingId);
+    }
+});

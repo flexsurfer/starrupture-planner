@@ -9,7 +9,7 @@ import type { Building } from '../core/types';
  * Custom hook for getting default output rate for an item
  */
 export const usePlannerDefaultOutput = () => {
-    const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS]);
+    const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_LIST]);
 
     // Helper function to find the default output rate for an item
     const getDefaultOutputRate = useCallback((itemId: string): number => {
@@ -30,7 +30,7 @@ export const usePlannerDefaultOutput = () => {
  * Custom hook for debounced target amount setting
  */
 export const useTargetAmount = () => {
-    const targetAmount = useSubscription<number>([SUB_IDS.TARGET_AMOUNT]);
+    const targetAmount = useSubscription<number>([SUB_IDS.PLANNER_TARGET_AMOUNT]);
     const timeoutRef = useRef<number | null>(null);
 
     const setTargetAmount = useCallback((amount: number) => {
@@ -41,7 +41,7 @@ export const useTargetAmount = () => {
 
         // Set new timeout for debounced dispatch
         timeoutRef.current = setTimeout(() => {
-            dispatch([EVENT_IDS.SET_TARGET_AMOUNT, amount]);
+            dispatch([EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, amount]);
         }, 300); // 300ms debounce
     }, []);
 

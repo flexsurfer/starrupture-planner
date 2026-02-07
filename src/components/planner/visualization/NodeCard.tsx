@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FlowNode, Item } from '../core/types';
-import { getItemName } from '../core/productionFlowBuilder';
+import { getItemName } from '../../../utils/itemUtils';
 import { ItemImage, BuildingImage } from '../../ui';
 
 interface NodeCardProps {
@@ -16,6 +16,15 @@ export const NodeCard: React.FC<NodeCardProps> = ({
 }) => {
     return (
         <div className="text-center p-2">
+            {/* Custom input badge */}
+            {node.isCustomInput && (
+                <div className="text-xs font-semibold absolute top-[-8px] left-[-8px]">
+                    <div className="badge badge-sm badge-success">
+                        input
+                    </div>
+                </div>
+            )}
+
             {/* Fractional count badge at bottom center */}
             {Math.ceil(node.buildingCount) > 1 && (
                 <div className="text-xs font-semibold absolute top-[-8px] right-[-8px]">
@@ -24,13 +33,6 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                     </div>
                 </div>
             )}
-
-            {/* Building count badge in center-right (link connection area) */}
-            <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2 z-50">
-                <div className="badge badge-sm badge-primary">
-                    x{node.buildingCount.toFixed(2)}
-                </div>
-            </div>
 
             {/* Building information */}
             <div className="text-xs font-semibold mb-1">
@@ -60,7 +62,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                     </div>
                     <div className="text-xs leading-tight"
                         style={{ color: getItemColor(node.outputItem) }}>
-                        {node.outputAmount.toFixed(1)}/min
+                        {(node.outputAmount * node.buildingCount).toFixed(1)}/min
                     </div>
                 </div>
             </div>

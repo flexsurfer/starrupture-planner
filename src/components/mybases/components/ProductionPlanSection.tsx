@@ -2,71 +2,124 @@ import React, { useState, useCallback } from 'react';
 import { useSubscription, dispatch } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { EVENT_IDS } from '../../../state/event-ids';
-import type { ProductionPlanSection as ProductionPlanSectionType, Base } from '../../../state/db';
-import type { BuildingRequirement } from '../types';
+import type { Production as ProductionType } from '../../../state/db';
+import type { BuildingRequirement, InputRequirement, ProductionPlanSectionStats } from '../types';
+import type { ProductionFlowResult } from '../../planner/core/types';
 import { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
 import { BuildingRequirementsModal } from '../modals';
 
 interface ProductionPlanSectionProps {
-    section: ProductionPlanSectionType;
     baseId: string;
-    onEdit: (section: ProductionPlanSectionType) => void;
+    sectionId: string;
 }
 
-export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ section, baseId, onEdit }) => {
+const EMPTY_PRODUCTION_FLOW: ProductionFlowResult = { nodes: [], edges: [], rawMaterialDeficits: [] };
+
+interface ProductionFlowDiagramProps {
+    baseId: string;
+    sectionId: string;
+}
+
+const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, sectionId }) => {
+
+    const productionFlow = useSubscription<ProductionFlowResult>([SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId]) || EMPTY_PRODUCTION_FLOW;
+
+    return (
+        <div className="h-[400px] border border-base-300 rounded-lg overflow-hidden">
+            <EmbeddedFlowDiagram
+                productionFlow={productionFlow}
+                className="w-full h-full"
+                interactive={false}
+            />
+        </div>
+    );
+};
+
+/** All data needed by ProductionPlanSection, delivered via a single subscription. */
+interface ProductionPlanSectionData {
+    selectedBaseId: string;
+    section: ProductionType;
+    itemName: string;
+    corporationName: string | null;
+    stats: ProductionPlanSectionStats;
+    buildingRequirements: BuildingRequirement[];
+    inputRequirements: InputRequirement[];
+    allRequirementsSatisfied: boolean;
+    planStatus: string;
+    hasError: boolean;
+    showManageButton: boolean;
+}
+
+export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ baseId, sectionId }) => {
 
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [showRequirementsModal, setShowRequirementsModal] = useState(false);
 
-    // Get data from subscriptions
-    const base = useSubscription<Base | null>([SUB_IDS.SELECTED_BASE]);
+    // Single subscription for all component data
+    const data = useSubscription<ProductionPlanSectionData>([SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId]);
 
-    // Get computed values from subscriptions
-    const itemName = useSubscription<string>([SUB_IDS.PRODUCTION_PLAN_SECTION_ITEM_NAME, section.selectedItemId]) || section.selectedItemId;
+    // Extract values for useCallback dependencies (use safe defaults)
+    // These must be extracted before any early returns to satisfy React hooks rules
+    const selectedBaseId = data?.selectedBaseId ?? '';
+    const section = data?.section;
 
-    const stats = useSubscription<{ buildingCount: number; totalHeat: number; totalPowerConsumption: number }>(
-        [SUB_IDS.PRODUCTION_PLAN_SECTION_STATS, section.selectedItemId, section.targetAmount, section.corporationLevel]
-    ) || { buildingCount: 0, totalHeat: 0, totalPowerConsumption: 0 };
-
-    const requirementsData = useSubscription<{
-        buildingRequirements: BuildingRequirement[];
-        allRequirementsSatisfied: boolean;
-    }>([SUB_IDS.PRODUCTION_PLAN_SECTION_BUILDING_REQUIREMENTS, baseId, section.id]) || {
-        buildingRequirements: [],
-        allRequirementsSatisfied: false
-    };
-    const { buildingRequirements, allRequirementsSatisfied } = requirementsData;
+    // All hooks must be called before any early returns
+    const handleEditProductionPlan = useCallback(() => {
+        if (section) {
+            dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, section.id]);
+        }
+    }, [section]);
 
     const handleDelete = useCallback(() => {
-        dispatch([EVENT_IDS.SHOW_CONFIRMATION_DIALOG,
-            'Delete Production Plan',
-        `Are you sure you want to delete "${section.name}"? This action cannot be undone.`,
-        () => {
-            dispatch([EVENT_IDS.DELETE_PRODUCTION_PLAN_SECTION, baseId, section.id]);
-            dispatch([EVENT_IDS.CLOSE_CONFIRMATION_DIALOG]);
-        },
-        {
-            confirmLabel: 'Delete',
-            confirmButtonClass: 'btn-error',
+        if (section && selectedBaseId) {
+            dispatch([EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG,
+                'Delete Production Plan',
+            `Are you sure you want to delete "${section.name}"? This action cannot be undone.`,
+            () => {
+                dispatch([EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, selectedBaseId, section.id]);
+                dispatch([EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG]);
+            },
+            {
+                confirmLabel: 'Delete',
+                confirmButtonClass: 'btn-error',
+            }
+            ]);
         }
-        ]);
-    }, [baseId, section.id, section.name]);
+    }, [selectedBaseId, section]);
 
     const handleActivate = useCallback(() => {
-        if (!base) return;
-        dispatch([EVENT_IDS.SHOW_ACTIVATE_PLAN_DIALOG, section.name, baseId, section.id, allRequirementsSatisfied]);
-    }, [base, baseId, section.id, section.name, allRequirementsSatisfied]);
+        if (selectedBaseId && section) {
+            dispatch([EVENT_IDS.PRODUCTION_PLAN_ACTIVATE_SECTION, selectedBaseId, section.id]);
+        }
+    }, [selectedBaseId, section]);
 
     const handleDeactivate = useCallback(() => {
-        dispatch([EVENT_IDS.DEACTIVATE_PRODUCTION_PLAN_SECTION, baseId, section.id]);
-    }, [baseId, section.id]);
+        if (selectedBaseId && section) {
+            dispatch([EVENT_IDS.PRODUCTION_PLAN_DEACTIVATE_SECTION, selectedBaseId, section.id]);
+        }
+    }, [selectedBaseId, section]);
+
+    if (!data) {
+        return null;
+    }
+
+    const {
+        itemName,
+        corporationName,
+        stats,
+        buildingRequirements,
+        inputRequirements,
+        allRequirementsSatisfied,
+        hasError,
+        showManageButton,
+    } = data;
 
     const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
+        setIsCollapsed((prev) => !prev);
     };
 
     return (
-        <div className="card bg-base-100 shadow-lg border border-primary/30">
+        <div className={`card bg-base-100 shadow-lg border ${hasError ? 'border-error/50' : 'border-primary/30'}`}>
             <div className="card-body">
                 {/* Collapsible Header */}
                 <div className="flex flex-col gap-3 mb-4 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg sticky top-0 z-10 bg-base-100 border-b border-base-300">
@@ -78,28 +131,40 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ se
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
                                 <h2 className="card-title text-xl">{section.name}</h2>
-                                <span className={`badge badge-sm ${section.active ? (allRequirementsSatisfied ? 'badge-success' : 'badge-warning') : 'badge-dash'}`}>
+                                <span className={`badge badge-sm ${
+                                    hasError 
+                                        ? 'badge-error' 
+                                        : section.active 
+                                            ? (allRequirementsSatisfied ? 'badge-success' : 'badge-warning') 
+                                            : 'badge-dash'
+                                }`}>
                                     {section.active ? 'Active' : 'Inactive'}
                                 </span>
                             </div>
                             <p className="text-sm text-base-content/70 mt-1">
                                 Producing <span className="font-semibold">{itemName}</span> at <span className="font-semibold">{section.targetAmount}/min</span>
+                                {corporationName && (
+                                    <>
+                                        {' • '}
+                                        <span className="text-base-content/70">
+                                            {corporationName} Lv.{section.corporationLevel?.level}
+                                        </span>
+                                    </>
+                                )}
                             </p>
                             <div className="flex gap-2 flex-wrap items-center mt-3">
-                                <div className={`badge badge-outline ${allRequirementsSatisfied ? 'badge-success' : 'badge-warning'}`}>
+                                <div className={`badge badge-outline ${hasError ? 'badge-error' : allRequirementsSatisfied ? 'badge-success' : 'badge-warning'}`}>
                                     {stats.buildingCount} building{stats.buildingCount !== 1 ? 's' : ''}
                                 </div>
-                                {!allRequirementsSatisfied && (
+                                {showManageButton && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setShowRequirementsModal(true);
                                         }}
-                                        className={`btn btn-sm h-6 min-h-6 px-2 btn-primary`}
+                                        className={`btn btn-sm h-6 min-h-6 px-2 ${hasError ? 'btn-error' : 'btn-primary'}`}
                                     >
-                                        <>
-                                            show buildings
-                                        </>
+                                        manage buildings
                                     </button>
                                 )}
                                 {stats.totalHeat > 0 && (
@@ -145,6 +210,8 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ se
                             <button
                                 className="btn btn-sm btn-outline btn-primary"
                                 onClick={handleActivate}
+                                disabled={hasError}
+                                title={hasError ? 'Cannot activate: inputs are insufficient' : ''}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -156,7 +223,7 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ se
                             className="btn btn-sm btn-outline btn-primary"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onEdit(section);
+                                handleEditProductionPlan();
                             }}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,15 +248,7 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ se
 
                 {/* Collapsible Content */}
                 {!isCollapsed && (
-                    <div className="h-[400px] border border-base-300 rounded-lg overflow-hidden">
-                        <EmbeddedFlowDiagram
-                            selectedItemId={section.selectedItemId}
-                            targetAmount={section.targetAmount}
-                            className="w-full h-full"
-                            interactive={false}
-                            includeLauncher={section.corporationLevel !== null && section.corporationLevel !== undefined}
-                        />
-                    </div>
+                    <ProductionFlowDiagram baseId={baseId} sectionId={sectionId} />
                 )}
             </div>
 
@@ -197,8 +256,9 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ se
             <BuildingRequirementsModal
                 isOpen={showRequirementsModal}
                 buildingRequirements={buildingRequirements}
+                inputRequirements={inputRequirements}
                 allRequirementsSatisfied={allRequirementsSatisfied}
-                baseId={baseId}
+                baseId={selectedBaseId}
                 sectionId={section.id}
                 onClose={() => setShowRequirementsModal(false)}
             />

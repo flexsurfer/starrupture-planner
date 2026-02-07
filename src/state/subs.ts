@@ -1,15 +1,17 @@
 import { regSub } from '@flexsurfer/reflex';
 import { SUB_IDS } from './sub-ids';
-import type { Item, Corporation, Building as DbBuilding, Base, BaseBuilding, ProductionPlanSection } from './db';
-import type { Building, ProductionFlowResult } from '../components/planner/core/types';
+import type { Item, Corporation, Building as DbBuilding, Base, BaseBuilding, Production, CreateProductionPlanModalState } from './db';
+import type { Building, ProductionFlowResult, RawMaterialDeficit } from '../components/planner/core/types';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import { generateReactFlowData } from '../components/planner/visualization/plannerFlowUtils';
-import { getItemName } from '../components/planner/core/productionFlowBuilder';
+import { getItemName } from '../utils/itemUtils';
 import type { Node, Edge } from '@xyflow/react';
 import { calculateBaseCoreHeatCapacity, isAmplifierBuilding } from '../components/mybases/utils/baseCoreUtils';
 import { getAvailableBuildingsForSection } from '../components/mybases/utils/buildingSectionUtils';
+import { getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
 import type {
   BaseDetailStats,
+  BuildingSectionBuilding,
   BuildingSectionStats,
   BaseInputItem,
   BaseOutputItem,
@@ -18,33 +20,33 @@ import type {
   MyBasesStats,
   ProductionPlanSectionStats,
   BuildingRequirement,
+  InputRequirement,
 } from '../components/mybases/types';
 
 // Root subscriptions
-regSub(SUB_IDS.DATA_VERSION);
-regSub(SUB_IDS.DATA_VERSIONS);
-regSub(SUB_IDS.ITEMS);
-regSub(SUB_IDS.ITEMS_MAP);
-regSub(SUB_IDS.SELECTED_CATEGORY);
-regSub(SUB_IDS.SELECTED_BUILDING);
-regSub(SUB_IDS.SEARCH_TERM);
-regSub(SUB_IDS.CATEGORIES);
-regSub(SUB_IDS.BUILDINGS);
-regSub(SUB_IDS.CORPORATIONS);
-regSub(SUB_IDS.THEME);
-regSub(SUB_IDS.ACTIVE_TAB);
-regSub(SUB_IDS.SELECTED_PLANNER_ITEM);
-regSub(SUB_IDS.SELECTED_PLANNER_CORPORATION_LEVEL);
-regSub(SUB_IDS.TARGET_AMOUNT);
-regSub(SUB_IDS.BASES);
-regSub(SUB_IDS.SELECTED_BASE_ID);
-regSub(SUB_IDS.BASE_DETAIL_ACTIVE_TAB);
-regSub(SUB_IDS.CONFIRMATION_DIALOG);
-regSub(SUB_IDS.ACTIVATE_PLAN_DIALOG);
+regSub(SUB_IDS.APP_DATA_VERSION, "appDataVersion");
+regSub(SUB_IDS.APP_DATA_VERSIONS, "appDataVersions");
+regSub(SUB_IDS.ITEMS_LIST, "itemsList");
+regSub(SUB_IDS.ITEMS_BY_ID, "itemsById");
+regSub(SUB_IDS.ITEMS_SELECTED_CATEGORY, "itemsSelectedCategory");
+regSub(SUB_IDS.ITEMS_SELECTED_BUILDING, "itemsSelectedBuilding");
+regSub(SUB_IDS.ITEMS_SEARCH_TERM, "itemsSearchTerm");
+regSub(SUB_IDS.ITEMS_CATEGORIES, "itemsCategories");
+regSub(SUB_IDS.BUILDINGS_LIST, "buildingsList");
+regSub(SUB_IDS.CORPORATIONS_LIST, "corporationsList");
+regSub(SUB_IDS.UI_THEME, "uiTheme");
+regSub(SUB_IDS.UI_ACTIVE_TAB, "uiActiveTab");
+regSub(SUB_IDS.PLANNER_SELECTED_ITEM_ID, "plannerSelectedItemId");
+regSub(SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL, "plannerSelectedCorporationLevel");
+regSub(SUB_IDS.PLANNER_TARGET_AMOUNT, "plannerTargetAmount");
+regSub(SUB_IDS.BASES_LIST, "basesList");
+regSub(SUB_IDS.BASES_SELECTED_BASE_ID, "basesSelectedBaseId");
+regSub(SUB_IDS.UI_CONFIRMATION_DIALOG, "uiConfirmationDialog");
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, "productionPlanModalState");
 
 // Available buildings subscription (unique building names)
 // Only includes production type buildings
-regSub(SUB_IDS.AVAILABLE_PRODUCTION_BUILDINGS,
+regSub(SUB_IDS.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS,
     (buildings: DbBuilding[]) => {
         const buildingNames = new Set<string>();
         buildingNames.add('all'); // Add 'all' option
@@ -56,10 +58,10 @@ regSub(SUB_IDS.AVAILABLE_PRODUCTION_BUILDINGS,
         });
         return Array.from(buildingNames).sort();
     },
-    () => [[SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.BUILDINGS_LIST]]);
 
 // Computed subscriptions
-regSub(SUB_IDS.FILTERED_ITEMS,
+regSub(SUB_IDS.ITEMS_FILTERED_LIST,
     (category, selectedBuilding, searchTerm, items, buildings) => {
         let filtered = category === 'all'
             ? items
@@ -91,7 +93,7 @@ regSub(SUB_IDS.FILTERED_ITEMS,
         // Sort items alphabetically by name
         return [...filtered].sort((a: Item, b: Item) => a.name.localeCompare(b.name));
     },
-    () => [[SUB_IDS.SELECTED_CATEGORY], [SUB_IDS.SELECTED_BUILDING], [SUB_IDS.SEARCH_TERM], [SUB_IDS.ITEMS], [SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.ITEMS_SELECTED_CATEGORY], [SUB_IDS.ITEMS_SELECTED_BUILDING], [SUB_IDS.ITEMS_SEARCH_TERM], [SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]]);
 
 // Items table data with computed properties - computed directly from source data
 interface ItemTableData {
@@ -100,7 +102,7 @@ interface ItemTableData {
     corporationUsage: Array<{ corporation: string; level: number }>;
 }
 
-regSub(SUB_IDS.ITEMS_TABLE_DATA,
+regSub(SUB_IDS.ITEMS_TABLE_ROWS,
     (filteredItems: Item[], buildings: DbBuilding[], corporations: Corporation[]): ItemTableData[] => {
         // Build producing buildings map
         const producingBuildingsMap = new Map<string, string>();
@@ -133,7 +135,7 @@ regSub(SUB_IDS.ITEMS_TABLE_DATA,
             corporationUsage: corporationUsageMap.get(item.id) || []
         }));
     },
-    () => [[SUB_IDS.FILTERED_ITEMS], [SUB_IDS.BUILDINGS], [SUB_IDS.CORPORATIONS]]);
+    () => [[SUB_IDS.ITEMS_FILTERED_LIST], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.CORPORATIONS_LIST]]);
 
 // Helper maps for RecipesPage and other components
 interface ItemsHelperMaps {
@@ -141,7 +143,7 @@ interface ItemsHelperMaps {
     buildingCorporationUsage: Map<string, Array<{ corporation: string; level: number }>>;
 }
 
-regSub(SUB_IDS.ITEMS_HELPER_MAPS,
+regSub(SUB_IDS.ITEMS_HELPER_LOOKUPS,
     (corporations: Corporation[]): ItemsHelperMaps => {
         const corporationNameToId = new Map<string, string>();
         const buildingCorporationUsage = new Map<string, Array<{ corporation: string; level: number }>>();
@@ -167,10 +169,10 @@ regSub(SUB_IDS.ITEMS_HELPER_MAPS,
             buildingCorporationUsage
         };
     },
-    () => [[SUB_IDS.CORPORATIONS]]);
+    () => [[SUB_IDS.CORPORATIONS_LIST]]);
 
 // Corporation with computed stats
-regSub(SUB_IDS.CORPORATIONS_WITH_STATS,
+regSub(SUB_IDS.CORPORATIONS_LIST_WITH_STATS,
     (corporations: Corporation[]) => {
         return corporations.map(corporation => ({
             ...corporation,
@@ -181,10 +183,10 @@ regSub(SUB_IDS.CORPORATIONS_WITH_STATS,
             }
         }));
     },
-    () => [[SUB_IDS.CORPORATIONS]]);
+    () => [[SUB_IDS.CORPORATIONS_LIST]]);
 
 // Overall corporations statistics
-regSub(SUB_IDS.CORPORATIONS_STATS,
+regSub(SUB_IDS.CORPORATIONS_STATS_SUMMARY,
     (corporationsWithStats: (Corporation & { stats: { totalLevels: number; totalComponents: number; totalCost: number } })[]) => {
         return {
             totalCorporations: corporationsWithStats.length,
@@ -192,7 +194,7 @@ regSub(SUB_IDS.CORPORATIONS_STATS,
             totalCost: corporationsWithStats.reduce((total: number, corp) => total + corp.stats.totalCost, 0)
         };
     },
-    () => [[SUB_IDS.CORPORATIONS_WITH_STATS]]);
+    () => [[SUB_IDS.CORPORATIONS_LIST_WITH_STATS]]);
 
 // Available corporation levels for selected planner item
 interface CorporationLevelInfo {
@@ -225,32 +227,7 @@ regSub(SUB_IDS.PLANNER_AVAILABLE_CORPORATION_LEVELS,
         }
         return levels;
     },
-    () => [[SUB_IDS.SELECTED_PLANNER_ITEM], [SUB_IDS.CORPORATIONS]]);
-
-// Parameterized subscription for available corporation levels by item ID
-regSub(SUB_IDS.AVAILABLE_CORPORATION_LEVELS_FOR_ITEM,
-    (corporations: Corporation[], itemId: string): CorporationLevelInfo[] => {
-        if (!itemId) return [];
-        
-        const levels: CorporationLevelInfo[] = [];
-        for (const corporation of corporations) {
-            for (const level of corporation.levels) {
-                for (const component of level.components) {
-                    if (component.id === itemId) {
-                        levels.push({
-                            corporationName: corporation.name,
-                            corporationId: corporation.id,
-                            level: level.level,
-                            points: component.points,
-                            cost: component.cost
-                        });
-                    }
-                }
-            }
-        }
-        return levels;
-    },
-    () => [[SUB_IDS.CORPORATIONS]]);
+    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.CORPORATIONS_LIST]]);
 
 // Production flow for planner (raw nodes and edges)
 // Only includes the Orbital Cargo Launcher when a corporation level is selected
@@ -260,7 +237,7 @@ interface SelectedCorporationLevel {
 }
 
 regSub(SUB_IDS.PLANNER_PRODUCTION_FLOW,
-    (selectedItem: string | null, targetAmount: number, buildings: Building[], corporations: Corporation[], selectedCorporationLevel: SelectedCorporationLevel | null): ProductionFlowResult => {
+    (selectedItem: string | null, targetAmount: number, buildings: Building[], selectedCorporationLevel: SelectedCorporationLevel | null): ProductionFlowResult => {
         if (!selectedItem) {
             return { nodes: [], edges: [] };
         }
@@ -269,16 +246,14 @@ regSub(SUB_IDS.PLANNER_PRODUCTION_FLOW,
         // Only include launcher if a corporation level is selected
         const includeLauncher = selectedCorporationLevel !== null;
         return buildProductionFlow(
-            { targetItemId: selectedItem, targetAmount: validAmount },
-            buildings,
-            corporations,
-            includeLauncher
+            { targetItemId: selectedItem, targetAmount: validAmount, includeLauncher },
+            buildings
         );
     },
-    () => [[SUB_IDS.SELECTED_PLANNER_ITEM], [SUB_IDS.TARGET_AMOUNT], [SUB_IDS.BUILDINGS], [SUB_IDS.CORPORATIONS], [SUB_IDS.SELECTED_PLANNER_CORPORATION_LEVEL]]);
+    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_TARGET_AMOUNT], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL]]);
 
 // React Flow formatted data for visualization
-regSub(SUB_IDS.PLANNER_REACT_FLOW_DATA,
+regSub(SUB_IDS.PLANNER_FLOW_GRAPH,
     (productionFlow: ProductionFlowResult, items: Item[]): { nodes: Node[]; edges: Edge[] } => {
         if (!productionFlow || productionFlow.nodes.length === 0) {
             return { nodes: [], edges: [] };
@@ -290,7 +265,7 @@ regSub(SUB_IDS.PLANNER_REACT_FLOW_DATA,
             items
         });
     },
-    () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS]]);
+    () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS_LIST]]);
 
 // Planner stats summary (for button display)
 regSub(SUB_IDS.PLANNER_STATS_SUMMARY,
@@ -303,7 +278,7 @@ regSub(SUB_IDS.PLANNER_STATS_SUMMARY,
         const totalHotness = productionFlow.nodes.reduce((sum, node) => sum + node.totalHeat, 0);
         return { totalBuildings, totalEnergy, totalHotness };
     },
-    () => [[SUB_IDS.SELECTED_PLANNER_ITEM], [SUB_IDS.PLANNER_PRODUCTION_FLOW]]);
+    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_PRODUCTION_FLOW]]);
 
 // Planner detailed stats (for modal display)
 interface BuildingStats {
@@ -430,15 +405,35 @@ regSub(SUB_IDS.PLANNER_STATS_DETAILED,
             sortedTypes
         };
     },
-    () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS]]);
+    () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS_LIST]]);
 
-// Selected base subscription - computed from selectedBaseId and bases
-regSub(SUB_IDS.SELECTED_BASE,
-    (selectedBaseId: string | null, bases: Base[]): Base | null => {
-        if (!selectedBaseId) return null;
-        return bases.find(b => b.id === selectedBaseId) || null;
+type BasesById = Record<string, Base>;
+
+regSub(SUB_IDS.BASES_BY_ID_MAP,
+    (bases: Base[]): BasesById => {
+        const basesById: BasesById = {};
+        bases.forEach((base) => {
+            basesById[base.id] = base;
+        });
+        return basesById;
     },
-    () => [[SUB_IDS.SELECTED_BASE_ID], [SUB_IDS.BASES]]);
+    () => [[SUB_IDS.BASES_LIST]]);
+
+// Selected base subscription - computed from selectedBaseId and indexed bases map
+regSub(SUB_IDS.BASES_SELECTED_BASE,
+    (selectedBaseId: string | null, basesById: BasesById): Base | null => {
+        if (!selectedBaseId) return null;
+        return basesById[selectedBaseId] || null;
+    },
+    () => [[SUB_IDS.BASES_SELECTED_BASE_ID], [SUB_IDS.BASES_BY_ID_MAP]]);
+
+// Parameterized subscription for base by ID
+regSub(SUB_IDS.BASES_BASE_BY_ID,
+    (basesById: BasesById, baseId: string): Base | null => {
+        if (!baseId) return null;
+        return basesById[baseId] || null;
+    },
+    () => [[SUB_IDS.BASES_BY_ID_MAP]]);
 
 // Helper function to calculate stats for a base
 function calculateBaseDetailStats(base: Base, buildings: DbBuilding[]): BaseDetailStats {
@@ -474,6 +469,7 @@ function calculateBaseDetailStats(base: Base, buildings: DbBuilding[]): BaseDeta
     const isEnergyInsufficient = energyGeneration === 0 || energyConsumption > energyGeneration;
     
     return {
+        baseName: base.name,
         buildingCount: base.buildings.length,
         totalHeat,
         energyGeneration,
@@ -486,26 +482,26 @@ function calculateBaseDetailStats(base: Base, buildings: DbBuilding[]): BaseDeta
     };
 }
 
-regSub(SUB_IDS.SELECTED_BASE_DETAIL_STATS,
+regSub(SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS,
     (selectedBase: Base | null, buildings: DbBuilding[]): BaseDetailStats | null => {
         if (!selectedBase) return null;
         return calculateBaseDetailStats(selectedBase, buildings);
     },
-    () => [[SUB_IDS.SELECTED_BASE], [SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_LIST]]);
 
 // Parameterized subscription for base detail stats by base ID
-regSub(SUB_IDS.BASE_DETAIL_STATS,
-    (bases: Base[], buildings: DbBuilding[], baseId: string): BaseDetailStats | null => {
-        const base = bases.find(b => b.id === baseId);
+regSub(SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID,
+    (basesById: BasesById, buildings: DbBuilding[], baseId: string): BaseDetailStats | null => {
+        const base = basesById[baseId];
         if (!base) return null;
         return calculateBaseDetailStats(base, buildings);
     },
-    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST]]);
 
 // Parameterized subscription for base input items by base ID
-regSub(SUB_IDS.BASE_INPUT_ITEMS,
-    (bases: Base[], buildings: DbBuilding[], itemsMap: Record<string, Item>, baseId: string): BaseInputItem[] => {
-        const base = bases.find(b => b.id === baseId);
+regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID,
+    (basesById: BasesById, buildings: DbBuilding[], itemsMap: Record<string, Item>, baseId: string): BaseInputItem[] => {
+        const base = basesById[baseId];
         if (!base) return [];
         
         const items: BaseInputItem[] = [];
@@ -521,6 +517,7 @@ regSub(SUB_IDS.BASE_INPUT_ITEMS,
                 const item = itemsMap[baseBuilding.selectedItemId];
                 if (item) {
                     items.push({
+                        baseBuildingId: baseBuilding.id,
                         item,
                         ratePerMinute: baseBuilding.ratePerMinute,
                         building,
@@ -531,12 +528,12 @@ regSub(SUB_IDS.BASE_INPUT_ITEMS,
         
         return items;
     },
-    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS], [SUB_IDS.ITEMS_MAP]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID]]);
 
 // Parameterized subscription for base output items by base ID
-regSub(SUB_IDS.BASE_OUTPUT_ITEMS,
-    (bases: Base[], buildings: DbBuilding[], itemsMap: Record<string, Item>, baseId: string): BaseOutputItem[] => {
-        const base = bases.find(b => b.id === baseId);
+regSub(SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID,
+    (basesById: BasesById, buildings: DbBuilding[], itemsMap: Record<string, Item>, baseId: string): BaseOutputItem[] => {
+        const base = basesById[baseId];
         if (!base) return [];
         
         const items: BaseOutputItem[] = [];
@@ -562,12 +559,12 @@ regSub(SUB_IDS.BASE_OUTPUT_ITEMS,
         
         return items;
     },
-    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS], [SUB_IDS.ITEMS_MAP]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID]]);
 
 // Parameterized subscription for base defense buildings by base ID
-regSub(SUB_IDS.BASE_DEFENSE_BUILDINGS,
-    (bases: Base[], buildings: DbBuilding[], baseId: string): BaseDefenseBuilding[] => {
-        const base = bases.find(b => b.id === baseId);
+regSub(SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID,
+    (basesById: BasesById, buildings: DbBuilding[], baseId: string): BaseDefenseBuilding[] => {
+        const base = basesById[baseId];
         if (!base) return [];
         
         const defenseMap = new Map<string, BaseDefenseBuilding>();
@@ -586,10 +583,10 @@ regSub(SUB_IDS.BASE_DEFENSE_BUILDINGS,
         
         return Array.from(defenseMap.values());
     },
-    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST]]);
 
 // Sorted production buildings subscription
-regSub(SUB_IDS.SORTED_PRODUCTION_BUILDINGS,
+regSub(SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST,
     (buildings: DbBuilding[], helperMaps: ItemsHelperMaps): DbBuilding[] => {
         // Filter buildings by type="production"
         const productionBuildings = buildings.filter(building => building.type === 'production');
@@ -617,10 +614,10 @@ regSub(SUB_IDS.SORTED_PRODUCTION_BUILDINGS,
             return a.name.localeCompare(b.name);
         });
     },
-    () => [[SUB_IDS.BUILDINGS], [SUB_IDS.ITEMS_HELPER_MAPS]]);
+    () => [[SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_HELPER_LOOKUPS]]);
 
 // Parameterized subscription for available items for a building
-regSub(SUB_IDS.AVAILABLE_ITEMS_FOR_BUILDING,
+regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID,
     (items: Item[], buildings: DbBuilding[], buildingId: string): Item[] => {
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return [];
@@ -640,26 +637,63 @@ regSub(SUB_IDS.AVAILABLE_ITEMS_FOR_BUILDING,
                 .sort((a, b) => a.name.localeCompare(b.name));
         }
     },
-    () => [[SUB_IDS.ITEMS], [SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]]);
 
 // Parameterized subscription for buildings in a specific section
-regSub(SUB_IDS.BUILDING_SECTION_BUILDINGS,
-    (bases: Base[], baseId: string, sectionType: string): BaseBuilding[] => {
-        const base = bases.find(b => b.id === baseId);
-        if (!base) {
-            return [];
-        }
-        
-        // Filter base buildings by the section type they were added to
-        return base.buildings.filter((baseBuilding: BaseBuilding) => {
-            return baseBuilding.sectionType === sectionType;
-        });
-    },
-    () => [[SUB_IDS.BASES]]);
+// Returns enriched data: building type info + active plan names alongside each base building
+regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS,
+    (base: Base | null, dbBuildings: DbBuilding[], _baseId: string, sectionType: string): BuildingSectionBuilding[] => {
+        if (!base) return [];
 
-regSub(SUB_IDS.BUILDING_SECTION_STATS,
-    (bases: Base[], buildings: DbBuilding[], baseId: string, sectionType: string): BuildingSectionStats => {
-        const base = bases.find(b => b.id === baseId);
+        const sectionBuildings = base.buildings.filter(b => b.sectionType === sectionType);
+        if (sectionBuildings.length === 0) return [];
+
+        // Build active-plan highlight map for the entire base
+        const activePlans = base.productions?.filter(p => p.active) || [];
+        const planNamesMap: Record<string, string[]> = {};
+
+        activePlans.forEach(plan => {
+            // Required production buildings (stored on plan save)
+            (plan.requiredBuildings || []).forEach(({ buildingId, count }) => {
+                const withItem = base.buildings.filter(b =>
+                    b.buildingTypeId === buildingId && b.selectedItemId !== undefined);
+                const withoutItem = base.buildings.filter(b =>
+                    b.buildingTypeId === buildingId && b.selectedItemId === undefined);
+                [...withItem, ...withoutItem].slice(0, count).forEach(b => {
+                    if (!planNamesMap[b.id]) planNamesMap[b.id] = [];
+                    if (!planNamesMap[b.id].includes(plan.name)) planNamesMap[b.id].push(plan.name);
+                });
+            });
+
+            // Input building snapshots
+            (plan.inputs || []).forEach(inputBuilding => {
+                if (inputBuilding.id && base.buildings.some(b => b.id === inputBuilding.id)) {
+                    if (!planNamesMap[inputBuilding.id]) planNamesMap[inputBuilding.id] = [];
+                    if (!planNamesMap[inputBuilding.id].includes(plan.name)) planNamesMap[inputBuilding.id].push(plan.name);
+                }
+            });
+        });
+
+        // Build lookup for building types
+        const buildingsById = new Map(dbBuildings.map(b => [b.id, b]));
+
+        return sectionBuildings
+            .map(baseBuilding => {
+                const building = buildingsById.get(baseBuilding.buildingTypeId);
+                if (!building) return null;
+                return {
+                    baseBuilding,
+                    building,
+                    activePlanNames: planNamesMap[baseBuilding.id] || [],
+                };
+            })
+            .filter((b): b is BuildingSectionBuilding => b !== null);
+    },
+    (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId], [SUB_IDS.BUILDINGS_LIST]]);
+
+regSub(SUB_IDS.BASES_BUILDING_SECTION_STATS,
+    (basesById: BasesById, buildings: DbBuilding[], baseId: string, sectionType: string): BuildingSectionStats => {
+        const base = basesById[baseId];
         if (!base) {
             return {
                 buildingCount: 0,
@@ -708,31 +742,36 @@ regSub(SUB_IDS.BUILDING_SECTION_STATS,
             hasGenerators,
         };
     },
-    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST]]);
 
 // Planner selectable items (excludes raw materials, sorted alphabetically)
 regSub(SUB_IDS.PLANNER_SELECTABLE_ITEMS,
     (items: Item[]): Item[] => {
         return items.filter(item => item.type !== 'raw').sort((a, b) => a.name.localeCompare(b.name));
     },
-    () => [[SUB_IDS.ITEMS]]);
+    () => [[SUB_IDS.ITEMS_LIST]]);
 
 // Parameterized subscription for available buildings for a specific section
-regSub(SUB_IDS.AVAILABLE_BUILDINGS_FOR_SECTION,
+regSub(SUB_IDS.BASES_AVAILABLE_BUILDINGS_FOR_SECTION,
     (buildings: DbBuilding[], sectionType: BuildingSectionType): DbBuilding[] => {
         return getAvailableBuildingsForSection(buildings, sectionType);
     },
-    () => [[SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.BUILDINGS_LIST]]);
 
 // Aggregated stats for all bases
-regSub(SUB_IDS.MY_BASES_STATS,
+regSub(SUB_IDS.BASES_STATS_SUMMARY,
     (bases: Base[], buildings: DbBuilding[]): MyBasesStats => {
         let totalBuildings = 0;
         let totalHeat = 0;
+        let totalHeatCapacity = 0;
         let totalEnergyUsed = 0;
+        let totalEnergyProduced = 0;
 
         bases.forEach((base: Base) => {
             totalBuildings += base.buildings.length;
+            
+            // Calculate heat capacity for this base
+            totalHeatCapacity += calculateBaseCoreHeatCapacity(base.buildings, buildings);
 
             base.buildings.forEach((baseBuilding: BaseBuilding) => {
                 const buildingType = buildings.find(b => b.id === baseBuilding.buildingTypeId);
@@ -741,79 +780,171 @@ regSub(SUB_IDS.MY_BASES_STATS,
                     if (!isAmplifierBuilding(buildingType.id)) {
                         totalHeat += buildingType.heat || 0;
                     }
-                    // Energy consumption (only count consumption, not generation)
-                    if (buildingType.type !== 'generator') {
+                    // Energy: generators produce, others consume
+                    if (buildingType.type === 'generator') {
+                        totalEnergyProduced += buildingType.power || 0;
+                    } else {
                         totalEnergyUsed += buildingType.power || 0;
                     }
                 }
             });
         });
 
+        // Calculate percentages and error states
+        const heatPercentage = totalHeatCapacity > 0
+            ? Math.min((totalHeat / totalHeatCapacity) * 100, 100)
+            : 0;
+        const isHeatOverCapacity = totalHeat > totalHeatCapacity;
+        
+        const energyPercentage = totalEnergyProduced > 0
+            ? Math.min((totalEnergyUsed / totalEnergyProduced) * 100, 100)
+            : totalEnergyUsed > 0
+                ? 100
+                : 0;
+        const isEnergyInsufficient = totalEnergyProduced === 0 || totalEnergyUsed > totalEnergyProduced;
+
         return {
             totalBases: bases.length,
             totalBuildings,
             totalHeat,
+            totalHeatCapacity,
             totalEnergyUsed,
+            totalEnergyProduced,
+            heatPercentage,
+            energyPercentage,
+            isHeatOverCapacity,
+            isEnergyInsufficient,
         };
     },
-    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS]]);
+    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_LIST]]);
 
 // Production Plan Section subscriptions
 
-// Parameterized subscription for production plan sections of a base
-regSub(SUB_IDS.BASE_PRODUCTION_PLAN_SECTIONS,
-    (bases: Base[], baseId: string): ProductionPlanSection[] => {
-        const base = bases.find(b => b.id === baseId);
-        if (!base) return [];
-        return base.productionPlanSections || [];
+// Parameterized subscription for production plan section IDs of selected base
+regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_IDS,
+    (selectedBase: Base | null): string[] => {
+        if (!selectedBase) return [];
+        return (selectedBase.productions || []).map(section => section.id);
     },
-    () => [[SUB_IDS.BASES]]);
+    () => [[SUB_IDS.BASES_SELECTED_BASE]]);
 
-// Parameterized subscription for production flow of a specific section
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW,
-    (buildings: Building[], corporations: Corporation[], selectedItemId: string, targetAmount: number, corporationLevel?: { corporationId: string; level: number } | null): ProductionFlowResult => {
-        if (!selectedItemId) {
-            return { nodes: [], edges: [] };
+// Parameterized subscription for a single production plan section by ID
+regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID,
+    (base: Base | null, _baseId: string, sectionId: string): Production | null => {
+        if (!base || !sectionId) return null;
+        return base.productions?.find(section => section.id === sectionId) || null;
+    },
+    (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId]]);
+
+const EMPTY_PRODUCTION_FLOW: ProductionFlowResult = { nodes: [], edges: [], rawMaterialDeficits: [] };
+const EMPTY_PRODUCTION_PLAN_SECTION_STATS: ProductionPlanSectionStats = {
+    buildingCount: 0,
+    totalHeat: 0,
+    totalPowerConsumption: 0,
+};
+
+const isLauncherEnabled = (corporationLevel?: { corporationId: string; level: number } | null): boolean =>
+    corporationLevel !== null && corporationLevel !== undefined;
+
+
+// Parameterized subscription for a production flow of a specific section
+regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID,
+    (section: Production | null, buildings: Building[]): ProductionFlowResult => {
+        if (!section || !section.selectedItemId) {
+            return EMPTY_PRODUCTION_FLOW;
         }
-        
-        const validAmount = targetAmount > 0 ? targetAmount : 1;
-        const includeLauncher = corporationLevel !== null && corporationLevel !== undefined;
+
+        const validAmount = section.targetAmount > 0 ? section.targetAmount : 1;
+
         return buildProductionFlow(
-            { targetItemId: selectedItemId, targetAmount: validAmount },
-            buildings,
-            corporations,
-            includeLauncher
+            {
+                targetItemId: section.selectedItemId,
+                targetAmount: validAmount,
+                inputBuildings: section.inputs,
+                rawProductionDisabled: true,
+                includeLauncher: isLauncherEnabled(section.corporationLevel),
+            },
+            buildings
         );
     },
-    () => [[SUB_IDS.BUILDINGS], [SUB_IDS.CORPORATIONS]]);
+    (baseId: string, sectionId: string) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId], [SUB_IDS.BUILDINGS_LIST]]);
 
-// Parameterized subscription for React Flow data of a production plan section
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REACT_FLOW_DATA,
-    (productionFlow: ProductionFlowResult, items: Item[]): { nodes: Node[]; edges: Edge[] } => {
-        if (!productionFlow || productionFlow.nodes.length === 0) {
-            return { nodes: [], edges: [] };
+// Subscription for production flow in the create/edit modal
+// Reads all data from modal state - no parameters needed
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW,
+    (
+        modalState: CreateProductionPlanModalState,
+        buildings: Building[],
+        basesById: BasesById
+    ): ProductionFlowResult => {
+        const { selectedItemId, targetAmount, selectedCorporationLevel, selectedInputIds, baseId } = modalState;
+        
+        if (!selectedItemId) {
+            return EMPTY_PRODUCTION_FLOW;
         }
 
-        return generateReactFlowData({
-            flowNodes: productionFlow.nodes,
-            flowEdges: productionFlow.edges,
-            items
-        });
+        const validAmount = targetAmount > 0 ? targetAmount : 1;
+        const base = baseId ? basesById[baseId] || null : null;
+        const inputBuildings = getSelectedFlowInputBuildings(base, selectedInputIds || []);
+
+        return buildProductionFlow(
+            {
+                targetItemId: selectedItemId,
+                targetAmount: validAmount,
+                inputBuildings,
+                rawProductionDisabled: true,
+                includeLauncher: isLauncherEnabled(selectedCorporationLevel)
+            },
+            buildings
+        );
     },
-    () => [[SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW], [SUB_IDS.ITEMS]]);
+    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.BASES_BY_ID_MAP]]);
+
+// Subscription for corporation levels based on modal's selected item
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS,
+    (corporations: Corporation[], modalState: CreateProductionPlanModalState): CorporationLevelInfo[] => {
+        const { selectedItemId } = modalState;
+        if (!selectedItemId) return [];
+        
+        const levels: CorporationLevelInfo[] = [];
+        for (const corporation of corporations) {
+            for (const level of corporation.levels) {
+                for (const component of level.components) {
+                    if (component.id === selectedItemId) {
+                        levels.push({
+                            corporationName: corporation.name,
+                            corporationId: corporation.id,
+                            level: level.level,
+                            points: component.points,
+                            cost: component.cost
+                        });
+                    }
+                }
+            }
+        }
+        return levels;
+    },
+    () => [[SUB_IDS.CORPORATIONS_LIST], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
 
 // Parameterized subscription for stats of a production plan section
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_STATS,
-    (productionFlow: ProductionFlowResult): ProductionPlanSectionStats => {
+regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_STATS_BY_ID,
+    (
+        productionFlow: ProductionFlowResult,
+        section: Production | null,
+    ): ProductionPlanSectionStats => {
         if (!productionFlow || productionFlow.nodes.length === 0) {
-            return {
-                buildingCount: 0,
-                totalHeat: 0,
-                totalPowerConsumption: 0,
-            };
+            return EMPTY_PRODUCTION_PLAN_SECTION_STATS;
         }
 
-        const totalBuildings = productionFlow.nodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0);
+        // Count buildings from production flow nodes (excluding custom input nodes)
+        const productionBuildings = productionFlow.nodes
+            .filter(node => !node.isCustomInput)
+            .reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0);
+
+        // Count custom input buildings from section snapshots to keep existing behavior
+        const customInputBuildings = (section?.inputs || []).length;
+
+        const totalBuildings = productionBuildings + customInputBuildings;
         const totalHeat = productionFlow.nodes.reduce((sum, node) => sum + node.totalHeat, 0);
         const totalPower = productionFlow.nodes.reduce((sum, node) => sum + node.totalPower, 0);
 
@@ -823,144 +954,331 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_STATS,
             totalPowerConsumption: totalPower,
         };
     },
-    (selectedItemId: string, targetAmount: number, corporationLevel?: { corporationId: string; level: number } | null) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW, selectedItemId, targetAmount, corporationLevel]]);
+    (baseId: string, sectionId: string) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId], [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId]]);
 
-// Active plans buildings map - maps buildingTypeId to array of plan names
-// This is used to highlight buildings in the buildings tab that are part of active plans
-export interface ActivePlansBuildingsMap {
-    [buildingTypeId: string]: string[];  // buildingTypeId -> plan names
+// Combined subscription for ProductionPlanSection component.
+// Uses stored requiredBuildings for building requirements & stats.
+// Derives item name and input requirement display data from existing lookups.
+interface ProductionPlanSectionData {
+    selectedBaseId: string;
+    section: Production;
+    itemName: string;
+    corporationName: string | null;
+    stats: ProductionPlanSectionStats;
+    buildingRequirements: BuildingRequirement[];
+    inputRequirements: InputRequirement[];
+    allRequirementsSatisfied: boolean;
+    planStatus: string;
+    hasError: boolean;
+    showManageButton: boolean;
 }
 
-regSub(SUB_IDS.ACTIVE_PLANS_BUILDINGS_MAP,
-    (selectedBase: Base | null, buildings: Building[], corporations: Corporation[]): ActivePlansBuildingsMap => {
-        if (!selectedBase) return {};
-        
-        const activePlans = selectedBase.productionPlanSections?.filter(section => section.active) || [];
-        if (activePlans.length === 0) return {};
-        
-        const buildingsMap: ActivePlansBuildingsMap = {};
-        
-        activePlans.forEach(plan => {
-            if (!plan.selectedItemId) return;
-            
-            // Compute production flow for this plan
-            const includeLauncher = plan.corporationLevel !== null && plan.corporationLevel !== undefined;
-            const flow = buildProductionFlow(
-                { targetItemId: plan.selectedItemId, targetAmount: plan.targetAmount || 1 },
-                buildings,
-                corporations,
-                includeLauncher
-            );
-            
-            // Extract building types from flow nodes
-            flow.nodes.forEach(node => {
-                if (!buildingsMap[node.buildingId]) {
-                    buildingsMap[node.buildingId] = [];
-                }
-                if (!buildingsMap[node.buildingId].includes(plan.name)) {
-                    buildingsMap[node.buildingId].push(plan.name);
-                }
-            });
-        });
-        
-        return buildingsMap;
-    },
-    () => [[SUB_IDS.SELECTED_BASE], [SUB_IDS.BUILDINGS], [SUB_IDS.CORPORATIONS]]);
-
-// Parameterized subscription for production plan section item name
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ITEM_NAME,
-    (itemsMap: Record<string, Item>, selectedItemId: string): string => {
-        if (!selectedItemId) return '';
-        const item = itemsMap[selectedItemId];
-        return item?.name || selectedItemId;
-    },
-    () => [[SUB_IDS.ITEMS_MAP]]);
-
-// Parameterized subscription for building requirements comparison
-// Returns building requirements with availability status for a production plan section
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_BUILDING_REQUIREMENTS,
+regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
     (
-        bases: Base[],
-        buildings: Building[],
-        corporations: Corporation[],
-        baseId: string,
-        sectionId: string
-    ): { buildingRequirements: BuildingRequirement[]; allRequirementsSatisfied: boolean } => {
-        const base = bases.find(b => b.id === baseId);
-        if (!base) {
-            return {
-                buildingRequirements: [],
-                allRequirementsSatisfied: false
-            };
+        section: Production | null,
+        base: Base | null,
+        itemsMap: Record<string, Item>,
+        buildings: DbBuilding[],
+        corporations: Corporation[]
+    ): ProductionPlanSectionData | null => {
+
+        if (!base || !section) {
+            return null;
         }
 
-        const section = base.productionPlanSections?.find(s => s.id === sectionId);
-        if (!section || !section.selectedItemId) {
-            return {
-                buildingRequirements: [],
-                allRequirementsSatisfied: false
-            };
-        }
+        // Item name — derived from items lookup
+        const itemName = section.selectedItemId
+            ? (itemsMap[section.selectedItemId]?.name || section.selectedItemId)
+            : '';
 
-        const validAmount = section.targetAmount > 0 ? section.targetAmount : 1;
-        const includeLauncher = section.corporationLevel !== null && section.corporationLevel !== undefined;
-        const flow: ProductionFlowResult = buildProductionFlow(
-            { targetItemId: section.selectedItemId, targetAmount: validAmount },
-            buildings,
-            corporations,
-            includeLauncher
-        );
+        // Corporation name — derived from corporations lookup
+        const corporationName = section.corporationLevel
+            ? (corporations.find(c => c.id === section.corporationLevel?.corporationId)?.name || null)
+            : null;
 
-        // Calculate required buildings from flow
-        const requiredBuildingsMap = new Map<string, { name: string; count: number }>();
-        flow.nodes.forEach(node => {
-            const existing = requiredBuildingsMap.get(node.buildingId);
-            if (existing) {
-                existing.count += Math.ceil(node.buildingCount);
-            } else {
-                requiredBuildingsMap.set(node.buildingId, {
-                    name: node.buildingName,
-                    count: Math.ceil(node.buildingCount)
-                });
+        // Stats — calculated from buildings map by looking up building types
+        const requiredBuildings = section.requiredBuildings || [];
+        const sectionInputs = section.inputs || [];
+        const buildingsById = new Map(buildings.map(b => [b.id, b]));
+
+        // Calculate heat/power from required buildings
+        let totalHeat = 0;
+        let totalPowerConsumption = 0;
+        requiredBuildings.forEach(({ buildingId, count }) => {
+            const building = buildingsById.get(buildingId);
+            if (building) {
+                totalHeat += (building.heat || 0) * count;
+                totalPowerConsumption += (building.power || 0) * count;
             }
         });
 
-        // Count available buildings in base
+        // Also account for input buildings
+        sectionInputs.forEach((inputBuilding: BaseBuilding) => {
+            const building = buildingsById.get(inputBuilding.buildingTypeId);
+            if (building) {
+                totalHeat += building.heat || 0;
+                totalPowerConsumption += building.power || 0;
+            }
+        });
+
+        const stats: ProductionPlanSectionStats = {
+            buildingCount:
+                requiredBuildings.reduce((sum, b) => sum + b.count, 0) +
+                sectionInputs.length,
+            totalHeat,
+            totalPowerConsumption,
+        };
+
+        // --- Building requirements: compare stored required buildings vs current base ---
         const availableBuildingsMap = new Map<string, number>();
         base.buildings.forEach(baseBuilding => {
             const count = availableBuildingsMap.get(baseBuilding.buildingTypeId) || 0;
             availableBuildingsMap.set(baseBuilding.buildingTypeId, count + 1);
         });
 
-        // Compare requirements with available
-        const requirements: BuildingRequirement[] = [];
-        let allSatisfied = true;
-        
-        requiredBuildingsMap.forEach((value, buildingId) => {
+        const buildingRequirements: BuildingRequirement[] = [];
+        let allRequirementsSatisfied = true;
+
+        requiredBuildings.forEach(({ buildingId, buildingName, count }) => {
             const available = availableBuildingsMap.get(buildingId) || 0;
-            const isSatisfied = available >= value.count;
-            if (!isSatisfied) allSatisfied = false;
-            
-            requirements.push({
+            const isSatisfied = available >= count;
+            if (!isSatisfied) allRequirementsSatisfied = false;
+
+            buildingRequirements.push({
                 buildingId,
-                buildingName: value.name,
-                required: value.count,
+                buildingName,
+                required: count,
                 available,
-                isSatisfied
+                isSatisfied,
             });
         });
 
-        // Sort by unsatisfied first, then by name
-        requirements.sort((a, b) => {
-            if (a.isSatisfied !== b.isSatisfied) {
-                return a.isSatisfied ? 1 : -1;
-            }
+        buildingRequirements.sort((a, b) => {
+            if (a.isSatisfied !== b.isSatisfied) return a.isSatisfied ? 1 : -1;
             return a.buildingName.localeCompare(b.buildingName);
         });
 
+        // --- Input requirements: derived from section.inputs + name lookups ---
+        const inputRequirements: InputRequirement[] = [];
+        let allInputsSatisfied = true;
+
+        if (sectionInputs.length > 0) {
+            const baseBuildingsById = new Map(base.buildings.map(b => [b.id, b]));
+
+            sectionInputs.forEach((inputBuilding: BaseBuilding) => {
+                const matchingBaseBuilding = baseBuildingsById.get(inputBuilding.id);
+                const building = buildingsById.get(inputBuilding.buildingTypeId) || null;
+                const item = inputBuilding.selectedItemId ? itemsMap[inputBuilding.selectedItemId] : null;
+
+                const isSatisfied = !!(
+                    matchingBaseBuilding &&
+                    matchingBaseBuilding.sectionType === 'inputs' &&
+                    matchingBaseBuilding.selectedItemId === inputBuilding.selectedItemId &&
+                    matchingBaseBuilding.ratePerMinute === inputBuilding.ratePerMinute &&
+                    building &&
+                    item
+                );
+
+                if (!isSatisfied) allInputsSatisfied = false;
+
+                inputRequirements.push({
+                    baseBuildingId: inputBuilding.id,
+                    buildingId: building?.id || inputBuilding.buildingTypeId,
+                    buildingName: building?.name || inputBuilding.buildingTypeId,
+                    itemId: inputBuilding.selectedItemId || '',
+                    itemName: item?.name || inputBuilding.selectedItemId || '',
+                    ratePerMinute: inputBuilding.ratePerMinute || 0,
+                    isSatisfied,
+                });
+            });
+        }
+
+        // Determine plan status: error if inputs insufficient, otherwise use section.status or derive from active state
+        const planStatus = section.status || (section.active ? 'active' : 'inactive');
+        const hasError = planStatus === 'error' || !allInputsSatisfied;
+        // Always show manage button if there are any requirements to manage
+        const showManageButton = buildingRequirements.length > 0 || inputRequirements.length > 0;
+
         return {
-            buildingRequirements: requirements,
-            allRequirementsSatisfied: allSatisfied
+            selectedBaseId: base.id,
+            section,
+            itemName,
+            corporationName,
+            stats,
+            buildingRequirements,
+            inputRequirements,
+            allRequirementsSatisfied,
+            planStatus,
+            hasError,
+            showManageButton,
         };
     },
-    () => [[SUB_IDS.BASES], [SUB_IDS.BUILDINGS], [SUB_IDS.CORPORATIONS]]);
+    (baseId: string, sectionId: string) => [
+        [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId],
+        [SUB_IDS.BASES_BASE_BY_ID, baseId],
+        [SUB_IDS.ITEMS_BY_ID],
+        [SUB_IDS.BUILDINGS_LIST],
+        [SUB_IDS.CORPORATIONS_LIST],
+    ]);
+
+// Lightweight subscription for plan requirements status (used in PlanItem)
+// Extracts only the needed fields from PRODUCTION_PLAN_SECTION_DATA
+regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
+    (sectionData: ProductionPlanSectionData | null): { 
+        allRequirementsSatisfied: boolean; 
+        planStatus: string;
+        hasError: boolean;
+        itemName: string;
+        corporationName: string | null;
+    } => {
+        if (!sectionData) {
+            return {
+                allRequirementsSatisfied: false,
+                planStatus: 'inactive',
+                hasError: false,
+                itemName: '',
+                corporationName: null
+            };
+        }
+        return {
+            allRequirementsSatisfied: sectionData.allRequirementsSatisfied,
+            planStatus: sectionData.planStatus,
+            hasError: sectionData.hasError,
+            itemName: sectionData.itemName,
+            corporationName: sectionData.corporationName
+        };
+    },
+    (baseId: string, sectionId: string) => [
+        [SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId],
+    ]);
+
+// Active plans buildings map - maps baseBuildingId to array of plan names
+// This is used to highlight buildings in the buildings tab that are part of active plans
+// Parameterized subscription for production plan section item name
+regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID,
+    (itemsMap: Record<string, Item>, selectedItemId: string): string => {
+        if (!selectedItemId) return '';
+        const item = itemsMap[selectedItemId];
+        return item?.name || selectedItemId;
+    },
+    () => [[SUB_IDS.ITEMS_BY_ID]]);
+
+// ============================================================
+// Production Plan Modal Sub-Component Subscriptions
+// ============================================================
+
+// Simple subscription for modal open state
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_OPEN_STATE,
+    (modalState: CreateProductionPlanModalState): { isOpen: boolean } => {
+        return {
+            isOpen: modalState.isOpen,
+        };
+    },
+    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+
+// Subscription for modal header (title/edit mode)
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_HEADER_DATA,
+    (modalState: CreateProductionPlanModalState): { isEditMode: boolean } => {
+        return {
+            isEditMode: !!modalState.editSectionId,
+        };
+    },
+    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+
+// Subscription for form initial values (used once when modal opens)
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES,
+    (modalState: CreateProductionPlanModalState, items: Item[]): {
+        defaultName: string;
+        currentSelectedItemId: string;
+        currentTargetAmount: number;
+        defaultSelectedCorporationLevel: { corporationId: string; level: number } | null;
+        selectedItemName: string;
+    } => {
+        const selectedItemName = modalState.selectedItemId
+            ? items.find(i => i.id === modalState.selectedItemId)?.name || ''
+            : '';
+        
+        return {
+            defaultName: modalState.name,
+            currentSelectedItemId: modalState.selectedItemId,
+            currentTargetAmount: modalState.targetAmount,
+            defaultSelectedCorporationLevel: modalState.selectedCorporationLevel,
+            selectedItemName,
+        };
+    },
+    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.ITEMS_LIST]]);
+
+// Subscription for inputs selector component
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
+    (
+        basesById: BasesById,
+        buildings: DbBuilding[],
+        itemsMap: Record<string, Item>,
+        modalState: CreateProductionPlanModalState
+    ): { inputItems: BaseInputItem[]; selectedInputIds: string[] } => {
+        const { baseId, selectedInputIds } = modalState;
+        if (!baseId) return { inputItems: [], selectedInputIds: [] };
+        
+        const base = basesById[baseId];
+        if (!base) return { inputItems: [], selectedInputIds: [] };
+        
+        const inputItems: BaseInputItem[] = [];
+        
+        base.buildings.forEach((baseBuilding: BaseBuilding) => {
+            const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
+            if (!building || !baseBuilding.selectedItemId || !baseBuilding.ratePerMinute) return;
+            
+            // Check if building is in inputs section
+            const isInputBuilding = baseBuilding.sectionType === 'inputs';
+            
+            if (isInputBuilding) {
+                const item = itemsMap[baseBuilding.selectedItemId];
+                if (item) {
+                    inputItems.push({
+                        baseBuildingId: baseBuilding.id,
+                        item,
+                        ratePerMinute: baseBuilding.ratePerMinute,
+                        building,
+                    });
+                }
+            }
+        });
+        
+        return { inputItems, selectedInputIds };
+    },
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+
+// Subscription for selected item ID only (used for form validation)
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID,
+    (modalState: CreateProductionPlanModalState): string => {
+        return modalState.selectedItemId;
+    },
+    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+
+// Subscription for raw material deficits (used for validation and display)
+// Derived from the production flow subscription - no need to store in modal state
+interface RawMaterialDeficitWithName extends RawMaterialDeficit {
+    itemName: string;
+}
+
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS,
+    (productionFlow: ProductionFlowResult, items: Item[]): RawMaterialDeficitWithName[] => {
+        const deficits = productionFlow.rawMaterialDeficits || [];
+        return deficits.map(deficit => ({
+            ...deficit,
+            itemName: getItemName(deficit.itemId, items),
+        }));
+    },
+    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW], [SUB_IDS.ITEMS_LIST]]);
+
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALIDITY,
+    (
+        modalState: CreateProductionPlanModalState,
+        selectedItemId: string,
+        rawMaterialDeficits: RawMaterialDeficitWithName[]
+    ): boolean => {
+        const { name, targetAmount } = modalState;
+        const hasDeficits = rawMaterialDeficits.length > 0;
+        return !!(name.trim() && selectedItemId && targetAmount > 0 && !hasDeficits);
+    },
+    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID], [SUB_IDS.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS]]);

@@ -21,7 +21,7 @@ if (import.meta.env.DEV) {
   })
 }
 
-dispatch([EVENT_IDS.INIT_APP]);
+dispatch([EVENT_IDS.APP_INIT]);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1153,14 +1153,16 @@
     "name": "Base Core Amplifier V1",
     "type": "temperature",
     "power": 0,
-    "heat": 20
+    "heat": 0,
+    "coreHeatCapacity": 20
   },
   {
     "id": "base_core_amplifier_v2",
     "name": "Base Core Amplifier V2",
     "type": "temperature",
     "power": 0,
-    "heat": 250
+    "heat": 0,
+    "coreHeatCapacity": 250
   },
   {
     "id": "habitat",

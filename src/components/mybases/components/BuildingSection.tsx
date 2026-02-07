@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
-import type { BaseBuilding, Building as DbBuilding } from '../../../state/db';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { BuildingSectionCard } from './BuildingSectionCard';
-import type { BuildingSectionType, BuildingSectionStats } from '../types';
-import type { ActivePlansBuildingsMap } from '../../../state/subs';
+import type { BuildingSectionBuilding, BuildingSectionType, BuildingSectionStats } from '../types';
 
 interface BuildingSectionProps {
   title: string;
@@ -18,13 +16,10 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
   
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Get buildings and stats from subscriptions
-  const baseBuildings = useSubscription<BaseBuilding[]>([SUB_IDS.BUILDING_SECTION_BUILDINGS, baseId, sectionType]);
-  const buildings = useSubscription<DbBuilding[]>([SUB_IDS.BUILDINGS]);
-  const stats = useSubscription<BuildingSectionStats>([SUB_IDS.BUILDING_SECTION_STATS, baseId, sectionType]);
-  const activePlansBuildingsMap = useSubscription<ActivePlansBuildingsMap>([SUB_IDS.ACTIVE_PLANS_BUILDINGS_MAP]);
+  const sectionBuildings = useSubscription<BuildingSectionBuilding[]>([SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS, baseId, sectionType]);
+  const stats = useSubscription<BuildingSectionStats>([SUB_IDS.BASES_BUILDING_SECTION_STATS, baseId, sectionType]);
 
-  const isEmpty = baseBuildings.length === 0;
+  const isEmpty = sectionBuildings.length === 0;
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -109,22 +104,15 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {baseBuildings.map((baseBuilding) => {
-                  const building = buildings.find(b => b.id === baseBuilding.buildingTypeId);
-                  if (!building) return null;
-                  
-                  const activePlanNames = activePlansBuildingsMap[baseBuilding.buildingTypeId] || [];
-
-                  return (
-                    <BuildingSectionCard
-                      key={baseBuilding.id}
-                      baseBuilding={baseBuilding}
-                      building={building}
-                      baseId={baseBuilding.baseId}
-                      activePlanNames={activePlanNames}
-                    />
-                  );
-                })}
+                {sectionBuildings.map(({ baseBuilding, building, activePlanNames }) => (
+                  <BuildingSectionCard
+                    key={baseBuilding.id}
+                    baseBuilding={baseBuilding}
+                    building={building}
+                    baseId={baseBuilding.baseId}
+                    activePlanNames={activePlanNames}
+                  />
+                ))}
                 {/* Add button when section has buildings */}
                 <div
                   className="card bg-base-200 border border-dashed border-base-300 hover:border-primary cursor-pointer transition-colors"
