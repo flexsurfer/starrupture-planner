@@ -7,8 +7,14 @@ const BASES_PERSIST_DEBOUNCE_MS = 500;
 
 let pendingBasesForPersist: Base[] | null = null;
 let pendingPersistTimer: ReturnType<typeof setTimeout> | null = null;
+let isLifecycleFlushRegistered = false;
 
 const flushPendingBasesPersist = () => {
+    if (pendingPersistTimer !== null) {
+        clearTimeout(pendingPersistTimer);
+        pendingPersistTimer = null;
+    }
+
     if (pendingBasesForPersist === null) return;
     try {
         writeBasesToStorage(pendingBasesForPersist);
@@ -16,9 +22,28 @@ const flushPendingBasesPersist = () => {
         console.error('Error saving bases to local storage:', e);
     } finally {
         pendingBasesForPersist = null;
-        pendingPersistTimer = null;
     }
 };
+
+const registerBasesLifecycleFlushHandlers = () => {
+    if (isLifecycleFlushRegistered) return;
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const flushIfNeeded = () => {
+        flushPendingBasesPersist();
+    };
+
+    window.addEventListener('pagehide', flushIfNeeded);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            flushIfNeeded();
+        }
+    });
+
+    isLifecycleFlushRegistered = true;
+};
+
+registerBasesLifecycleFlushHandlers();
 
 regEffect(EFFECT_IDS.SET_THEME, ( newTheme: 'light' | 'dark') => {
     localStorage.setItem('theme', newTheme);
