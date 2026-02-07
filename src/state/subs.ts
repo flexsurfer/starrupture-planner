@@ -981,14 +981,15 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
         const buildingRequirements: BuildingRequirement[] = [];
         let allRequirementsSatisfied = true;
 
-        requiredBuildings.forEach(({ buildingId, buildingName, count }) => {
+        requiredBuildings.forEach(({ buildingId, count }) => {
             const available = availableBuildingsMap.get(buildingId) || 0;
             const isSatisfied = available >= count;
             if (!isSatisfied) allRequirementsSatisfied = false;
+            const building = buildingsById.get(buildingId);
 
             buildingRequirements.push({
                 buildingId,
-                buildingName,
+                buildingName: building?.name || buildingId,
                 required: count,
                 available,
                 isSatisfied,

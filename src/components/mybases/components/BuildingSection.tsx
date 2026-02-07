@@ -109,7 +109,7 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
                     key={baseBuilding.id}
                     baseBuilding={baseBuilding}
                     building={building}
-                    baseId={baseBuilding.baseId}
+                    baseId={baseId}
                     activePlanNames={activePlanNames}
                   />
                 ))}

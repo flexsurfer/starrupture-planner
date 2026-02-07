@@ -112,23 +112,15 @@ export interface CorporationLevelSelection {
 // Base-related types
 export interface BaseBuilding {
     id: string;
-    baseId: string;
     buildingTypeId: string; // References Building.id from buildings data
     sectionType: string; // Section where this building was added (e.g., 'inputs', 'production', 'outputs')
     selectedItemId?: string; // Selected item for input buildings
     ratePerMinute?: number; // Rate per minute for the selected item
 }
 
-export interface BasePlanBuilding {
-    buildingTypeId: string; // References Building.id from buildings data
-    selectedItemId: string; // Selected item for input buildings
-    ratePerMinute: number; // Rate per minute for the selected item
-}
-
 /** A single building requirement entry stored on a production plan. */
 export interface PlanRequiredBuilding {
     buildingId: string;
-    buildingName: string;
     count: number;
 }
 

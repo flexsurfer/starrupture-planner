@@ -73,7 +73,6 @@ function computeRequiredBuildings(flow: ProductionFlowResult): PlanRequiredBuild
         } else {
             map.set(node.buildingId, {
                 buildingId: node.buildingId,
-                buildingName: node.buildingName,
                 count: Math.ceil(node.buildingCount),
             });
         }
@@ -295,10 +294,9 @@ regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null)
 });
 
 /** Creates a new BaseBuilding object with a unique ID. */
-function createBaseBuilding(baseId: string, buildingTypeId: string, sectionType: string): BaseBuilding {
+function createBaseBuilding(buildingTypeId: string, sectionType: string): BaseBuilding {
     return {
         id: `building_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        baseId,
         buildingTypeId,
         sectionType,
     };
@@ -307,7 +305,7 @@ function createBaseBuilding(baseId: string, buildingTypeId: string, sectionType:
 regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
-        base.buildings.push(createBaseBuilding(baseId, buildingTypeId, sectionType));
+        base.buildings.push(createBaseBuilding(buildingTypeId, sectionType));
         return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
     }
 });
@@ -403,7 +401,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_SECTION, ({ draftDb }, baseI
         for (const { buildingId, count } of requiredBuildings) {
             const sectionType = resolveSectionType(buildingId);
             for (let i = 0; i < count; i++) {
-                base.buildings.push(createBaseBuilding(baseId, buildingId, sectionType));
+                base.buildings.push(createBaseBuilding(buildingId, sectionType));
             }
         }
     } else if (flag === 'missing') {
@@ -421,7 +419,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_SECTION, ({ draftDb }, baseI
             if (missingCount > 0) {
                 const sectionType = resolveSectionType(buildingId);
                 for (let i = 0; i < missingCount; i++) {
-                    base.buildings.push(createBaseBuilding(baseId, buildingId, sectionType));
+                    base.buildings.push(createBaseBuilding(buildingId, sectionType));
                 }
             }
         }
