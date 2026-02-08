@@ -11,8 +11,7 @@ const EXTRACTOR_IDS = new Set(['ore_excavator', 'sulfur_extractor', 'helium_extr
 
 const isExtractor = (b: Building) => EXTRACTOR_IDS.has(b.id);
 const isReceiver = (b: Building) => b.id === 'package_receiver';
-const isDispatcher = (b: Building) => b.id === 'orbital_cargo_launcher' || b.id === 'package_dispatcher';
-const isStorage = (b: Building) => b.id === 'storage_depot_v1';
+const isDispatcher = (b: Building) => b.id === 'orbital_cargo_launcher' || b.id === 'package_dispatcher';;
 const isDroneMerger = (b: Building) => b.id === 'drone_merger_3_to_1';
 
 // ============================================================================
@@ -30,7 +29,7 @@ export function isBuildingAvailableForSection(building: Building, section: Build
     case 'inputs':
       // Extractors and receivers bring resources into the base
       // Drone merger can be used for input
-      return isExtractor(building) || isReceiver(building) || isDroneMerger(building);
+      return isExtractor(building) || isReceiver(building) || isDroneMerger(building) || building.type === 'storage';
 
     case 'energy':
       // Generators produce power, amplifiers increase heat capacity
@@ -38,12 +37,12 @@ export function isBuildingAvailableForSection(building: Building, section: Build
 
     case 'production':
       // Production buildings (except extractors) and storage
-      return (building.type === 'production' && !isExtractor(building)) || isStorage(building);
+      return (building.type === 'production' && !isExtractor(building)) || building.type === 'storage';
 
     case 'outputs':
       // Dispatchers send items out, storage can also be used for output staging
       // Drone merger can be used for output
-      return isDispatcher(building) || isStorage(building) || isDroneMerger(building);
+      return isDispatcher(building) || building.type === 'storage' || isDroneMerger(building);
 
     case 'infrastructure':
       // Habitat and defense buildings

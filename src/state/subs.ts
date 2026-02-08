@@ -196,7 +196,7 @@ regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID,
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return [];
 
-        if (building.id === 'package_receiver' || building.id === 'package_dispatcher' || building.id === 'orbital_cargo_launcher' || building.id === 'storage_depot_v1' || building.id === 'drone_merger_3_to_1') {
+        if (building.id === 'package_receiver' || building.id === 'package_dispatcher' || building.id === 'orbital_cargo_launcher' || building.type === 'storage' || building.id === 'drone_merger_3_to_1') {
             // For package_receiver, output buildings, and drone_merger_3_to_1, all items are available
             return [...items].sort((a, b) => a.name.localeCompare(b.name));
         } else {

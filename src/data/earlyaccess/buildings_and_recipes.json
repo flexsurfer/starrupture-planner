@@ -1144,9 +1144,30 @@
   {
     "id": "storage_depot_v1",
     "name": "Storage Depot V1",
-    "type": "transport",
+    "type": "storage",
     "power": 5,
     "heat": 5
+  },
+  {
+    "id": "storage_depot_v2",
+    "name": "Storage Depot V2",
+    "type": "storage",
+    "power": 5,
+    "heat": 40
+  },
+  {
+    "id": "expandable_storage",
+    "name": "Expandable Storage",
+    "type": "storage",
+    "power": 60,
+    "heat": 0
+  },
+  {
+    "id": "multistorage",
+    "name": "Multistorage",
+    "type": "storage",
+    "power": 5,
+    "heat": 60
   },
   {
     "id": "base_core_amplifier_v1",
@@ -1184,6 +1205,13 @@
     "type": "defense",
     "power": 20,
     "heat": 20
+  },
+  {
+    "id": "turret_v2",
+    "name": "Defense Tower",
+    "type": "defense",
+    "power": 50,
+    "heat": 30
   },
   {
     "id": "drone_merger_3_to_1",
