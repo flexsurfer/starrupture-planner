@@ -577,7 +577,7 @@
       },
       {
         "level": 11,
-        "xp": 368299,
+        "xp": 368300,
         "components": [
           {
             "id": "condenser",
@@ -687,7 +687,7 @@
         ],
         "rewards": [
           {
-            "name": "Base Core Amplifier v.2"
+            "name": "Base Core Amplifier v.1"
           }
         ]
       },

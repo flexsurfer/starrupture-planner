@@ -54,7 +54,7 @@
     "recipes": [
       {
         "output": {
-          "id": "ore_sulphur",
+          "id": "ore_sulfur",
           "amount_per_minute": 240
         },
         "inputs": []
@@ -292,7 +292,7 @@
         },
         "inputs": [
           {
-            "id": "sulphuric_acid",
+            "id": "sulfuric_acid",
             "amount_per_minute": 75
           },
           {
@@ -312,7 +312,7 @@
         },
         "inputs": [
           {
-            "id": "sulphuric_acid",
+            "id": "sulfuric_acid",
             "amount_per_minute": 100
           },
           {
@@ -582,7 +582,7 @@
             "amount_per_minute": 20
           },
           {
-            "id": "sulphuric_acid",
+            "id": "sulfuric_acid",
             "amount_per_minute": 20
           }
         ]
@@ -670,7 +670,7 @@
             "amount_per_minute": 30
           },
           {
-            "id": "sulphuric_acid",
+            "id": "sulfuric_acid",
             "amount_per_minute": 15
           }
         ]
@@ -750,7 +750,7 @@
             "amount_per_minute": 6
           },
           {
-            "id": "sulphuric_acid",
+            "id": "sulfuric_acid",
             "amount_per_minute": 18
           }
         ]
@@ -766,12 +766,12 @@
     "recipes": [
       {
         "output": {
-          "id": "sulphuric_acid",
+          "id": "sulfuric_acid",
           "amount_per_minute": 120
         },
         "inputs": [
           {
-            "id": "ore_sulphur",
+            "id": "ore_sulfur",
             "amount_per_minute": 240
           },
           {
@@ -791,7 +791,7 @@
             "amount_per_minute": 30
           },
           {
-            "id": "ore_sulphur",
+            "id": "ore_sulfur",
             "amount_per_minute": 30
           }
         ]
@@ -991,7 +991,7 @@
             "amount_per_minute": 40
           },
           {
-            "id": "sulphuric_acid",
+            "id": "sulfuric_acid",
             "amount_per_minute": 80
           },
           {

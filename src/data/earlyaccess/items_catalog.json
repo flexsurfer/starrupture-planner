@@ -15,8 +15,8 @@
     "type": "raw"
   },
   {
-    "id": "ore_sulphur",
-    "name": "Sulphur Ore",
+    "id": "ore_sulfur",
+    "name": "Sulfur Ore",
     "type": "raw"
   },
   {
@@ -80,8 +80,8 @@
     "type": "component"
   },
   {
-    "id": "sulphuric_acid",
-    "name": "Sulphuric Acid",
+    "id": "sulfuric_acid",
+    "name": "Sulfuric Acid",
     "type": "component"
   },
   {

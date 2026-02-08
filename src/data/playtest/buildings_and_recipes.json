@@ -30,7 +30,7 @@
       },
       {
         "output": {
-          "id": "ore_sulphur",
+          "id": "ore_sulfur",
           "amount_per_minute": 75
         },
         "inputs": [
@@ -244,7 +244,7 @@
         },
         "inputs": [
           {
-            "id": "sulphuric_acid",
+            "id": "sulfuric_acid",
             "amount_per_minute": 40
           },
           {
@@ -578,7 +578,7 @@
             "amount_per_minute": 10
           },
           {
-            "id": "sulphuric_acid",
+            "id": "sulfuric_acid",
             "amount_per_minute": 20
           }
         ]
@@ -592,12 +592,12 @@
     "recipes": [
       {
         "output": {
-          "id": "sulphuric_acid",
+          "id": "sulfuric_acid",
           "amount_per_minute": 90
         },
         "inputs": [
           {
-            "id": "ore_sulphur",
+            "id": "ore_sulfur",
             "amount_per_minute": 120
           },
           {
