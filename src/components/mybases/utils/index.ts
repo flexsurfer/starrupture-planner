@@ -14,3 +14,7 @@ export {
   isAmplifierBuilding,
   calculateBaseCoreHeatCapacity,
 } from './baseCoreUtils';
+
+export {
+  buildActivePlanOccupancy,
+} from './activePlanOccupancy';

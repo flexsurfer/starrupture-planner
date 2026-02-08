@@ -26,6 +26,7 @@ import { getItemName } from '../utils/itemUtils';
 import type { Node, Edge } from '@xyflow/react';
 import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } from '../components/mybases/utils/baseCoreUtils';
 import { getAvailableBuildingsForSection } from '../components/mybases/utils/buildingSectionUtils';
+import { buildActivePlanOccupancy } from '../components/mybases/utils/activePlanOccupancy';
 import { getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
 import type { CorporationWithStats } from '../components/corporations/types';
 import type { CorporationUsage, ItemTableData, ItemsHelperLookups } from '../components/items/types';
@@ -643,68 +644,54 @@ regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS,
         const sectionBuildings = base.buildings.filter(b => b.sectionType === sectionType);
         if (sectionBuildings.length === 0) return [];
 
-        // Build active-plan highlight map for the entire base
-        const activePlans = base.productions?.filter(p => p.active) || [];
-        const planNamesMap = new Map<string, Set<string>>();
+        // Build active-plan highlight map for the entire base.
+        // Production buildings overlap only when free buildings are exhausted.
+        const activePlansById = new Map<string, Production>();
+        (base.productions || [])
+            .filter((plan) => plan.active)
+            .forEach((plan) => {
+                activePlansById.set(plan.id, plan);
+            });
 
+        const occupancy = buildActivePlanOccupancy(base);
+        const planNamesByBuildingId = new Map<string, Set<string>>();
         const addPlanName = (buildingId: string, planName: string) => {
-            let set = planNamesMap.get(buildingId);
+            if (!buildingId || !planName) return;
+            let set = planNamesByBuildingId.get(buildingId);
             if (!set) {
                 set = new Set<string>();
-                planNamesMap.set(buildingId, set);
+                planNamesByBuildingId.set(buildingId, set);
             }
             set.add(planName);
         };
 
-        const baseBuildingIds = new Set(base.buildings.map(b => b.id));
-        const withItemByType = new Map<string, BaseBuilding[]>();
-        const withoutItemByType = new Map<string, BaseBuilding[]>();
-        for (const baseBuilding of base.buildings) {
-            if (baseBuilding.selectedItemId !== undefined) {
-                const list = withItemByType.get(baseBuilding.buildingTypeId) || [];
-                list.push(baseBuilding);
-                withItemByType.set(baseBuilding.buildingTypeId, list);
-            } else {
-                const list = withoutItemByType.get(baseBuilding.buildingTypeId) || [];
-                list.push(baseBuilding);
-                withoutItemByType.set(baseBuilding.buildingTypeId, list);
-            }
-        }
-        const prioritizedBuildingsByType = new Map<string, BaseBuilding[]>();
-        const allBuildingTypeIds = new Set<string>([
-            ...withItemByType.keys(),
-            ...withoutItemByType.keys(),
-        ]);
-        for (const buildingTypeId of allBuildingTypeIds) {
-            prioritizedBuildingsByType.set(buildingTypeId, [
-                ...(withItemByType.get(buildingTypeId) || []),
-                ...(withoutItemByType.get(buildingTypeId) || []),
-            ]);
-        }
-
-        activePlans.forEach(plan => {
-            // Required production buildings (stored on plan save)
-            (plan.requiredBuildings || []).forEach(({ buildingId, count }) => {
-                const prioritized = prioritizedBuildingsByType.get(buildingId) || [];
-                prioritized.slice(0, count).forEach(b => addPlanName(b.id, plan.name));
-            });
-
-            // Input building snapshots
-            (plan.inputs || []).forEach(inputBuilding => {
-                if (inputBuilding.id && baseBuildingIds.has(inputBuilding.id)) {
-                    addPlanName(inputBuilding.id, plan.name);
-                }
+        const baseBuildingIds = new Set(base.buildings.map((b) => b.id));
+        occupancy.assignedPlanBuildingIds.forEach((buildingIds, planId) => {
+            const planName = activePlansById.get(planId)?.name;
+            if (!planName) return;
+            buildingIds.forEach((buildingId) => {
+                addPlanName(buildingId, planName);
             });
         });
+        (base.productions || [])
+            .filter((plan) => plan.active)
+            .forEach((plan) => {
+                for (const inputBuilding of plan.inputs || []) {
+                    if (inputBuilding.id && baseBuildingIds.has(inputBuilding.id)) {
+                        addPlanName(inputBuilding.id, plan.name);
+                    }
+                }
+            });
 
         return sectionBuildings
             .map(baseBuilding => {
                 const building = buildingsById[baseBuilding.buildingTypeId];
                 if (!building) return null;
+                const planNames = Array.from(planNamesByBuildingId.get(baseBuilding.id) || []);
                 return {
                     baseBuilding,
                     building,
-                    activePlanNames: Array.from(planNamesMap.get(baseBuilding.id) || []),
+                    activePlanNames: planNames,
                 };
             })
             .filter((b): b is BuildingSectionBuilding => b !== null);
@@ -1013,18 +1000,21 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
             totalPowerConsumption,
         };
 
-        // --- Building requirements: compare stored required buildings vs current base ---
-        const availableBuildingsMap = new Map<string, number>();
-        base.buildings.forEach(baseBuilding => {
-            const count = availableBuildingsMap.get(baseBuilding.buildingTypeId) || 0;
-            availableBuildingsMap.set(baseBuilding.buildingTypeId, count + 1);
+        // --- Building requirements: compare requirements vs base buildings not reserved by other active plans ---
+        const occupancyFromOtherPlans = buildActivePlanOccupancy(base, { excludePlanId: section.id });
+        const totalBuildingsMap = new Map<string, number>();
+        base.buildings.forEach((baseBuilding) => {
+            const count = totalBuildingsMap.get(baseBuilding.buildingTypeId) || 0;
+            totalBuildingsMap.set(baseBuilding.buildingTypeId, count + 1);
         });
 
         const buildingRequirements: BuildingRequirement[] = [];
         let allRequirementsSatisfied = true;
 
         requiredBuildings.forEach(({ buildingId, count }) => {
-            const available = availableBuildingsMap.get(buildingId) || 0;
+            const total = totalBuildingsMap.get(buildingId) || 0;
+            const occupied = occupancyFromOtherPlans.occupiedBuildingTypeCounts.get(buildingId) || 0;
+            const available = Math.max(0, total - occupied);
             const isSatisfied = available >= count;
             if (!isSatisfied) allRequirementsSatisfied = false;
             const building = buildingsById[buildingId];
@@ -1188,14 +1178,15 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
         const base = basesById[baseId];
         if (!base) return { inputItems: [], selectedInputIds: [] };
 
-        const inputItems = collectConfiguredSectionItems(base, buildingsById, itemsMap, 'inputs').map((entry) => ({
-            baseBuildingId: entry.baseBuildingId,
-            item: entry.item,
-            ratePerMinute: entry.ratePerMinute,
-            building: entry.building,
-        }));
+        const inputItems = collectConfiguredSectionItems(base, buildingsById, itemsMap, 'inputs')
+            .map((entry) => ({
+                baseBuildingId: entry.baseBuildingId,
+                item: entry.item,
+                ratePerMinute: entry.ratePerMinute,
+                building: entry.building,
+            }));
 
-        return { inputItems, selectedInputIds };
+        return { inputItems, selectedInputIds: selectedInputIds || [] };
     },
     () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
 

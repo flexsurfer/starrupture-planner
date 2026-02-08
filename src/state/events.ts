@@ -16,7 +16,7 @@ import type {
 import { buildItemsMap, parseCorporations, extractCategories } from './data-utils';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '../components/planner/core/types';
-import { getSectionTypeForBuilding } from '../components/mybases/utils';
+import { getSectionTypeForBuilding, buildActivePlanOccupancy } from '../components/mybases/utils';
 import { getProductionInputIds, getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
 
 // Common function to update draftDb with version data
@@ -78,6 +78,28 @@ function computeRequiredBuildings(flow: ProductionFlowResult): PlanRequiredBuild
         }
     });
     return Array.from(map.values());
+}
+
+function buildTotalBuildingCountByType(base: Base): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const baseBuilding of base.buildings) {
+        const count = counts.get(baseBuilding.buildingTypeId) || 0;
+        counts.set(baseBuilding.buildingTypeId, count + 1);
+    }
+    return counts;
+}
+
+function buildAvailableBuildingCountByType(base: Base, excludePlanId?: string | null): Map<string, number> {
+    const totals = buildTotalBuildingCountByType(base);
+    const occupied = buildActivePlanOccupancy(base, { excludePlanId }).occupiedBuildingTypeCounts;
+    const available = new Map<string, number>();
+
+    totals.forEach((totalCount, buildingTypeId) => {
+        const occupiedCount = occupied.get(buildingTypeId) || 0;
+        available.set(buildingTypeId, Math.max(0, totalCount - occupiedCount));
+    });
+
+    return available;
 }
 
 regEvent(EVENT_IDS.UI_SET_THEME, ({ draftDb }, newTheme: 'light' | 'dark') => {
@@ -310,13 +332,9 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftDb }, baseId: 
     const requiredBuildings = plan.requiredBuildings || [];
     if (requiredBuildings.length === 0) return;
 
-    const existingCountByType = new Map<string, number>();
-    if (flag === 'missing') {
-        for (const baseBuilding of base.buildings) {
-            const count = existingCountByType.get(baseBuilding.buildingTypeId) || 0;
-            existingCountByType.set(baseBuilding.buildingTypeId, count + 1);
-        }
-    }
+    const existingCountByType = flag === 'missing'
+        ? buildAvailableBuildingCountByType(base, plan.id)
+        : new Map<string, number>();
 
     const buildingCountsToAdd: PlanRequiredBuilding[] = [];
 
@@ -429,7 +447,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
     // Get production flow to extract used inputs
     const validAmount = targetAmount > 0 ? targetAmount : 1;
     const includeLauncher = selectedCorporationLevel !== null;
-    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modal.selectedInputIds);
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modal.selectedInputIds || []);
     
     const flow = buildProductionFlow(
         { 
