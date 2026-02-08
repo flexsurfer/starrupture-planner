@@ -38,11 +38,6 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
         onClose();
     };
 
-    const handleAddAll = () => {
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, baseId, sectionId, 'all']);
-        onClose();
-    };
-
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) {
             onClose();
@@ -153,12 +148,6 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                                 </p>
                             </>
                         )}
-                        {false && <button
-                            className="btn btn-outline btn-sm w-full mb-2"
-                            onClick={handleAddAll}
-                        >
-                            Add All Production Buildings
-                        </button>}
                     </div>
                 )}
                 <div className="modal-action">

@@ -135,8 +135,9 @@ A custom input source results in a node **only if at least one edge is created f
 
 Implementation uses edge-driven approach:
 - Custom input nodes are created lazily when processing allocations
-- `outputAmount` starts at 0 and accumulates as edges are added
-- This guarantees `outputAmount` exactly equals sum of outgoing edge amounts
+- `outputAmount` is fixed to the source `ratePerMinute`
+- `buildingCount` is derived from actual used flow (`used / outputAmount`)
+- This guarantees `outputAmount * buildingCount` equals sum of outgoing edge amounts
 
 Unused custom inputs are not represented in the output.
 
@@ -188,7 +189,7 @@ No production nodes or edges are created for items whose remaining demand is zer
 ### 8) Edge creation uses edge-driven tracking
 To ensure consistency between allocation plans and actual graph:
 - `allocatedToConsumer` index is built AS edges are created (not before)
-- Custom node `outputAmount` is accumulated from actual edge amounts
+- Custom node `buildingCount` is derived from actual edge amounts
 - This prevents divergence between planned allocations and realized edges
 
 ---
@@ -201,5 +202,5 @@ To ensure consistency between allocation plans and actual graph:
 > They may supply intermediate or raw items, but never the target item itself.
 > Production nodes are built only where demand remains after allocation.
 > Raw material demand is derived from actual production, not theoretical demand.
-> Edge creation is the source of truth for custom node output amounts.
+> Edge creation is the source of truth for custom node utilization.
 > When raw production is disabled, raw materials are external-only and deficits are reported.

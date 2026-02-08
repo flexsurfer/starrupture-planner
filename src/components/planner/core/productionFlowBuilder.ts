@@ -371,7 +371,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     // STEP 7: Create edges (edge-driven approach)
     // 
     // Custom input nodes and allocation tracking are built AS edges are created,
-    // ensuring outputAmount and allocatedToConsumer always match actual edges.
+    // ensuring custom utilization and allocatedToConsumer always match actual edges.
     // -------------------------------------------------------------------------
     const flowEdges: FlowEdge[] = [];
     const flows = new Map<string, { from: string; to: string; itemId: string; amount: number }>();
@@ -387,7 +387,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     };
 
     // Edge-driven custom input node creation
-    // Nodes are created lazily and outputAmount is accumulated from actual edges
+    // Nodes are created lazily when they first get an outgoing edge
     const customNodeBySource = new Map<string, FlowNode>();
     const sourceById = new Map(sources.map(s => [s.baseBuildingId, s]));
 
@@ -398,13 +398,14 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         if (!source) return null;
 
         const building = buildingById.get(source.buildingId);
-        // Initialize with outputAmount=0; will be incremented as edges are added
+        // Custom nodes behave like regular nodes:
+        // outputAmount = source rate per minute, buildingCount derived from used amount.
         const node = createFlowNode(
             building ?? { id: source.buildingId, name: source.buildingName, power: 0, heat: 0, recipes: [] },
             -2,
             source.itemId,
-            0, // Start at 0, accumulate from edges
-            1,
+            source.available,
+            0,
             { isCustomInput: true, baseBuildingId: source.baseBuildingId }
         );
 
@@ -416,6 +417,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     // Edge-driven allocation tracking
     // Built as edges are created, ensuring consistency with actual graph
     const allocatedToConsumer = new Map<string, number>();
+    const usedByCustomSource = new Map<string, number>();
     const allAllocations = [...prodAllocation.allocations, ...rawAllocation.allocations];
 
     // Create custom input edges and track allocations simultaneously
@@ -425,8 +427,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         const customNode = getOrCreateCustomNode(a.baseBuildingId);
         if (!customNode) continue;
 
-        // Accumulate outputAmount from actual edges (edge-driven)
-        customNode.outputAmount += a.amount;
+        usedByCustomSource.set(a.baseBuildingId, (usedByCustomSource.get(a.baseBuildingId) ?? 0) + a.amount);
 
         // Track allocation for this consumer (edge-driven)
         const allocKey = `${a.consumerNodeId}::${a.itemId}`;
@@ -434,6 +435,20 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 
         const customId = nodeId(customNode.buildingId, customNode.recipeIndex, customNode.outputItem, a.baseBuildingId);
         addFlow(customId, a.consumerNodeId, a.itemId, a.amount);
+    }
+
+    // Finalize custom node utilization from edge-driven used amounts.
+    for (const [trackerId, customNode] of customNodeBySource.entries()) {
+        const source = sourceById.get(trackerId);
+        if (!source || source.available <= 0) continue;
+
+        const used = usedByCustomSource.get(trackerId) ?? 0;
+        const buildingCount = used / source.available;
+        const ceilBuildings = Math.ceil(buildingCount);
+
+        customNode.buildingCount = buildingCount;
+        customNode.totalPower = ceilBuildings * customNode.powerPerBuilding;
+        customNode.totalHeat = ceilBuildings * customNode.heatPerBuilding;
     }
 
     // Edges from production relationships (using edge-driven allocation index)

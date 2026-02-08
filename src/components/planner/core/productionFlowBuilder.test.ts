@@ -351,7 +351,8 @@ describe('buildProductionFlow', () => {
 
             const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'ore_titanium');
             expect(customInputNode).toBeDefined();
-            expect(customInputNode!.outputAmount).toBe(90);
+            expect(customInputNode!.outputAmount).toBe(100);
+            expect(customInputNode!.buildingCount).toBeCloseTo(0.9, 5);
 
             const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput);
             expect(oreNode).toBeUndefined();
@@ -383,7 +384,8 @@ describe('buildProductionFlow', () => {
             // Raw input building should be used to satisfy demand
             const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'ore_titanium');
             expect(customInputNode).toBeDefined();
-            expect(customInputNode!.outputAmount).toBe(90); // smelter needs 90 ore
+            expect(customInputNode!.outputAmount).toBe(100); // Source rate per minute
+            expect(customInputNode!.buildingCount).toBeCloseTo(0.9, 5); // 90 used / 100 available
 
             // Raw production node should be omitted when custom input fully satisfies demand
             const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput);
