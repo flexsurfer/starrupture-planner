@@ -105,7 +105,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
             <img
               src="/icons/buildings/base_core.png"
               alt="Base Core"
-              className="w-30 h-30 object-contain"
+              className="w-20 h-20 object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
