@@ -95,17 +95,19 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
         </div>
 
         {/* Open in Planner button */}
-        <div>
-          <button
-            className="btn btn-xs btn-primary"
-            onClick={() => {
-              dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, recipe.output.id]);
-            }}
-            title={`Open ${outputItem?.name || recipe.output.id} in planner`}
-          >
-            Open in Planner
-          </button>
-        </div>
+        {outputItem?.type !== 'raw' && (
+          <div>
+            <button
+              className="btn btn-xs btn-primary"
+              onClick={() => {
+                dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, recipe.output.id]);
+              }}
+              title={`Open ${outputItem?.name || recipe.output.id} in planner`}
+            >
+              Open in Planner
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

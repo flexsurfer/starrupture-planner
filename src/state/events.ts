@@ -289,53 +289,67 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, ({ draftDb }, baseId: string,
     }
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_SECTION, ({ draftDb }, baseId: string, sectionId: string, flag: 'all' | 'missing') => {
+regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftDb }, baseId: string, planId: string, flag: 'all' | 'missing') => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
-    const section = base.productions.find((s: Production) => s.id === sectionId);
-    if (!section) return;
+    const plan = base.productions.find((s: Production) => s.id === planId);
+    if (!plan) return;
 
-    const requiredBuildings = section.requiredBuildings || [];
+    const requiredBuildings = plan.requiredBuildings || [];
     if (requiredBuildings.length === 0) return;
 
-    // Build a lookup for building type data to resolve section types
+    const existingCountByType = new Map<string, number>();
+    if (flag === 'missing') {
+        for (const baseBuilding of base.buildings) {
+            const count = existingCountByType.get(baseBuilding.buildingTypeId) || 0;
+            existingCountByType.set(baseBuilding.buildingTypeId, count + 1);
+        }
+    }
+
+    const buildingCountsToAdd: PlanRequiredBuilding[] = [];
+
+    for (const { buildingId, count: requiredCount } of requiredBuildings) {
+        if (requiredCount <= 0) continue;
+
+        const existingCount = flag === 'missing' ? (existingCountByType.get(buildingId) || 0) : 0;
+        const countToAdd = flag === 'missing'
+            ? Math.max(0, requiredCount - existingCount)
+            : requiredCount;
+        if (countToAdd === 0) continue;
+
+        buildingCountsToAdd.push({ buildingId, count: countToAdd });
+        existingCountByType.set(buildingId, existingCount + countToAdd);
+    }
+
+    if (buildingCountsToAdd.length === 0) return;
+
+    // Build a lookup for building type data only when additions are needed.
     const buildingsById = new Map(
         (draftDb.buildingsList as Building[]).map((b: Building) => [b.id, b])
     );
-
     const resolveSectionType = (buildingId: string): string => {
         const building = buildingsById.get(buildingId);
         return building ? getSectionTypeForBuilding(building) : 'production';
     };
 
-    if (flag === 'all') {
-        for (const { buildingId, count } of requiredBuildings) {
-            const sectionType = resolveSectionType(buildingId);
-            for (let i = 0; i < count; i++) {
-                base.buildings.push(createBaseBuilding(buildingId, sectionType));
-            }
+    const newBuildings: BaseBuilding[] = [];
+    const createPlanBuilding = (buildingId: string, sectionType: string): BaseBuilding => {
+        const newBuilding = createBaseBuilding(buildingId, sectionType);
+        if (buildingId === 'orbital_cargo_launcher' && plan.selectedItemId) {
+            newBuilding.selectedItemId = plan.selectedItemId;
+            newBuilding.ratePerMinute = 10;
         }
-    } else if (flag === 'missing') {
-        // Count existing buildings by type
-        const existingCountByType = new Map<string, number>();
-        for (const baseBuilding of base.buildings) {
-            const count = existingCountByType.get(baseBuilding.buildingTypeId) || 0;
-            existingCountByType.set(baseBuilding.buildingTypeId, count + 1);
-        }
-
-        // Add only the missing ones
-        for (const { buildingId, count } of requiredBuildings) {
-            const existingCount = existingCountByType.get(buildingId) || 0;
-            const missingCount = Math.max(0, count - existingCount);
-            if (missingCount > 0) {
-                const sectionType = resolveSectionType(buildingId);
-                for (let i = 0; i < missingCount; i++) {
-                    base.buildings.push(createBaseBuilding(buildingId, sectionType));
-                }
-            }
+        return newBuilding;
+    };
+    for (const { buildingId, count } of buildingCountsToAdd) {
+        const sectionType = resolveSectionType(buildingId);
+        for (let i = 0; i < count; i++) {
+            newBuildings.push(createPlanBuilding(buildingId, sectionType));
         }
     }
+
+    base.buildings.push(...newBuildings);
 
     return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
 });

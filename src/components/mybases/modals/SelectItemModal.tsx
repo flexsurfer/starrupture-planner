@@ -13,6 +13,8 @@ interface SelectItemModalProps {
   onConfirm: (itemId: string, ratePerMinute: number) => void;
 }
 
+const DEFAULT_RATE_PER_MINUTE = 0;
+
 export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   isOpen,
   building,
@@ -22,7 +24,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   onConfirm,
 }) => {
   const [selectedItemId, setSelectedItemId] = useState<string>(currentItemId || '');
-  const [ratePerMinute, setRatePerMinute] = useState<number>(currentRatePerMinute || 60);
+  const [ratePerMinute, setRatePerMinute] = useState<string>(String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE));
 
   // Get available items from subscription
   const availableItems = useSubscription<Item[]>([SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, building.id]);
@@ -31,7 +33,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setSelectedItemId(currentItemId || '');
-      setRatePerMinute(currentRatePerMinute || 60);
+      setRatePerMinute(String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE));
     }
   }, [isOpen, currentItemId, currentRatePerMinute]);
 
@@ -41,25 +43,27 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedItemId && ratePerMinute > 0) {
-      onConfirm(selectedItemId, ratePerMinute);
+    const rateValue = Number(ratePerMinute);
+    if (selectedItemId && rateValue > 0) {
+      onConfirm(selectedItemId, rateValue);
       onClose();
     }
   };
 
   const handleCancel = () => {
     setSelectedItemId(currentItemId || '');
-    setRatePerMinute(currentRatePerMinute || 60);
+    setRatePerMinute(String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE));
     onClose();
   };
 
   const handleItemSelect = (itemId: string) => {
     setSelectedItemId(itemId);
-    // Set default rate from recipe if available
+    // Set default rate from recipe only if current value is DEFAULT_RATE_PER_MINUTE
+    // This preserves user-entered values and currentRatePerMinute prop
     if (building.recipes) {
       const recipe = building.recipes.find(r => r.output.id === itemId);
-      if (recipe) {
-        setRatePerMinute(recipe.output.amount_per_minute);
+      if (recipe && Number(ratePerMinute) === DEFAULT_RATE_PER_MINUTE) {
+        setRatePerMinute(String(recipe.output.amount_per_minute));
       }
     }
   };
@@ -107,7 +111,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
               type="number"
               className="input input-bordered w-full"
               value={ratePerMinute}
-              onChange={(e) => setRatePerMinute(Number(e.target.value))}
+              onChange={(e) => setRatePerMinute(e.target.value)}
               min="0.01"
               step="0.01"
               required
@@ -130,7 +134,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={!selectedItemId || ratePerMinute <= 0}
+              disabled={!selectedItemId || !ratePerMinute || Number(ratePerMinute) <= 0}
             >
               Confirm
             </button>

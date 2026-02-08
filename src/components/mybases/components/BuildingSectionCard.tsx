@@ -59,7 +59,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
                   {activePlanNames.map((planName) => (
                     <span
                       key={planName}
-                      className="badge badge-primary badge-xs text-[10px] text-left inline-block truncate max-w-[100px]"
+                      className="badge badge-primary badge-xs text-[10px] text-left inline-block truncate w-full"
                       title={planName}
                     >
                       {planName}

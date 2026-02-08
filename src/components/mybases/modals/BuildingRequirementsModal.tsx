@@ -28,20 +28,18 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
     onClose,
 }) => {
     const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_LIST]);
-    
+
     if (!isOpen) {
         return null;
     }
 
     const handleAddMissing = () => {
-        // Don't add inputs - only add production buildings
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_SECTION, baseId, sectionId, 'missing']);
+        dispatch([EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, baseId, sectionId, 'missing']);
         onClose();
     };
 
     const handleAddAll = () => {
-        // Don't add inputs - only add production buildings
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_SECTION, baseId, sectionId, 'all']);
+        dispatch([EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, baseId, sectionId, 'all']);
         onClose();
     };
 
@@ -68,7 +66,7 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                         ✕
                     </button>
                 </div>
-                
+
                 {/* Inputs Section */}
                 {inputRequirements.length > 0 && (
                     <div className="mb-6">
@@ -80,8 +78,8 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                                     <div
                                         key={req.baseBuildingId}
                                         className={`flex items-center justify-between text-sm py-2 px-3 rounded-lg border ${req.isSatisfied
-                                                ? 'bg-success/10 border-success/30'
-                                                : 'bg-error/20 border-error/30'
+                                            ? 'bg-success/10 border-success/30'
+                                            : 'bg-error/20 border-error/30'
                                             }`}
                                     >
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -112,7 +110,7 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                         </div>
                     </div>
                 )}
-                
+
                 {/* Production Buildings Section */}
                 <div>
                     <h4 className="text-sm font-semibold mb-2 text-base-content/70">Production Buildings</h4>
@@ -124,8 +122,8 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                                 <div
                                     key={req.buildingId}
                                     className={`flex items-center justify-between text-sm py-2 px-3 rounded-lg border ${req.isSatisfied
-                                            ? 'bg-success/10 border-success/30'
-                                            : 'bg-warning/20 border-warning/30'
+                                        ? 'bg-success/10 border-success/30'
+                                        : 'bg-warning/20 border-warning/30'
                                         }`}
                                 >
                                     <span className="truncate flex-1 mr-3">{req.buildingName}</span>
@@ -143,22 +141,24 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                 {buildingRequirements.length > 0 && (
                     <div className="mt-4">
                         {!allRequirementsSatisfied && (
-                            <button
-                                className="btn btn-primary btn-sm w-full mb-2"
-                                onClick={handleAddMissing}
-                            >
-                                Add Missing Production Buildings
-                            </button>
+                            <>
+                                <button
+                                    className="btn btn-primary btn-sm w-full mb-2"
+                                    onClick={handleAddMissing}
+                                >
+                                    Add Missing Production Buildings
+                                </button>
+                                <p className="text-xs text-base-content/60 text-center">
+                                    Note: Input buildings must be added manually in the Buildings tab
+                                </p>
+                            </>
                         )}
-                        <button
+                        {false && <button
                             className="btn btn-outline btn-sm w-full mb-2"
                             onClick={handleAddAll}
                         >
                             Add All Production Buildings
-                        </button>
-                        <p className="text-xs text-base-content/60 text-center">
-                            Note: Input buildings must be added manually in the Buildings tab
-                        </p>
+                        </button>}
                     </div>
                 )}
                 <div className="modal-action">

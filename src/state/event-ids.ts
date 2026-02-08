@@ -27,7 +27,7 @@ export const EVENT_IDS = {
     PRODUCTION_PLAN_DELETE_SECTION: 'productionPlanDeleteSection',
     PRODUCTION_PLAN_ACTIVATE_SECTION: 'productionPlanActivateSection',
     PRODUCTION_PLAN_DEACTIVATE_SECTION: 'productionPlanDeactivateSection',
-    PRODUCTION_PLAN_ADD_BUILDINGS_TO_SECTION: 'productionPlanAddBuildingsToSection',
+    PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE: 'productionPlanAddBuildingsToBase',
     PRODUCTION_PLAN_MODAL_OPEN: 'productionPlanModalOpen',
     PRODUCTION_PLAN_MODAL_CLOSE: 'productionPlanModalClose',
     PRODUCTION_PLAN_MODAL_SET_NAME: 'productionPlanModalSetName',

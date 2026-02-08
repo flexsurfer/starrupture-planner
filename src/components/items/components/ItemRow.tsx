@@ -51,14 +51,16 @@ export const ItemRow = ({
           >
             Recipe
           </button>
-          <button
-            className="btn btn-xs btn-primary"
-            onClick={() => {
-              dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, item.id]);
-            }}
-          >
-            Planner
-          </button>
+          {item.type !== 'raw' && (
+            <button
+              className="btn btn-xs btn-primary"
+              onClick={() => {
+                dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, item.id]);
+              }}
+            >
+              Planner
+            </button>
+          )}
         </div>
       </td>
       
