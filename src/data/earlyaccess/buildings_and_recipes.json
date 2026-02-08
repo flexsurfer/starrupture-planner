@@ -807,19 +807,19 @@
       {
         "output": {
           "id": "accumulator",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "electronics",
-            "amount_per_minute": 24
+            "amount_per_minute": 20
           },
           {
             "id": "stator",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           },{
             "id": "battery",
-            "amount_per_minute": 24
+            "amount_per_minute": 20
           }
         ]
       },
@@ -954,20 +954,20 @@
       {
         "output": {
           "id": "scanner",
-          "amount_per_minute": 10
+          "amount_per_minute": 6
         },
         "inputs": [
           {
             "id": "lens",
-            "amount_per_minute": 20
+            "amount_per_minute": 12
           },
           {
             "id": "generator",
-            "amount_per_minute": 20
+            "amount_per_minute": 12
           },
           {
             "id": "stabilizer",
-            "amount_per_minute": 120
+            "amount_per_minute": 72
           }
         ]
       }
