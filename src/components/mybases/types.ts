@@ -17,6 +17,7 @@ export type BuildingSectionType = 'inputs' | 'energy' | 'production' | 'outputs'
  */
 export interface BaseDetailStats {
   baseName: string;
+  coreLevel: number;
   buildingCount: number;
   totalHeat: number;
   energyGeneration: number;

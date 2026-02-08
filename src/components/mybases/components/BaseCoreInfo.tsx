@@ -7,9 +7,14 @@ import { useCallback } from 'react';
 export const BaseCoreInfo: React.FC = () => {
 
   const detailStats = useSubscription<BaseDetailStats | null>([SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS]);
+  const coreLevels = useSubscription<{ level: number; heatCapacity: number }[]>([SUB_IDS.BASES_CORE_LEVELS]);
 
   const onBack = useCallback(() => {
     dispatch([EVENT_IDS.BASES_SET_SELECTED_BASE, null]);
+  }, []);
+
+  const onCoreLeveChange = useCallback((level: number) => {
+    dispatch([EVENT_IDS.BASES_SET_CORE_LEVEL, level]);
   }, []);
   
   // Early return if data not available
@@ -17,7 +22,7 @@ export const BaseCoreInfo: React.FC = () => {
     return null;
   }
 
-  const { baseName, buildingCount, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient } = detailStats;
+  const { baseName, coreLevel, buildingCount, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient } = detailStats;
 
   return (
     <div className="bg-base-200 rounded-lg p-2 sm:p-3">
@@ -49,6 +54,22 @@ export const BaseCoreInfo: React.FC = () => {
           <p className="hidden sm:block text-xs text-base-content/70 mt-1">
             The Core defines the buildable area for this Base. Buildings can only be placed inside the Core area.
           </p>
+          {/* Core Level Selector */}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs text-base-content/70">Core Level:</span>
+            <div className="join">
+              {coreLevels.map(({ level, heatCapacity }) => (
+                <button
+                  key={level}
+                  className={`join-item btn btn-xs ${coreLevel === level ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => onCoreLeveChange(level)}
+                  title={`Level ${level} — Heat Capacity: ${heatCapacity.toLocaleString()}`}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Stats */}

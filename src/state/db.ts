@@ -56,6 +56,11 @@ export interface Recipe {
     inputs: RecipeInput[];
 }
 
+export interface CoreLevel {
+    level: number;
+    heatCapacity: number;
+}
+
 export interface Building {
     id: string;
     name: string;
@@ -63,6 +68,7 @@ export interface Building {
     power?: number;
     heat?: number;
     coreHeatCapacity?: number; // Used by base core amplifiers to increase base heat capacity
+    levels?: CoreLevel[]; // Used by base_core building to define heat capacity per level
     recipes?: Recipe[];
 }
 
@@ -142,6 +148,7 @@ export interface Production {
 export interface Base {
     id: string;
     name: string;
+    coreLevel?: number; // Base Core level (0-4), defaults to 0
     buildings: BaseBuilding[];
     productions: Production[];
 }

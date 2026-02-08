@@ -1189,5 +1189,17 @@
     "id": "drone_merger_3_to_1",
     "name": "Drone Merger 3-to-1",
     "type": "transport"
+  },
+  {
+    "id": "base_core",
+    "name": "Base Core",
+    "type": "core",
+    "levels": [
+      { "level": 0, "heatCapacity": 1000 },
+      { "level": 1, "heatCapacity": 2500 },
+      { "level": 2, "heatCapacity": 4000 },
+      { "level": 3, "heatCapacity": 6000 },
+      { "level": 4, "heatCapacity": 10000 }
+    ]
   }
 ]

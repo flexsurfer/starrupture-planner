@@ -20,6 +20,7 @@ export const EVENT_IDS = {
     BASES_UPDATE_BASE_NAME: 'basesUpdateBaseName',
     BASES_DELETE_BASE: 'basesDeleteBase',
     BASES_SET_SELECTED_BASE: 'basesSetSelectedBase',
+    BASES_SET_CORE_LEVEL: 'basesSetCoreLevel',
     BASES_ADD_BUILDING: 'basesAddBuilding',
     BASES_REMOVE_BUILDING: 'basesRemoveBuilding',
     BASES_UPDATE_BUILDING_ITEM_SELECTION: 'basesUpdateBuildingItemSelection',

@@ -163,9 +163,18 @@ function normalizeBases(rawBases: unknown): Base[] {
                 .filter((production): production is Production => production !== null)
             : [];
 
+        // Normalize coreLevel: must be a number between 0-4, default to 0 if missing/invalid
+        const coreLevel = typeof base.coreLevel === 'number' && 
+            Number.isFinite(base.coreLevel) && 
+            base.coreLevel >= 0 && 
+            base.coreLevel <= 4
+            ? base.coreLevel
+            : 0;
+
         normalizedBases.push({
             id: base.id,
             name: base.name,
+            coreLevel,
             buildings,
             productions,
         });

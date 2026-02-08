@@ -193,6 +193,17 @@ regEvent(EVENT_IDS.BASES_UPDATE_BASE_NAME, ({ draftDb }, baseId: string, newName
     }
 });
 
+regEvent(EVENT_IDS.BASES_SET_CORE_LEVEL, ({ draftDb }, level: number) => {
+    const baseId = draftDb.basesSelectedBaseId;
+    if (!baseId) return;
+    
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (base) {
+        base.coreLevel = level;
+        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+    }
+});
+
 regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftDb }, baseId: string) => {
     draftDb.basesList = draftDb.basesList.filter((b: Base) => b.id !== baseId);
     if (draftDb.basesSelectedBaseId === baseId) {

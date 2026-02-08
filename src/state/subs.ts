@@ -24,7 +24,7 @@ import { buildProductionFlow } from '../components/planner/core/productionFlowBu
 import { generateReactFlowData } from '../components/planner/visualization/plannerFlowUtils';
 import { getItemName } from '../utils/itemUtils';
 import type { Node, Edge } from '@xyflow/react';
-import { calculateBaseCoreHeatCapacity, isAmplifierBuilding } from '../components/mybases/utils/baseCoreUtils';
+import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } from '../components/mybases/utils/baseCoreUtils';
 import { getAvailableBuildingsForSection } from '../components/mybases/utils/buildingSectionUtils';
 import { getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
 import type { CorporationWithStats } from '../components/corporations/types';
@@ -536,7 +536,8 @@ function calculateBaseDetailStats(base: Base, buildingsById: BuildingsByIdMap): 
         }
     });
 
-    const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(base.buildings, buildingsById);
+    const coreLevel = base.coreLevel ?? 0;
+    const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(coreLevel, base.buildings, buildingsById);
     const heatPercentage = Math.min((totalHeat / baseCoreHeatCapacity) * 100, 100);
     // Calculate energy percentage: used / available (similar to heat)
     // If no generation, show full red bar (100%)
@@ -551,6 +552,7 @@ function calculateBaseDetailStats(base: Base, buildingsById: BuildingsByIdMap): 
 
     return {
         baseName: base.name,
+        coreLevel,
         buildingCount: base.buildings.length,
         totalHeat,
         energyGeneration,
@@ -569,6 +571,12 @@ regSub(SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS,
         return calculateBaseDetailStats(selectedBase, buildingsById);
     },
     () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
+
+regSub(SUB_IDS.BASES_CORE_LEVELS,
+    (buildingsById: BuildingsByIdMap): { level: number; heatCapacity: number }[] => {
+        return getCoreLevels(buildingsById);
+    },
+    () => [[SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID,
     (basesById: BasesById, buildingsById: BuildingsByIdMap, baseId: string): BaseDetailStats | null => {
@@ -771,7 +779,7 @@ regSub(SUB_IDS.BASES_STATS_SUMMARY,
             totalBuildings += base.buildings.length;
 
             // Calculate heat capacity for this base
-            totalHeatCapacity += calculateBaseCoreHeatCapacity(base.buildings, buildingsById);
+            totalHeatCapacity += calculateBaseCoreHeatCapacity(base.coreLevel ?? 0, base.buildings, buildingsById);
 
             base.buildings.forEach((baseBuilding: BaseBuilding) => {
                 const buildingType = buildingsById[baseBuilding.buildingTypeId];

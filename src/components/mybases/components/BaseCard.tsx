@@ -90,7 +90,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
     return null;
   }
 
-  const { totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient } = stats;
+  const { coreLevel, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient } = stats;
 
   // Calculate plan counts and prepare plan data
   const planSections = base.productions || [];
@@ -101,7 +101,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
         <h3 className="card-title text-lg font-semibold mb-3">{base.name}</h3>
         {/* Row 1: Image | Base Info */}
         <div className="flex items-start gap-6 mb-4">
-          <div className="flex-shrink-0 flex flex-col">
+          <div className="flex-shrink-0 flex flex-col items-center">
             <img
               src="/icons/buildings/base_core.png"
               alt="Base Core"
@@ -111,6 +111,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
                 target.style.display = 'none';
               }}
             />
+            <span className="badge badge-sm badge-outline mt-1">Lv.{coreLevel}</span>
           </div>
 
           <div className="flex flex-col flex-1 min-w-0 gap-2 mt-2">

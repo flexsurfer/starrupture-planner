@@ -49,6 +49,7 @@ export const SUB_IDS = {
     BASES_BUILDING_SECTION_STATS: 'basesBuildingSectionStats',
     BASES_BUILDING_SECTION_BUILDINGS: 'basesBuildingSectionBuildings',
     BASES_AVAILABLE_BUILDINGS_FOR_SECTION: 'basesAvailableBuildingsForSection',
+    BASES_CORE_LEVELS: 'basesCoreLevels',
     BASES_STATS_SUMMARY: 'basesStatsSummary',
 
     PRODUCTION_PLAN_SECTION_FLOW_BY_ID: 'productionPlanSectionFlowById',
