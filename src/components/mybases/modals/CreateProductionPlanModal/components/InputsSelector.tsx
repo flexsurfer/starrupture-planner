@@ -32,34 +32,43 @@ export const InputsSelector: React.FC = () => {
                         </span>
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2 flex-wrap max-h-32 overflow-y-auto">
+                    <div className="flex items-stretch gap-2 flex-wrap max-h-32 overflow-y-auto">
                         {inputItems.map((inputItem) => {
                             const isSelected = selectedInputIds.includes(inputItem.baseBuildingId);
+                            const hasNameOrDescription = inputItem.name || inputItem.description;
                             return (
                                 <div
                                     key={inputItem.baseBuildingId}
                                     onClick={() => handleInputToggle(inputItem.baseBuildingId)}
-                                    className={`flex items-center gap-1.5 border rounded-lg px-2 py-1 cursor-pointer transition-colors ${
+                                    className={`flex flex-col gap-1 border rounded-lg px-2 py-1 cursor-pointer transition-colors ${
                                         isSelected
                                             ? 'bg-primary/20 border-primary'
                                             : 'border-base-300 hover:bg-base-300/50'
                                     }`}
                                     title={`${inputItem.building.name}: ${inputItem.item.name} - ${inputItem.ratePerMinute}/min`}
                                 >
-                                    <BuildingImage
-                                        buildingId={inputItem.building.id}
-                                        building={inputItem.building}
-                                        size="small"
-                                        className="w-4 h-4"
-                                    />
-                                    <ItemImage
-                                        itemId={inputItem.item.id}
-                                        item={inputItem.item}
-                                        size="small"
-                                        className="w-4 h-4"
-                                    />
-                                    <span className="text-xs font-medium">{inputItem.item.name}</span>
-                                    <span className="text-xs text-base-content/60">{inputItem.ratePerMinute}/min</span>
+                                    {hasNameOrDescription && (
+                                        <div className="flex gap-2">
+                                            <span className="text-xs font-semibold text-base-content w-1/2">{inputItem.name || ''}</span>
+                                            <span className="text-xs text-base-content/70 w-1/2">{inputItem.description || ''}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-1.5 mt-auto">
+                                        <BuildingImage
+                                            buildingId={inputItem.building.id}
+                                            building={inputItem.building}
+                                            size="small"
+                                            className="w-4 h-4"
+                                        />
+                                        <ItemImage
+                                            itemId={inputItem.item.id}
+                                            item={inputItem.item}
+                                            size="small"
+                                            className="w-4 h-4"
+                                        />
+                                        <span className="text-xs font-medium">{inputItem.item.name}</span>
+                                        <span className="text-xs text-base-content/60">{inputItem.ratePerMinute}/min</span>
+                                    </div>
                                 </div>
                             );
                         })}

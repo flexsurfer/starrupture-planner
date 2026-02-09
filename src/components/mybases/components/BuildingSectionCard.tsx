@@ -52,8 +52,13 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
             {/* Building name and active plan badge */}
             <div className="flex flex-col gap-1">
               <div className="text-xs font-semibold">
-                {building.name}
+                {baseBuilding.name || building.name}
               </div>
+              {baseBuilding.description && (
+                <div className="text-xs text-base-content/60 line-clamp-2" title={baseBuilding.description}>
+                  {baseBuilding.description}
+                </div>
+              )}
               {isInActivePlan && (
                 <div className="flex flex-wrap gap-1">
                   {activePlanNames.map((planName) => (

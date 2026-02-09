@@ -56,6 +56,13 @@ function normalizeBases(rawBases: unknown): Base[] {
             ? building.ratePerMinute
             : undefined;
 
+        const name = typeof building.name === 'string' && building.name.trim()
+            ? building.name.trim()
+            : undefined;
+        const description = typeof building.description === 'string' && building.description.trim()
+            ? building.description.trim()
+            : undefined;
+
         const normalized: BaseBuilding = {
             id: building.id,
             buildingTypeId: building.buildingTypeId,
@@ -64,6 +71,8 @@ function normalizeBases(rawBases: unknown): Base[] {
 
         if (selectedItemId !== undefined) normalized.selectedItemId = selectedItemId;
         if (ratePerMinute !== undefined) normalized.ratePerMinute = ratePerMinute;
+        if (name !== undefined) normalized.name = name;
+        if (description !== undefined) normalized.description = description;
 
         return normalized;
     };

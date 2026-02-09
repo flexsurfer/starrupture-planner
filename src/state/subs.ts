@@ -462,6 +462,8 @@ interface ConfiguredSectionItem {
     item: Item;
     ratePerMinute: number;
     building: DbBuilding;
+    name: string;
+    description: string;
 }
 
 function collectConfiguredSectionItems(
@@ -487,6 +489,8 @@ function collectConfiguredSectionItems(
             item,
             ratePerMinute: baseBuilding.ratePerMinute,
             building,
+            name: baseBuilding.name || '',
+            description: baseBuilding.description || '',
         });
     }
 
@@ -597,6 +601,8 @@ regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID,
             item: entry.item,
             ratePerMinute: entry.ratePerMinute,
             building: entry.building,
+            name: entry.name,
+            description: entry.description,
         }));
     },
     () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
@@ -1184,6 +1190,8 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
                 item: entry.item,
                 ratePerMinute: entry.ratePerMinute,
                 building: entry.building,
+                name: entry.name,
+                description: entry.description,
             }));
 
         return { inputItems, selectedInputIds: selectedInputIds || [] };

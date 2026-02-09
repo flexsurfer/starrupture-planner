@@ -15,9 +15,9 @@ export const BaseBuildingsView: React.FC = () => {
 
   const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
 
-  const handleAddBuilding = useCallback((buildingTypeId: string) => {
+  const handleAddBuilding = useCallback((buildingTypeId: string, name?: string, description?: string) => {
     if (selectedBase && addBuildingSection) {
-      dispatch([EVENT_IDS.BASES_ADD_BUILDING, selectedBase.id, buildingTypeId, addBuildingSection]);
+      dispatch([EVENT_IDS.BASES_ADD_BUILDING, selectedBase.id, buildingTypeId, addBuildingSection, name, description]);
       setAddBuildingSection(null);
     }
   }, [selectedBase, addBuildingSection]);

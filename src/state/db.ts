@@ -125,6 +125,8 @@ export interface BaseBuilding {
     sectionType: string; // Section where this building was added (e.g., 'inputs', 'production', 'outputs')
     selectedItemId?: string; // Selected item for input buildings
     ratePerMinute?: number; // Rate per minute for the selected item
+    name?: string; // Optional custom name for this building instance
+    description?: string; // Optional custom description for this building instance
 }
 
 /** A single building requirement entry stored on a production plan. */

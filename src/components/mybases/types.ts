@@ -59,6 +59,8 @@ export interface BaseInputItem {
   item: Item;
   ratePerMinute: number;
   building: Building;
+  name: string;
+  description: string;
 }
 
 /**

@@ -239,18 +239,20 @@ regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null)
 });
 
 /** Creates a new BaseBuilding object with a unique ID. */
-function createBaseBuilding(buildingTypeId: string, sectionType: string): BaseBuilding {
+function createBaseBuilding(buildingTypeId: string, sectionType: string, name?: string, description?: string): BaseBuilding {
     return {
         id: `building_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         buildingTypeId,
         sectionType,
+        ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
     };
 }
 
-regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string) => {
+regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
-        base.buildings.push(createBaseBuilding(buildingTypeId, sectionType));
+        base.buildings.push(createBaseBuilding(buildingTypeId, sectionType, name, description));
         return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
     }
 });
