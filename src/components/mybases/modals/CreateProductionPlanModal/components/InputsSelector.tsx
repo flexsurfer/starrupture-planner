@@ -48,9 +48,17 @@ export const InputsSelector: React.FC = () => {
                                     title={`${inputItem.building.name}: ${inputItem.item.name} - ${inputItem.ratePerMinute}/min`}
                                 >
                                     {hasNameOrDescription && (
-                                        <div className="flex gap-2">
-                                            <span className="text-xs font-semibold text-base-content w-1/2">{inputItem.name || ''}</span>
-                                            <span className="text-xs text-base-content/70 w-1/2">{inputItem.description || ''}</span>
+                                        <div className="flex flex-col gap-1 min-w-0">
+                                            {inputItem.name && (
+                                                <span className="text-xs font-semibold text-base-content truncate" title={inputItem.name}>
+                                                    {inputItem.name}
+                                                </span>
+                                            )}
+                                            {inputItem.description && (
+                                                <span className="text-xs text-base-content/70 truncate" title={inputItem.description}>
+                                                    {inputItem.description}
+                                                </span>
+                                            )}
                                         </div>
                                     )}
                                     <div className="flex items-center gap-1.5 mt-auto">
