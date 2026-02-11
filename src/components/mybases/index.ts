@@ -51,6 +51,7 @@ export {
   RenameBaseModal,
   CreateProductionPlanModal,
   BuildingRequirementsModal,
+  ManageEnergyGroupsModal,
 } from './modals';
 
 // Utils

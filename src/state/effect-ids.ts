@@ -5,4 +5,6 @@ export const EFFECT_IDS = {
     SET_DATA_VERSION: 'setDataVersion',
     GET_BASES: 'getBases',
     SET_BASES: 'setBases',
+    GET_ENERGY_GROUPS: 'getEnergyGroups',
+    SET_ENERGY_GROUPS: 'setEnergyGroups',
 }

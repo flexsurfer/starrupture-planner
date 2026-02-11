@@ -9,6 +9,7 @@ import type {
     AppState,
     Base,
     BaseBuilding,
+    EnergyGroup,
     Production,
     PlanRequiredBuilding,
     CorporationLevelSelection,
@@ -41,6 +42,31 @@ function getBaseById(bases: Base[], baseId: string): Base | undefined {
         }
     }
     return undefined;
+}
+
+function createEntityId(prefix: string): string {
+    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function normalizeEnergyGroupName(name: string): string {
+    return name.trim().replace(/\s+/g, ' ');
+}
+
+function findEnergyGroupByName(groups: EnergyGroup[], name: string): EnergyGroup | undefined {
+    const normalizedName = normalizeEnergyGroupName(name).toLowerCase();
+    if (!normalizedName) return undefined;
+
+    return groups.find((group) => normalizeEnergyGroupName(group.name).toLowerCase() === normalizedName);
+}
+
+/** Returns a SET_BASES effect tuple that persists bases. */
+function persistBasesEffect(draftDb: AppState): [string, Base[]] {
+    return [EFFECT_IDS.SET_BASES, current(draftDb.basesList)];
+}
+
+/** Returns a SET_ENERGY_GROUPS effect tuple that persists energy groups. */
+function persistEnergyGroupsEffect(draftDb: AppState): [string, EnergyGroup[]] {
+    return [EFFECT_IDS.SET_ENERGY_GROUPS, current(draftDb.energyGroups)];
 }
 
 // Helper function to set target amount to default output rate for an item
@@ -125,7 +151,7 @@ regEvent(EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG, ({ draftDb }) => {
 });
 
 /** Initialization event */
-regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion, localStoreBases }) => {
+regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion, localStoreBases, localStoreEnergyGroups }) => {
     if (localStoreTheme) {
         draftDb.uiTheme = localStoreTheme;
     }
@@ -136,9 +162,10 @@ regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion,
     }
     
     draftDb.basesList = Array.isArray(localStoreBases) ? localStoreBases : [];
+    draftDb.energyGroups = Array.isArray(localStoreEnergyGroups) ? localStoreEnergyGroups : [];
 
     return [[EFFECT_IDS.SET_THEME, draftDb.uiTheme]];
-}, [[EFFECT_IDS.GET_THEME], [EFFECT_IDS.GET_DATA_VERSION], [EFFECT_IDS.GET_BASES]]);
+}, [[EFFECT_IDS.GET_THEME], [EFFECT_IDS.GET_DATA_VERSION], [EFFECT_IDS.GET_BASES], [EFFECT_IDS.GET_ENERGY_GROUPS]]);
 
 regEvent(EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, ({ draftDb }, category: string) => {
     draftDb.itemsSelectedCategory = category;
@@ -191,8 +218,7 @@ regEvent(EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, ({ draftDb }, targetAmount: number
 //===============================================
 
 regEvent(EVENT_IDS.BASES_CREATE_BASE, ({ draftDb }, name: string) => {
-    //TODO there is "now" coeffect in reflex
-    const baseId = `base_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const baseId = createEntityId('base');
     
     const newBase: Base = {
         id: baseId,
@@ -204,14 +230,14 @@ regEvent(EVENT_IDS.BASES_CREATE_BASE, ({ draftDb }, name: string) => {
     draftDb.basesList.push(newBase);
     draftDb.basesSelectedBaseId = baseId;
     
-    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+    return [persistBasesEffect(draftDb as AppState)];
 });
 
 regEvent(EVENT_IDS.BASES_UPDATE_BASE_NAME, ({ draftDb }, baseId: string, newName: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.name = newName;
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+        return [persistBasesEffect(draftDb as AppState)];
     }
 });
 
@@ -222,7 +248,7 @@ regEvent(EVENT_IDS.BASES_SET_CORE_LEVEL, ({ draftDb }, level: number) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.coreLevel = level;
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+        return [persistBasesEffect(draftDb as AppState)];
     }
 });
 
@@ -231,7 +257,7 @@ regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftDb }, baseId: string) => {
     if (draftDb.basesSelectedBaseId === baseId) {
         draftDb.basesSelectedBaseId = null;
     }
-    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+    return [persistBasesEffect(draftDb as AppState)];
 });
 
 regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null) => {
@@ -241,7 +267,7 @@ regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null)
 /** Creates a new BaseBuilding object with a unique ID. */
 function createBaseBuilding(buildingTypeId: string, sectionType: string, name?: string, description?: string): BaseBuilding {
     return {
-        id: `building_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: createEntityId('building'),
         buildingTypeId,
         sectionType,
         ...(name ? { name } : {}),
@@ -253,7 +279,7 @@ regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTyp
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.buildings.push(createBaseBuilding(buildingTypeId, sectionType, name, description));
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+        return [persistBasesEffect(draftDb as AppState)];
     }
 });
 
@@ -264,7 +290,7 @@ regEvent(EVENT_IDS.BASES_REMOVE_BUILDING, ({ draftDb }, buildingId: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.buildings = base.buildings.filter((b: BaseBuilding) => b.id !== buildingId);
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+        return [persistBasesEffect(draftDb as AppState)];
     }
 });
 
@@ -280,9 +306,97 @@ regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: s
                 building.selectedItemId = undefined;
                 building.ratePerMinute = undefined;
             }
-            return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+            return [persistBasesEffect(draftDb as AppState)];
         }
     }
+});
+
+//===============================================
+// Energy Groups
+//===============================================
+
+regEvent(EVENT_IDS.ENERGY_GROUP_CREATE, ({ draftDb }, rawName: string, assignBaseId?: string) => {
+    const normalizedName = normalizeEnergyGroupName(rawName);
+    if (!normalizedName) return;
+
+    const existingGroup = findEnergyGroupByName(draftDb.energyGroups, normalizedName);
+    const targetGroup = existingGroup ?? {
+        id: createEntityId('eg'),
+        name: normalizedName,
+    };
+
+    let changed = false;
+    if (!existingGroup) {
+        draftDb.energyGroups.push(targetGroup);
+        changed = true;
+    }
+
+    if (!assignBaseId) {
+        return changed ? [persistEnergyGroupsEffect(draftDb as AppState)] : undefined;
+    }
+
+    const base = getBaseById(draftDb.basesList, assignBaseId);
+    if (!base) {
+        return changed ? [persistEnergyGroupsEffect(draftDb as AppState)] : undefined;
+    }
+
+    if (base.energyGroupId !== targetGroup.id) {
+        base.energyGroupId = targetGroup.id;
+        changed = true;
+    }
+
+    return changed
+        ? (existingGroup ? [persistBasesEffect(draftDb as AppState)] : [persistBasesEffect(draftDb as AppState), persistEnergyGroupsEffect(draftDb as AppState)])
+        : undefined;
+});
+
+regEvent(EVENT_IDS.ENERGY_GROUP_DELETE, ({ draftDb }, groupId: string) => {
+    const hasGroup = draftDb.energyGroups.some((group: EnergyGroup) => group.id === groupId);
+    if (!hasGroup) return;
+
+    draftDb.energyGroups = draftDb.energyGroups.filter((g: EnergyGroup) => g.id !== groupId);
+
+    draftDb.basesList.forEach((base: Base) => {
+        if (base.energyGroupId === groupId) {
+            base.energyGroupId = undefined;
+        }
+    });
+
+    return [persistBasesEffect(draftDb as AppState), persistEnergyGroupsEffect(draftDb as AppState)];
+});
+
+regEvent(EVENT_IDS.ENERGY_GROUP_RENAME, ({ draftDb }, groupId: string, rawName: string) => {
+    const group = draftDb.energyGroups.find((g: EnergyGroup) => g.id === groupId);
+    if (!group) return;
+
+    const normalizedName = normalizeEnergyGroupName(rawName);
+    if (!normalizedName) return;
+
+    const duplicateByName = draftDb.energyGroups.find((candidate: EnergyGroup) => {
+        return candidate.id !== groupId && normalizeEnergyGroupName(candidate.name).toLowerCase() === normalizedName.toLowerCase();
+    });
+    if (duplicateByName) return;
+
+    if (group.name === normalizedName) return;
+    group.name = normalizedName;
+    return [persistEnergyGroupsEffect(draftDb as AppState)];
+});
+
+regEvent(EVENT_IDS.BASES_SET_ENERGY_GROUP, ({ draftDb }, baseId: string, groupId: string | null) => {
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (!base) return;
+
+    if (!groupId) {
+        if (!base.energyGroupId) return;
+        base.energyGroupId = undefined;
+        return [persistBasesEffect(draftDb as AppState)];
+    }
+
+    const groupExists = draftDb.energyGroups.some((group: EnergyGroup) => group.id === groupId);
+    if (!groupExists || base.energyGroupId === groupId) return;
+
+    base.energyGroupId = groupId;
+    return [persistBasesEffect(draftDb as AppState)];
 });
 
 //===============================================
@@ -301,7 +415,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ACTIVATE_SECTION, ({ draftDb }, baseId: strin
     section.active = true;
     section.status = 'active';
 
-    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+    return [persistBasesEffect(draftDb as AppState)];
 });
 
 regEvent(EVENT_IDS.PRODUCTION_PLAN_DEACTIVATE_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
@@ -311,7 +425,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_DEACTIVATE_SECTION, ({ draftDb }, baseId: str
         if (section) {
             section.active = false;
             section.status = 'inactive';
-            return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+            return [persistBasesEffect(draftDb as AppState)];
         }
     }
 });
@@ -320,7 +434,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, ({ draftDb }, baseId: string,
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.productions = base.productions.filter((s: Production) => s.id !== sectionId);
-        return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+        return [persistBasesEffect(draftDb as AppState)];
     }
 });
 
@@ -382,7 +496,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftDb }, baseId: 
 
     base.buildings.push(...newBuildings);
 
-    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+    return [persistBasesEffect(draftDb as AppState)];
 });
 
 /** Create Production Plan Modal events */
@@ -498,7 +612,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
         }
     } else {
         // Create new section
-        const sectionId = `pps_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const sectionId = createEntityId('pps');
         const newSection: Production = {
             id: sectionId,
             name: name.trim(),
@@ -513,7 +627,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
         base.productions.push(newSection);
     }
 
-    return [[EFFECT_IDS.SET_BASES, current(draftDb.basesList)]];
+    return [persistBasesEffect(draftDb as AppState)];
 });
 
 /** Production Plan Modal Form events */

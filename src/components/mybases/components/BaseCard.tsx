@@ -3,6 +3,7 @@ import { useSubscription } from '@flexsurfer/reflex';
 import type { Base, Item, Production } from '../../../state/db';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { ItemImage, BuildingImage } from '../../ui';
+import { EnergyGroupSelector } from './EnergyGroupSelector';
 import type {
   BaseDetailStats,
   BaseInputItem,
@@ -90,7 +91,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
     return null;
   }
 
-  const { coreLevel, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient } = stats;
+  const { coreLevel, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient, energyGroupId, energyGroupName } = stats;
 
   // Calculate plan counts and prepare plan data
   const planSections = base.productions || [];
@@ -98,7 +99,9 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
   return (
     <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow">
       <div className="card-body p-4 flex flex-col">
-        <h3 className="card-title text-lg font-semibold mb-3">{base.name}</h3>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="card-title text-lg font-semibold">{base.name}</h3>
+        </div>
         {/* Row 1: Image | Base Info */}
         <div className="flex items-start gap-6 mb-4">
           <div className="flex-shrink-0 flex flex-col items-center">
@@ -135,7 +138,10 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
 
             <div className="space-y-1">
               <div className="flex justify-between items-center text-sm">
-                <span className={isEnergyInsufficient ? 'text-error' : 'text-base-content/70'}>Energy:</span>
+                <span className={`flex items-center gap-1 ${isEnergyInsufficient ? 'text-error' : 'text-base-content/70'}`}>
+                  Energy{energyGroupName ? ` (${energyGroupName})` : ''}:
+                  <EnergyGroupSelector baseId={base.id} currentGroupId={energyGroupId} variant="text" />
+                </span>
                 <span className={`font-medium ${isEnergyInsufficient ? 'text-error' : ''}`}>{energyConsumption} / {energyGeneration} MW</span>
               </div>
               <div className="w-full bg-base-300 rounded-full h-2">

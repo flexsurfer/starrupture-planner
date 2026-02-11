@@ -172,21 +172,27 @@ function normalizeBases(rawBases: unknown): Base[] {
                 .filter((production): production is Production => production !== null)
             : [];
 
-        // Normalize coreLevel: must be a number between 0-4, default to 0 if missing/invalid
-        const coreLevel = typeof base.coreLevel === 'number' && 
-            Number.isFinite(base.coreLevel) && 
-            base.coreLevel >= 0 && 
+        const coreLevel = typeof base.coreLevel === 'number' &&
+            Number.isFinite(base.coreLevel) &&
+            base.coreLevel >= 0 &&
             base.coreLevel <= 4
             ? base.coreLevel
             : 0;
 
-        normalizedBases.push({
+        const normalized: Base = {
             id: base.id,
             name: base.name,
             coreLevel,
             buildings,
             productions,
-        });
+        };
+
+        const rawEnergyGroupId = (rawBase as Record<string, unknown>).energyGroupId;
+        if (typeof rawEnergyGroupId === 'string' && rawEnergyGroupId) {
+            normalized.energyGroupId = rawEnergyGroupId;
+        }
+
+        normalizedBases.push(normalized);
     }
 
     return normalizedBases;
@@ -198,25 +204,19 @@ export function readBasesFromStorage(): Base[] | null {
 
     const raw = JSON.parse(stored) as unknown;
 
-    // Legacy format: raw array under "bases" key.
     if (Array.isArray(raw)) {
-        const normalized = normalizeBases(raw);
-        writeBasesToStorage(normalized);
-        return normalized;
+        const bases = normalizeBases(raw);
+        writeBasesToStorage(bases);
+        return bases;
     }
 
-    // Current format: envelope with schemaVersion and bases.
     if (isBasesStorageEnvelope(raw)) {
-        const normalized = normalizeBases(raw.bases);
-
-        // Rewrite when schema changes in the future or payload isn't an array.
+        const bases = normalizeBases(raw.bases);
         if (raw.schemaVersion !== BASES_SCHEMA_VERSION || !Array.isArray(raw.bases)) {
-            writeBasesToStorage(normalized);
+            writeBasesToStorage(bases);
         }
-
-        return normalized;
+        return bases;
     }
 
-    // Unknown/corrupt shape.
     return [];
 }

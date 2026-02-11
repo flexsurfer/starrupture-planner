@@ -8,6 +8,7 @@ import type {
     Base,
     BasesById,
     BaseBuilding,
+    EnergyGroup,
     Production,
     CreateProductionPlanModalState,
     CorporationLevelSelection,
@@ -67,6 +68,7 @@ regSub(SUB_IDS.BASES_LIST, "basesList");
 regSub(SUB_IDS.BASES_SELECTED_BASE_ID, "basesSelectedBaseId");
 regSub(SUB_IDS.UI_CONFIRMATION_DIALOG, "uiConfirmationDialog");
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, "productionPlanModalState");
+regSub(SUB_IDS.ENERGY_GROUPS_LIST, "energyGroups");
 
 //============================================================
 // Items, buildings, corporations subscriptions
@@ -455,6 +457,19 @@ regSub(SUB_IDS.PLANNER_SELECTABLE_ITEMS,
     () => [[SUB_IDS.ITEMS_LIST]]);
 
 //============================================================
+// Energy Groups subscriptions
+//============================================================
+regSub(SUB_IDS.ENERGY_GROUPS_BY_ID_MAP,
+    (groups: EnergyGroup[]): Record<string, EnergyGroup> => {
+        const byId: Record<string, EnergyGroup> = {};
+        for (const group of groups) {
+            byId[group.id] = group;
+        }
+        return byId;
+    },
+    () => [[SUB_IDS.ENERGY_GROUPS_LIST]]);
+
+//============================================================
 // Bases subscriptions
 //============================================================
 interface ConfiguredSectionItem {
@@ -521,8 +536,47 @@ regSub(SUB_IDS.BASES_BASE_BY_ID,
     },
     () => [[SUB_IDS.BASES_BY_ID_MAP]]);
 
+/** Pooled energy context — aggregated generation/consumption across an energy group. */
+interface PooledEnergyContext {
+    pooledGeneration: number;
+}
+
+/**
+ * Calculate pooled energy for all bases in the same energy group.
+ * Returns null if the base doesn't belong to a group.
+ */
+function calculatePooledEnergy(
+    base: Base,
+    allBases: Base[],
+    buildingsById: BuildingsByIdMap,
+    energyGroupsById: Record<string, EnergyGroup>,
+): PooledEnergyContext | null {
+    if (!base.energyGroupId) return null;
+    if (!energyGroupsById[base.energyGroupId]) return null;
+
+    let pooledGeneration = 0;
+
+    for (const b of allBases) {
+        if (b.energyGroupId !== base.energyGroupId) continue;
+        for (const bb of b.buildings) {
+            const buildingType = buildingsById[bb.buildingTypeId];
+            if (!buildingType) continue;
+            if (buildingType.type === 'generator') {
+                pooledGeneration += buildingType.power || 0;
+            }
+        }
+    }
+
+    return { pooledGeneration };
+}
+
 // Helper function to calculate stats for a base
-function calculateBaseDetailStats(base: Base, buildingsById: BuildingsByIdMap): BaseDetailStats {
+function calculateBaseDetailStats(
+    base: Base,
+    buildingsById: BuildingsByIdMap,
+    energyGroupsById?: Record<string, EnergyGroup>,
+    allBases?: Base[],
+): BaseDetailStats {
     let totalHeat = 0;
     let energyGeneration = 0;
     let energyConsumption = 0;
@@ -541,41 +595,57 @@ function calculateBaseDetailStats(base: Base, buildingsById: BuildingsByIdMap): 
         }
     });
 
+    // If this base belongs to an energy group, use pooled energy values
+    const pooled = allBases && energyGroupsById
+        ? calculatePooledEnergy(base, allBases, buildingsById, energyGroupsById)
+        : null;
+    const effectiveGeneration = pooled ? pooled.pooledGeneration : energyGeneration;
+    const effectiveConsumption = energyConsumption;
+
     const coreLevel = base.coreLevel ?? 0;
     const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(coreLevel, base.buildings, buildingsById);
     const heatPercentage = Math.min((totalHeat / baseCoreHeatCapacity) * 100, 100);
     // Calculate energy percentage: used / available (similar to heat)
     // If no generation, show full red bar (100%)
-    const energyPercentage = energyGeneration > 0
-        ? Math.min((energyConsumption / energyGeneration) * 100, 100)
-        : energyConsumption > 0
+    const energyPercentage = effectiveGeneration > 0
+        ? Math.min((effectiveConsumption / effectiveGeneration) * 100, 100)
+        : effectiveConsumption > 0
             ? 100 // Full red bar when consuming but no generation
             : 0;
 
     const isHeatOverCapacity = totalHeat > baseCoreHeatCapacity;
-    const isEnergyInsufficient = energyGeneration === 0 || energyConsumption > energyGeneration;
+    const hasEnergyLoad = effectiveConsumption > 0;
+    const isEnergyInsufficient = hasEnergyLoad && (effectiveGeneration === 0 || effectiveConsumption > effectiveGeneration);
+
+    // Energy group info
+    const energyGroupId = base.energyGroupId;
+    const energyGroupName = energyGroupId && energyGroupsById
+        ? energyGroupsById[energyGroupId]?.name
+        : undefined;
 
     return {
         baseName: base.name,
         coreLevel,
         buildingCount: base.buildings.length,
         totalHeat,
-        energyGeneration,
-        energyConsumption,
+        energyGeneration: effectiveGeneration,
+        energyConsumption: effectiveConsumption,
         baseCoreHeatCapacity,
         heatPercentage,
         energyPercentage,
         isHeatOverCapacity,
         isEnergyInsufficient,
+        energyGroupId,
+        energyGroupName,
     };
 }
 
 regSub(SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS,
-    (selectedBase: Base | null, buildingsById: BuildingsByIdMap): BaseDetailStats | null => {
+    (selectedBase: Base | null, buildingsById: BuildingsByIdMap, energyGroupsById: Record<string, EnergyGroup>, allBases: Base[]): BaseDetailStats | null => {
         if (!selectedBase) return null;
-        return calculateBaseDetailStats(selectedBase, buildingsById);
+        return calculateBaseDetailStats(selectedBase, buildingsById, energyGroupsById, allBases);
     },
-    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
+    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP], [SUB_IDS.BASES_LIST]]);
 
 regSub(SUB_IDS.BASES_CORE_LEVELS,
     (buildingsById: BuildingsByIdMap): { level: number; heatCapacity: number }[] => {
@@ -584,12 +654,12 @@ regSub(SUB_IDS.BASES_CORE_LEVELS,
     () => [[SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID,
-    (basesById: BasesById, buildingsById: BuildingsByIdMap, baseId: string): BaseDetailStats | null => {
+    (basesById: BasesById, buildingsById: BuildingsByIdMap, energyGroupsById: Record<string, EnergyGroup>, allBases: Base[], baseId: string): BaseDetailStats | null => {
         const base = basesById[baseId];
         if (!base) return null;
-        return calculateBaseDetailStats(base, buildingsById);
+        return calculateBaseDetailStats(base, buildingsById, energyGroupsById, allBases);
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP], [SUB_IDS.BASES_LIST]]);
 
 regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID,
     (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, baseId: string): BaseInputItem[] => {
@@ -802,7 +872,7 @@ regSub(SUB_IDS.BASES_STATS_SUMMARY,
             : totalEnergyUsed > 0
                 ? 100
                 : 0;
-        const isEnergyInsufficient = totalEnergyProduced === 0 || totalEnergyUsed > totalEnergyProduced;
+        const isEnergyInsufficient = totalEnergyUsed > 0 && (totalEnergyProduced === 0 || totalEnergyUsed > totalEnergyProduced);
 
         return {
             totalBases: bases.length,

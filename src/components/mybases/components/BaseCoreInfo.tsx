@@ -2,12 +2,15 @@ import { dispatch, useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
 import type { BaseDetailStats } from '../types';
 import { EVENT_IDS } from '../../../state/event-ids';
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
+import type { Base } from '../../../state/db';
+import { EnergyGroupSelector } from './EnergyGroupSelector';
 
 export const BaseCoreInfo: React.FC = () => {
 
   const detailStats = useSubscription<BaseDetailStats | null>([SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS]);
   const coreLevels = useSubscription<{ level: number; heatCapacity: number }[]>([SUB_IDS.BASES_CORE_LEVELS]);
+  const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
 
   const onBack = useCallback(() => {
     dispatch([EVENT_IDS.BASES_SET_SELECTED_BASE, null]);
@@ -22,7 +25,7 @@ export const BaseCoreInfo: React.FC = () => {
     return null;
   }
 
-  const { baseName, coreLevel, buildingCount, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient } = detailStats;
+  const { baseName, coreLevel, buildingCount, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient, energyGroupId, energyGroupName } = detailStats;
 
   return (
     <div className="bg-base-200 rounded-lg p-2 sm:p-3">
@@ -92,7 +95,10 @@ export const BaseCoreInfo: React.FC = () => {
             </div>
           </div>
           <div className="flex-shrink-0 min-w-[100px]">
-            <div className={`text-xs mb-0.5 ${isEnergyInsufficient ? 'text-error' : 'text-base-content/70'}`}>Energy</div>
+            <div className={`text-xs mb-0.5 flex items-center gap-1 ${isEnergyInsufficient ? 'text-error' : 'text-base-content/70'}`}>
+              Energy{energyGroupName ? ` (${energyGroupName})` : ''}
+              {selectedBase && <EnergyGroupSelector baseId={selectedBase.id} currentGroupId={energyGroupId} variant="text" />}
+            </div>
             <div className={`text-sm sm:text-base font-bold ${isEnergyInsufficient ? 'text-error' : ''}`}>{energyConsumption} / {energyGeneration} MW</div>
             <div className="w-full bg-base-300 rounded-full h-1 mt-0.5">
               <div

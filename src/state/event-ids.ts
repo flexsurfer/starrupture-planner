@@ -24,7 +24,12 @@ export const EVENT_IDS = {
     BASES_ADD_BUILDING: 'basesAddBuilding',
     BASES_REMOVE_BUILDING: 'basesRemoveBuilding',
     BASES_UPDATE_BUILDING_ITEM_SELECTION: 'basesUpdateBuildingItemSelection',
-    
+    BASES_SET_ENERGY_GROUP: 'basesSetEnergyGroup',
+
+    ENERGY_GROUP_CREATE: 'energyGroupCreate',
+    ENERGY_GROUP_DELETE: 'energyGroupDelete',
+    ENERGY_GROUP_RENAME: 'energyGroupRename',
+
     PRODUCTION_PLAN_DELETE_SECTION: 'productionPlanDeleteSection',
     PRODUCTION_PLAN_ACTIVATE_SECTION: 'productionPlanActivateSection',
     PRODUCTION_PLAN_DEACTIVATE_SECTION: 'productionPlanDeactivateSection',

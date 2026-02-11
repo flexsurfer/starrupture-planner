@@ -27,6 +27,8 @@ export interface BaseDetailStats {
   energyPercentage: number;
   isHeatOverCapacity: boolean;
   isEnergyInsufficient: boolean;
+  energyGroupId?: string;
+  energyGroupName?: string;
 }
 
 /**

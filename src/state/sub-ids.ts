@@ -52,6 +52,9 @@ export const SUB_IDS = {
     BASES_CORE_LEVELS: 'basesCoreLevels',
     BASES_STATS_SUMMARY: 'basesStatsSummary',
 
+    ENERGY_GROUPS_LIST: 'energyGroups',
+    ENERGY_GROUPS_BY_ID_MAP: 'energyGroupsByIdMap',
+
     PRODUCTION_PLAN_SECTION_FLOW_BY_ID: 'productionPlanSectionFlowById',
     PRODUCTION_PLAN_SECTION_STATS_BY_ID: 'productionPlanSectionStatsById',
     PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID: 'productionPlanSectionViewModelById',

@@ -1,18 +1,19 @@
 import { regCoeffect, regEffect } from "@flexsurfer/reflex";
 import { EFFECT_IDS } from "./effect-ids";
-import type { DataVersion, Base } from "./db";
+import type { DataVersion, Base, EnergyGroup } from "./db";
 import { readBasesFromStorage, writeBasesToStorage } from "./bases-storage";
+import { readEnergyGroupsFromStorage, writeEnergyGroupsToStorage } from "./energy-groups-storage";
 
 const BASES_PERSIST_DEBOUNCE_MS = 500;
 
 let pendingBasesForPersist: Base[] | null = null;
-let pendingPersistTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingBasesPersistTimer: ReturnType<typeof setTimeout> | null = null;
 let isLifecycleFlushRegistered = false;
 
 const flushPendingBasesPersist = () => {
-    if (pendingPersistTimer !== null) {
-        clearTimeout(pendingPersistTimer);
-        pendingPersistTimer = null;
+    if (pendingBasesPersistTimer !== null) {
+        clearTimeout(pendingBasesPersistTimer);
+        pendingBasesPersistTimer = null;
     }
 
     if (pendingBasesForPersist === null) return;
@@ -66,8 +67,8 @@ regCoeffect(EFFECT_IDS.GET_DATA_VERSION, (coeffects) => {
 
 regEffect(EFFECT_IDS.SET_BASES, (bases: Base[]) => {
     pendingBasesForPersist = bases;
-    if (pendingPersistTimer !== null) return;
-    pendingPersistTimer = setTimeout(flushPendingBasesPersist, BASES_PERSIST_DEBOUNCE_MS);
+    if (pendingBasesPersistTimer !== null) return;
+    pendingBasesPersistTimer = setTimeout(flushPendingBasesPersist, BASES_PERSIST_DEBOUNCE_MS);
 });
 
 regCoeffect(EFFECT_IDS.GET_BASES, (coeffects) => {
@@ -76,6 +77,24 @@ regCoeffect(EFFECT_IDS.GET_BASES, (coeffects) => {
     } catch (e) {
         console.error('Error loading bases from local storage:', e);
         coeffects.localStoreBases = null;
+    }
+    return coeffects;
+});
+
+regEffect(EFFECT_IDS.SET_ENERGY_GROUPS, (energyGroups: EnergyGroup[]) => {
+    try {
+        writeEnergyGroupsToStorage(energyGroups);
+    } catch (e) {
+        console.error('Error saving energy groups to local storage:', e);
+    }
+});
+
+regCoeffect(EFFECT_IDS.GET_ENERGY_GROUPS, (coeffects) => {
+    try {
+        coeffects.localStoreEnergyGroups = readEnergyGroupsFromStorage();
+    } catch (e) {
+        console.error('Error loading energy groups from local storage:', e);
+        coeffects.localStoreEnergyGroups = [];
     }
     return coeffects;
 }); 

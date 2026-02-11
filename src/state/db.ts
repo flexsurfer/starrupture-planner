@@ -147,10 +147,16 @@ export interface Production {
     requiredBuildings?: PlanRequiredBuilding[]; // Aggregated building requirements, populated on save
 }
 
+export interface EnergyGroup {
+    id: string;
+    name: string;
+}
+
 export interface Base {
     id: string;
     name: string;
     coreLevel?: number; // Base Core level (0-4), defaults to 0
+    energyGroupId?: string; // References EnergyGroup.id for pooled energy grids
     buildings: BaseBuilding[];
     productions: Production[];
 }
@@ -203,6 +209,7 @@ export interface AppState {
     plannerSelectedCorporationLevel: CorporationLevelSelection | null;
     plannerTargetAmount: number;
     basesList: Base[];
+    energyGroups: EnergyGroup[];
     basesSelectedBaseId: string | null;
     uiConfirmationDialog: ConfirmationDialog;
     productionPlanModalState: CreateProductionPlanModalState;
@@ -226,6 +233,7 @@ const appState: AppState = {
     buildingsList: defaultBuildings,
     corporationsList: defaultCorporations,
     basesList: [],
+    energyGroups: [],
 
     //UI
     uiTheme: 'dark',
