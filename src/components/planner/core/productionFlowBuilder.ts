@@ -136,7 +136,6 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     // -------------------------------------------------------------------------
     // STEP 1: Calculate demand for producible items
     // -------------------------------------------------------------------------
-    const itemDemand = new Map<string, number>();
     const itemConsumers = new Map<string, ConsumerDemand[]>();
 
     const calculateDemand = (itemId: string, amount: number, consumerNodeId: string, path: Set<string>): void => {
@@ -155,8 +154,6 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 
         const info = getRecipe(itemId);
         if (!info) return;
-
-        itemDemand.set(itemId, (itemDemand.get(itemId) ?? 0) + amount);
 
         path.add(itemId);
         const buildingsNeeded = amount / info.recipe.output.amount_per_minute;
@@ -264,11 +261,55 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 
     const prodAllocation = allocate(itemConsumers);
 
-    // Compute remaining demand after allocation
+    // Compute remaining demand after allocation and propagate only unmet demand
+    // through the dependency tree. This keeps upstream nodes consistent when
+    // custom inputs satisfy intermediate items.
     const remainingDemand = new Map<string, number>();
-    itemDemand.forEach((demand, itemId) => {
-        remainingDemand.set(itemId, Math.max(demand - (prodAllocation.totalAllocatedByItem.get(itemId) ?? 0), 0));
-    });
+    remainingDemand.set(targetItemId, targetAmount);
+
+    const prodAllocationBudget = new Map<string, number>();
+    for (const a of prodAllocation.allocations) {
+        const key = `${a.consumerNodeId}::${a.itemId}`;
+        prodAllocationBudget.set(key, (prodAllocationBudget.get(key) ?? 0) + a.amount);
+    }
+
+    const propagatedByItem = new Map<string, number>();
+    const queue: string[] = [targetItemId];
+
+    while (queue.length > 0) {
+        const itemId = queue.shift()!;
+        if (isRaw(itemId)) continue;
+
+        const info = getRecipe(itemId);
+        if (!info) continue;
+
+        const totalDemand = remainingDemand.get(itemId) ?? 0;
+        const alreadyPropagated = propagatedByItem.get(itemId) ?? 0;
+        const deltaDemand = totalDemand - alreadyPropagated;
+        if (deltaDemand <= EPSILON) continue;
+
+        propagatedByItem.set(itemId, totalDemand);
+        const buildingsForDelta = deltaDemand / info.recipe.output.amount_per_minute;
+        const consumerId = nodeId(info.building.id, info.recipeIndex, itemId);
+
+        for (const input of info.recipe.inputs) {
+            const inputNeeded = input.amount_per_minute * buildingsForDelta;
+            if (inputNeeded <= EPSILON) continue;
+
+            const allocKey = `${consumerId}::${input.id}`;
+            const allocBudget = prodAllocationBudget.get(allocKey) ?? 0;
+            const fromCustom = Math.min(inputNeeded, allocBudget);
+            if (fromCustom > EPSILON) {
+                prodAllocationBudget.set(allocKey, allocBudget - fromCustom);
+            }
+
+            const remainingInputDemand = inputNeeded - fromCustom;
+            if (remainingInputDemand <= EPSILON) continue;
+
+            remainingDemand.set(input.id, (remainingDemand.get(input.id) ?? 0) + remainingInputDemand);
+            queue.push(input.id);
+        }
+    }
 
     // -------------------------------------------------------------------------
     // STEP 3: Create production nodes

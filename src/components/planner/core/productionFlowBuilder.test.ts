@@ -430,6 +430,39 @@ describe('buildProductionFlow', () => {
             expect(result.edges).toHaveLength(1);
         });
 
+        it('propagates intermediate custom-input allocation to upstream demand', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_housing',
+                    targetAmount: 30,
+                    inputBuildings: [
+                        {
+                            id: 'beam_input',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'titanium_beam',
+                            ratePerMinute: 30
+                        }
+                    ],
+                    rawProductionDisabled: false
+                },
+                buildings
+            );
+
+            // Beam demand is fully satisfied by custom input, so no beam producer should exist.
+            const beamNode = result.nodes.find(n => !n.isCustomInput && n.outputItem === 'titanium_beam');
+            expect(beamNode).toBeUndefined();
+
+            // Smelter should only produce bars needed for sheets (30/min), not full theoretical 90/min.
+            const smelterNode = result.nodes.find(n => n.outputItem === 'bar_titanium' && !n.isCustomInput);
+            expect(smelterNode).toBeDefined();
+            expect(smelterNode!.buildingCount).toBe(0.5); // 30/60
+
+            const edgesFromSmelter = result.edges.filter(e => e.from === 'smelter_0_bar_titanium');
+            const totalFromSmelter = edgesFromSmelter.reduce((sum, e) => sum + e.amount, 0);
+            expect(totalFromSmelter).toBe(30);
+        });
+
         it('should show input node when it is actually consumed by another node', () => {
             // Verify that input snapshots ARE shown when they're consumed by production nodes
             const result = buildProductionFlow(
