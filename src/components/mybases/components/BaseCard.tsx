@@ -91,7 +91,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
     return null;
   }
 
-  const { coreLevel, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient, energyGroupId, energyGroupName } = stats;
+  const { coreLevel, totalHeat, energyGeneration, energyConsumption, energyGridConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient, energyGroupId, energyGroupName } = stats;
 
   // Calculate plan counts and prepare plan data
   const planSections = base.productions || [];
@@ -139,10 +139,17 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
             <div className="space-y-1">
               <div className="flex justify-between items-center text-sm">
                 <span className={`flex items-center gap-1 ${isEnergyInsufficient ? 'text-error' : 'text-base-content/70'}`}>
-                  Energy{energyGroupName ? ` (${energyGroupName})` : ''}:
+                  Energy{energyGroupName ? ` [${energyGroupName}]` : ''}:
                   <EnergyGroupSelector baseId={base.id} currentGroupId={energyGroupId} variant="text" />
                 </span>
-                <span className={`font-medium ${isEnergyInsufficient ? 'text-error' : ''}`}>{energyConsumption} / {energyGeneration} MW</span>
+                <span className={`font-medium ${isEnergyInsufficient ? 'text-error' : ''}`}>
+                  {energyConsumption}
+                  {energyGroupId && (
+                    <span className="text-xs text-base-content/60"> ({energyGridConsumption})</span>
+                  )}
+                  {' / '}
+                  {energyGeneration} MW
+                </span>
               </div>
               <div className="w-full bg-base-300 rounded-full h-2">
                 <div

@@ -22,6 +22,7 @@ export interface BaseDetailStats {
   totalHeat: number;
   energyGeneration: number;
   energyConsumption: number;
+  energyGridConsumption: number;
   baseCoreHeatCapacity: number;
   heatPercentage: number;
   energyPercentage: number;

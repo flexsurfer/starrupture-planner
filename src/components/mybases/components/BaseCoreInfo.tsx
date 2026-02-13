@@ -25,7 +25,7 @@ export const BaseCoreInfo: React.FC = () => {
     return null;
   }
 
-  const { baseName, coreLevel, buildingCount, totalHeat, energyGeneration, energyConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient, energyGroupId, energyGroupName } = detailStats;
+  const { baseName, coreLevel, buildingCount, totalHeat, energyGeneration, energyConsumption, energyGridConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient, energyGroupId, energyGroupName } = detailStats;
 
   return (
     <div className="bg-base-200 rounded-lg p-2 sm:p-3">
@@ -96,10 +96,17 @@ export const BaseCoreInfo: React.FC = () => {
           </div>
           <div className="flex-shrink-0 min-w-[100px]">
             <div className={`text-xs mb-0.5 flex items-center gap-1 ${isEnergyInsufficient ? 'text-error' : 'text-base-content/70'}`}>
-              Energy{energyGroupName ? ` (${energyGroupName})` : ''}
+              Energy{energyGroupName ? ` [${energyGroupName}]` : ''}
               {selectedBase && <EnergyGroupSelector baseId={selectedBase.id} currentGroupId={energyGroupId} variant="text" />}
             </div>
-            <div className={`text-sm sm:text-base font-bold ${isEnergyInsufficient ? 'text-error' : ''}`}>{energyConsumption} / {energyGeneration} MW</div>
+            <div className={`text-sm sm:text-base font-bold ${isEnergyInsufficient ? 'text-error' : ''}`}>
+              {energyConsumption}
+              {energyGroupId && (
+                <span className="text-xs text-base-content/60"> ({energyGridConsumption})</span>
+              )}
+              {' / '}
+              {energyGeneration} MW
+            </div>
             <div className="w-full bg-base-300 rounded-full h-1 mt-0.5">
               <div
                 className={`h-1 rounded-full transition-all ${isEnergyInsufficient ? 'bg-error' : 'bg-success'}`}

@@ -541,6 +541,7 @@ regSub(SUB_IDS.BASES_BASE_BY_ID,
 /** Pooled energy context — aggregated generation/consumption across an energy group. */
 interface PooledEnergyContext {
     pooledGeneration: number;
+    pooledConsumption: number;
 }
 
 /**
@@ -557,6 +558,7 @@ function calculatePooledEnergy(
     if (!energyGroupsById[base.energyGroupId]) return null;
 
     let pooledGeneration = 0;
+    let pooledConsumption = 0;
 
     for (const b of allBases) {
         if (b.energyGroupId !== base.energyGroupId) continue;
@@ -565,11 +567,13 @@ function calculatePooledEnergy(
             if (!buildingType) continue;
             if (buildingType.type === 'generator') {
                 pooledGeneration += buildingType.power || 0;
+            } else {
+                pooledConsumption += buildingType.power || 0;
             }
         }
     }
 
-    return { pooledGeneration };
+    return { pooledGeneration, pooledConsumption };
 }
 
 // Helper function to calculate stats for a base
@@ -603,6 +607,7 @@ function calculateBaseDetailStats(
         : null;
     const effectiveGeneration = pooled ? pooled.pooledGeneration : energyGeneration;
     const effectiveConsumption = energyConsumption;
+    const energyGridConsumption = pooled ? pooled.pooledConsumption : energyConsumption;
 
     const coreLevel = base.coreLevel ?? 0;
     const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(coreLevel, base.buildings, buildingsById);
@@ -632,6 +637,7 @@ function calculateBaseDetailStats(
         totalHeat,
         energyGeneration: effectiveGeneration,
         energyConsumption: effectiveConsumption,
+        energyGridConsumption,
         baseCoreHeatCapacity,
         heatPercentage,
         energyPercentage,
