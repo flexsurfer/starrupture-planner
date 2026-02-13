@@ -18,3 +18,7 @@ export {
 export {
   buildActivePlanOccupancy,
 } from './activePlanOccupancy';
+
+export {
+  calculateSharedInputShortages,
+} from './sharedInputShortages';

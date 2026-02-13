@@ -19,6 +19,11 @@ interface ProductionFlowDiagramProps {
     sectionId: string;
 }
 
+const formatRatePerMinute = (value: number): string => {
+    const rounded = Math.round(value * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+};
+
 const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, sectionId }) => {
 
     const productionFlow = useSubscription<ProductionFlowResult>([SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId]) || EMPTY_PRODUCTION_FLOW;
@@ -93,6 +98,7 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
         stats,
         buildingRequirements,
         inputRequirements,
+        sharedInputShortages,
         allRequirementsSatisfied,
         hasError,
         showManageButton,
@@ -228,6 +234,22 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                             Delete
                         </button>
                     </div>
+                    {!section.active && (!allRequirementsSatisfied || sharedInputShortages.length > 0) && (
+                        <div className="flex flex-col items-end mt-1 space-y-1 text-right" onClick={(e) => e.stopPropagation()}>
+                            {!allRequirementsSatisfied && (
+                                <p className="text-xs text-warning font-medium">
+                                    Not enough production buildings in base. Use the &quot;manage buildings&quot; button.
+                                </p>
+                            )}
+                            {sharedInputShortages.map((shortage) => (
+                                <p key={shortage.baseBuildingId} className="text-xs text-warning font-medium">
+                                    Not enough resources from input &quot;{shortage.inputName}&quot; ({shortage.itemName}):{' '}
+                                    {formatRatePerMinute(shortage.availablePerMinute)}/min available,{' '}
+                                    {formatRatePerMinute(shortage.requiredPerMinute)}/min required for all plans.
+                                </p>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Collapsible Content */}

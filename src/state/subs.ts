@@ -28,6 +28,7 @@ import type { Node, Edge } from '@xyflow/react';
 import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } from '../components/mybases/utils/baseCoreUtils';
 import { getAvailableBuildingsForSection } from '../components/mybases/utils/buildingSectionUtils';
 import { buildActivePlanOccupancy } from '../components/mybases/utils/activePlanOccupancy';
+import { calculateSharedInputShortages } from '../components/mybases/utils/sharedInputShortages';
 import { getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
 import type { CorporationWithStats } from '../components/corporations/types';
 import type { CorporationUsage, ItemTableData, ItemsHelperLookups } from '../components/items/types';
@@ -43,6 +44,7 @@ import type {
     ProductionPlanSectionStats,
     BuildingRequirement,
     InputRequirement,
+    SharedInputShortage,
     ProductionPlanSectionViewModel,
     ProductionPlanRequirementsStatus,
 } from '../components/mybases/types';
@@ -1026,6 +1028,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
         section: Production | null,
         base: Base | null,
         itemsMap: Record<string, Item>,
+        buildings: DbBuilding[],
         buildingsById: BuildingsByIdMap,
         corporations: Corporation[]
     ): ProductionPlanSectionViewModel | null => {
@@ -1109,13 +1112,23 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
             return a.buildingName.localeCompare(b.buildingName);
         });
 
+        const baseBuildingsById = new Map(base.buildings.map(b => [b.id, b]));
+        const baseInputBuildingsById = new Map(
+            base.buildings
+                .filter((baseBuilding) =>
+                    baseBuilding.sectionType === 'inputs' &&
+                    !!baseBuilding.selectedItemId &&
+                    !!baseBuilding.ratePerMinute &&
+                    baseBuilding.ratePerMinute > 0
+                )
+                .map((baseBuilding) => [baseBuilding.id, baseBuilding])
+        );
+
         // --- Input requirements: derived from section.inputs + name lookups ---
         const inputRequirements: InputRequirement[] = [];
         let allInputsSatisfied = true;
 
         if (sectionInputs.length > 0) {
-            const baseBuildingsById = new Map(base.buildings.map(b => [b.id, b]));
-
             sectionInputs.forEach((inputBuilding: BaseBuilding) => {
                 const matchingBaseBuilding = baseBuildingsById.get(inputBuilding.id);
                 const building = buildingsById[inputBuilding.buildingTypeId] || null;
@@ -1144,6 +1157,20 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
             });
         }
 
+        const sharedInputShortages: SharedInputShortage[] = calculateSharedInputShortages(base, section.id, buildings).map((shortage) => {
+            const matchingBaseInput = baseInputBuildingsById.get(shortage.baseBuildingId);
+            const customInputName = (matchingBaseInput?.name || '').trim();
+            const itemId = shortage.itemId || matchingBaseInput?.selectedItemId || '';
+            const itemName = itemId ? (itemsMap[itemId]?.name || itemId) : 'Unknown input';
+
+            return {
+                ...shortage,
+                inputName: customInputName || itemName,
+                itemId,
+                itemName,
+            };
+        });
+
         // Determine plan status: error if inputs insufficient, otherwise use section.status or derive from active state
         const planStatus = section.status || (section.active ? 'active' : 'inactive');
         const hasError = planStatus === 'error' || !allInputsSatisfied;
@@ -1158,6 +1185,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
             stats,
             buildingRequirements,
             inputRequirements,
+            sharedInputShortages,
             allRequirementsSatisfied,
             planStatus,
             hasError,
@@ -1168,6 +1196,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
         [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId],
         [SUB_IDS.BASES_BASE_BY_ID, baseId],
         [SUB_IDS.ITEMS_BY_ID_MAP],
+        [SUB_IDS.BUILDINGS_LIST],
         [SUB_IDS.BUILDINGS_BY_ID_MAP],
         [SUB_IDS.CORPORATIONS_LIST],
     ]);

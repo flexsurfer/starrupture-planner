@@ -22,6 +22,7 @@ export type {
   ProductionPlanSectionStats,
   BuildingRequirement,
   InputRequirement,
+  SharedInputShortage,
   ProductionPlanSectionViewModel,
   ProductionPlanRequirementsStatus,
 } from './types';

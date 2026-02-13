@@ -135,6 +135,19 @@ export interface InputRequirement {
   isSatisfied: boolean;
 }
 
+/**
+ * Shared input shortage for a plan when evaluated alongside active plans.
+ */
+export interface SharedInputShortage {
+  baseBuildingId: string;
+  inputName: string;
+  itemId: string;
+  itemName: string;
+  requiredPerMinute: number;
+  availablePerMinute: number;
+  missingPerMinute: number;
+}
+
 /** Combined data model used by the ProductionPlanSection component subscription. */
 export interface ProductionPlanSectionViewModel {
   selectedBaseId: string;
@@ -144,6 +157,7 @@ export interface ProductionPlanSectionViewModel {
   stats: ProductionPlanSectionStats;
   buildingRequirements: BuildingRequirement[];
   inputRequirements: InputRequirement[];
+  sharedInputShortages: SharedInputShortage[];
   allRequirementsSatisfied: boolean;
   planStatus: string;
   hasError: boolean;
