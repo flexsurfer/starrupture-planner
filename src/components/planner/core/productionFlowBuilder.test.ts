@@ -463,6 +463,47 @@ describe('buildProductionFlow', () => {
             expect(totalFromSmelter).toBe(30);
         });
 
+        it('does not count allocations to pruned consumers in custom-input utilization', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_housing',
+                    targetAmount: 30,
+                    inputBuildings: [
+                        {
+                            id: 'sheet_input',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'titanium_sheet',
+                            ratePerMinute: 60
+                        },
+                        {
+                            id: 'bar_input',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 90
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            // Sheet production is fully satisfied by custom input.
+            const sheetProducer = result.nodes.find(n => !n.isCustomInput && n.outputItem === 'titanium_sheet');
+            expect(sheetProducer).toBeUndefined();
+
+            // Bar input should only be used for beam branch (60/min), not pruned sheet branch.
+            const customBarNode = result.nodes.find(n => n.isCustomInput && n.baseBuildingId === 'bar_input');
+            expect(customBarNode).toBeDefined();
+            expect(customBarNode!.buildingCount).toBeCloseTo(60 / 90, 5);
+
+            const customBarEdgeTotal = result.edges
+                .filter(e => e.from.includes('bar_input'))
+                .reduce((sum, e) => sum + e.amount, 0);
+            expect(customBarEdgeTotal).toBe(60);
+        });
+
         it('should show input node when it is actually consumed by another node', () => {
             // Verify that input snapshots ARE shown when they're consumed by production nodes
             const result = buildProductionFlow(

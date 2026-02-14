@@ -460,10 +460,16 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     const allocatedToConsumer = new Map<string, number>();
     const usedByCustomSource = new Map<string, number>();
     const allAllocations = [...prodAllocation.allocations, ...rawAllocation.allocations];
+    const validConsumerIds = new Set<string>(
+        flowNodes
+            .filter(node => !node.isCustomInput)
+            .map(node => nodeId(node.buildingId, node.recipeIndex, node.outputItem))
+    );
 
     // Create custom input edges and track allocations simultaneously
     for (const a of allAllocations) {
         if (!a.consumerNodeId || a.amount <= 0) continue;
+        if (!validConsumerIds.has(a.consumerNodeId)) continue;
         
         const customNode = getOrCreateCustomNode(a.baseBuildingId);
         if (!customNode) continue;
