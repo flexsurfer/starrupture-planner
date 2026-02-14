@@ -25,15 +25,21 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
 }) => {
   const [selectedItemId, setSelectedItemId] = useState<string>(currentItemId || '');
   const [ratePerMinute, setRatePerMinute] = useState<string>(String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE));
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Get available items from subscription
   const availableItems = useSubscription<Item[]>([SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, building.id]);
+
+  const filteredItems = searchQuery
+    ? availableItems.filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : availableItems;
 
   // Sync state with props when modal opens or props change
   useEffect(() => {
     if (isOpen) {
       setSelectedItemId(currentItemId || '');
       setRatePerMinute(String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE));
+      setSearchQuery('');
     }
   }, [isOpen, currentItemId, currentRatePerMinute]);
 
@@ -75,11 +81,22 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
         
         <form onSubmit={handleSubmit}>
           <div className="form-control mb-4">
-            <label className="label">
+            <div className="label flex flex-row justify-between items-center gap-2">
               <span className="label-text">Item</span>
-            </label>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-64 overflow-y-auto p-2 border border-base-300 rounded-lg">
-              {availableItems.map((item) => {
+              <input
+                type="text"
+                className="input input-bordered input-sm flex-1 max-w-xs"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSelectedItemId('');
+              }}
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 min-h-64 max-h-64 overflow-y-auto p-2 border border-base-300 rounded-lg">
+              {filteredItems.map((item) => {
                 const isSelected = selectedItemId === item.id;
                 return (
                   <button
