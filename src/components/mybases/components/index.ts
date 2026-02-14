@@ -11,6 +11,7 @@ export { BaseCoreInfo } from './BaseCoreInfo';
 export { BuildingSection } from './BuildingSection';
 export { BuildingSectionCard } from './BuildingSectionCard';
 export { MyBasesStats } from './MyBasesStats';
+export { ShareBasesStatsButton } from './ShareBasesStatsButton';
 export { EnergyGroupSelector } from './EnergyGroupSelector';
 export { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
 export { ProductionPlanSection } from './ProductionPlanSection';

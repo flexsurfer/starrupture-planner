@@ -84,12 +84,23 @@ export interface BaseDefenseBuilding {
 }
 
 /**
+ * Top produced item for stats display and sharing.
+ */
+export interface TopProducedItem {
+  itemId: string;
+  itemName: string;
+  totalRatePerMinute: number;
+  corporationPoints: number;
+}
+
+/**
  * Aggregated stats for all bases.
  * Used in the MyBasesStats component and MY_BASES_STATS subscription.
  */
 export interface MyBasesStats {
   totalBases: number;
   totalBuildings: number;
+  totalPlans: number;
   totalHeat: number;
   totalHeatCapacity: number;
   totalEnergyUsed: number;
@@ -98,6 +109,7 @@ export interface MyBasesStats {
   energyPercentage: number;
   isHeatOverCapacity: boolean;
   isEnergyInsufficient: boolean;
+  topProducedItems: TopProducedItem[];
 }
 
 /**
