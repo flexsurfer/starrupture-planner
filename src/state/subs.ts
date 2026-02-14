@@ -28,7 +28,6 @@ import type { Node, Edge } from '@xyflow/react';
 import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } from '../components/mybases/utils/baseCoreUtils';
 import { getAvailableBuildingsForSection } from '../components/mybases/utils/buildingSectionUtils';
 import { buildActivePlanOccupancy } from '../components/mybases/utils/activePlanOccupancy';
-import { calculateTopProducedItems } from '../components/mybases/utils/baseStatsShare';
 import { calculateSharedInputShortages } from '../components/mybases/utils/sharedInputShortages';
 import { getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
 import type { CorporationWithStats } from '../components/corporations/types';
@@ -840,7 +839,7 @@ regSub(SUB_IDS.BASES_AVAILABLE_BUILDINGS_FOR_SECTION,
     () => [[SUB_IDS.BUILDINGS_LIST]]);
 
 regSub(SUB_IDS.BASES_STATS_SUMMARY,
-    (bases: Base[], buildingsById: BuildingsByIdMap, itemsById: Record<string, Item>, corporations: Corporation[]): MyBasesStats => {
+    (bases: Base[], buildingsById: BuildingsByIdMap): MyBasesStats => {
         let totalBuildings = 0;
         let totalHeat = 0;
         let totalHeatCapacity = 0;
@@ -884,8 +883,6 @@ regSub(SUB_IDS.BASES_STATS_SUMMARY,
         const isEnergyInsufficient = totalEnergyUsed > 0 && (totalEnergyProduced === 0 || totalEnergyUsed > totalEnergyProduced);
 
         const totalPlans = bases.reduce((sum, base) => sum + (base.productions?.length ?? 0), 0);
-        const topProducedItems = calculateTopProducedItems(bases, itemsById, corporations, 4);
-
         return {
             totalBases: bases.length,
             totalBuildings,
@@ -898,10 +895,9 @@ regSub(SUB_IDS.BASES_STATS_SUMMARY,
             energyPercentage,
             isHeatOverCapacity,
             isEnergyInsufficient,
-            topProducedItems,
         };
     },
-    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.CORPORATIONS_LIST]]);
+    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 //============================================================
 // Production Plan subscriptions

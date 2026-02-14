@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { Base } from '../../../state/db';
+import { useSubscription } from '@flexsurfer/reflex';
+import { SUB_IDS } from '../../../state/sub-ids';
+import type { Base, Corporation, Item } from '../../../state/db';
 import type { MyBasesStats as MyBasesStatsType } from '../types';
-import { shareBasesStats } from '../utils/baseStatsShare';
+import { calculateTopProducedItems, shareBasesStats } from '../utils/baseStatsShare';
 
 interface ShareBasesStatsButtonProps {
   stats: MyBasesStatsType;
@@ -65,6 +67,8 @@ export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ st
   const resetTimerRef = useRef<number | null>(null);
   const isSharingRef = useRef(false);
   const lastShareStartRef = useRef(0);
+  const itemsById = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+  const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS_LIST]);
 
   const clearResetTimer = useCallback(() => {
     if (resetTimerRef.current !== null) {
@@ -98,7 +102,8 @@ export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ st
     lastShareStartRef.current = now;
     setState('sharing');
     try {
-      const result = await shareBasesStats(stats, bases, stats.topProducedItems);
+      const topProducedItems = calculateTopProducedItems(bases, itemsById, corporations, 4);
+      const result = await shareBasesStats(stats, bases, topProducedItems);
       if (result === 'cancelled') {
         setState('idle');
         return;
@@ -114,7 +119,7 @@ export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ st
     } finally {
       isSharingRef.current = false;
     }
-  }, [bases, scheduleReset, state, stats]);
+  }, [bases, corporations, itemsById, scheduleReset, state, stats]);
 
   const buttonInfo = getButtonLabel(state);
 

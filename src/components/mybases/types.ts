@@ -90,7 +90,7 @@ export interface TopProducedItem {
   itemId: string;
   itemName: string;
   totalRatePerMinute: number;
-  corporationPoints: number;
+  levelXpCost: number;
 }
 
 /**
@@ -109,7 +109,6 @@ export interface MyBasesStats {
   energyPercentage: number;
   isHeatOverCapacity: boolean;
   isEnergyInsufficient: boolean;
-  topProducedItems: TopProducedItem[];
 }
 
 /**

@@ -85,55 +85,66 @@ export const calculateTopProducedItems = (
   corporations: Corporation[],
   maxCount = 4,
 ): TopProducedItem[] => {
-  const pointsByItemId = new Map<string, number>();
+  const corporationsById = new Map<string, Corporation>();
+  const fallbackXpByItemId = new Map<string, number>();
   for (const corporation of corporations) {
+    corporationsById.set(corporation.id, corporation);
     for (const level of corporation.levels) {
+      const levelXp = level.xp ?? 0;
       for (const component of level.components) {
-        const current = pointsByItemId.get(component.id) ?? 0;
-        pointsByItemId.set(component.id, Math.max(current, component.points));
+        fallbackXpByItemId.set(
+          component.id,
+          Math.max(fallbackXpByItemId.get(component.id) ?? 0, levelXp),
+        );
       }
     }
   }
 
-  const targetedItemIds = new Set<string>();
+  const totalRateByItemId = new Map<string, number>();
+  const costByItemId = new Map<string, number>();
+
   for (const base of bases) {
     for (const plan of base.productions || []) {
-      if (plan.selectedItemId) {
-        targetedItemIds.add(plan.selectedItemId);
+      if (!plan.selectedItemId) continue;
+
+      const planRate = plan.targetAmount ?? 0;
+      if (planRate > 0) {
+        totalRateByItemId.set(
+          plan.selectedItemId,
+          (totalRateByItemId.get(plan.selectedItemId) ?? 0) + planRate,
+        );
       }
-    }
-  }
 
-  const totalsByItemId = new Map<string, number>();
+      let planLevelXp = 0;
+      if (plan.corporationLevel) {
+        const corporation = corporationsById.get(plan.corporationLevel.corporationId);
+        const corpLevel = corporation?.levels.find((lvl) => lvl.level === plan.corporationLevel?.level);
+        const component = corpLevel?.components.find((c) => c.id === plan.selectedItemId);
+        if (component) {
+          planLevelXp = corpLevel?.xp ?? 0;
+        }
+      }
+      if (planLevelXp === 0) {
+        planLevelXp = fallbackXpByItemId.get(plan.selectedItemId) ?? 0;
+      }
 
-  for (const base of bases) {
-    for (const baseBuilding of base.buildings) {
-      if (baseBuilding.sectionType !== 'outputs') continue;
-      if (!baseBuilding.selectedItemId) continue;
-      if (!targetedItemIds.has(baseBuilding.selectedItemId)) continue;
-
-      const rate = baseBuilding.ratePerMinute ?? 0;
-      if (rate <= 0) continue;
-
-      totalsByItemId.set(
-        baseBuilding.selectedItemId,
-        (totalsByItemId.get(baseBuilding.selectedItemId) ?? 0) + rate,
+      costByItemId.set(
+        plan.selectedItemId,
+        Math.max(costByItemId.get(plan.selectedItemId) ?? 0, planLevelXp),
       );
     }
   }
 
-  return Array.from(totalsByItemId.entries())
-    .map(([itemId, totalRatePerMinute]) => ({
+  return Array.from(costByItemId.entries())
+    .map(([itemId, levelXpCost]) => ({
       itemId,
       itemName: itemsById[itemId]?.name ?? itemId,
-      totalRatePerMinute,
-      corporationPoints: pointsByItemId.get(itemId) ?? 0,
+      totalRatePerMinute: totalRateByItemId.get(itemId) ?? 0,
+      levelXpCost,
     }))
     .sort((a, b) => {
-      const byPoints = b.corporationPoints - a.corporationPoints;
-      if (byPoints !== 0) return byPoints;
-      const byRate = b.totalRatePerMinute - a.totalRatePerMinute;
-      if (byRate !== 0) return byRate;
+      const byCost = b.levelXpCost - a.levelXpCost;
+      if (byCost !== 0) return byCost;
       return a.itemName.localeCompare(b.itemName);
     })
     .slice(0, maxCount);
