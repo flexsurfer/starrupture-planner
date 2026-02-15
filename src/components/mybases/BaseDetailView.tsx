@@ -2,7 +2,7 @@ import React from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../state/sub-ids';
 import type { Base } from '../../state/db';
-import { BaseCoreInfo, BaseBuildingsView, BasePlansView } from './index';
+import { BaseCoreInfo, BaseBuildingsView, BasePlansView, CreateProductionPlanModal } from './index';
 
 export const BaseDetailView: React.FC = () => {
   const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
@@ -46,6 +46,8 @@ export const BaseDetailView: React.FC = () => {
           <BaseBuildingsView />
         </div>
       </div>
+
+      <CreateProductionPlanModal />
     </div>
   );
 };

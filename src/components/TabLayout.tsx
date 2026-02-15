@@ -5,7 +5,6 @@ import RecipesPage from './RecipesPage';
 import CorporationsPage from './CorporationsPage';
 import MyBasesPage from './MyBasesPage';
 import { ThemeToggle, GitHubButton, DiscordButton, VersionSelector, ConfirmationDialog } from './ui';
-import { CreateProductionPlanModal } from './mybases/modals/CreateProductionPlanModal';
 import { useNavigationSync } from '../hooks/useNavigationSync';
 
 // Lazy load the PlannerPage to reduce initial bundle size
@@ -181,7 +180,6 @@ const TabLayout = () => {
 
         {/* Global Modals */}
         <ConfirmationDialog />
-        <CreateProductionPlanModal />
       </div>
   );
 };
