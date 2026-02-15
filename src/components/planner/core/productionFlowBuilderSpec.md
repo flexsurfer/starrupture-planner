@@ -45,14 +45,17 @@ interface ProductionFlowParams {
 The algorithm operates in 9 sequential passes:
 
 1. **INPUT NORMALIZATION PASS**: Normalize and validate external sources (`inputBuildings`)
-2. **REACHABLE DEMAND PASS**: Propagate demand from target through reachable branches only, consuming custom supply pools during propagation
-3. **NODE CREATION PASS**: Create production nodes from remaining demand
-4. **RAW DEMAND PASS**: Calculate raw material needs from actual production nodes
-5. **RAW ALLOCATION PASS**: Allocate external inputs to raw material consumers (for deficit/remaining raw production decisions)
-6. **RAW NODE PASS**: Create raw production nodes (if allowed)
-7. **EDGE ALLOCATION + EDGE CREATION PASS**: Build custom allocations from actual live consumers and create all graph edges
+2. **DEMAND FULFILLMENT PASS**: Recursively fulfill target demand:
+   - allocate custom inputs to the current consumer (deterministic source order)
+   - produce remaining amount internally when possible
+   - propagate recipe input demand from the produced remainder
+3. **NODE AGGREGATION PASS**: Aggregate produced item demand into one node per produced item
+4. **CUSTOM NODE FINALIZATION PASS**: Derive custom `buildingCount` from actual edge-emitted usage
+5. **EDGE FINALIZATION PASS**: Consolidate emitted flows into final edge list
+6. **RAW ACCOUNTING PASS**: Track raw `required` and `available` during fulfillment
+7. **RAW DEFICIT PASS**: Emit raw deficits when raw production is disabled
 8. **LAUNCHER PASS**: Add orbital cargo launcher (if requested)
-9. **DEFICIT PASS**: Calculate raw material deficits (if raw production disabled)
+9. **RESULT PASS**: Return nodes, edges, and deficits
 
 ---
 
@@ -140,6 +143,17 @@ reachable demand after custom supply consumption.
 
 ---
 
+### 2b) Allocation is consumer-local and demand-driven
+Custom allocation is performed at the point where demand is fulfilled for a specific
+consumer node. It is not precomputed globally.
+
+This guarantees:
+- custom supply is only consumed by reachable consumers
+- no supply is reserved for branches that are never realized
+- edge emission and allocation are always consistent
+
+---
+
 ### 3) Custom input nodes are created only if actually used (edge-driven)
 A custom input source results in a node **only if at least one edge is created from it**.
 
@@ -171,6 +185,15 @@ This means:
 
 ---
 
+### 4a) Source-order determinism
+For a given item, custom sources are consumed in stable source order as provided by
+`inputBuildings`.
+
+If multiple sources can satisfy the same consumer demand, earlier sources must be
+depleted before later sources are used.
+
+---
+
 ### 5) Raw-material mode controls production and deficit accounting
 The flag `rawProductionDisabled` controls **raw material handling**.
 
@@ -186,11 +209,14 @@ When disabled:
 ---
 
 ### 6) Raw material demand is derived from actual production
-Raw material demand is computed **only from production nodes that are actually created**.
+Raw material accounting is computed during demand fulfillment from actual consumer
+requests and actual custom allocation results.
 
 Specifically:
-- Raw demand = sum of raw inputs required by final production nodes after allocation
-- Raw demand is NOT derived from the full theoretical dependency tree
+- Raw `required` = all raw demand requested by realized consumers
+- Raw `available` = raw demand satisfied by custom inputs
+- Raw `missing` = `required - available` when raw production is disabled
+- Raw accounting is NOT derived from a full theoretical dependency expansion
 
 This ensures deficits reflect only what is truly required after branch elimination.
 
@@ -198,8 +224,8 @@ This ensures deficits reflect only what is truly required after branch eliminati
 
 ### 7) Demand propagation and graph construction must be branch-consistent
 - Demand starts at the target item and is propagated only through reachable branches
-- Custom input supply is consumed during propagation, reducing downstream demand before upstream expansion
-- Node and edge creation is based **only on remaining reachable demand**
+- Custom input supply is consumed at each consumer before upstream expansion
+- Production and edge creation are based only on the unsatisfied remainder
 
 No production nodes or edges are created for items whose remaining demand is zero.
 
@@ -207,9 +233,9 @@ No production nodes or edges are created for items whose remaining demand is zer
 
 ### 8) Edge creation uses edge-driven tracking
 To ensure consistency between allocation plans and actual graph:
-- `allocatedToConsumer` index is built AS edges are created (not before)
-- Custom node `buildingCount` is derived from actual edge amounts
-- This prevents divergence between planned allocations and realized edges
+- flows are emitted immediately during demand fulfillment
+- duplicate `(from, to, item)` flows are consolidated
+- custom node `buildingCount` is derived from emitted edge amounts
 
 ---
 
@@ -239,10 +265,11 @@ Example pattern:
 > The target item must be producible (non-raw); raw targets return empty result.
 > Custom inputs act as external sources at any level of the production chain.
 > They may supply intermediate or raw items, but never the target item itself.
-> Reachable demand is propagated with supply consumption, so pruned branches do not retain supply.
+> Each consumer demand is fulfilled locally: custom first, then internal production for the remainder.
+> Supply consumption happens in source order and only for realized consumers.
 > Production nodes are built only where remaining reachable demand exists.
-> Raw material demand is derived from actual production, not theoretical demand.
-> Edge creation is the source of truth for custom node utilization and live-consumer allocation.
+> Raw material accounting is tracked during fulfillment, not from a separate theoretical pass.
+> Emitted edges are the source of truth for custom node utilization.
 > When raw production is disabled, raw materials are external-only and deficits are reported.
 
 ---

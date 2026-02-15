@@ -1,16 +1,17 @@
 /**
  * Production Flow Builder
- * 
+ *
  * Builds the complete production dependency tree for a target item.
- * 
- * Algorithm passes:
- * 1. DEMAND PASS: Calculate total demand for producible items
- * 2. ALLOCATION PASS: Allocate custom inputs to production demands
- * 3. NODE CREATION PASS: Create production nodes based on remaining demand
- * 4. RAW DEMAND PASS: Calculate raw material needs from actual production nodes
- * 5. RAW ALLOCATION PASS: Allocate custom inputs to raw material consumers
- * 6. RAW NODE PASS: Create raw production nodes (if allowed)
- * 7. EDGE CREATION PASS: Create edges from allocations and production relationships
+ *
+ * Algorithm (demand-driven):
+ * 1. Normalize external input sources
+ * 2. Recursively fulfill target demand:
+ *    - consume matching custom inputs (deterministic source order)
+ *    - produce remaining demand internally (unless raw production is disabled)
+ *    - propagate input demands to producer recipes
+ * 3. Finalize custom node utilization from emitted edges
+ * 4. Add launcher (optional)
+ * 5. Compute raw deficits (optional)
  */
 
 import type {
@@ -20,21 +21,13 @@ import type {
     FlowEdge,
     ProductionFlowParams,
     ProductionFlowResult,
-    ProductionNode,
     RawMaterialDeficit,
-    InputBuildingSnapshot,
-    CustomInputAllocation,
-    AllocationPlan,
+    InputBuildingSnapshot
 } from './types';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface ConsumerDemand {
-    nodeId: string;
-    amount: number;
-}
 
 interface RecipeInfo {
     building: Building;
@@ -54,6 +47,8 @@ const emptyResult = (): ProductionFlowResult => ({
 });
 
 const EPSILON = 0.0001;
+const ROUND_DECIMALS = 10;
+const round = (value: number): number => Number(value.toFixed(ROUND_DECIMALS));
 
 const nodeId = (buildingId: string, recipeIndex: number, outputItem: string, suffix = ''): string =>
     suffix ? `${buildingId}_${recipeIndex}_${outputItem}_${suffix}` : `${buildingId}_${recipeIndex}_${outputItem}`;
@@ -166,219 +161,31 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     const sources = normalizeInputBuildings(inputBuildings)
         .filter((source) => source.itemId !== targetItemId && source.available > 0);
 
-    const allocate = (consumers: Map<string, ConsumerDemand[]>): AllocationPlan => {
-        const allocations: CustomInputAllocation[] = [];
-        const totalAllocatedByItem = new Map<string, number>();
-        const usedByTracker = new Map<string, number>();
-        
-        if (sources.length === 0) return { allocations, totalAllocatedByItem, usedByTracker };
-
-        // Build demand tracking: itemId -> sorted list of { nodeId, remaining }
-        const demandByItem = new Map<string, Array<{ nodeId: string; remaining: number }>>();
-        consumers.forEach((list, itemId) => {
-            const merged = new Map<string, number>();
-            for (const { nodeId, amount } of list) {
-                merged.set(nodeId, (merged.get(nodeId) ?? 0) + amount);
-            }
-            const sorted = Array.from(merged.entries())
-                .map(([nodeId, amount]) => ({ nodeId, remaining: amount }))
-                .sort((a, b) => a.nodeId.localeCompare(b.nodeId));
-            demandByItem.set(itemId, sorted);
-        });
-
-        // Track remaining supply per source (fresh each call - safe due to disjoint item types)
-        const supply = new Map(sources.map(s => [s.baseBuildingId, s.available]));
-
-        // Process sources in order
-        for (const source of sources) {
-            let available = supply.get(source.baseBuildingId) ?? 0;
-            if (available <= 0) continue;
-
-            const demands = demandByItem.get(source.itemId);
-            if (!demands) continue;
-
-            for (const demand of demands) {
-                if (available <= 0 || demand.remaining <= 0) continue;
-
-                const amount = Math.min(available, demand.remaining);
-                
-                allocations.push({
-                    baseBuildingId: source.baseBuildingId,
-                    buildingId: source.buildingId,
-                    buildingName: source.buildingName,
-                    consumerNodeId: demand.nodeId,
-                    itemId: source.itemId,
-                    amount
-                });
-
-                available -= amount;
-                demand.remaining -= amount;
-                supply.set(source.baseBuildingId, available);
-                totalAllocatedByItem.set(source.itemId, (totalAllocatedByItem.get(source.itemId) ?? 0) + amount);
-                usedByTracker.set(source.baseBuildingId, (usedByTracker.get(source.baseBuildingId) ?? 0) + amount);
-            }
-        }
-
-        return { allocations, totalAllocatedByItem, usedByTracker };
-    };
-
-    // Compute remaining demand and consume custom input pools only on reachable
-    // branches. This prevents supply from being "spent" on branches that are
-    // later pruned by other custom inputs.
-    const remainingDemand = new Map<string, number>();
-    remainingDemand.set(targetItemId, targetAmount);
-
-    const remainingSupplyByItem = new Map<string, number>();
+    const sourceStateById = new Map(sources.map(source => [
+        source.baseBuildingId,
+        { ...source, remaining: source.available }
+    ]));
+    const sourceIdsByItem = new Map<string, string[]>();
     for (const source of sources) {
-        remainingSupplyByItem.set(
-            source.itemId,
-            (remainingSupplyByItem.get(source.itemId) ?? 0) + source.available
-        );
-    }
-
-    const propagatedByItem = new Map<string, number>();
-    const queue: string[] = [targetItemId];
-
-    while (queue.length > 0) {
-        const itemId = queue.shift()!;
-        if (isRaw(itemId)) continue;
-
-        const info = getRecipe(itemId);
-        if (!info) continue;
-
-        const totalDemand = remainingDemand.get(itemId) ?? 0;
-        const alreadyPropagated = propagatedByItem.get(itemId) ?? 0;
-        const deltaDemand = totalDemand - alreadyPropagated;
-        if (deltaDemand <= EPSILON) continue;
-
-        propagatedByItem.set(itemId, totalDemand);
-        const buildingsForDelta = deltaDemand / info.recipe.output.amount_per_minute;
-
-        for (const input of info.recipe.inputs) {
-            const inputNeeded = input.amount_per_minute * buildingsForDelta;
-            if (inputNeeded <= EPSILON) continue;
-
-            const available = remainingSupplyByItem.get(input.id) ?? 0;
-            const fromCustom = Math.min(inputNeeded, available);
-            if (fromCustom > EPSILON) {
-                remainingSupplyByItem.set(input.id, available - fromCustom);
-            }
-
-            const remainingInputDemand = inputNeeded - fromCustom;
-            if (remainingInputDemand <= EPSILON) continue;
-
-            remainingDemand.set(input.id, (remainingDemand.get(input.id) ?? 0) + remainingInputDemand);
-            queue.push(input.id);
-        }
+        const sourceIds = sourceIdsByItem.get(source.itemId) ?? [];
+        sourceIds.push(source.baseBuildingId);
+        sourceIdsByItem.set(source.itemId, sourceIds);
     }
 
     // -------------------------------------------------------------------------
-    // STEP 3: Create production nodes
+    // STEP 2: Demand-driven fulfillment (production + edges)
     // -------------------------------------------------------------------------
-    const flowNodes: ProductionNode[] = [];
-    const nodeByItem = new Map<string, FlowNode>();
-    const processed = new Set<string>();
-
-    const processItem = (itemId: string): void => {
-        if (processed.has(itemId)) return;
-        processed.add(itemId);
-
-        if (isRaw(itemId)) return;
-
-        const info = getRecipe(itemId);
-        if (!info) return;
-
-        const demand = remainingDemand.get(itemId) ?? 0;
-        if (demand <= 0) return;
-
-        const buildingsNeeded = demand / info.recipe.output.amount_per_minute;
-        const node = createFlowNode(
-            info.building,
-            info.recipeIndex,
-            itemId,
-            info.recipe.output.amount_per_minute,
-            buildingsNeeded
-        );
-
-        flowNodes.push(node);
-        nodeByItem.set(itemId, node);
-
-        for (const input of info.recipe.inputs) {
-            processItem(input.id);
-        }
-    };
-
-    processItem(targetItemId);
-
-    // -------------------------------------------------------------------------
-    // STEP 4: Calculate raw material demands from actual production nodes
-    // -------------------------------------------------------------------------
-    const rawDemand = new Map<string, number>();
-    const rawConsumers = new Map<string, ConsumerDemand[]>();
-
-    for (const node of flowNodes) {
-        if (node.isCustomInput || node.recipeIndex < 0) continue;
-
-        const info = getRecipe(node.outputItem);
-        if (!info) continue;
-
-        const consumerNodeId = nodeId(node.buildingId, node.recipeIndex, node.outputItem);
-
-        for (const input of info.recipe.inputs) {
-            if (!isRaw(input.id)) continue;
-
-            const inputDemand = input.amount_per_minute * node.buildingCount;
-            rawDemand.set(input.id, (rawDemand.get(input.id) ?? 0) + inputDemand);
-
-            const consumers = rawConsumers.get(input.id) ?? [];
-            consumers.push({ nodeId: consumerNodeId, amount: inputDemand });
-            rawConsumers.set(input.id, consumers);
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // STEP 5: Allocate custom inputs to raw materials
-    // -------------------------------------------------------------------------
-    const rawAllocation = rawDemand.size > 0
-        ? allocate(rawConsumers)
-        : { allocations: [], totalAllocatedByItem: new Map(), usedByTracker: new Map() };
-
-    // -------------------------------------------------------------------------
-    // STEP 6: Create raw production nodes (if allowed)
-    // -------------------------------------------------------------------------
-    if (!rawProductionDisabled) {
-        rawDemand.forEach((required, itemId) => {
-            const allocated = rawAllocation.totalAllocatedByItem.get(itemId) ?? 0;
-            const remaining = required - allocated;
-            if (remaining <= EPSILON) return;
-
-            const info = getRecipe(itemId);
-            if (!info) return;
-
-            const buildingsNeeded = remaining / info.recipe.output.amount_per_minute;
-            const node = createFlowNode(
-                info.building,
-                info.recipeIndex,
-                itemId,
-                info.recipe.output.amount_per_minute,
-                buildingsNeeded
-            );
-
-            flowNodes.push(node);
-            nodeByItem.set(itemId, node);
-        });
-    }
-
-    // -------------------------------------------------------------------------
-    // STEP 7: Create edges (edge-driven approach)
-    // 
-    // Custom input nodes and allocation tracking are built AS edges are created,
-    // ensuring custom utilization and allocatedToConsumer always match actual edges.
-    // -------------------------------------------------------------------------
+    const flowNodes: FlowNode[] = [];
     const flowEdges: FlowEdge[] = [];
     const flows = new Map<string, { from: string; to: string; itemId: string; amount: number }>();
+    const producedNodeByItem = new Map<string, FlowNode>();
+    const customNodeBySource = new Map<string, FlowNode>();
+    const usedByCustomSource = new Map<string, number>();
+    const rawRequiredByItem = new Map<string, number>();
+    const rawAvailableByItem = new Map<string, number>();
 
     const addFlow = (from: string, to: string, itemId: string, amount: number): void => {
+        if (amount <= EPSILON) return;
         const key = `${from}=>${to}::${itemId}`;
         const existing = flows.get(key);
         if (existing) {
@@ -388,15 +195,10 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         }
     };
 
-    // Edge-driven custom input node creation
-    // Nodes are created lazily when they first get an outgoing edge
-    const customNodeBySource = new Map<string, FlowNode>();
-    const sourceById = new Map(sources.map(s => [s.baseBuildingId, s]));
-
     const getOrCreateCustomNode = (trackerId: string): FlowNode | null => {
         if (customNodeBySource.has(trackerId)) return customNodeBySource.get(trackerId)!;
 
-        const source = sourceById.get(trackerId);
+        const source = sourceStateById.get(trackerId);
         if (!source) return null;
 
         const building = buildingById.get(source.buildingId);
@@ -416,90 +218,116 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         return node;
     };
 
-    // Edge-driven allocation tracking
-    // Built as edges are created, ensuring consistency with actual graph
-    const allocatedToConsumer = new Map<string, number>();
-    const usedByCustomSource = new Map<string, number>();
-    const actualConsumers = new Map<string, ConsumerDemand[]>();
-    for (const consumer of flowNodes) {
-        if (consumer.isCustomInput || consumer.recipeIndex < 0) continue;
+    const getOrCreateProducedNode = (itemId: string, info: RecipeInfo): FlowNode => {
+        const existing = producedNodeByItem.get(itemId);
+        if (existing) return existing;
 
-        const info = getRecipe(consumer.outputItem);
-        if (!info) continue;
+        const node = createFlowNode(
+            info.building,
+            info.recipeIndex,
+            itemId,
+            info.recipe.output.amount_per_minute,
+            0
+        );
+        flowNodes.push(node);
+        producedNodeByItem.set(itemId, node);
+        return node;
+    };
 
-        const consumerId = nodeId(consumer.buildingId, consumer.recipeIndex, consumer.outputItem);
-        for (const input of info.recipe.inputs) {
-            const amount = input.amount_per_minute * consumer.buildingCount;
+    const allocateCustomToConsumer = (itemId: string, consumerId: string, requested: number): number => {
+        if (!consumerId || requested <= EPSILON) return 0;
+
+        const sourceIds = sourceIdsByItem.get(itemId) ?? [];
+        if (sourceIds.length === 0) return 0;
+
+        let remaining = requested;
+        let allocated = 0;
+
+        for (const sourceId of sourceIds) {
+            if (remaining <= EPSILON) break;
+
+            const source = sourceStateById.get(sourceId);
+            if (!source || source.remaining <= EPSILON) continue;
+
+            const amount = Math.min(source.remaining, remaining);
             if (amount <= EPSILON) continue;
 
-            const consumers = actualConsumers.get(input.id) ?? [];
-            consumers.push({ nodeId: consumerId, amount });
-            actualConsumers.set(input.id, consumers);
+            source.remaining -= amount;
+            remaining -= amount;
+            allocated += amount;
+
+            usedByCustomSource.set(sourceId, (usedByCustomSource.get(sourceId) ?? 0) + amount);
+
+            const customNode = getOrCreateCustomNode(sourceId);
+            if (!customNode) continue;
+
+            const customId = nodeId(
+                customNode.buildingId,
+                customNode.recipeIndex,
+                customNode.outputItem,
+                sourceId
+            );
+            addFlow(customId, consumerId, itemId, amount);
         }
-    }
 
-    const edgeAllocation = allocate(actualConsumers);
-    const allAllocations = edgeAllocation.allocations;
-    const validConsumerIds = new Set<string>(
-        flowNodes
-            .filter(node => !node.isCustomInput)
-            .map(node => nodeId(node.buildingId, node.recipeIndex, node.outputItem))
-    );
+        return allocated;
+    };
 
-    // Create custom input edges and track allocations simultaneously
-    for (const a of allAllocations) {
-        if (!a.consumerNodeId || a.amount <= 0) continue;
-        if (!validConsumerIds.has(a.consumerNodeId)) continue;
-        
-        const customNode = getOrCreateCustomNode(a.baseBuildingId);
-        if (!customNode) continue;
+    const fulfillDemand = (itemId: string, requested: number, consumerId: string, path: Set<string>): void => {
+        if (requested <= EPSILON) return;
 
-        usedByCustomSource.set(a.baseBuildingId, (usedByCustomSource.get(a.baseBuildingId) ?? 0) + a.amount);
+        const allocatedFromCustom = allocateCustomToConsumer(itemId, consumerId, requested);
+        const remaining = requested - allocatedFromCustom;
 
-        // Track allocation for this consumer (edge-driven)
-        const allocKey = `${a.consumerNodeId}::${a.itemId}`;
-        allocatedToConsumer.set(allocKey, (allocatedToConsumer.get(allocKey) ?? 0) + a.amount);
+        const info = getRecipe(itemId);
+        const raw = isRaw(itemId);
 
-        const customId = nodeId(customNode.buildingId, customNode.recipeIndex, customNode.outputItem, a.baseBuildingId);
-        addFlow(customId, a.consumerNodeId, a.itemId, a.amount);
-    }
+        if (raw) {
+            rawRequiredByItem.set(itemId, (rawRequiredByItem.get(itemId) ?? 0) + requested);
+            rawAvailableByItem.set(itemId, (rawAvailableByItem.get(itemId) ?? 0) + allocatedFromCustom);
+
+            if (remaining <= EPSILON) return;
+            if (rawProductionDisabled || !info) return;
+        }
+
+        if (remaining <= EPSILON) return;
+        if (!info) return;
+        if (path.has(itemId)) return;
+
+        const producerNode = getOrCreateProducedNode(itemId, info);
+        const additionalBuildings = remaining / info.recipe.output.amount_per_minute;
+        producerNode.buildingCount = round(producerNode.buildingCount + additionalBuildings);
+        const ceilBuildings = Math.ceil(producerNode.buildingCount);
+        producerNode.totalPower = ceilBuildings * producerNode.powerPerBuilding;
+        producerNode.totalHeat = ceilBuildings * producerNode.heatPerBuilding;
+
+        const producerId = nodeId(producerNode.buildingId, producerNode.recipeIndex, producerNode.outputItem);
+        if (consumerId) {
+            addFlow(producerId, consumerId, itemId, remaining);
+        }
+
+        path.add(itemId);
+        for (const input of info.recipe.inputs) {
+            const inputAmount = input.amount_per_minute * additionalBuildings;
+            fulfillDemand(input.id, inputAmount, producerId, path);
+        }
+        path.delete(itemId);
+    };
+
+    fulfillDemand(targetItemId, targetAmount, '', new Set());
 
     // Finalize custom node utilization from edge-driven used amounts.
-    for (const [trackerId, customNode] of customNodeBySource.entries()) {
-        const source = sourceById.get(trackerId);
+    for (const [sourceId, customNode] of customNodeBySource.entries()) {
+        const source = sourceStateById.get(sourceId);
         if (!source || source.available <= 0) continue;
 
-        const used = usedByCustomSource.get(trackerId) ?? 0;
-        const buildingCount = used / source.available;
+        const used = usedByCustomSource.get(sourceId) ?? 0;
+        const buildingCount = round(used / source.available);
         const ceilBuildings = Math.ceil(buildingCount);
 
         customNode.buildingCount = buildingCount;
         customNode.totalPower = ceilBuildings * customNode.powerPerBuilding;
         customNode.totalHeat = ceilBuildings * customNode.heatPerBuilding;
-    }
-
-    // Edges from production relationships (using edge-driven allocation index)
-    for (const consumer of flowNodes) {
-        if (consumer.isCustomInput || consumer.recipeIndex < 0) continue;
-
-        const info = getRecipe(consumer.outputItem);
-        if (!info) continue;
-
-        const consumerId = nodeId(consumer.buildingId, consumer.recipeIndex, consumer.outputItem);
-
-        for (const input of info.recipe.inputs) {
-            const totalNeeded = input.amount_per_minute * consumer.buildingCount;
-            const fromCustom = allocatedToConsumer.get(`${consumerId}::${input.id}`) ?? 0;
-            const remaining = totalNeeded - fromCustom;
-
-            if (remaining > EPSILON) {
-                const producer = nodeByItem.get(input.id);
-                if (producer) {
-                    const producerId = nodeId(producer.buildingId, producer.recipeIndex, producer.outputItem);
-                    addFlow(producerId, consumerId, input.id, remaining);
-                }
-            }
-        }
     }
 
     // Convert flows to edges
@@ -529,7 +357,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 
         flowNodes.push(launcherNode);
 
-        const targetNode = nodeByItem.get(targetItemId);
+        const targetNode = producedNodeByItem.get(targetItemId);
         if (targetNode) {
             flowEdges.push({
                 from: nodeId(targetNode.buildingId, targetNode.recipeIndex, targetNode.outputItem),
@@ -546,8 +374,8 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     const rawMaterialDeficits: RawMaterialDeficit[] = [];
 
     if (rawProductionDisabled) {
-        rawDemand.forEach((required, itemId) => {
-            const available = rawAllocation.totalAllocatedByItem.get(itemId) ?? 0;
+        rawRequiredByItem.forEach((required, itemId) => {
+            const available = rawAvailableByItem.get(itemId) ?? 0;
             const missing = required - available;
             if (missing > EPSILON) {
                 rawMaterialDeficits.push({ itemId, required, available, missing });
