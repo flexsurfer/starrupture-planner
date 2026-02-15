@@ -74,6 +74,13 @@ const buildings = [
                 ]
             }
         ]
+    },
+    {
+        id: 'orbital_cargo_launcher',
+        name: 'Orbital Cargo Launcher',
+        power: 10,
+        heat: 5,
+        recipes: []
     }
 ];
 
@@ -253,7 +260,7 @@ describe('buildProductionFlow', () => {
                 buildings
             );
 
-            expect(result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput)).toBeUndefined();
+            expect(result.nodes.find(n => n.outputItem === 'ore_titanium' && n.nodeType === 'production')).toBeUndefined();
             expect(result.rawMaterialDeficits).toBeDefined();
             expect(result.rawMaterialDeficits).toHaveLength(1);
             expect(result.rawMaterialDeficits![0]).toEqual({
@@ -266,21 +273,24 @@ describe('buildProductionFlow', () => {
     });
 
     describe('Edge Cases and Error Handling', () => {
-        it('should handle zero target amount gracefully', () => {
+        it('should return empty result for zero target amount', () => {
             const result = buildProductionFlow({
                 targetItemId: 'bar_titanium',
                 targetAmount: 0
             }, buildings);
 
-            // The current implementation still creates nodes with zero amounts
-            // This might be the expected behavior for the UI to show the chain structure
-            expect(result.nodes.length).toBeGreaterThanOrEqual(0);
-            expect(result.edges.length).toBeGreaterThanOrEqual(0);
+            expect(result.nodes).toHaveLength(0);
+            expect(result.edges).toHaveLength(0);
+        });
 
-            // But building counts should be very small or zero
-            result.nodes.forEach(node => {
-                expect(node.buildingCount).toBeGreaterThanOrEqual(0);
-            });
+        it('should return empty result for negative target amount', () => {
+            const result = buildProductionFlow({
+                targetItemId: 'bar_titanium',
+                targetAmount: -10
+            }, buildings);
+
+            expect(result.nodes).toHaveLength(0);
+            expect(result.edges).toHaveLength(0);
         });
 
         it('should handle invalid item ID', () => {
@@ -370,12 +380,12 @@ describe('buildProductionFlow', () => {
                 buildings
             );
 
-            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'ore_titanium');
+            const customInputNode = result.nodes.find(n => n.nodeType === 'input' && n.outputItem === 'ore_titanium');
             expect(customInputNode).toBeDefined();
             expect(customInputNode!.outputAmount).toBe(100);
             expect(customInputNode!.buildingCount).toBeCloseTo(0.9, 5);
 
-            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput);
+            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && n.nodeType === 'production');
             expect(oreNode).toBeUndefined();
 
             const edgeFromCustom = result.edges.find(e => e.from.includes('input_snapshot_1') && e.to.includes('bar_titanium'));
@@ -403,13 +413,13 @@ describe('buildProductionFlow', () => {
             );
 
             // Raw input building should be used to satisfy demand
-            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'ore_titanium');
+            const customInputNode = result.nodes.find(n => n.nodeType === 'input' && n.outputItem === 'ore_titanium');
             expect(customInputNode).toBeDefined();
             expect(customInputNode!.outputAmount).toBe(100); // Source rate per minute
             expect(customInputNode!.buildingCount).toBeCloseTo(0.9, 5); // 90 used / 100 available
 
             // Raw production node should be omitted when custom input fully satisfies demand
-            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput);
+            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && n.nodeType === 'production');
             expect(oreNode).toBeUndefined();
 
             const edgeFromCustom = result.edges.find(e => e.from.includes('input_1') && e.to.includes('bar_titanium'));
@@ -441,11 +451,11 @@ describe('buildProductionFlow', () => {
             );
 
             // Custom input node should NOT exist because target inputs are ignored
-            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'bar_titanium');
+            const customInputNode = result.nodes.find(n => n.nodeType === 'input' && n.outputItem === 'bar_titanium');
             expect(customInputNode).toBeUndefined();
 
             const smelterNode = result.nodes.find(n => n.buildingId === 'smelter');
-            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput);
+            const oreNode = result.nodes.find(n => n.outputItem === 'ore_titanium' && n.nodeType === 'production');
             expect(smelterNode).toBeDefined();
             expect(oreNode).toBeDefined();
             expect(result.edges).toHaveLength(1);
@@ -471,11 +481,11 @@ describe('buildProductionFlow', () => {
             );
 
             // Beam demand is fully satisfied by custom input, so no beam producer should exist.
-            const beamNode = result.nodes.find(n => !n.isCustomInput && n.outputItem === 'titanium_beam');
+            const beamNode = result.nodes.find(n => n.nodeType === 'production' && n.outputItem === 'titanium_beam');
             expect(beamNode).toBeUndefined();
 
             // Smelter should only produce bars needed for sheets (30/min), not full theoretical 90/min.
-            const smelterNode = result.nodes.find(n => n.outputItem === 'bar_titanium' && !n.isCustomInput);
+            const smelterNode = result.nodes.find(n => n.outputItem === 'bar_titanium' && n.nodeType === 'production');
             expect(smelterNode).toBeDefined();
             expect(smelterNode!.buildingCount).toBe(0.5); // 30/60
 
@@ -511,11 +521,11 @@ describe('buildProductionFlow', () => {
             );
 
             // Sheet production is fully satisfied by custom input.
-            const sheetProducer = result.nodes.find(n => !n.isCustomInput && n.outputItem === 'titanium_sheet');
+            const sheetProducer = result.nodes.find(n => n.nodeType === 'production' && n.outputItem === 'titanium_sheet');
             expect(sheetProducer).toBeUndefined();
 
             // Bar input should only be used for beam branch (60/min), not pruned sheet branch.
-            const customBarNode = result.nodes.find(n => n.isCustomInput && n.baseBuildingId === 'bar_input');
+            const customBarNode = result.nodes.find(n => n.nodeType === 'input' && n.baseBuildingId === 'bar_input');
             expect(customBarNode).toBeDefined();
             expect(customBarNode!.buildingCount).toBeCloseTo(60 / 90, 5);
 
@@ -606,11 +616,11 @@ describe('buildProductionFlow', () => {
             );
 
             // Stabilizer branch should be pruned by direct custom input.
-            const stabilizerProducer = result.nodes.find(n => !n.isCustomInput && n.outputItem === 'stabilizer');
+            const stabilizerProducer = result.nodes.find(n => n.nodeType === 'production' && n.outputItem === 'stabilizer');
             expect(stabilizerProducer).toBeUndefined();
 
             // Rod custom input must still feed impeller directly, so no rod producer is required.
-            const rodProducer = result.nodes.find(n => !n.isCustomInput && n.outputItem === 'titanium_rod');
+            const rodProducer = result.nodes.find(n => n.nodeType === 'production' && n.outputItem === 'titanium_rod');
             expect(rodProducer).toBeUndefined();
 
             const rodEdgeToImpeller = result.edges.find(
@@ -641,7 +651,7 @@ describe('buildProductionFlow', () => {
             );
 
             // Input node SHOULD exist because it's consumed by the fabricator
-            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'bar_titanium');
+            const customInputNode = result.nodes.find(n => n.nodeType === 'input' && n.outputItem === 'bar_titanium');
             expect(customInputNode).toBeDefined();
             expect(customInputNode!.outputAmount).toBe(30);
             
@@ -720,7 +730,7 @@ describe('buildProductionFlow', () => {
             // Input buildings should be used in source order (source_a first)
             // Total demand is 60 (beam needs 60 bar_titanium per minute for 30 beams)
             // source_a provides 20, source_b provides remaining 40
-            const customNodesR1 = result1.nodes.filter(n => n.isCustomInput);
+            const customNodesR1 = result1.nodes.filter(n => n.nodeType === 'input');
             expect(customNodesR1.length).toBe(2);
             
             const sourceA = customNodesR1.find(n => n.baseBuildingId === 'source_a');
@@ -791,7 +801,7 @@ describe('buildProductionFlow', () => {
             );
 
             // Check input node shows correct used amount
-            const customInputNode = result.nodes.find(n => n.isCustomInput && n.outputItem === 'bar_titanium');
+            const customInputNode = result.nodes.find(n => n.nodeType === 'input' && n.outputItem === 'bar_titanium');
             expect(customInputNode).toBeDefined();
             expect(customInputNode!.outputAmount).toBe(30); // Should only show 30, not more
 
@@ -828,7 +838,7 @@ describe('buildProductionFlow', () => {
             );
 
             // Input should provide 30
-            const customNode = result.nodes.find(n => n.isCustomInput);
+            const customNode = result.nodes.find(n => n.nodeType === 'input');
             expect(customNode).toBeDefined();
             expect(customNode!.outputAmount).toBe(30);
 
@@ -875,7 +885,7 @@ describe('buildProductionFlow', () => {
                 buildings
             );
 
-            const customNodes = result.nodes.filter(n => n.isCustomInput);
+            const customNodes = result.nodes.filter(n => n.nodeType === 'input');
             customNodes.forEach(node => {
                 const used = node.outputAmount * node.buildingCount;
                 const fromNode = result.edges
@@ -910,7 +920,7 @@ describe('buildProductionFlow', () => {
             });
 
             result.nodes
-                .filter(n => !n.isCustomInput && n.recipeIndex >= 0)
+                .filter(n => n.nodeType === 'production')
                 .forEach(node => {
                     const consumerId = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
                     const recipe = recipeByOutput.get(node.outputItem);
@@ -1057,23 +1067,21 @@ describe('buildProductionFlow', () => {
             }, buildings);
 
             result.nodes.forEach(node => {
+                expect(node).toHaveProperty('nodeType');
                 expect(node).toHaveProperty('buildingId');
                 expect(node).toHaveProperty('buildingName');
                 expect(node).toHaveProperty('recipeIndex');
                 expect(node).toHaveProperty('outputItem');
                 expect(node).toHaveProperty('outputAmount');
                 expect(node).toHaveProperty('buildingCount');
-                expect(node).toHaveProperty('x');
-                expect(node).toHaveProperty('y');
 
+                expect(['production', 'input', 'launcher']).toContain(node.nodeType);
                 expect(typeof node.buildingId).toBe('string');
                 expect(typeof node.buildingName).toBe('string');
                 expect(typeof node.recipeIndex).toBe('number');
                 expect(typeof node.outputItem).toBe('string');
                 expect(typeof node.outputAmount).toBe('number');
                 expect(typeof node.buildingCount).toBe('number');
-                expect(typeof node.x).toBe('number');
-                expect(typeof node.y).toBe('number');
             });
         });
 

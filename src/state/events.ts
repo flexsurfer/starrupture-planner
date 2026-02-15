@@ -92,7 +92,7 @@ function setTargetAmountToDefault(draftDb: AppState, itemId: string) {
 function computeRequiredBuildings(flow: ProductionFlowResult): PlanRequiredBuilding[] {
     const map = new Map<string, PlanRequiredBuilding>();
     flow.nodes.forEach(node => {
-        if (node.isCustomInput) return;
+        if (node.nodeType === 'input') return;
         const existing = map.get(node.buildingId);
         if (existing) {
             existing.count += Math.ceil(node.buildingCount);
@@ -579,7 +579,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
     // Extract used inputs from the production flow nodes
     const usedInputIdSet = new Set<string>();
     flow.nodes.forEach(node => {
-        if (node.isCustomInput && node.baseBuildingId) {
+        if (node.nodeType === 'input' && node.baseBuildingId) {
             usedInputIdSet.add(node.baseBuildingId);
         }
     });

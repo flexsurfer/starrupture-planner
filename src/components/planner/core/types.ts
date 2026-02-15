@@ -20,11 +20,16 @@ export type Recipe = DbRecipe;
 /** Canonical building model from the app state layer. */
 export type Building = DbBuilding;
 
+/** Discriminant for the three kinds of flow node. */
+export type FlowNodeType = 'production' | 'input' | 'launcher';
+
 /**
- * Internal representation of a building node in the production flow
- * This is used by the flow builder to create the dependency graph
+ * Internal representation of a building node in the production flow.
+ * This is used by the flow builder to create the dependency graph.
  */
 export interface FlowNode {
+    /** Discriminant: 'production' | 'input' | 'launcher' */
+    nodeType: FlowNodeType;
     /** ID of the building type */
     buildingId: string;
     /** Human-readable name of the building */
@@ -45,13 +50,7 @@ export interface FlowNode {
     totalPower: number;
     /** Total heat generation (buildingCount * heatPerBuilding) */
     totalHeat: number;
-    /** X coordinate for layout (set by dagre) */
-    x: number;
-    /** Y coordinate for layout (set by dagre) */
-    y: number;
-    /** Whether this node represents a custom input (external source) */
-    isCustomInput?: boolean;
-    /** Unique ID of the base building instance (for custom inputs) */
+    /** Unique ID of the base building instance (for input nodes) */
     baseBuildingId?: string;
 }
 
@@ -135,11 +134,6 @@ export interface ProductionFlowParams {
 }
 
 /**
- * Union type for all possible node types in the production flow
- */
-export type ProductionNode = FlowNode;
-
-/**
  * Represents a deficit in raw material supply
  */
 export interface RawMaterialDeficit {
@@ -163,41 +157,11 @@ export interface RawMaterialDeficitWithName extends RawMaterialDeficit {
  */
 export interface ProductionFlowResult {
     /** List of building nodes in the production chain */
-    nodes: ProductionNode[];
+    nodes: FlowNode[];
     /** List of material flow edges between buildings */
     edges: FlowEdge[];
     /** List of raw material deficits (when custom inputs don't fully satisfy demand) */
     rawMaterialDeficits?: RawMaterialDeficit[];
-}
-
-/**
- * Represents a single allocation of custom input to a consumer
- */
-export interface CustomInputAllocation {
-    /** ID of the base building providing the input */
-    baseBuildingId: string;
-    /** Building ID of the source */
-    buildingId: string;
-    /** Building name of the source */
-    buildingName: string;
-    /** ID of the consumer node (empty for raw material allocation pool) */
-    consumerNodeId: string;
-    /** ID of the item being transferred */
-    itemId: string;
-    /** Amount allocated */
-    amount: number;
-}
-
-/**
- * Result of the allocation pass
- */
-export interface AllocationPlan {
-    /** All allocations from custom inputs to consumers */
-    allocations: CustomInputAllocation[];
-    /** Total amount allocated per item */
-    totalAllocatedByItem: Map<string, number>;
-    /** Amount used per custom input tracker (keyed by baseBuildingId) */
-    usedByTracker: Map<string, number>;
 }
 
 /** Re-export selection type used across planner and modal forms. */

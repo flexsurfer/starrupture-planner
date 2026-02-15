@@ -3,48 +3,26 @@
  *
  * Builds the complete production dependency tree for a target item.
  *
- * Algorithm (demand-driven):
- * 1. Normalize external input sources
- * 2. Recursively fulfill target demand:
- *    - consume matching custom inputs (deterministic source order)
- *    - produce remaining demand internally (unless raw production is disabled)
- *    - propagate input demands to producer recipes
- * 3. Finalize custom node utilization from emitted edges
- * 4. Add launcher (optional)
- * 5. Compute raw deficits (optional)
+ * Algorithm (three phases):
+ *   Phase 1 – Normalize: validate and normalize external input sources
+ *   Phase 2 – Fulfill:   recursively satisfy target demand (external inputs first, then production)
+ *   Phase 3 – Finalize:  derive input-node utilization, add launcher, compute raw deficits
  */
 
 import type {
     Building,
     Recipe,
     FlowNode,
+    FlowNodeType,
     FlowEdge,
     ProductionFlowParams,
     ProductionFlowResult,
     RawMaterialDeficit,
-    InputBuildingSnapshot
 } from './types';
 
 // ============================================================================
-// Types
+// Constants & helpers
 // ============================================================================
-
-interface RecipeInfo {
-    building: Building;
-    recipe: Recipe;
-    recipeIndex: number;
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/** Returns a fresh empty result each time to prevent mutation issues */
-const emptyResult = (): ProductionFlowResult => ({
-    nodes: [],
-    edges: [],
-    rawMaterialDeficits: []
-});
 
 const EPSILON = 0.0001;
 const ROUND_DECIMALS = 10;
@@ -53,7 +31,53 @@ const round = (value: number): number => Number(value.toFixed(ROUND_DECIMALS));
 const nodeId = (buildingId: string, recipeIndex: number, outputItem: string, suffix = ''): string =>
     suffix ? `${buildingId}_${recipeIndex}_${outputItem}_${suffix}` : `${buildingId}_${recipeIndex}_${outputItem}`;
 
+/** Returns a fresh empty result each time to prevent mutation issues. */
+const emptyResult = (): ProductionFlowResult => ({
+    nodes: [],
+    edges: [],
+    rawMaterialDeficits: []
+});
+
+// ============================================================================
+// Internal types
+// ============================================================================
+
+interface RecipeInfo {
+    building: Building;
+    recipe: Recipe;
+    recipeIndex: number;
+}
+
+const LAUNCHER_BUILDING_ID = 'orbital_cargo_launcher';
+const LAUNCHER_RATE_PER_MINUTE = 10;
+
+/** All mutable state accumulated during the demand-fulfillment pass. */
+interface BuilderContext {
+    nodes: FlowNode[];
+    flows: Map<string, { from: string; to: string; itemId: string; amount: number }>;
+    producedNodeByItem: Map<string, FlowNode>;
+    inputNodeBySource: Map<string, FlowNode>;
+    usedByInputSource: Map<string, number>;
+    rawRequiredByItem: Map<string, number>;
+    rawAvailableByItem: Map<string, number>;
+}
+
+const createBuilderContext = (): BuilderContext => ({
+    nodes: [],
+    flows: new Map(),
+    producedNodeByItem: new Map(),
+    inputNodeBySource: new Map(),
+    usedByInputSource: new Map(),
+    rawRequiredByItem: new Map(),
+    rawAvailableByItem: new Map(),
+});
+
+// ============================================================================
+// Node factory
+// ============================================================================
+
 const createFlowNode = (
+    nodeType: FlowNodeType,
     building: Building,
     recipeIndex: number,
     outputItem: string,
@@ -65,6 +89,7 @@ const createFlowNode = (
     const heat = building.heat || 0;
     const ceilBuildings = Math.ceil(buildingsNeeded);
     return {
+        nodeType,
         buildingId: building.id,
         buildingName: building.name,
         recipeIndex,
@@ -75,14 +100,12 @@ const createFlowNode = (
         heatPerBuilding: heat,
         totalPower: ceilBuildings * power,
         totalHeat: ceilBuildings * heat,
-        x: 0,
-        y: 0,
         ...extras
     };
 };
 
 // ============================================================================
-// Main Function
+// Main function
 // ============================================================================
 
 export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[]): ProductionFlowResult {
@@ -95,12 +118,11 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     } = params;
 
     if (!buildings?.length) return emptyResult();
+    if (targetAmount <= 0) return emptyResult();
 
-    // -------------------------------------------------------------------------
-    // Build lookup caches
-    // -------------------------------------------------------------------------
+    // ── Lookup caches ────────────────────────────────────────────────────
     const buildingById = new Map(buildings.filter(Boolean).map(b => [b.id, b]));
-    
+
     const recipeCache = new Map<string, RecipeInfo | null>();
     for (const building of buildings) {
         if (!building?.recipes) continue;
@@ -112,10 +134,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     }
 
     const getRecipe = (itemId: string): RecipeInfo | null => recipeCache.get(itemId) ?? null;
-    
-    // "Raw" = leaf node in production graph (no recipe OR zero-input recipe)
-    // Per spec: raw items CAN be produced via their recipes when rawProductionDisabled=false
-    // The term "raw" refers to dependency structure, not production capability
+
+    // "Raw" = leaf node in production graph (no recipe OR zero-input recipe).
+    // Raw items CAN be produced via their recipes when rawProductionDisabled=false.
     const rawCache = new Map<string, boolean>();
     const isRaw = (itemId: string): boolean => {
         if (!rawCache.has(itemId)) {
@@ -125,116 +146,98 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         return rawCache.get(itemId)!;
     };
 
-    // Target must be producible
+    // Target must be producible (non-raw).
     if (isRaw(targetItemId)) return emptyResult();
 
-    // -------------------------------------------------------------------------
-    // STEP 1: Normalize external inputs
-    // -------------------------------------------------------------------------
-    const normalizeInputBuildings = (snapshots: InputBuildingSnapshot[]): Array<{
-        baseBuildingId: string;
-        itemId: string;
-        available: number;
-        buildingId: string;
-        buildingName: string;
-    }> =>
-        snapshots
-            .filter((inputBuilding) =>
-                inputBuilding.sectionType === 'inputs' &&
-                !!inputBuilding.id &&
-                !!inputBuilding.selectedItemId &&
-                !!inputBuilding.ratePerMinute &&
-                inputBuilding.ratePerMinute > 0
-            )
-            .map((inputBuilding) => {
-                const buildingId = inputBuilding.buildingTypeId;
-                const buildingName = buildingById.get(buildingId)?.name || buildingId;
-                return {
-                    baseBuildingId: inputBuilding.id,
-                    itemId: inputBuilding.selectedItemId!,
-                    available: inputBuilding.ratePerMinute!,
-                    buildingId,
-                    buildingName
-                };
-            });
+    // ── Phase 1: Normalize external inputs ───────────────────────────────
+    const sources = inputBuildings
+        .filter((ib) =>
+            ib.sectionType === 'inputs' &&
+            !!ib.id &&
+            !!ib.selectedItemId &&
+            !!ib.ratePerMinute &&
+            ib.ratePerMinute > 0 &&
+            ib.selectedItemId !== targetItemId
+        )
+        .map((ib) => {
+            const bid = ib.buildingTypeId;
+            const name = buildingById.get(bid)?.name || bid;
+            return {
+                baseBuildingId: ib.id,
+                itemId: ib.selectedItemId!,
+                available: ib.ratePerMinute!,
+                buildingId: bid,
+                buildingName: name,
+            };
+        })
+        .filter((s) => s.available > 0);
 
-    const sources = normalizeInputBuildings(inputBuildings)
-        .filter((source) => source.itemId !== targetItemId && source.available > 0);
-
-    const sourceStateById = new Map(sources.map(source => [
-        source.baseBuildingId,
-        { ...source, remaining: source.available }
+    const sourceStateById = new Map(sources.map(s => [
+        s.baseBuildingId,
+        { ...s, remaining: s.available }
     ]));
+
     const sourceIdsByItem = new Map<string, string[]>();
     for (const source of sources) {
-        const sourceIds = sourceIdsByItem.get(source.itemId) ?? [];
-        sourceIds.push(source.baseBuildingId);
-        sourceIdsByItem.set(source.itemId, sourceIds);
+        const ids = sourceIdsByItem.get(source.itemId) ?? [];
+        ids.push(source.baseBuildingId);
+        sourceIdsByItem.set(source.itemId, ids);
     }
 
-    // -------------------------------------------------------------------------
-    // STEP 2: Demand-driven fulfillment (production + edges)
-    // -------------------------------------------------------------------------
-    const flowNodes: FlowNode[] = [];
-    const flowEdges: FlowEdge[] = [];
-    const flows = new Map<string, { from: string; to: string; itemId: string; amount: number }>();
-    const producedNodeByItem = new Map<string, FlowNode>();
-    const customNodeBySource = new Map<string, FlowNode>();
-    const usedByCustomSource = new Map<string, number>();
-    const rawRequiredByItem = new Map<string, number>();
-    const rawAvailableByItem = new Map<string, number>();
+    // ── Phase 2: Demand-driven fulfillment ───────────────────────────────
+    const ctx = createBuilderContext();
 
     const addFlow = (from: string, to: string, itemId: string, amount: number): void => {
         if (amount <= EPSILON) return;
         const key = `${from}=>${to}::${itemId}`;
-        const existing = flows.get(key);
+        const existing = ctx.flows.get(key);
         if (existing) {
             existing.amount += amount;
         } else {
-            flows.set(key, { from, to, itemId, amount });
+            ctx.flows.set(key, { from, to, itemId, amount });
         }
     };
 
-    const getOrCreateCustomNode = (trackerId: string): FlowNode | null => {
-        if (customNodeBySource.has(trackerId)) return customNodeBySource.get(trackerId)!;
+    const getOrCreateInputNode = (trackerId: string): FlowNode | null => {
+        if (ctx.inputNodeBySource.has(trackerId)) return ctx.inputNodeBySource.get(trackerId)!;
 
         const source = sourceStateById.get(trackerId);
         if (!source) return null;
 
         const building = buildingById.get(source.buildingId);
-        // Custom nodes behave like regular nodes:
-        // outputAmount = source rate per minute, buildingCount derived from used amount.
         const node = createFlowNode(
+            'input',
             building ?? { id: source.buildingId, name: source.buildingName, power: 0, heat: 0, recipes: [] },
             -2,
             source.itemId,
             source.available,
             0,
-            { isCustomInput: true, baseBuildingId: source.baseBuildingId }
+            { baseBuildingId: source.baseBuildingId }
         );
 
-        flowNodes.push(node);
-        customNodeBySource.set(trackerId, node);
+        ctx.nodes.push(node);
+        ctx.inputNodeBySource.set(trackerId, node);
         return node;
     };
 
     const getOrCreateProducedNode = (itemId: string, info: RecipeInfo): FlowNode => {
-        const existing = producedNodeByItem.get(itemId);
+        const existing = ctx.producedNodeByItem.get(itemId);
         if (existing) return existing;
 
         const node = createFlowNode(
+            'production',
             info.building,
             info.recipeIndex,
             itemId,
             info.recipe.output.amount_per_minute,
             0
         );
-        flowNodes.push(node);
-        producedNodeByItem.set(itemId, node);
+        ctx.nodes.push(node);
+        ctx.producedNodeByItem.set(itemId, node);
         return node;
     };
 
-    const allocateCustomToConsumer = (itemId: string, consumerId: string, requested: number): number => {
+    const allocateInputToConsumer = (itemId: string, consumerId: string, requested: number): number => {
         if (!consumerId || requested <= EPSILON) return 0;
 
         const sourceIds = sourceIdsByItem.get(itemId) ?? [];
@@ -256,35 +259,37 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             remaining -= amount;
             allocated += amount;
 
-            usedByCustomSource.set(sourceId, (usedByCustomSource.get(sourceId) ?? 0) + amount);
+            ctx.usedByInputSource.set(sourceId, (ctx.usedByInputSource.get(sourceId) ?? 0) + amount);
 
-            const customNode = getOrCreateCustomNode(sourceId);
-            if (!customNode) continue;
+            const inputNode = getOrCreateInputNode(sourceId);
+            if (!inputNode) continue;
 
-            const customId = nodeId(
-                customNode.buildingId,
-                customNode.recipeIndex,
-                customNode.outputItem,
+            const inputId = nodeId(
+                inputNode.buildingId,
+                inputNode.recipeIndex,
+                inputNode.outputItem,
                 sourceId
             );
-            addFlow(customId, consumerId, itemId, amount);
+            addFlow(inputId, consumerId, itemId, amount);
         }
 
         return allocated;
     };
 
-    const fulfillDemand = (itemId: string, requested: number, consumerId: string, path: Set<string>): void => {
+    const fulfillDemand = (itemId: string, requested: number, consumerId: string | null, path: Set<string>): void => {
         if (requested <= EPSILON) return;
 
-        const allocatedFromCustom = allocateCustomToConsumer(itemId, consumerId, requested);
-        const remaining = requested - allocatedFromCustom;
+        const allocatedFromInput = consumerId
+            ? allocateInputToConsumer(itemId, consumerId, requested)
+            : 0;
+        const remaining = requested - allocatedFromInput;
 
         const info = getRecipe(itemId);
         const raw = isRaw(itemId);
 
         if (raw) {
-            rawRequiredByItem.set(itemId, (rawRequiredByItem.get(itemId) ?? 0) + requested);
-            rawAvailableByItem.set(itemId, (rawAvailableByItem.get(itemId) ?? 0) + allocatedFromCustom);
+            ctx.rawRequiredByItem.set(itemId, (ctx.rawRequiredByItem.get(itemId) ?? 0) + requested);
+            ctx.rawAvailableByItem.set(itemId, (ctx.rawAvailableByItem.get(itemId) ?? 0) + allocatedFromInput);
 
             if (remaining <= EPSILON) return;
             if (rawProductionDisabled || !info) return;
@@ -314,68 +319,63 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         path.delete(itemId);
     };
 
-    fulfillDemand(targetItemId, targetAmount, '', new Set());
+    fulfillDemand(targetItemId, targetAmount, null, new Set());
 
-    // Finalize custom node utilization from edge-driven used amounts.
-    for (const [sourceId, customNode] of customNodeBySource.entries()) {
+    // ── Phase 3: Finalize ────────────────────────────────────────────────
+
+    // 3a. Derive input-node utilization from edge-driven used amounts.
+    for (const [sourceId, inputNode] of ctx.inputNodeBySource.entries()) {
         const source = sourceStateById.get(sourceId);
         if (!source || source.available <= 0) continue;
 
-        const used = usedByCustomSource.get(sourceId) ?? 0;
+        const used = ctx.usedByInputSource.get(sourceId) ?? 0;
         const buildingCount = round(used / source.available);
         const ceilBuildings = Math.ceil(buildingCount);
 
-        customNode.buildingCount = buildingCount;
-        customNode.totalPower = ceilBuildings * customNode.powerPerBuilding;
-        customNode.totalHeat = ceilBuildings * customNode.heatPerBuilding;
+        inputNode.buildingCount = buildingCount;
+        inputNode.totalPower = ceilBuildings * inputNode.powerPerBuilding;
+        inputNode.totalHeat = ceilBuildings * inputNode.heatPerBuilding;
     }
 
-    // Convert flows to edges
-    flows.forEach(f => flowEdges.push({ from: f.from, to: f.to, itemId: f.itemId, amount: f.amount }));
+    // 3b. Convert flows to edges.
+    const flowEdges: FlowEdge[] = [];
+    ctx.flows.forEach(f => flowEdges.push({ from: f.from, to: f.to, itemId: f.itemId, amount: f.amount }));
 
-    // -------------------------------------------------------------------------
-    // STEP 8: Add launcher
-    // -------------------------------------------------------------------------
+    // 3c. Add launcher (optional).
     if (includeLauncher) {
-        const launchRate = 10;
-        const launchersNeeded = targetAmount / launchRate;
+        const launcherBuilding = buildingById.get(LAUNCHER_BUILDING_ID);
+        if (launcherBuilding) {
+            const launchersNeeded = targetAmount / LAUNCHER_RATE_PER_MINUTE;
 
-        const launcherNode: FlowNode = {
-            buildingId: 'orbital_cargo_launcher',
-            buildingName: 'Orbital Cargo Launcher',
-            recipeIndex: -1,
-            outputItem: targetItemId,
-            outputAmount: launchRate,
-            buildingCount: launchersNeeded,
-            powerPerBuilding: 10,
-            heatPerBuilding: 5,
-            totalPower: Math.ceil(launchersNeeded) * 10,
-            totalHeat: Math.ceil(launchersNeeded) * 5,
-            x: 0,
-            y: 0
-        };
+            const launcherNode = createFlowNode(
+                'launcher',
+                launcherBuilding,
+                -1,
+                targetItemId,
+                LAUNCHER_RATE_PER_MINUTE,
+                launchersNeeded,
+            );
 
-        flowNodes.push(launcherNode);
+            ctx.nodes.push(launcherNode);
 
-        const targetNode = producedNodeByItem.get(targetItemId);
-        if (targetNode) {
-            flowEdges.push({
-                from: nodeId(targetNode.buildingId, targetNode.recipeIndex, targetNode.outputItem),
-                to: nodeId(launcherNode.buildingId, launcherNode.recipeIndex, launcherNode.outputItem),
-                itemId: targetItemId,
-                amount: targetAmount
-            });
+            const targetNode = ctx.producedNodeByItem.get(targetItemId);
+            if (targetNode) {
+                flowEdges.push({
+                    from: nodeId(targetNode.buildingId, targetNode.recipeIndex, targetNode.outputItem),
+                    to: nodeId(launcherNode.buildingId, launcherNode.recipeIndex, launcherNode.outputItem),
+                    itemId: targetItemId,
+                    amount: targetAmount
+                });
+            }
         }
     }
 
-    // -------------------------------------------------------------------------
-    // STEP 9: Calculate raw material deficits
-    // -------------------------------------------------------------------------
+    // 3d. Calculate raw material deficits.
     const rawMaterialDeficits: RawMaterialDeficit[] = [];
 
     if (rawProductionDisabled) {
-        rawRequiredByItem.forEach((required, itemId) => {
-            const available = rawAvailableByItem.get(itemId) ?? 0;
+        ctx.rawRequiredByItem.forEach((required, itemId) => {
+            const available = ctx.rawAvailableByItem.get(itemId) ?? 0;
             const missing = required - available;
             if (missing > EPSILON) {
                 rawMaterialDeficits.push({ itemId, required, available, missing });
@@ -383,5 +383,5 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         });
     }
 
-    return { nodes: flowNodes, edges: flowEdges, rawMaterialDeficits };
+    return { nodes: ctx.nodes, edges: flowEdges, rawMaterialDeficits };
 }

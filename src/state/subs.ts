@@ -1030,7 +1030,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_STATS_BY_ID,
 
         // Count buildings from production flow nodes (excluding custom input nodes)
         const productionBuildings = productionFlow.nodes
-            .filter(node => !node.isCustomInput)
+            .filter(node => node.nodeType !== 'input')
             .reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0);
 
         // Count custom input buildings from section snapshots to keep existing behavior

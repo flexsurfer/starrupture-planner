@@ -10,6 +10,7 @@ export type {
     Item,
     Recipe,
     Building,
+    FlowNodeType,
     FlowNode,
     FlowEdge,
     PlannerBuildingStats,
@@ -21,8 +22,6 @@ export type {
     RawMaterialDeficit,
     RawMaterialDeficitWithName,
     CorporationLevelSelection,
-    CustomInputAllocation,
-    AllocationPlan,
 } from './types';
 
 export {

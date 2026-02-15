@@ -58,7 +58,7 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items }: FlowDataG
     const nodeIdMap = new Map<string, string>();
     flowNodes.forEach((node, index) => {
         // For custom input nodes, include baseBuildingId to make them unique
-        const nodeKey = node.isCustomInput && node.baseBuildingId
+        const nodeKey = node.nodeType === 'input' && node.baseBuildingId
             ? `${node.buildingId}_${node.recipeIndex}_${node.outputItem}_${node.baseBuildingId}`
             : `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
         nodeIdMap.set(nodeKey, `node_${index}`);

@@ -17,7 +17,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     return (
         <div className="text-center p-2">
             {/* Custom input badge */}
-            {node.isCustomInput && (
+            {node.nodeType === 'input' && (
                 <div className="text-xs font-semibold absolute top-[-8px] left-[-8px]">
                     <div className="badge badge-sm badge-success">
                         input

@@ -53,7 +53,7 @@ function buildPlanInputUsageByBuildingId(plan: Production, buildings: Building[]
     const usageByBuildingId = new Map<string, PlanInputUsage>();
 
     for (const node of productionFlow.nodes) {
-        if (!node.isCustomInput || !node.baseBuildingId || !node.outputItem) continue;
+        if (node.nodeType !== 'input' || !node.baseBuildingId || !node.outputItem) continue;
         if (!node.outputAmount || node.outputAmount <= 0) continue;
 
         const requiredPerMinute = node.buildingCount * node.outputAmount;
