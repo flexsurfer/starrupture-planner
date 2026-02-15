@@ -242,6 +242,27 @@ describe('buildProductionFlow', () => {
             expect(result.rawMaterialDeficits).toBeDefined();
             expect(result.rawMaterialDeficits!.length).toBe(0);
         });
+
+        it('reports raw material deficits when raw production is disabled and inputs are insufficient', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'bar_titanium',
+                    targetAmount: 60,
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            expect(result.nodes.find(n => n.outputItem === 'ore_titanium' && !n.isCustomInput)).toBeUndefined();
+            expect(result.rawMaterialDeficits).toBeDefined();
+            expect(result.rawMaterialDeficits).toHaveLength(1);
+            expect(result.rawMaterialDeficits![0]).toEqual({
+                itemId: 'ore_titanium',
+                required: 90,
+                available: 0,
+                missing: 90
+            });
+        });
     });
 
     describe('Edge Cases and Error Handling', () => {
@@ -711,6 +732,43 @@ describe('buildProductionFlow', () => {
             expect(sourceB!.outputAmount).toBe(40); // Then source_b
         });
 
+        it('uses earlier sources first based on actual edge allocation amounts', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_beam',
+                    targetAmount: 30, // Requires 60 bar_titanium
+                    inputBuildings: [
+                        {
+                            id: 'source_a',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 50
+                        },
+                        {
+                            id: 'source_b',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 40
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                buildings
+            );
+
+            const fromA = result.edges
+                .filter(e => e.from.includes('source_a') && e.itemId === 'bar_titanium')
+                .reduce((sum, e) => sum + e.amount, 0);
+            const fromB = result.edges
+                .filter(e => e.from.includes('source_b') && e.itemId === 'bar_titanium')
+                .reduce((sum, e) => sum + e.amount, 0);
+
+            expect(fromA).toBe(50);
+            expect(fromB).toBe(10);
+        });
+
         it('should not double-count input supply across multiple consumers', () => {
             // Both titanium_beam and titanium_sheet need bar_titanium
             // If one input building only provides 30, it should be split correctly
@@ -787,6 +845,84 @@ describe('buildProductionFlow', () => {
             
             const totalToFabricator = edgesToFabricator.reduce((sum, e) => sum + e.amount, 0);
             expect(totalToFabricator).toBe(60); // Total should be exactly 60
+        });
+    });
+
+    describe('Flow Conservation Invariants', () => {
+        it('keeps per-source custom usage equal to outgoing edge flow', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_housing',
+                    targetAmount: 30,
+                    inputBuildings: [
+                        {
+                            id: 'input_beam',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'titanium_beam',
+                            ratePerMinute: 30
+                        },
+                        {
+                            id: 'input_bar',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 90
+                        }
+                    ],
+                    rawProductionDisabled: false
+                },
+                buildings
+            );
+
+            const customNodes = result.nodes.filter(n => n.isCustomInput);
+            customNodes.forEach(node => {
+                const used = node.outputAmount * node.buildingCount;
+                const fromNode = result.edges
+                    .filter(e => e.from.includes(node.baseBuildingId!))
+                    .reduce((sum, e) => sum + e.amount, 0);
+                expect(used).toBeCloseTo(fromNode, 5);
+            });
+        });
+
+        it('satisfies each consumer input amount from incoming edges', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'titanium_housing',
+                    targetAmount: 30,
+                    inputBuildings: [
+                        {
+                            id: 'partial_bar',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'bar_titanium',
+                            ratePerMinute: 30
+                        }
+                    ],
+                    rawProductionDisabled: false
+                },
+                buildings
+            );
+
+            const recipeByOutput = new Map<string, { inputs: Array<{ id: string; amount_per_minute: number }> }>();
+            buildings.forEach(b => {
+                (b.recipes || []).forEach(r => recipeByOutput.set(r.output.id, { inputs: r.inputs }));
+            });
+
+            result.nodes
+                .filter(n => !n.isCustomInput && n.recipeIndex >= 0)
+                .forEach(node => {
+                    const consumerId = `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
+                    const recipe = recipeByOutput.get(node.outputItem);
+                    expect(recipe).toBeDefined();
+                    recipe!.inputs.forEach(input => {
+                        const incoming = result.edges
+                            .filter(e => e.to === consumerId && e.itemId === input.id)
+                            .reduce((sum, e) => sum + e.amount, 0);
+                        const required = input.amount_per_minute * node.buildingCount;
+                        expect(incoming).toBeCloseTo(required, 5);
+                    });
+                });
         });
     });
 
