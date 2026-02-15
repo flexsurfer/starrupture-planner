@@ -504,6 +504,101 @@ describe('buildProductionFlow', () => {
             expect(customBarEdgeTotal).toBe(60);
         });
 
+        it('allocates shared custom inputs to remaining live consumers after branch pruning', () => {
+            const localBuildings = [
+                {
+                    id: 'ore_excavator',
+                    name: 'Ore Excavator',
+                    power: 10,
+                    heat: 10,
+                    recipes: [
+                        {
+                            output: { id: 'ore_titanium', amount_per_minute: 75 },
+                            inputs: []
+                        }
+                    ]
+                },
+                {
+                    id: 'smelter',
+                    name: 'Smelter',
+                    power: 10,
+                    heat: 10,
+                    recipes: [
+                        {
+                            output: { id: 'titanium_rod', amount_per_minute: 60 },
+                            inputs: [{ id: 'ore_titanium', amount_per_minute: 60 }]
+                        }
+                    ]
+                },
+                {
+                    id: 'fabricator',
+                    name: 'Fabricator',
+                    power: 10,
+                    heat: 10,
+                    recipes: [
+                        {
+                            output: { id: 'stabilizer', amount_per_minute: 60 },
+                            inputs: [{ id: 'titanium_rod', amount_per_minute: 60 }]
+                        }
+                    ]
+                },
+                {
+                    id: 'mega_press',
+                    name: 'Mega Press',
+                    power: 10,
+                    heat: 10,
+                    recipes: [
+                        {
+                            output: { id: 'impeller', amount_per_minute: 60 },
+                            inputs: [
+                                { id: 'stabilizer', amount_per_minute: 60 },
+                                { id: 'titanium_rod', amount_per_minute: 60 }
+                            ]
+                        }
+                    ]
+                }
+            ];
+
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'impeller',
+                    targetAmount: 60,
+                    inputBuildings: [
+                        {
+                            id: 'stabilizer_input',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'stabilizer',
+                            ratePerMinute: 60
+                        },
+                        {
+                            id: 'rod_input',
+                            buildingTypeId: 'importer',
+                            sectionType: 'inputs',
+                            selectedItemId: 'titanium_rod',
+                            ratePerMinute: 60
+                        }
+                    ],
+                    rawProductionDisabled: true
+                },
+                localBuildings
+            );
+
+            // Stabilizer branch should be pruned by direct custom input.
+            const stabilizerProducer = result.nodes.find(n => !n.isCustomInput && n.outputItem === 'stabilizer');
+            expect(stabilizerProducer).toBeUndefined();
+
+            // Rod custom input must still feed impeller directly, so no rod producer is required.
+            const rodProducer = result.nodes.find(n => !n.isCustomInput && n.outputItem === 'titanium_rod');
+            expect(rodProducer).toBeUndefined();
+
+            const rodEdgeToImpeller = result.edges.find(
+                e => e.from.includes('rod_input') && e.to.includes('impeller') && e.itemId === 'titanium_rod'
+            );
+            expect(rodEdgeToImpeller).toBeDefined();
+            expect(rodEdgeToImpeller!.amount).toBe(60);
+        });
+
         it('should show input node when it is actually consumed by another node', () => {
             // Verify that input snapshots ARE shown when they're consumed by production nodes
             const result = buildProductionFlow(

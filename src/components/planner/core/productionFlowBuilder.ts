@@ -134,41 +134,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     if (isRaw(targetItemId)) return emptyResult();
 
     // -------------------------------------------------------------------------
-    // STEP 1: Calculate demand for producible items
-    // -------------------------------------------------------------------------
-    const itemConsumers = new Map<string, ConsumerDemand[]>();
-
-    const calculateDemand = (itemId: string, amount: number, consumerNodeId: string, path: Set<string>): void => {
-        if (path.has(itemId)) return; // Cycle detection
-        
-        const raw = isRaw(itemId);
-        
-        // Track consumer for non-raw items
-        if (consumerNodeId && !raw) {
-            const consumers = itemConsumers.get(itemId) ?? [];
-            consumers.push({ nodeId: consumerNodeId, amount });
-            itemConsumers.set(itemId, consumers);
-        }
-
-        if (rawProductionDisabled && raw) return;
-
-        const info = getRecipe(itemId);
-        if (!info) return;
-
-        path.add(itemId);
-        const buildingsNeeded = amount / info.recipe.output.amount_per_minute;
-        const thisNodeId = nodeId(info.building.id, info.recipeIndex, itemId);
-
-        for (const input of info.recipe.inputs) {
-            calculateDemand(input.id, input.amount_per_minute * buildingsNeeded, thisNodeId, path);
-        }
-        path.delete(itemId);
-    };
-
-    calculateDemand(targetItemId, targetAmount, '', new Set());
-
-    // -------------------------------------------------------------------------
-    // STEP 2: Allocate external inputs
+    // STEP 1: Normalize external inputs
     // -------------------------------------------------------------------------
     const normalizeInputBuildings = (snapshots: InputBuildingSnapshot[]): Array<{
         baseBuildingId: string;
@@ -197,9 +163,6 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
                 };
             });
 
-    // Each baseBuildingId has exactly one itemId, which is either raw or non-raw.
-    // Since itemConsumers (non-raw) and rawConsumers (raw) are mutually exclusive,
-    // each source can only match one consumer set. Fresh supply per call is correct.
     const sources = normalizeInputBuildings(inputBuildings)
         .filter((source) => source.itemId !== targetItemId && source.available > 0);
 
@@ -259,18 +222,18 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         return { allocations, totalAllocatedByItem, usedByTracker };
     };
 
-    const prodAllocation = allocate(itemConsumers);
-
-    // Compute remaining demand after allocation and propagate only unmet demand
-    // through the dependency tree. This keeps upstream nodes consistent when
-    // custom inputs satisfy intermediate items.
+    // Compute remaining demand and consume custom input pools only on reachable
+    // branches. This prevents supply from being "spent" on branches that are
+    // later pruned by other custom inputs.
     const remainingDemand = new Map<string, number>();
     remainingDemand.set(targetItemId, targetAmount);
 
-    const prodAllocationBudget = new Map<string, number>();
-    for (const a of prodAllocation.allocations) {
-        const key = `${a.consumerNodeId}::${a.itemId}`;
-        prodAllocationBudget.set(key, (prodAllocationBudget.get(key) ?? 0) + a.amount);
+    const remainingSupplyByItem = new Map<string, number>();
+    for (const source of sources) {
+        remainingSupplyByItem.set(
+            source.itemId,
+            (remainingSupplyByItem.get(source.itemId) ?? 0) + source.available
+        );
     }
 
     const propagatedByItem = new Map<string, number>();
@@ -290,17 +253,15 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
 
         propagatedByItem.set(itemId, totalDemand);
         const buildingsForDelta = deltaDemand / info.recipe.output.amount_per_minute;
-        const consumerId = nodeId(info.building.id, info.recipeIndex, itemId);
 
         for (const input of info.recipe.inputs) {
             const inputNeeded = input.amount_per_minute * buildingsForDelta;
             if (inputNeeded <= EPSILON) continue;
 
-            const allocKey = `${consumerId}::${input.id}`;
-            const allocBudget = prodAllocationBudget.get(allocKey) ?? 0;
-            const fromCustom = Math.min(inputNeeded, allocBudget);
+            const available = remainingSupplyByItem.get(input.id) ?? 0;
+            const fromCustom = Math.min(inputNeeded, available);
             if (fromCustom > EPSILON) {
-                prodAllocationBudget.set(allocKey, allocBudget - fromCustom);
+                remainingSupplyByItem.set(input.id, available - fromCustom);
             }
 
             const remainingInputDemand = inputNeeded - fromCustom;
@@ -459,7 +420,26 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     // Built as edges are created, ensuring consistency with actual graph
     const allocatedToConsumer = new Map<string, number>();
     const usedByCustomSource = new Map<string, number>();
-    const allAllocations = [...prodAllocation.allocations, ...rawAllocation.allocations];
+    const actualConsumers = new Map<string, ConsumerDemand[]>();
+    for (const consumer of flowNodes) {
+        if (consumer.isCustomInput || consumer.recipeIndex < 0) continue;
+
+        const info = getRecipe(consumer.outputItem);
+        if (!info) continue;
+
+        const consumerId = nodeId(consumer.buildingId, consumer.recipeIndex, consumer.outputItem);
+        for (const input of info.recipe.inputs) {
+            const amount = input.amount_per_minute * consumer.buildingCount;
+            if (amount <= EPSILON) continue;
+
+            const consumers = actualConsumers.get(input.id) ?? [];
+            consumers.push({ nodeId: consumerId, amount });
+            actualConsumers.set(input.id, consumers);
+        }
+    }
+
+    const edgeAllocation = allocate(actualConsumers);
+    const allAllocations = edgeAllocation.allocations;
     const validConsumerIds = new Set<string>(
         flowNodes
             .filter(node => !node.isCustomInput)
