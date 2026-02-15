@@ -25,6 +25,7 @@ export const SUB_IDS = {
     ITEMS_CATEGORIES: 'itemsCategories',
     ITEMS_TABLE_ROWS: 'itemsTableRows',
     ITEMS_HELPER_LOOKUPS: 'itemsHelperLookups',
+    ITEMS_RECIPES_BY_INPUT_ITEM_ID: 'itemsRecipesByInputItemId',
 
     PLANNER_SELECTED_ITEM_ID: 'plannerSelectedItemId',
     PLANNER_SELECTED_CORPORATION_LEVEL: 'plannerSelectedCorporationLevel',

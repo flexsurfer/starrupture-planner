@@ -2,6 +2,7 @@ import React from 'react';
 import type { Item, Recipe, Building } from '../../state/db';
 import { RecipeCard } from './RecipeCard';
 import { BuildingImage } from './BuildingImage';
+import { UsedInRecipes } from './UsedInRecipes';
 
 interface RecipeModalProps {
   isOpen: boolean;
@@ -19,9 +20,9 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item,
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="modal-box max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between mb-4 lg:mb-6">
+        <div className="flex items-center justify-between mb-4 lg:mb-6 flex-shrink-0">
           <h3 className="text-lg lg:text-xl font-bold pr-4">Recipe for {item.name}</h3>
           <button
             className="btn btn-sm btn-circle btn-ghost flex-shrink-0"
@@ -33,23 +34,24 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item,
         </div>
 
         {/* Building Info */}
-        <div className="mb-4 lg:mb-6 p-3 lg:p-4 bg-base-200 rounded-lg">
-          <div className="flex items-center gap-2 lg:gap-3">
-            <BuildingImage buildingId={building.id} building={building} className="w-10 h-10 flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <h4 className="font-semibold text-sm lg:text-base">Produced in: {building.name}</h4>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <BuildingImage buildingId={building.id} building={building} size="small" />
+          <span className="text-sm font-medium">{building.name}</span>
         </div>
 
         {/* Recipe Card */}
         <RecipeCard
           recipe={recipe}
-          className="mb-4 lg:mb-6"
+          className="mb-4 lg:mb-6 flex-shrink-0"
         />
 
+        {/* Recipes where this item is used as input - scrollable */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <UsedInRecipes itemId={item.id} itemName={item.name} />
+        </div>
+
         {/* Modal Actions */}
-        <div className="modal-action">
+        <div className="modal-action flex-shrink-0">
           <button className="btn btn-primary btn-sm lg:btn-md" onClick={onClose}>
             Close
           </button>

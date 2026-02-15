@@ -48,7 +48,7 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
       <div className="card-body p-4">
         <div className="flex items-center gap-4 mb-3">
           {/* Output */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <h4 className="text-sm font-medium text-base-content/70">Output</h4>
             <RecipeItemIcon 
               itemId={recipe.output.id} 
@@ -71,7 +71,7 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
           </div>
 
           {/* Inputs */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <h4 className="text-sm font-medium text-base-content/70">
               {recipe.inputs.length > 0 ? "Inputs" : "Raw Material"}
             </h4>
@@ -98,13 +98,13 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
         {outputItem?.type !== 'raw' && (
           <div>
             <button
-              className="btn btn-xs btn-primary"
+              className="btn btn-xs btn-primary btn-outline"
               onClick={() => {
                 dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, recipe.output.id]);
               }}
               title={`Open ${outputItem?.name || recipe.output.id} in planner`}
             >
-              Open in Planner
+              Planner
             </button>
           </div>
         )}

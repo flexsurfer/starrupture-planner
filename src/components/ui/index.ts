@@ -12,6 +12,7 @@ export { ItemImage } from './ItemImage';
 export { BuildingImage } from './BuildingImage';
 export { RecipeCard } from './RecipeCard';
 export { RecipeModal } from './RecipeModal';
+export { UsedInRecipes } from './UsedInRecipes';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export { CorporationLevelSelector } from './CorporationLevelSelector';
 export type { SelectedCorporationLevel } from './CorporationLevelSelector';

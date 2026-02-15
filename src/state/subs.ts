@@ -2,6 +2,7 @@ import { regSub } from '@flexsurfer/reflex';
 import { SUB_IDS } from './sub-ids';
 import type {
     Item,
+    Recipe,
     Corporation,
     Building as DbBuilding,
     BuildingsByIdMap,
@@ -217,6 +218,22 @@ regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID,
         }
     },
     () => [[SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]]);
+
+regSub(SUB_IDS.ITEMS_RECIPES_BY_INPUT_ITEM_ID,
+    (buildings: DbBuilding[], itemId: string): { recipe: Recipe; building: DbBuilding }[] => {
+        if (!itemId) return [];
+
+        const results: { recipe: Recipe; building: DbBuilding }[] = [];
+        for (const building of buildings) {
+            for (const recipe of building.recipes || []) {
+                if (recipe.inputs.some(input => input.id === itemId)) {
+                    results.push({ recipe, building });
+                }
+            }
+        }
+        return results;
+    },
+    () => [[SUB_IDS.BUILDINGS_LIST]]);
 
 regSub(SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST,
     (buildings: DbBuilding[], helperMaps: ItemsHelperLookups): DbBuilding[] => {
