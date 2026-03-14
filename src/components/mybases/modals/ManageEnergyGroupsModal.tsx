@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { dispatch, useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { EVENT_IDS } from '../../../state/event-ids';
@@ -21,12 +21,6 @@ const EnergyGroupRow: React.FC<{
 }> = ({ group, memberCount, isNameTaken, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(group.name);
-
-  useEffect(() => {
-    if (!isEditing) {
-      setEditName(group.name);
-    }
-  }, [group.name, isEditing]);
 
   const handleRename = useCallback(() => {
     const normalizedName = normalizeGroupName(editName);
@@ -96,7 +90,10 @@ const EnergyGroupRow: React.FC<{
           <button
             type="button"
             className="flex-1 text-left font-medium text-sm hover:text-primary transition-colors"
-            onClick={() => setIsEditing(true)}
+            onClick={() => {
+              setEditName(group.name);
+              setIsEditing(true);
+            }}
             title="Click to rename"
           >
             {group.name}
@@ -110,7 +107,10 @@ const EnergyGroupRow: React.FC<{
         <button
           type="button"
           className="btn btn-xs btn-ghost"
-          onClick={() => setIsEditing(true)}
+          onClick={() => {
+            setEditName(group.name);
+            setIsEditing(true);
+          }}
           title="Rename"
         >
           <svg

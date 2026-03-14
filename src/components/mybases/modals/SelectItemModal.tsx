@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
 import type { Building as DbBuilding, Item } from '../../../state/db';
 import { SUB_IDS } from '../../../state/sub-ids';
@@ -23,9 +23,11 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   onClose,
   onConfirm,
 }) => {
-  const [selectedItemId, setSelectedItemId] = useState<string>(currentItemId || '');
-  const [ratePerMinute, setRatePerMinute] = useState<string>(String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE));
+  const [selectedItemIdDraft, setSelectedItemIdDraft] = useState<string | null>(null);
+  const [ratePerMinuteDraft, setRatePerMinuteDraft] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const selectedItemId = selectedItemIdDraft ?? (currentItemId || '');
+  const ratePerMinute = ratePerMinuteDraft ?? String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE);
 
   // Get available items from subscription
   const availableItems = useSubscription<Item[]>([SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, building.id]);
@@ -33,15 +35,6 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   const filteredItems = searchQuery
     ? availableItems.filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : availableItems;
-
-  // Sync state with props when modal opens or props change
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedItemId(currentItemId || '');
-      setRatePerMinute(String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE));
-      setSearchQuery('');
-    }
-  }, [isOpen, currentItemId, currentRatePerMinute]);
 
   if (!isOpen) {
     return null;
@@ -52,24 +45,28 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
     const rateValue = Number(ratePerMinute);
     if (selectedItemId && rateValue > 0) {
       onConfirm(selectedItemId, rateValue);
+      setSelectedItemIdDraft(null);
+      setRatePerMinuteDraft(null);
+      setSearchQuery('');
       onClose();
     }
   };
 
   const handleCancel = () => {
-    setSelectedItemId(currentItemId || '');
-    setRatePerMinute(String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE));
+    setSelectedItemIdDraft(null);
+    setRatePerMinuteDraft(null);
+    setSearchQuery('');
     onClose();
   };
 
   const handleItemSelect = (itemId: string) => {
-    setSelectedItemId(itemId);
+    setSelectedItemIdDraft(itemId);
     // Set default rate from recipe only if current value is DEFAULT_RATE_PER_MINUTE
     // This preserves user-entered values and currentRatePerMinute prop
     if (building.recipes) {
       const recipe = building.recipes.find(r => r.output.id === itemId);
       if (recipe && Number(ratePerMinute) === DEFAULT_RATE_PER_MINUTE) {
-        setRatePerMinute(String(recipe.output.amount_per_minute));
+        setRatePerMinuteDraft(String(recipe.output.amount_per_minute));
       }
     }
   };
@@ -90,7 +87,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
                 value={searchQuery}
                 onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setSelectedItemId('');
+                setSelectedItemIdDraft('');
               }}
                 autoFocus
               />
@@ -128,7 +125,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
               type="number"
               className="input input-bordered w-full"
               value={ratePerMinute}
-              onChange={(e) => setRatePerMinute(e.target.value)}
+              onChange={(e) => setRatePerMinuteDraft(e.target.value)}
               min="0.01"
               step="0.01"
               required

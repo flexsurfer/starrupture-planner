@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../state/sub-ids";
 import type { Building } from "../state/db";
@@ -9,24 +9,17 @@ const RecipesPage = () => {
   const sortedBuildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST]);
   const { findBuildingCorporationUsage, getCorporationId } = useItemsData();
 
-  // Track collapsed state for each building (collapsed by default)
-  const [collapsedBuildings, setCollapsedBuildings] = useState<Set<string>>(new Set());
-
-  // Initialize collapsed state when buildings load
-  useEffect(() => {
-    if (sortedBuildings.length > 0 && collapsedBuildings.size === 0) {
-      setCollapsedBuildings(new Set(sortedBuildings.map(building => building.id)));
-    }
-  }, [sortedBuildings, collapsedBuildings.size]);
+  // Track expanded state for each building (collapsed by default)
+  const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
 
   const toggleBuilding = (buildingId: string) => {
-    const newCollapsed = new Set(collapsedBuildings);
-    if (newCollapsed.has(buildingId)) {
-      newCollapsed.delete(buildingId);
+    const newExpanded = new Set(expandedBuildings);
+    if (newExpanded.has(buildingId)) {
+      newExpanded.delete(buildingId);
     } else {
-      newCollapsed.add(buildingId);
+      newExpanded.add(buildingId);
     }
-    setCollapsedBuildings(newCollapsed);
+    setExpandedBuildings(newExpanded);
   };
 
   const BuildingIcon = ({ building }: { building: Building }) => {
@@ -146,7 +139,7 @@ const RecipesPage = () => {
             <BuildingCard
               key={building.id}
               building={building}
-              isCollapsed={collapsedBuildings.has(building.id)}
+              isCollapsed={!expandedBuildings.has(building.id)}
               onToggle={() => toggleBuilding(building.id)}
             />
           ))}

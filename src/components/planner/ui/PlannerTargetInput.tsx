@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTargetAmount } from '../hooks';
 
 interface PlannerTargetInputProps {
@@ -11,16 +11,12 @@ interface PlannerTargetInputProps {
 export const PlannerTargetInput: React.FC<PlannerTargetInputProps> = ({ className = ''}) => {
     
     const { targetAmount, setTargetAmount } = useTargetAmount();
-    const [inputValue, setInputValue] = useState<string>(targetAmount.toString());
-
-    // Sync input value with subscription when targetAmount changes externally
-    useEffect(() => {
-        setInputValue(targetAmount === 0 ? '' : targetAmount.toString());
-    }, [targetAmount]);
+    const [inputValueDraft, setInputValueDraft] = useState<string | null>(null);
+    const inputValue = inputValueDraft ?? (targetAmount === 0 ? '' : targetAmount.toString());
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        setInputValue(value); // Update input instantly
+        setInputValueDraft(value); // Update input instantly
 
         if (value === '') {
             setTargetAmount(0);
@@ -37,12 +33,14 @@ export const PlannerTargetInput: React.FC<PlannerTargetInputProps> = ({ classNam
         if (value < 1 || isNaN(value)) {
             if (targetAmount >= 1 && !isNaN(targetAmount)) {
                 // Ensure input reflects the valid targetAmount
-                setInputValue(targetAmount.toString());
+                setInputValueDraft(null);
             } else {
-                setInputValue('1');
+                setInputValueDraft('1');
                 setTargetAmount(1);
             }
-        } 
+        } else {
+            setInputValueDraft(null);
+        }
     };
 
     return (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface RenameBaseModalProps {
   isOpen: boolean;
@@ -15,13 +15,8 @@ export const RenameBaseModal: React.FC<RenameBaseModalProps> = ({
   onClose,
   onRename,
 }) => {
-  const [name, setName] = useState('');
-
-  useEffect(() => {
-    if (isOpen) {
-      setName(currentName);
-    }
-  }, [isOpen, currentName]);
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const name = nameDraft ?? currentName;
 
   if (!isOpen || !baseId) {
     return null;
@@ -29,15 +24,16 @@ export const RenameBaseModal: React.FC<RenameBaseModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && name.trim() !== currentName) {
-      onRename(baseId, name.trim());
-      setName('');
+    const nextName = name.trim();
+    if (nextName && nextName !== currentName) {
+      onRename(baseId, nextName);
+      setNameDraft(null);
       onClose();
     }
   };
 
   const handleCancel = () => {
-    setName('');
+    setNameDraft(null);
     onClose();
   };
 
@@ -55,7 +51,7 @@ export const RenameBaseModal: React.FC<RenameBaseModalProps> = ({
               type="text"
               className="input input-bordered w-full"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => setNameDraft(e.target.value)}
               placeholder="Enter base name"
               autoFocus
               required

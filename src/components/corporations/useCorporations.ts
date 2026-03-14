@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../../state/sub-ids";
 import type { Item } from "../../state/db";
@@ -15,25 +15,28 @@ export const useCorporations = () => {
 };
 
 export const useCorporationCollapse = (corporationsWithStats: CorporationWithStats[]) => {
-  // Track collapsed state for each corporation (collapsed by default)
-  const [collapsedCorporations, setCollapsedCorporations] = useState<Set<string>>(new Set());
-
-  // Initialize collapsed state when corporations load
-  useEffect(() => {
-    if (corporationsWithStats.length > 0 && collapsedCorporations.size === 0) {
-      setCollapsedCorporations(new Set(corporationsWithStats.map(corporation => corporation.name)));
-    }
-  }, [corporationsWithStats, collapsedCorporations.size]);
+  // Track expanded state for each corporation (collapsed by default)
+  const [expandedCorporations, setExpandedCorporations] = useState<Set<string>>(new Set());
 
   const toggleCorporation = (corporationName: string) => {
-    const newCollapsed = new Set(collapsedCorporations);
-    if (newCollapsed.has(corporationName)) {
-      newCollapsed.delete(corporationName);
+    const newExpanded = new Set(expandedCorporations);
+    if (newExpanded.has(corporationName)) {
+      newExpanded.delete(corporationName);
     } else {
-      newCollapsed.add(corporationName);
+      newExpanded.add(corporationName);
     }
-    setCollapsedCorporations(newCollapsed);
+    setExpandedCorporations(newExpanded);
   };
+
+  const collapsedCorporations = useMemo(() => {
+    const collapsed = new Set<string>();
+    for (const corporation of corporationsWithStats) {
+      if (!expandedCorporations.has(corporation.name)) {
+        collapsed.add(corporation.name);
+      }
+    }
+    return collapsed;
+  }, [corporationsWithStats, expandedCorporations]);
 
   return {
     collapsedCorporations,
