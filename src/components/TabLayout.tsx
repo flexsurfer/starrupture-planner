@@ -65,6 +65,10 @@ const TabLayout = () => {
     if (path) {
       navigate(path);
       dispatch([EVENT_IDS.UI_SET_ACTIVE_TAB, tabId]);
+      if (tabId === 'mybases') {
+        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE]);
+        dispatch([EVENT_IDS.BASES_SET_SELECTED_BASE, null]);
+      }
     }
   };
 

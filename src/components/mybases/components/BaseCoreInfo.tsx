@@ -34,10 +34,10 @@ export const BaseCoreInfo: React.FC = () => {
         <div className="flex items-start gap-2 sm:gap-3 w-full sm:w-auto sm:flex-1 min-w-0">
           {/* Back Button */}
           <button
-            className="btn btn-sm btn-ghost flex-shrink-0"
+            className="btn btn-sm btn-outline gap-1 flex-shrink-0"
             onClick={onBack}
           >
-            ←
+            ← Back
           </button>
 
           {/* Core Icon */}
