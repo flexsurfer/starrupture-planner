@@ -19,6 +19,7 @@ import { buildProductionFlow } from '../components/planner/core/productionFlowBu
 import type { ProductionFlowResult } from '../components/planner/core/types';
 import { getSectionTypeForBuilding, buildActivePlanOccupancy } from '../components/mybases/utils';
 import { getProductionInputIds, getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
+import { calculateMaxTargetFromInputs } from '../utils/matchInputsCalculation';
 
 // Common function to update draftDb with version data
 function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
@@ -57,6 +58,27 @@ function findEnergyGroupByName(groups: EnergyGroup[], name: string): EnergyGroup
     if (!normalizedName) return undefined;
 
     return groups.find((group) => normalizeEnergyGroupName(group.name).toLowerCase() === normalizedName);
+}
+
+/** Recalculates and sets targetAmount when matchInputs is enabled. */
+function applyMatchInputs(draftDb: AppState): void {
+    if (!draftDb.productionPlanModalState.matchInputs) return;
+
+    const { selectedItemId, selectedInputIds, baseId, selectedCorporationLevel } = draftDb.productionPlanModalState;
+    if (!selectedItemId || !baseId || !selectedInputIds?.length) return;
+
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (!base) return;
+
+    const maxAmount = calculateMaxTargetFromInputs({
+        selectedItemId,
+        inputBuildings: getSelectedFlowInputBuildings(base, selectedInputIds),
+        buildings: draftDb.buildingsList,
+        includeLauncher: selectedCorporationLevel !== null,
+    });
+    if (maxAmount !== null && maxAmount > 0) {
+        draftDb.productionPlanModalState.targetAmount = maxAmount;
+    }
 }
 
 /** Returns a SET_BASES effect tuple that persists bases. */
@@ -521,6 +543,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftDb }, editSectionId?: str
             targetAmount: editSection.targetAmount,
             selectedCorporationLevel: editSection.corporationLevel || null,
             selectedInputIds: getProductionInputIds(editSection.inputs),
+            matchInputs: false,
         };
     } else {
         draftDb.productionPlanModalState = {
@@ -532,6 +555,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftDb }, editSectionId?: str
             targetAmount: 60,
             selectedCorporationLevel: null,
             selectedInputIds: [],
+            matchInputs: false,
         };
     }
 });
@@ -546,6 +570,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE, ({ draftDb }) => {
         targetAmount: 60,
         selectedCorporationLevel: null,
         selectedInputIds: [],
+        matchInputs: false,
     };
 });
 
@@ -638,16 +663,14 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_NAME, ({ draftDb }, name: string) =
 
 regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftDb }, itemId: string) => {
     draftDb.productionPlanModalState.selectedItemId = itemId;
-    // Reset corporation level when item changes
     draftDb.productionPlanModalState.selectedCorporationLevel = null;
-    
-    // Set target amount to default output rate for the item
+
     if (itemId) {
         for (const building of draftDb.buildingsList) {
             for (const recipe of building.recipes || []) {
                 if (recipe.output.id === itemId) {
-                    const rate = recipe.output.amount_per_minute;
-                    draftDb.productionPlanModalState.targetAmount = rate;
+                    draftDb.productionPlanModalState.targetAmount = recipe.output.amount_per_minute;
+                    applyMatchInputs(draftDb as AppState);
                     return;
                 }
             }
@@ -656,7 +679,15 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftDb }, itemId
 });
 
 regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, ({ draftDb }, amount: number) => {
+    if (draftDb.productionPlanModalState.matchInputs) return;
     draftDb.productionPlanModalState.targetAmount = amount;
+});
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, ({ draftDb }, enabled: boolean) => {
+    draftDb.productionPlanModalState.matchInputs = enabled;
+    if (enabled) {
+        applyMatchInputs(draftDb as AppState);
+    }
 });
 
 regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, level: CorporationLevelSelection | null) => {
@@ -671,4 +702,5 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftDb }, baseBuildin
     } else {
         selectedInputIds.push(baseBuildingId);
     }
+    applyMatchInputs(draftDb as AppState);
 });

@@ -41,5 +41,6 @@ export const EVENT_IDS = {
     PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'productionPlanModalSetTargetAmount',
     PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'productionPlanModalSetSelectedCorporationLevel',
     PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'productionPlanModalToggleInput',
+    PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'productionPlanModalSetMatchInputs',
     PRODUCTION_PLAN_MODAL_SUBMIT: 'productionPlanModalSubmit',
 }

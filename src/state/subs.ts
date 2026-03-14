@@ -1280,6 +1280,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES,
         currentTargetAmount: number;
         defaultSelectedCorporationLevel: CorporationLevelSelection | null;
         selectedItemName: string;
+        matchInputs: boolean;
     } => {
         const selectedItemName = modalState.selectedItemId
             ? items.find(i => i.id === modalState.selectedItemId)?.name || ''
@@ -1291,6 +1292,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES,
             currentTargetAmount: modalState.targetAmount,
             defaultSelectedCorporationLevel: modalState.selectedCorporationLevel,
             selectedItemName,
+            matchInputs: modalState.matchInputs,
         };
     },
     () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.ITEMS_LIST]]);

@@ -185,6 +185,7 @@ export interface CreateProductionPlanModalState {
     targetAmount: number;
     selectedCorporationLevel: CorporationLevelSelection | null;
     selectedInputIds: string[];
+    matchInputs: boolean;
 }
 
 export interface AppState {
@@ -264,6 +265,7 @@ const appState: AppState = {
         targetAmount: 60,
         selectedCorporationLevel: null,
         selectedInputIds: [],
+        matchInputs: false,
     },
 };
 

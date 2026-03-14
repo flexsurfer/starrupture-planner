@@ -15,14 +15,17 @@ interface FormControlsInitialValues {
     currentSelectedItemId: string;
     currentTargetAmount: number;
     selectedItemName: string;
+    matchInputs: boolean;
 }
 
 interface TargetAmountInputProps {
     currentTargetAmount: number;
+    disabled?: boolean;
 }
 
-const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ currentTargetAmount }) => {
+const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ currentTargetAmount, disabled }) => {
     const [localTargetAmountInput, setLocalTargetAmountInput] = useState(() => currentTargetAmount.toString());
+    const inputValue = disabled ? currentTargetAmount.toString() : localTargetAmountInput;
 
     const debouncedSetTargetAmount = useDebouncedCallback(
         (amount: number) => dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, amount]),
@@ -47,11 +50,12 @@ const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ currentTargetAmou
         <input
             type="number"
             className="input input-bordered input-sm w-20"
-            value={localTargetAmountInput}
+            value={inputValue}
             onChange={handleTargetAmountChange}
             onBlur={handleTargetAmountBlur}
             min={1}
             required
+            disabled={disabled}
         />
     );
 };
@@ -67,6 +71,7 @@ export const FormControls: React.FC = () => {
         defaultSelectedCorporationLevel,
         currentTargetAmount,
         selectedItemName,
+        matchInputs,
     } = initialValues;
 
     // Track initial defaultName to check if it was empty when modal opened
@@ -111,6 +116,10 @@ export const FormControls: React.FC = () => {
         dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, level]);
     }, []);
 
+    const handleMatchInputsToggle = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, e.target.checked]);
+    }, []);
+
     return (
         <div className="px-4 py-2 border-b border-base-300 flex-shrink-0">
             <div className="flex flex-wrap items-center gap-3">
@@ -146,11 +155,20 @@ export const FormControls: React.FC = () => {
                 {/* Target Amount */}
                 <div className="form-control flex items-center gap-2 min-w-[120px]">
                     <TargetAmountInput
-                        //key is needed to reset component with currentTargetAmount when currentSelectedItemId has changed
-                        key={currentSelectedItemId || 'no-item-selected'}
+                        key={`${currentSelectedItemId || 'no-item-selected'}-${matchInputs ? 'locked' : 'manual'}`}
                         currentTargetAmount={currentTargetAmount}
+                        disabled={matchInputs}
                     />
                     <span className="text-xs text-base-content/70 whitespace-nowrap">/min</span>
+                    <label className="label cursor-pointer gap-1 px-0">
+                        <input
+                            type="checkbox"
+                            className="checkbox checkbox-xs checkbox-primary"
+                            checked={matchInputs}
+                            onChange={handleMatchInputsToggle}
+                        />
+                        <span className="label-text text-xs whitespace-nowrap">Match inputs</span>
+                    </label>
                 </div>
 
                 {/* Corporation Level Selector */}
