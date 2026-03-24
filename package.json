@@ -19,6 +19,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "deploy": "gh-pages -d dist",
+    "images:webp": "./scripts/generate-webp.sh",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",

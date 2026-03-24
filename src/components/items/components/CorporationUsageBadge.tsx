@@ -6,7 +6,7 @@ interface CorporationUsageBadgeProps {
 }
 
 export const CorporationUsageBadge = ({ usage, corporationId }: CorporationUsageBadgeProps) => {
-  const imagePath = `./icons/corporations/${corporationId}.png`;
+  const webpImagePath = `./icons/corporations/${corporationId}.webp`;
   
   return (
     <div 
@@ -14,12 +14,19 @@ export const CorporationUsageBadge = ({ usage, corporationId }: CorporationUsage
       title={`${usage.corporation} - Level ${usage.level}`}
     >
       <img
-        src={imagePath}
+        key={corporationId}
+        src={webpImagePath}
         alt={usage.corporation}
         className="w-4 h-4 rounded object-cover"
+        width={16}
+        height={16}
+        loading="lazy"
+        decoding="async"
+        fetchPriority="low"
         onError={(e) => {
+          const target = e.currentTarget;
           // Hide image if it fails to load
-          e.currentTarget.style.display = 'none';
+          target.style.display = 'none';
         }}
       />
       <span className="text-xs">

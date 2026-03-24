@@ -15,6 +15,13 @@ const sizeClasses = {
   large: 'w-30 h-30'
 };
 
+const sizePixels = {
+  xsmall: 20,
+  small: 40,
+  medium: 60,
+  large: 120,
+};
+
 export const BuildingImage = ({
   buildingId,
   building,
@@ -22,20 +29,27 @@ export const BuildingImage = ({
   size = 'large',
   style = {}
 }: BuildingImageProps) => {
-  const imagePath = `./icons/buildings/${buildingId}.png`;
+  const webpImagePath = `./icons/buildings/${buildingId}.webp`;
   const baseClasses = `${sizeClasses[size]}`;
   const finalClassName = className ? `${baseClasses} ${className}` : baseClasses;
+  const pixelSize = sizePixels[size];
 
   return (
     <div className={finalClassName}>
       <img
-        src={imagePath}
+        key={buildingId}
+        src={webpImagePath}
         alt={building?.name || buildingId}
         className={finalClassName}
+        width={pixelSize}
+        height={pixelSize}
+        loading="lazy"
+        decoding="async"
+        fetchPriority="low"
         style={{...style, display: 'block'}} // Ensure image is visible initially
         onError={(e) => {
+          const target = e.currentTarget;
           // Fallback to showing a building icon if image doesn't exist
-          const target = e.target as HTMLImageElement;
           target.style.display = 'none';
           const fallback = target.nextElementSibling as HTMLElement;
           if (fallback) {
@@ -44,7 +58,7 @@ export const BuildingImage = ({
         }}
         onLoad={(e) => {
           // Ensure fallback is hidden when image loads successfully
-          const target = e.target as HTMLImageElement;
+          const target = e.currentTarget;
           target.style.display = 'block';
           const fallback = target.nextElementSibling as HTMLElement;
           if (fallback) {

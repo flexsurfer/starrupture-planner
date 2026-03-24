@@ -15,6 +15,12 @@ const sizeClasses = {
   large: 'w-30 h-30'
 };
 
+const sizePixels = {
+  small: 40,
+  medium: 60,
+  large: 120,
+};
+
 export const ItemImage = ({ 
   itemId, 
   item, 
@@ -23,21 +29,28 @@ export const ItemImage = ({
   showFallback = true,
   style = {}
 }: ItemImageProps) => {
-  const imagePath = `./icons/items/${itemId}.png`;
+  const webpImagePath = `./icons/items/${itemId}.webp`;
   const baseClasses = `${sizeClasses[size]} object-cover`;
   const finalClassName = className ? `${baseClasses} ${className}` : baseClasses;
+  const pixelSize = sizePixels[size];
   
   return (
     <div className={`flex items-center justify-center ${sizeClasses[size]}`}>
       <img
-        src={imagePath}
+        key={itemId}
+        src={webpImagePath}
         alt={item?.name || itemId}
         className={finalClassName}
+        width={pixelSize}
+        height={pixelSize}
+        loading="lazy"
+        decoding="async"
+        fetchPriority="low"
         style={{...style, display: 'block'}} // Ensure image is visible initially
         onError={(e) => {
+          const target = e.currentTarget;
           if (showFallback) {
             // Fallback to showing a no-picture icon if image doesn't exist
-            const target = e.target as HTMLImageElement;
             target.style.display = 'none';
             const fallback = target.nextElementSibling as HTMLElement;
             if (fallback) {
@@ -47,7 +60,7 @@ export const ItemImage = ({
         }}
         onLoad={(e) => {
           // Ensure fallback is hidden when image loads successfully
-          const target = e.target as HTMLImageElement;
+          const target = e.currentTarget;
           target.style.display = 'block';
           const fallback = target.nextElementSibling as HTMLElement;
           if (fallback) {

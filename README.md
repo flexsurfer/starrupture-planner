@@ -2,7 +2,7 @@
 
 <div align="center">
 
-   <img src="./assets/logo_black_bg.jpg" width="100" />
+   <img src="./assets/logo_black_bg.webp" width="100" />
 
 
 **The Ultimate Production Planning Tool for Star Rupture**

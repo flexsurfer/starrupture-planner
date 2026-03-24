@@ -106,9 +106,14 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onRename, onDe
         <div className="flex items-start gap-6 mb-4">
           <div className="flex-shrink-0 flex flex-col items-center">
             <img
-              src="/icons/buildings/base_core.png"
+              src="/icons/buildings/base_core.webp"
               alt="Base Core"
               className="w-20 h-20 object-contain"
+              width={80}
+              height={80}
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
