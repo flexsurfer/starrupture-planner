@@ -1,106 +1,541 @@
 [
   {
-    "id": "ore_excavator",
-    "name": "Ore Excavator",
+    "id": "assembler",
+    "name": "Assembler",
     "type": "production",
-    "power": 5,
-    "heat": 3,
+    "power": 60,
+    "heat": 150,
     "recipes": [
       {
         "output": {
-          "id": "ore_titanium",
-          "amount_per_minute": 60
-        },
-        "inputs": []
-      },
-      {
-        "output": {
-          "id": "ore_wolfram",
-          "amount_per_minute": 60
-        },
-        "inputs": []
-      },
-      {
-        "output": {
-          "id": "ore_calcium",
-          "amount_per_minute": 60
-        },
-        "inputs": []
-      }
-    ]
-  },
-  {
-    "id": "helium_extractor",
-    "name": "Helium-3 Extractor",
-    "type": "production",
-    "power": 15,
-    "heat": 60,
-    "recipes": [
-      {
-        "output": {
-          "id": "helium",
-          "amount_per_minute": 240
-        },
-        "inputs": []
-      }
-    ]
-  },
-  {
-    "id": "sulfur_extractor",
-    "name": "Sulfur Extractor",
-    "type": "production",
-    "power": 40,
-    "heat": 60,
-    "recipes": [
-      {
-        "output": {
-          "id": "ore_sulfur",
-          "amount_per_minute": 240
-        },
-        "inputs": []
-      }
-    ]
-  },
-  {
-    "id": "smelter",
-    "name": "Smelter",
-    "type": "production",
-    "power": 5,
-    "heat": 3,
-    "recipes": [
-      {
-        "output": {
-          "id": "bar_titanium",
-          "amount_per_minute": 60
+          "id": "accumulator",
+          "amount_per_minute": 10
         },
         "inputs": [
           {
-            "id": "ore_titanium",
+            "id": "electronics",
+            "amount_per_minute": 20
+          },
+          {
+            "id": "stator",
+            "amount_per_minute": 10
+          },
+          {
+            "id": "battery",
+            "amount_per_minute": 20
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "generator",
+          "amount_per_minute": 6
+        },
+        "inputs": [
+          {
+            "id": "turbine",
+            "amount_per_minute": 6
+          },
+          {
+            "id": "battery",
+            "amount_per_minute": 6
+          },
+          {
+            "id": "nozzle",
+            "amount_per_minute": 6
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "electromagnet",
+          "amount_per_minute": 12
+        },
+        "inputs": [
+          {
+            "id": "electromagnetic_coil",
+            "amount_per_minute": 36
+          },
+          {
+            "id": "synthetic_resin",
+            "amount_per_minute": 36
+          },
+          {
+            "id": "accumulator",
+            "amount_per_minute": 24
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "pressure_tank",
+          "amount_per_minute": 5
+        },
+        "inputs": [
+          {
+            "id": "heat_sheet",
+            "amount_per_minute": 25
+          },
+          {
+            "id": "titanium_housing",
+            "amount_per_minute": 15
+          },
+          {
+            "id": "pump",
+            "amount_per_minute": 15
+          },
+          {
+            "id": "valve",
+            "amount_per_minute": 10
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "resonator",
+          "amount_per_minute": 5
+        },
+        "inputs": [
+          {
+            "id": "accumulator",
+            "amount_per_minute": 5
+          },
+          {
+            "id": "generator",
+            "amount_per_minute": 10
+          },
+          {
+            "id": "liquid_helium",
+            "amount_per_minute": 10
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "condenser",
+          "amount_per_minute": 4
+        },
+        "inputs": [
+          {
+            "id": "resonator",
+            "amount_per_minute": 4
+          },
+          {
+            "id": "synthetic_resin",
+            "amount_per_minute": 12
+          },
+          {
+            "id": "nanofiber",
+            "amount_per_minute": 32
+          },
+          {
+            "id": "pump",
+            "amount_per_minute": 12
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "laser_emitter",
+          "amount_per_minute": 10
+        },
+        "inputs": [
+          {
+            "id": "lens",
+            "amount_per_minute": 20
+          },
+          {
+            "id": "resonator",
+            "amount_per_minute": 10
+          },
+          {
+            "id": "electromagnetic_coil",
             "amount_per_minute": 60
           }
         ]
       },
       {
         "output": {
-          "id": "bar_wolfram",
-          "amount_per_minute": 60
+          "id": "scanner",
+          "amount_per_minute": 6
+        },
+        "inputs": [
+          {
+            "id": "lens",
+            "amount_per_minute": 12
+          },
+          {
+            "id": "generator",
+            "amount_per_minute": 12
+          },
+          {
+            "id": "stabilizer",
+            "amount_per_minute": 72
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "base_core",
+    "name": "Base Core",
+    "type": "core",
+    "levels": [
+      {
+        "level": 0,
+        "heatCapacity": 1000
+      },
+      {
+        "level": 1,
+        "heatCapacity": 2500
+      },
+      {
+        "level": 2,
+        "heatCapacity": 4000
+      },
+      {
+        "level": 3,
+        "heatCapacity": 6000
+      },
+      {
+        "level": 4,
+        "heatCapacity": 10000
+      }
+    ]
+  },
+  {
+    "id": "base_core_amplifier_v1",
+    "name": "Base Core Amplifier V1",
+    "type": "temperature",
+    "power": 0,
+    "heat": 0,
+    "coreHeatCapacity": 20
+  },
+  {
+    "id": "base_core_amplifier_v2",
+    "name": "Base Core Amplifier V2",
+    "type": "temperature",
+    "power": 0,
+    "heat": 0,
+    "coreHeatCapacity": 250
+  },
+  {
+    "id": "compounder",
+    "name": "Compounder",
+    "type": "production",
+    "power": 60,
+    "heat": 150,
+    "recipes": [
+      {
+        "output": {
+          "id": "synthetic_resin",
+          "amount_per_minute": 20
+        },
+        "inputs": [
+          {
+            "id": "hardening_agent",
+            "amount_per_minute": 40
+          },
+          {
+            "id": "sulfuric_acid",
+            "amount_per_minute": 80
+          },
+          {
+            "id": "calcite_sheets",
+            "amount_per_minute": 200
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "liquid_helium",
+          "amount_per_minute": 20
+        },
+        "inputs": [
+          {
+            "id": "pressurized_helium",
+            "amount_per_minute": 20
+          },
+          {
+            "id": "hardening_agent",
+            "amount_per_minute": 20
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "lens",
+          "amount_per_minute": 5
+        },
+        "inputs": [
+          {
+            "id": "glass",
+            "amount_per_minute": 50
+          },
+          {
+            "id": "hardening_agent",
+            "amount_per_minute": 40
+          },
+          {
+            "id": "synthetic_resin",
+            "amount_per_minute": 40
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "nanofiber",
+          "amount_per_minute": 12
+        },
+        "inputs": [
+          {
+            "id": "tube",
+            "amount_per_minute": 240
+          },
+          {
+            "id": "liquid_helium",
+            "amount_per_minute": 60
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "ion_injector",
+          "amount_per_minute": 5
+        },
+        "inputs": [
+          {
+            "id": "applicator",
+            "amount_per_minute": 50
+          },
+          {
+            "id": "electromagnet",
+            "amount_per_minute": 20
+          },
+          {
+            "id": "pressure_tank",
+            "amount_per_minute": 10
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "superconductor",
+          "amount_per_minute": 12
+        },
+        "inputs": [
+          {
+            "id": "ceramics",
+            "amount_per_minute": 84
+          },
+          {
+            "id": "electromagnet",
+            "amount_per_minute": 24
+          },
+          {
+            "id": "supermagnet",
+            "amount_per_minute": 96
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "drone_merger_3_to_1",
+    "name": "Drone Merger 3-to-1",
+    "type": "transport"
+  },
+  {
+    "id": "expandable_storage",
+    "name": "Expandable Storage",
+    "type": "storage",
+    "power": 60,
+    "heat": 0
+  },
+  {
+    "id": "fabricator",
+    "name": "Fabricator",
+    "type": "production",
+    "power": 10,
+    "heat": 5,
+    "recipes": [
+      {
+        "output": {
+          "id": "basic_building",
+          "amount_per_minute": 300
         },
         "inputs": [
           {
             "id": "ore_wolfram",
+            "amount_per_minute": 30
+          },
+          {
+            "id": "ore_titanium",
+            "amount_per_minute": 30
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "pistol_ammo",
+          "amount_per_minute": 375
+        },
+        "inputs": [
+          {
+            "id": "basic_building",
+            "amount_per_minute": 210
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "calcite_sheets",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "block_calcium",
+            "amount_per_minute": 30
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "titanium_beam",
+          "amount_per_minute": 20
+        },
+        "inputs": [
+          {
+            "id": "bar_titanium",
+            "amount_per_minute": 20
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "titanium_rod",
+          "amount_per_minute": 30
+        },
+        "inputs": [
+          {
+            "id": "bar_titanium",
+            "amount_per_minute": 30
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "titanium_sheet",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "bar_titanium",
+            "amount_per_minute": 30
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "wolfram_plate",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "bar_wolfram",
             "amount_per_minute": 60
           }
         ]
       },
       {
         "output": {
-          "id": "block_calcium",
+          "id": "wolfram_wire",
+          "amount_per_minute": 30
+        },
+        "inputs": [
+          {
+            "id": "bar_wolfram",
+            "amount_per_minute": 15
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "rotor",
+          "amount_per_minute": 10
+        },
+        "inputs": [
+          {
+            "id": "titanium_rod",
+            "amount_per_minute": 20
+          },
+          {
+            "id": "wolfram_wire",
+            "amount_per_minute": 20
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "tube",
           "amount_per_minute": 60
         },
         "inputs": [
           {
-            "id": "ore_calcium",
-            "amount_per_minute": 60
+            "id": "titanium_rod",
+            "amount_per_minute": 30
+          },
+          {
+            "id": "titanium_sheet",
+            "amount_per_minute": 30
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "stabilizer",
+          "amount_per_minute": 10
+        },
+        "inputs": [
+          {
+            "id": "rotor",
+            "amount_per_minute": 10
+          },
+          {
+            "id": "titanium_rod",
+            "amount_per_minute": 20
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "stator",
+          "amount_per_minute": 20
+        },
+        "inputs": [
+          {
+            "id": "titanium_housing",
+            "amount_per_minute": 40
+          },
+          {
+            "id": "wolfram_wire",
+            "amount_per_minute": 20
+          }
+        ]
+      },
+      {
+        "output": {
+          "id": "applicator",
+          "amount_per_minute": 15
+        },
+        "inputs": [
+          {
+            "id": "tube",
+            "amount_per_minute": 120
+          },
+          {
+            "id": "glass",
+            "amount_per_minute": 30
           }
         ]
       }
@@ -328,191 +763,32 @@
     ]
   },
   {
-    "id": "fabricator",
-    "name": "Fabricator",
+    "id": "habitat",
+    "name": "Habitat",
+    "type": "habitat",
+    "power": 0,
+    "heat": 5
+  },
+  {
+    "id": "habitat_large",
+    "name": "Habitat Large",
+    "type": "habitat",
+    "power": 0,
+    "heat": 20
+  },
+  {
+    "id": "helium_extractor",
+    "name": "Helium-3 Extractor",
     "type": "production",
-    "power": 10,
-    "heat": 5,
+    "power": 15,
+    "heat": 60,
     "recipes": [
       {
         "output": {
-          "id": "basic_building",
-          "amount_per_minute": 300
+          "id": "helium",
+          "amount_per_minute": 240
         },
-        "inputs": [
-          {
-            "id": "ore_wolfram",
-            "amount_per_minute": 30
-          },
-          {
-            "id": "ore_titanium",
-            "amount_per_minute": 30
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "pistol_ammo",
-          "amount_per_minute": 375
-        },
-        "inputs": [
-          {
-            "id": "basic_building",
-            "amount_per_minute": 210
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "calcite_sheets",
-          "amount_per_minute": 60
-        },
-        "inputs": [
-          {
-            "id": "block_calcium",
-            "amount_per_minute": 30
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "titanium_beam",
-          "amount_per_minute": 20
-        },
-        "inputs": [
-          {
-            "id": "bar_titanium",
-            "amount_per_minute": 20
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "titanium_rod",
-          "amount_per_minute": 30
-        },
-        "inputs": [
-          {
-            "id": "bar_titanium",
-            "amount_per_minute": 30
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "titanium_sheet",
-          "amount_per_minute": 60
-        },
-        "inputs": [
-          {
-            "id": "bar_titanium",
-            "amount_per_minute": 30
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "wolfram_plate",
-          "amount_per_minute": 60
-        },
-        "inputs": [
-          {
-            "id": "bar_wolfram",
-            "amount_per_minute": 60
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "wolfram_wire",
-          "amount_per_minute": 30
-        },
-        "inputs": [
-          {
-            "id": "bar_wolfram",
-            "amount_per_minute": 15
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "rotor",
-          "amount_per_minute": 10
-        },
-        "inputs": [
-          {
-            "id": "titanium_rod",
-            "amount_per_minute": 20
-          },
-          {
-            "id": "wolfram_wire",
-            "amount_per_minute": 20
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "tube",
-          "amount_per_minute": 60
-        },
-        "inputs": [
-          {
-            "id": "titanium_rod",
-            "amount_per_minute": 30
-          },
-          {
-            "id": "titanium_sheet",
-            "amount_per_minute": 30
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "stabilizer",
-          "amount_per_minute": 10
-        },
-        "inputs": [
-          {
-            "id": "rotor",
-            "amount_per_minute": 10
-          },
-          {
-            "id": "titanium_rod",
-            "amount_per_minute": 20
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "stator",
-          "amount_per_minute": 20
-        },
-        "inputs": [
-          {
-            "id": "titanium_housing",
-            "amount_per_minute": 40
-          },
-          {
-            "id": "wolfram_wire",
-            "amount_per_minute": 20
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "applicator",
-          "amount_per_minute": 15
-        },
-        "inputs": [
-          {
-            "id": "tube",
-            "amount_per_minute": 120
-          },
-          {
-            "id": "glass",
-            "amount_per_minute": 30
-          }
-        ]
+        "inputs": []
       }
     ]
   },
@@ -758,6 +1034,64 @@
     ]
   },
   {
+    "id": "multistorage",
+    "name": "Multistorage",
+    "type": "storage",
+    "power": 5,
+    "heat": 60
+  },
+  {
+    "id": "orbital_cargo_launcher",
+    "name": "Orbital Cargo Launcher",
+    "type": "transport",
+    "power": 10,
+    "heat": 5
+  },
+  {
+    "id": "ore_excavator",
+    "name": "Ore Excavator",
+    "type": "production",
+    "power": 5,
+    "heat": 3,
+    "recipes": [
+      {
+        "output": {
+          "id": "ore_titanium",
+          "amount_per_minute": 60
+        },
+        "inputs": []
+      },
+      {
+        "output": {
+          "id": "ore_wolfram",
+          "amount_per_minute": 60
+        },
+        "inputs": []
+      },
+      {
+        "output": {
+          "id": "ore_calcium",
+          "amount_per_minute": 60
+        },
+        "inputs": []
+      }
+    ]
+  },
+  {
+    "id": "package_dispatcher",
+    "name": "Cargo Dispatcher",
+    "type": "transport",
+    "power": 40,
+    "heat": 40
+  },
+  {
+    "id": "package_receiver",
+    "name": "Cargo Receiver",
+    "type": "transport",
+    "power": 40,
+    "heat": 40
+  },
+  {
     "id": "refinery",
     "name": "Refinery",
     "type": "production",
@@ -797,296 +1131,47 @@
         ]
       }
     ]
-  }, {
-    "id": "assembler",
-    "name": "Assembler",
-    "type": "production",
-    "power": 60,
-    "heat": 150,
-    "recipes": [
-      {
-        "output": {
-          "id": "accumulator",
-          "amount_per_minute": 10
-        },
-        "inputs": [
-          {
-            "id": "electronics",
-            "amount_per_minute": 20
-          },
-          {
-            "id": "stator",
-            "amount_per_minute": 10
-          },{
-            "id": "battery",
-            "amount_per_minute": 20
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "generator",
-          "amount_per_minute": 6
-        },
-        "inputs": [
-          {
-            "id": "turbine",
-            "amount_per_minute": 6
-          },
-          {
-            "id": "battery",
-            "amount_per_minute": 6
-          },
-          {
-            "id": "nozzle",
-            "amount_per_minute": 6
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "electromagnet",
-          "amount_per_minute": 12
-        },
-        "inputs": [
-          {
-            "id": "electromagnetic_coil",
-            "amount_per_minute": 36
-          },
-          {
-            "id": "synthetic_resin",
-            "amount_per_minute": 36
-          },
-          {
-            "id": "accumulator",
-            "amount_per_minute": 24
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "pressure_tank",
-          "amount_per_minute": 5
-        },
-        "inputs": [
-          {
-            "id": "heat_sheet",
-            "amount_per_minute": 25
-          },
-          {
-            "id": "titanium_housing",
-            "amount_per_minute": 15
-          },
-          {
-            "id": "pump",
-            "amount_per_minute": 15
-          },
-          {
-            "id": "valve",
-            "amount_per_minute": 10
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "resonator",
-          "amount_per_minute": 5
-        },
-        "inputs": [
-          {
-            "id": "accumulator",
-            "amount_per_minute": 5
-          },
-          {
-            "id": "generator",
-            "amount_per_minute": 10
-          },
-          {
-            "id": "liquid_helium",
-            "amount_per_minute": 10
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "condenser",
-          "amount_per_minute": 4
-        },
-        "inputs": [
-          {
-            "id": "resonator",
-            "amount_per_minute": 4
-          },
-          {
-            "id": "synthetic_resin",
-            "amount_per_minute": 12
-          },
-          {
-            "id": "nanofiber",
-            "amount_per_minute": 32
-          },
-          {
-            "id": "pump",
-            "amount_per_minute": 12
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "laser_emitter",
-          "amount_per_minute": 10
-        },
-        "inputs": [
-          {
-            "id": "lens",
-            "amount_per_minute": 20
-          },
-          {
-            "id": "resonator",
-            "amount_per_minute": 10
-          },
-          {
-            "id": "electromagnetic_coil",
-            "amount_per_minute": 60
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "scanner",
-          "amount_per_minute": 6
-        },
-        "inputs": [
-          {
-            "id": "lens",
-            "amount_per_minute": 12
-          },
-          {
-            "id": "generator",
-            "amount_per_minute": 12
-          },
-          {
-            "id": "stabilizer",
-            "amount_per_minute": 72
-          }
-        ]
-      }
-    ]
   },
   {
-    "id": "compounder",
-    "name": "Compounder",
+    "id": "smelter",
+    "name": "Smelter",
     "type": "production",
-    "power": 60,
-    "heat": 150,
+    "power": 5,
+    "heat": 3,
     "recipes": [
       {
         "output": {
-          "id": "synthetic_resin",
-          "amount_per_minute": 20
+          "id": "bar_titanium",
+          "amount_per_minute": 60
         },
         "inputs": [
           {
-            "id": "hardening_agent",
-            "amount_per_minute": 40
-          },
-          {
-            "id": "sulfuric_acid",
-            "amount_per_minute": 80
-          },
-          {
-            "id": "calcite_sheets",
-            "amount_per_minute": 200
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "liquid_helium",
-          "amount_per_minute": 20
-        },
-        "inputs": [
-          {
-            "id": "pressurized_helium",
-            "amount_per_minute": 20
-          },
-          {
-            "id": "hardening_agent",
-            "amount_per_minute": 20
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "lens",
-          "amount_per_minute": 5
-        },
-        "inputs": [
-          {
-            "id": "glass",
-            "amount_per_minute": 50
-          },
-          {
-            "id": "hardening_agent",
-            "amount_per_minute": 40
-          },
-          {
-            "id": "synthetic_resin",
-            "amount_per_minute": 40
-          }
-        ]
-      },
-      {
-        "output": {
-          "id": "nanofiber",
-          "amount_per_minute": 12
-        },
-        "inputs": [
-          {
-            "id": "tube",
-            "amount_per_minute": 240
-          },
-          {
-            "id": "liquid_helium",
+            "id": "ore_titanium",
             "amount_per_minute": 60
           }
         ]
       },
       {
         "output": {
-          "id": "ion_injector",
-          "amount_per_minute": 5
+          "id": "bar_wolfram",
+          "amount_per_minute": 60
         },
         "inputs": [
           {
-            "id": "applicator",
-            "amount_per_minute": 50
-          },{
-            "id": "electromagnet",
-            "amount_per_minute": 20
-          },
-          {
-            "id": "pressure_tank",
-            "amount_per_minute": 10
+            "id": "ore_wolfram",
+            "amount_per_minute": 60
           }
         ]
       },
       {
         "output": {
-          "id": "superconductor",
-          "amount_per_minute": 12
+          "id": "block_calcium",
+          "amount_per_minute": 60
         },
         "inputs": [
           {
-            "id": "ceramics",
-            "amount_per_minute": 84
-          },{
-            "id": "electromagnet",
-            "amount_per_minute": 24
-          },
-          {
-            "id": "supermagnet",
-            "amount_per_minute": 96
+            "id": "ore_calcium",
+            "amount_per_minute": 60
           }
         ]
       }
@@ -1107,41 +1192,6 @@
     "heat": 250
   },
   {
-    "id": "wind_turbine_v1",
-    "name": "Wind Turbine V1",
-    "type": "generator",
-    "power": 200,
-    "heat": 20
-  },
-  {
-    "id": "wind_turbine_v2",
-    "name": "Wind Turbine V2",
-    "type": "generator",
-    "power": 2000,
-    "heat": 200
-  },
-  {
-    "id": "package_dispatcher",
-    "name": "Cargo Dispatcher",
-    "type": "transport",
-    "power": 40,
-    "heat": 40
-  },
-  {
-    "id": "package_receiver",
-    "name": "Cargo Receiver",
-    "type": "transport",
-    "power": 40,
-    "heat": 40
-  },
-  {
-    "id": "orbital_cargo_launcher",
-    "name": "Orbital Cargo Launcher",
-    "type": "transport",
-    "power": 10,
-    "heat": 5
-  },
-  {
     "id": "storage_depot_v1",
     "name": "Storage Depot V1",
     "type": "storage",
@@ -1156,48 +1206,20 @@
     "heat": 40
   },
   {
-    "id": "expandable_storage",
-    "name": "Expandable Storage",
-    "type": "storage",
-    "power": 60,
-    "heat": 0
-  },
-  {
-    "id": "multistorage",
-    "name": "Multistorage",
-    "type": "storage",
-    "power": 5,
-    "heat": 60
-  },
-  {
-    "id": "base_core_amplifier_v1",
-    "name": "Base Core Amplifier V1",
-    "type": "temperature",
-    "power": 0,
-    "heat": 0,
-    "coreHeatCapacity": 20
-  },
-  {
-    "id": "base_core_amplifier_v2",
-    "name": "Base Core Amplifier V2",
-    "type": "temperature",
-    "power": 0,
-    "heat": 0,
-    "coreHeatCapacity": 250
-  },
-  {
-    "id": "habitat",
-    "name": "Habitat",
-    "type": "habitat",
-    "power": 0,
-    "heat": 5
-  },
-  {
-    "id": "habitat_large",
-    "name": "Habitat Large",
-    "type": "habitat",
-    "power": 0,
-    "heat": 20
+    "id": "sulfur_extractor",
+    "name": "Sulfur Extractor",
+    "type": "production",
+    "power": 40,
+    "heat": 60,
+    "recipes": [
+      {
+        "output": {
+          "id": "ore_sulfur",
+          "amount_per_minute": 240
+        },
+        "inputs": []
+      }
+    ]
   },
   {
     "id": "turret_v1",
@@ -1214,20 +1236,17 @@
     "heat": 30
   },
   {
-    "id": "drone_merger_3_to_1",
-    "name": "Drone Merger 3-to-1",
-    "type": "transport"
+    "id": "wind_turbine_v1",
+    "name": "Wind Turbine V1",
+    "type": "generator",
+    "power": 200,
+    "heat": 20
   },
   {
-    "id": "base_core",
-    "name": "Base Core",
-    "type": "core",
-    "levels": [
-      { "level": 0, "heatCapacity": 1000 },
-      { "level": 1, "heatCapacity": 2500 },
-      { "level": 2, "heatCapacity": 4000 },
-      { "level": 3, "heatCapacity": 6000 },
-      { "level": 4, "heatCapacity": 10000 }
-    ]
+    "id": "wind_turbine_v2",
+    "name": "Wind Turbine V2",
+    "type": "generator",
+    "power": 2000,
+    "heat": 200
   }
 ]
