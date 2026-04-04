@@ -6,6 +6,7 @@ import type { Item, CorporationLevelSelection } from '../../../../../state/db';
 import { CorporationLevelSelector } from '../../../../ui/CorporationLevelSelector';
 import type { CorporationLevelInfo } from '../../../../planner';
 import { useDebouncedCallback } from '../../../../../hooks/useDebouncedCallback';
+import { RecipeAlternativesSelector } from './RecipeAlternativesSelector';
 
 const DEBOUNCE_DELAY = 300;
 
@@ -179,6 +180,8 @@ export const FormControls: React.FC = () => {
                     targetAmount={currentTargetAmount}
                     className="min-w-[200px]"
                 />
+
+                <RecipeAlternativesSelector />
             </div>
         </div>
     );

@@ -99,6 +99,27 @@ function normalizeBases(rawBases: unknown): Base[] {
         };
     };
 
+    const normalizeRecipeSelections = (rawRecipeSelections: unknown): Record<string, string> | undefined => {
+        if (typeof rawRecipeSelections !== 'object' || rawRecipeSelections === null) {
+            return undefined;
+        }
+
+        const entries = Object.entries(rawRecipeSelections);
+        if (entries.length === 0) {
+            return {};
+        }
+
+        const normalized: Record<string, string> = {};
+        for (const [itemId, recipeKey] of entries) {
+            if (typeof itemId !== 'string' || typeof recipeKey !== 'string') {
+                continue;
+            }
+            normalized[itemId] = recipeKey;
+        }
+
+        return normalized;
+    };
+
     const normalizeProduction = (rawProduction: unknown): Production | null => {
         if (typeof rawProduction !== 'object' || rawProduction === null) {
             return null;
@@ -133,6 +154,11 @@ function normalizeBases(rawBases: unknown): Base[] {
         const normalizedCorporationLevel = normalizeCorporationLevel(production.corporationLevel);
         if (normalizedCorporationLevel !== null) {
             normalized.corporationLevel = normalizedCorporationLevel;
+        }
+
+        const normalizedRecipeSelections = normalizeRecipeSelections(production.recipeSelections);
+        if (normalizedRecipeSelections !== undefined) {
+            normalized.recipeSelections = normalizedRecipeSelections;
         }
 
         if (Array.isArray(production.inputs)) {

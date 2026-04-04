@@ -19,6 +19,7 @@ import {
     PlannerTargetInput,
     PlannerFlowDiagram,
     PlannerCorporationLevelSelector,
+    PlannerRecipeSelector,
     PlannerStatsDisplay,
 } from './planner';
 
@@ -45,9 +46,10 @@ const PlannerPageInner: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex gap-2 items-center">
+                    <div className="flex gap-2 items-center flex-wrap">
                         <PlannerStatsDisplay />
                         <PlannerCorporationLevelSelector />
+                        <PlannerRecipeSelector />
                     </div>
                 </div>
 
@@ -70,7 +72,7 @@ const PlannerPageInner: React.FC = () => {
                     <PlannerCorporationLevelSelector
                         className="max-w-md"
                     />
-
+                    <PlannerRecipeSelector />
                 </div>
             </div>
 

@@ -26,3 +26,23 @@ export function getSelectedFlowInputBuildings(
     const selectedIds = new Set(selectedInputIds);
     return getFlowInputBuildings(base.buildings.filter((building) => selectedIds.has(building.id)));
 }
+
+/**
+ * Drops recipe overrides for items already supplied by selected base inputs,
+ * so the flow does not try to optimize production for what is external supply.
+ */
+export function sanitizeRecipeSelectionsForInputItems(
+    recipeSelections: Record<string, string> | undefined,
+    inputBuildings: ReadonlyArray<Pick<BaseBuilding, 'selectedItemId'>> = []
+): Record<string, string> {
+    const sanitized = { ...(recipeSelections || {}) };
+    const inputItemIds = new Set(
+        inputBuildings
+            .map((input) => input.selectedItemId)
+            .filter((id): id is string => !!id)
+    );
+    inputItemIds.forEach((itemId) => {
+        delete sanitized[itemId];
+    });
+    return sanitized;
+}

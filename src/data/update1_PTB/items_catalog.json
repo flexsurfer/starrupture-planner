@@ -5,19 +5,24 @@
     "type": "component"
   },
   {
-    "id": "applicator",
-    "name": "Applicator",
+    "id": "aerogel",
+    "name": "Aerogel",
     "type": "component"
   },
   {
-    "id": "bar_titanium",
-    "name": "Titanium Bar",
-    "type": "processed"
+    "id": "airlock",
+    "name": "Airlock",
+    "type": "component"
   },
   {
-    "id": "bar_wolfram",
-    "name": "Wolfram Bar",
-    "type": "processed"
+    "id": "anti-radiationcovers",
+    "name": "Anti-Radiation Covers",
+    "type": "component"
+  },
+  {
+    "id": "applicator",
+    "name": "Applicator",
+    "type": "component"
   },
   {
     "id": "basic_building",
@@ -25,8 +30,23 @@
     "type": "material"
   },
   {
+    "id": "basicfuel",
+    "name": "Basic Fuel",
+    "type": "component"
+  },
+  {
     "id": "battery",
     "name": "Battery",
+    "type": "component"
+  },
+  {
+    "id": "biofilament",
+    "name": "Biofilament",
+    "type": "component"
+  },
+  {
+    "id": "calcite_sheets",
+    "name": "Calcite Sheets",
     "type": "component"
   },
   {
@@ -35,8 +55,18 @@
     "type": "processed"
   },
   {
-    "id": "calcite_sheets",
-    "name": "Calcite Sheets",
+    "id": "ore_calcium",
+    "name": "Calcium Ore",
+    "type": "raw"
+  },
+  {
+    "id": "powder_calcium",
+    "name": "Calcium Powder",
+    "type": "component"
+  },
+  {
+    "id": "carbonsonar",
+    "name": "Carbon Sonar",
     "type": "component"
   },
   {
@@ -55,6 +85,21 @@
     "type": "component"
   },
   {
+    "id": "converter",
+    "name": "Converter",
+    "type": "component"
+  },
+  {
+    "id": "cyclotrone",
+    "name": "Cyclotrone",
+    "type": "component"
+  },
+  {
+    "id": "dome",
+    "name": "Dome",
+    "type": "component"
+  },
+  {
     "id": "electromagnet",
     "name": "Electromagnet",
     "type": "component"
@@ -70,6 +115,16 @@
     "type": "component"
   },
   {
+    "id": "epoxy",
+    "name": "Epoxy",
+    "type": "component"
+  },
+  {
+    "id": "grenade",
+    "name": "Explosive Charge",
+    "type": "component"
+  },
+  {
     "id": "generator",
     "name": "Generator",
     "type": "component"
@@ -77,6 +132,26 @@
   {
     "id": "glass",
     "name": "Glass",
+    "type": "component"
+  },
+  {
+    "id": "goethiteingot",
+    "name": "Goethite Ingot",
+    "type": "processed"
+  },
+  {
+    "id": "goethitelattice",
+    "name": "Goethite Lattice",
+    "type": "component"
+  },
+  {
+    "id": "goethiteore",
+    "name": "Goethite Ore",
+    "type": "raw"
+  },
+  {
+    "id": "goethitepowder",
+    "name": "Goethite Powder",
     "type": "component"
   },
   {
@@ -90,13 +165,18 @@
     "type": "component"
   },
   {
+    "id": "heatshield",
+    "name": "Heat Shield",
+    "type": "component"
+  },
+  {
     "id": "heavy_ammo",
     "name": "Heavy Ammo",
     "type": "ammo"
   },
   {
     "id": "helium",
-    "name": "Helium",
+    "name": "Helium-3",
     "type": "raw"
   },
   {
@@ -115,8 +195,23 @@
     "type": "material"
   },
   {
+    "id": "ionbomb",
+    "name": "Ion Bomb",
+    "type": "component"
+  },
+  {
     "id": "ion_injector",
     "name": "Ion Injector",
+    "type": "component"
+  },
+  {
+    "id": "ionstabilizer",
+    "name": "Ion Stabilizer",
+    "type": "component"
+  },
+  {
+    "id": "ionthrusters",
+    "name": "Ion Thrusters",
     "type": "component"
   },
   {
@@ -140,29 +235,24 @@
     "type": "component"
   },
   {
+    "id": "nanosyringe",
+    "name": "Nanosyringe",
+    "type": "component"
+  },
+  {
     "id": "nozzle",
     "name": "Nozzle",
     "type": "component"
   },
   {
-    "id": "ore_calcium",
-    "name": "Calcium Ore",
-    "type": "raw"
+    "id": "onboardinstruments",
+    "name": "Onboard Instruments",
+    "type": "component"
   },
   {
-    "id": "ore_sulfur",
-    "name": "Sulfur Ore",
-    "type": "raw"
-  },
-  {
-    "id": "ore_titanium",
-    "name": "Titanium Ore",
-    "type": "raw"
-  },
-  {
-    "id": "ore_wolfram",
-    "name": "Wolfram Ore",
-    "type": "raw"
+    "id": "organiccompound",
+    "name": "Organic Compound",
+    "type": "component"
   },
   {
     "id": "pistol_ammo",
@@ -170,14 +260,19 @@
     "type": "ammo"
   },
   {
-    "id": "powder_calcium",
-    "name": "Calcium Powder",
+    "id": "uberoil",
+    "name": "Plastic",
     "type": "component"
   },
   {
-    "id": "powder_wolfram",
-    "name": "Wolfram Powder",
+    "id": "plasticdust",
+    "name": "Plastic Dust",
     "type": "component"
+  },
+  {
+    "id": "magicoilore",
+    "name": "Powerium",
+    "type": "raw"
   },
   {
     "id": "pressure_tank",
@@ -190,8 +285,48 @@
     "type": "component"
   },
   {
+    "id": "pseudorubberinsulator",
+    "name": "Pseudorubber Insulator",
+    "type": "component"
+  },
+  {
     "id": "pump",
     "name": "Pump",
+    "type": "component"
+  },
+  {
+    "id": "quantumtranqualizer",
+    "name": "Quantum Tranquilizer",
+    "type": "component"
+  },
+  {
+    "id": "rnastabilizer",
+    "name": "RNA Stabilizer",
+    "type": "component"
+  },
+  {
+    "id": "rtsc",
+    "name": "RTSC",
+    "type": "component"
+  },
+  {
+    "id": "rtscgenerator",
+    "name": "RTSC Generator",
+    "type": "component"
+  },
+  {
+    "id": "refinedoil",
+    "name": "Refined Oil",
+    "type": "component"
+  },
+  {
+    "id": "reinforcedframe",
+    "name": "Reinforced Frame",
+    "type": "component"
+  },
+  {
+    "id": "reinforcedhousing",
+    "name": "Reinforced Housing",
     "type": "component"
   },
   {
@@ -200,8 +335,28 @@
     "type": "component"
   },
   {
+    "id": "rocketengine",
+    "name": "Rocket Engine",
+    "type": "component"
+  },
+  {
+    "id": "rocketfuel",
+    "name": "Rocket Fuel",
+    "type": "component"
+  },
+  {
     "id": "rotor",
     "name": "Rotor",
+    "type": "component"
+  },
+  {
+    "id": "satellitebody",
+    "name": "Satellite Body",
+    "type": "component"
+  },
+  {
+    "id": "scafolding",
+    "name": "Scaffolding",
     "type": "component"
   },
   {
@@ -230,6 +385,16 @@
     "type": "component"
   },
   {
+    "id": "substancefhs-135-493",
+    "name": "Substance #FHS-135-493",
+    "type": "component"
+  },
+  {
+    "id": "ore_sulfur",
+    "name": "Sulfur Ore",
+    "type": "raw"
+  },
+  {
     "id": "sulfuric_acid",
     "name": "Sulfuric Acid",
     "type": "component"
@@ -245,6 +410,16 @@
     "type": "component"
   },
   {
+    "id": "syntheticdna",
+    "name": "Synthetic DNA",
+    "type": "component"
+  },
+  {
+    "id": "syntheticprotein",
+    "name": "Synthetic Protein",
+    "type": "component"
+  },
+  {
     "id": "synthetic_resin",
     "name": "Synthetic Resin",
     "type": "component"
@@ -253,6 +428,11 @@
     "id": "synthetic_silicon",
     "name": "Synthetic Silicon",
     "type": "component"
+  },
+  {
+    "id": "bar_titanium",
+    "name": "Titanium Bar",
+    "type": "processed"
   },
   {
     "id": "titanium_beam",
@@ -265,6 +445,11 @@
     "type": "component"
   },
   {
+    "id": "ore_titanium",
+    "name": "Titanium Ore",
+    "type": "raw"
+  },
+  {
     "id": "titanium_rod",
     "name": "Titanium Rod",
     "type": "component"
@@ -272,6 +457,16 @@
   {
     "id": "titanium_sheet",
     "name": "Titanium Sheet",
+    "type": "component"
+  },
+  {
+    "id": "ubertitanium",
+    "name": "Titanoferrite Ingot",
+    "type": "processed"
+  },
+  {
+    "id": "trackingdevice",
+    "name": "Tracking Device",
     "type": "component"
   },
   {
@@ -285,14 +480,39 @@
     "type": "component"
   },
   {
+    "id": "uberfilament",
+    "name": "Uberfilament",
+    "type": "component"
+  },
+  {
     "id": "valve",
     "name": "Valve",
     "type": "component"
   },
   {
+    "id": "bar_wolfram",
+    "name": "Wolfram Bar",
+    "type": "processed"
+  },
+  {
+    "id": "ore_wolfram",
+    "name": "Wolfram Ore",
+    "type": "raw"
+  },
+  {
     "id": "wolfram_plate",
     "name": "Wolfram Plate",
     "type": "component"
+  },
+  {
+    "id": "powder_wolfram",
+    "name": "Wolfram Powder",
+    "type": "component"
+  },
+  {
+    "id": "uberwolfram",
+    "name": "Wolfram Steel Ingot",
+    "type": "processed"
   },
   {
     "id": "wolfram_wire",

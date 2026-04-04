@@ -29,6 +29,8 @@ export const SUB_IDS = {
 
     PLANNER_SELECTED_ITEM_ID: 'plannerSelectedItemId',
     PLANNER_SELECTED_CORPORATION_LEVEL: 'plannerSelectedCorporationLevel',
+    PLANNER_RECIPE_SELECTIONS: 'plannerRecipeSelections',
+    PLANNER_RECIPE_OPTIONS: 'plannerRecipeOptions',
     PLANNER_AVAILABLE_CORPORATION_LEVELS: 'plannerAvailableCorporationLevels',
     PLANNER_TARGET_AMOUNT: 'plannerTargetAmount',
     PLANNER_PRODUCTION_FLOW: 'plannerProductionFlow',
@@ -64,6 +66,7 @@ export const SUB_IDS = {
     PRODUCTION_PLAN_SECTION_IDS: 'productionPlanSectionIds',
     PRODUCTION_PLAN_SECTION_ENTITY_BY_ID: 'productionPlanSectionEntityById',
     PRODUCTION_PLAN_MODAL_FLOW: 'productionPlanModalFlow',
+    PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS: 'productionPlanModalRecipeOptions',
     PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS: 'productionPlanModalAvailableCorporationLevels',
     PRODUCTION_PLAN_MODAL_STATE: 'productionPlanModalState',
     PRODUCTION_PLAN_MODAL_OPEN_STATE: 'productionPlanModalOpenState',

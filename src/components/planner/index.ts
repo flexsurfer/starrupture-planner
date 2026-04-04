@@ -22,6 +22,8 @@ export type {
     PlannerBuildingStats,
     PlannerDetailedStatsItem,
     PlannerDetailedStats,
+    PlannerRecipeOption,
+    PlannerRecipeOptionsItem,
     ProductionFlowParams,
     ProductionFlowResult,
     CorporationLevelInfo,
@@ -46,6 +48,7 @@ export {
     PlannerItemSelector,
     PlannerTargetInput,
     PlannerCorporationLevelSelector,
+    PlannerRecipeSelector,
 } from './ui';
 
 // Stats component exports

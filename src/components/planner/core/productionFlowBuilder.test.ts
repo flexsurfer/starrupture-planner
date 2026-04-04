@@ -144,6 +144,204 @@ describe('buildProductionFlow', () => {
         });
     });
 
+    describe('Alternative Recipe Selection', () => {
+        const altBuildings = [
+            {
+                id: 'ore_excavator',
+                name: 'Ore Excavator',
+                power: 10,
+                heat: 10,
+                recipes: [
+                    {
+                        output: { id: 'ore_titanium', amount_per_minute: 75 },
+                        inputs: []
+                    }
+                ]
+            },
+            {
+                id: 'smelter',
+                name: 'Smelter',
+                power: 10,
+                heat: 10,
+                recipes: [
+                    {
+                        output: { id: 'bar_titanium', amount_per_minute: 60 },
+                        inputs: [{ id: 'ore_titanium', amount_per_minute: 90 }]
+                    }
+                ]
+            },
+            {
+                id: 'fabricator',
+                name: 'Fabricator',
+                power: 10,
+                heat: 10,
+                recipes: [
+                    {
+                        output: { id: 'rotor', amount_per_minute: 10 },
+                        inputs: [{ id: 'bar_titanium', amount_per_minute: 20 }]
+                    }
+                ]
+            },
+            {
+                id: 'craftertier2',
+                name: 'Fabricator v.2',
+                power: 25,
+                heat: 8,
+                recipes: [
+                    {
+                        output: { id: 'rotor', amount_per_minute: 60 },
+                        inputs: [{ id: 'bar_titanium', amount_per_minute: 10 }]
+                    }
+                ]
+            }
+        ];
+
+        it('uses the slow-rate recipe by default when alternatives exist', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'rotor',
+                    targetAmount: 60
+                },
+                altBuildings
+            );
+
+            const slowNode = result.nodes.find((n) => n.buildingId === 'fabricator' && n.outputItem === 'rotor');
+            const fastNode = result.nodes.find((n) => n.buildingId === 'craftertier2' && n.outputItem === 'rotor');
+
+            expect(slowNode).toBeDefined();
+            expect(fastNode).toBeUndefined();
+            expect(slowNode!.buildingCount).toBe(6); // 60/10
+        });
+
+        it('uses selected alternative recipe for the specific output item', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'rotor',
+                    targetAmount: 60,
+                    recipeSelections: {
+                        rotor: 'craftertier2:0'
+                    }
+                },
+                altBuildings
+            );
+
+            const slowNode = result.nodes.find((n) => n.buildingId === 'fabricator' && n.outputItem === 'rotor');
+            const fastNode = result.nodes.find((n) => n.buildingId === 'craftertier2' && n.outputItem === 'rotor');
+
+            expect(slowNode).toBeUndefined();
+            expect(fastNode).toBeDefined();
+            expect(fastNode!.buildingCount).toBe(1); // 60/60
+        });
+
+        it('falls back to slow-rate recipe when selected key is invalid', () => {
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'rotor',
+                    targetAmount: 60,
+                    recipeSelections: {
+                        rotor: 'invalid_building:99'
+                    }
+                },
+                altBuildings
+            );
+
+            const slowNode = result.nodes.find((n) => n.buildingId === 'fabricator' && n.outputItem === 'rotor');
+            const fastNode = result.nodes.find((n) => n.buildingId === 'craftertier2' && n.outputItem === 'rotor');
+
+            expect(slowNode).toBeDefined();
+            expect(fastNode).toBeUndefined();
+        });
+
+        it('applies recipe selection to an intermediate item and updates upstream production counts', () => {
+            const chainBuildings = [
+                {
+                    id: 'ore_excavator',
+                    name: 'Ore Excavator',
+                    power: 10,
+                    heat: 10,
+                    recipes: [
+                        {
+                            output: { id: 'ore_titanium', amount_per_minute: 75 },
+                            inputs: []
+                        }
+                    ]
+                },
+                {
+                    id: 'smelter',
+                    name: 'Smelter',
+                    power: 10,
+                    heat: 10,
+                    recipes: [
+                        {
+                            output: { id: 'bar_titanium', amount_per_minute: 60 },
+                            inputs: [{ id: 'ore_titanium', amount_per_minute: 90 }]
+                        }
+                    ]
+                },
+                {
+                    id: 'blast_furnace',
+                    name: 'Blast Furnace',
+                    power: 20,
+                    heat: 15,
+                    recipes: [
+                        {
+                            output: { id: 'bar_titanium', amount_per_minute: 120 },
+                            inputs: [{ id: 'ore_titanium', amount_per_minute: 180 }]
+                        }
+                    ]
+                },
+                {
+                    id: 'fabricator',
+                    name: 'Fabricator',
+                    power: 10,
+                    heat: 10,
+                    recipes: [
+                        {
+                            output: { id: 'rotor', amount_per_minute: 10 },
+                            inputs: [{ id: 'bar_titanium', amount_per_minute: 20 }]
+                        }
+                    ]
+                }
+            ];
+
+            // 60 rotor/min @ 10 per building => 6 fabricators => 120 bar/min
+            const defaultFlow = buildProductionFlow(
+                { targetItemId: 'rotor', targetAmount: 60 },
+                chainBuildings
+            );
+
+            const defaultBarNode = defaultFlow.nodes.find(
+                (n) => n.nodeType === 'production' && n.outputItem === 'bar_titanium'
+            );
+            expect(defaultBarNode?.buildingId).toBe('smelter');
+            expect(defaultBarNode?.buildingCount).toBe(2);
+
+            const selectedFlow = buildProductionFlow(
+                {
+                    targetItemId: 'rotor',
+                    targetAmount: 60,
+                    recipeSelections: { bar_titanium: 'blast_furnace:0' }
+                },
+                chainBuildings
+            );
+
+            const selectedBarNode = selectedFlow.nodes.find(
+                (n) => n.nodeType === 'production' && n.outputItem === 'bar_titanium'
+            );
+            expect(selectedBarNode?.buildingId).toBe('blast_furnace');
+            expect(selectedBarNode?.buildingCount).toBe(1);
+
+            const defaultOreNode = defaultFlow.nodes.find(
+                (n) => n.nodeType === 'production' && n.outputItem === 'ore_titanium'
+            );
+            const selectedOreNode = selectedFlow.nodes.find(
+                (n) => n.nodeType === 'production' && n.outputItem === 'ore_titanium'
+            );
+            expect(defaultOreNode?.buildingCount).toBeCloseTo(2.4, 5);
+            expect(selectedOreNode?.buildingCount).toBeCloseTo(2.4, 5);
+        });
+    });
+
     describe('Complex Multi-Input Chain', () => {
         it('should build a complex chain with multiple inputs', () => {
             const result = buildProductionFlow({

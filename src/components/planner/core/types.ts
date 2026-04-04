@@ -95,6 +95,24 @@ export interface PlannerDetailedStats {
     sortedTypes: string[];
 }
 
+/** Selectable recipe option for a produced item in planner. */
+export interface PlannerRecipeOption {
+    key: string; // `${buildingId}:${recipeIndex}`
+    buildingId: string;
+    buildingName: string;
+    recipeIndex: number;
+    outputRate: number;
+}
+
+/** Planner recipe alternatives descriptor for one output item. */
+export interface PlannerRecipeOptionsItem {
+    itemId: string;
+    itemName: string;
+    options: PlannerRecipeOption[];
+    selectedKey: string;
+    defaultKey: string; // slow-rate default
+}
+
 /**
  * Information about corporation level that uses a specific item
  */
@@ -131,6 +149,8 @@ export interface ProductionFlowParams {
     rawProductionDisabled?: boolean;
     /** Adds a launcher node that consumes the target item */
     includeLauncher?: boolean;
+    /** Optional per-output recipe override map: output item id -> `${buildingId}:${recipeIndex}` */
+    recipeSelections?: Record<string, string>;
 }
 
 /**

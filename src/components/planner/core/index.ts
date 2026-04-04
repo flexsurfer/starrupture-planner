@@ -16,6 +16,8 @@ export type {
     PlannerBuildingStats,
     PlannerDetailedStatsItem,
     PlannerDetailedStats,
+    PlannerRecipeOption,
+    PlannerRecipeOptionsItem,
     ProductionFlowParams,
     ProductionFlowResult,
     CorporationLevelInfo,

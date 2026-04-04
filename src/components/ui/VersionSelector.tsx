@@ -1,7 +1,7 @@
 /**
  * Version Selector Component
  * 
- * A dropdown selector for switching between data versions (Early Access, Playtest).
+ * A dropdown selector for switching between available data versions.
  */
 
 import { dispatch, useSubscription } from "@flexsurfer/reflex";

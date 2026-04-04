@@ -19,6 +19,7 @@ import type {
     PlannerBuildingStats,
     PlannerDetailedStats,
     PlannerDetailedStatsItem,
+    PlannerRecipeOptionsItem,
     ProductionFlowResult,
     RawMaterialDeficitWithName,
 } from '../components/planner/core/types';
@@ -30,7 +31,7 @@ import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } fro
 import { getAvailableBuildingsForSection } from '../components/mybases/utils/buildingSectionUtils';
 import { buildActivePlanOccupancy } from '../components/mybases/utils/activePlanOccupancy';
 import { calculateSharedInputShortages } from '../components/mybases/utils/sharedInputShortages';
-import { getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
+import { getSelectedFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '../utils/productionPlanInputs';
 import type { CorporationWithStats } from '../components/corporations/types';
 import type { CorporationUsage, ItemTableData, ItemsHelperLookups } from '../components/items/types';
 import type {
@@ -66,6 +67,7 @@ regSub(SUB_IDS.UI_THEME, "uiTheme");
 regSub(SUB_IDS.UI_ACTIVE_TAB, "uiActiveTab");
 regSub(SUB_IDS.PLANNER_SELECTED_ITEM_ID, "plannerSelectedItemId");
 regSub(SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL, "plannerSelectedCorporationLevel");
+regSub(SUB_IDS.PLANNER_RECIPE_SELECTIONS, "plannerRecipeSelections");
 regSub(SUB_IDS.PLANNER_TARGET_AMOUNT, "plannerTargetAmount");
 regSub(SUB_IDS.BASES_LIST, "basesList");
 regSub(SUB_IDS.BASES_SELECTED_BASE_ID, "basesSelectedBaseId");
@@ -137,10 +139,18 @@ regSub(SUB_IDS.ITEMS_FILTERED_LIST,
 regSub(SUB_IDS.ITEMS_TABLE_ROWS,
     (filteredItems: Item[], buildings: DbBuilding[], corporations: Corporation[]): ItemTableData[] => {
         // Build producing buildings map
-        const producingBuildingsMap = new Map<string, string>();
+        const producingBuildingsMap = new Map<string, Map<string, number>>();
         for (const building of buildings) {
             for (const recipe of building.recipes || []) {
-                producingBuildingsMap.set(recipe.output.id, building.name);
+                if (!producingBuildingsMap.has(recipe.output.id)) {
+                    producingBuildingsMap.set(recipe.output.id, new Map<string, number>());
+                }
+                const buildingRates = producingBuildingsMap.get(recipe.output.id)!;
+                const existingRate = buildingRates.get(building.name);
+                // Keep the slowest known rate per building for this output item.
+                if (existingRate === undefined || recipe.output.amount_per_minute < existingRate) {
+                    buildingRates.set(building.name, recipe.output.amount_per_minute);
+                }
             }
         }
 
@@ -163,7 +173,12 @@ regSub(SUB_IDS.ITEMS_TABLE_ROWS,
         // Map filtered items to table data
         return filteredItems.map(item => ({
             item,
-            producingBuilding: producingBuildingsMap.get(item.id) || 'Raw Material',
+            producingBuildings: Array.from((producingBuildingsMap.get(item.id) || new Map<string, number>()).entries())
+                .sort((a, b) => {
+                    if (a[1] !== b[1]) return a[1] - b[1];
+                    return a[0].localeCompare(b[0]);
+                })
+                .map(([buildingName]) => buildingName),
             corporationUsage: corporationUsageMap.get(item.id) || []
         }));
     },
@@ -239,11 +254,10 @@ regSub(SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST,
     (buildings: DbBuilding[], helperMaps: ItemsHelperLookups): DbBuilding[] => {
         const productionBuildings = buildings.filter(building => building.type === 'production');
 
-        return [...productionBuildings].sort((a, b) => {
+        const sorted = [...productionBuildings].sort((a, b) => {
             const usageA = helperMaps.buildingCorporationUsage.get(a.name) || [];
             const usageB = helperMaps.buildingCorporationUsage.get(b.name) || [];
 
-            // Get minimum level for each building
             const minLevelA = usageA.length > 0 ? Math.min(...usageA.map(u => u.level)) : Infinity;
             const minLevelB = usageB.length > 0 ? Math.min(...usageB.map(u => u.level)) : Infinity;
 
@@ -260,6 +274,46 @@ regSub(SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST,
             // If neither has rewards, sort by name
             return a.name.localeCompare(b.name);
         });
+
+        // Keep upgraded variants directly after their base building using explicit JSON mapping.
+        const buildingsById = new Map<string, DbBuilding>(sorted.map(building => [building.id, building]));
+        const upgradeTargetIds = new Set<string>();
+        for (const building of sorted) {
+            if (building.upgrade) {
+                upgradeTargetIds.add(building.upgrade);
+            }
+        }
+
+        const result: DbBuilding[] = [];
+        const emittedIds = new Set<string>();
+
+        for (const building of sorted) {
+            if (emittedIds.has(building.id)) continue;
+
+            if (upgradeTargetIds.has(building.id)) {
+                // Delay upgraded entries until their base building is emitted.
+                continue;
+            }
+
+            result.push(building);
+            emittedIds.add(building.id);
+
+            const upgradedBuilding = building.upgrade ? buildingsById.get(building.upgrade) : undefined;
+            if (upgradedBuilding && !emittedIds.has(upgradedBuilding.id)) {
+                result.push(upgradedBuilding);
+                emittedIds.add(upgradedBuilding.id);
+            }
+        }
+
+        // Append any remaining entries (for example targets without a visible base counterpart).
+        for (const building of sorted) {
+            if (!emittedIds.has(building.id)) {
+                result.push(building);
+                emittedIds.add(building.id);
+            }
+        }
+
+        return result;
     },
     () => [[SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_HELPER_LOOKUPS]]);
 
@@ -289,6 +343,61 @@ regSub(SUB_IDS.CORPORATIONS_STATS_SUMMARY,
 //============================================================
 // Planner subscriptions
 //============================================================
+function buildRecipeOptionsForOutputItems(
+    outputItems: Set<string>,
+    buildings: DbBuilding[],
+    itemsById: Record<string, Item>,
+    recipeSelections: Record<string, string>
+): PlannerRecipeOptionsItem[] {
+    const optionsByItem = new Map<string, PlannerRecipeOptionsItem>();
+
+    for (const building of buildings) {
+        for (let recipeIndex = 0; recipeIndex < (building.recipes || []).length; recipeIndex++) {
+            const recipe = building.recipes![recipeIndex];
+            const itemId = recipe.output.id;
+            if (!outputItems.has(itemId)) continue;
+
+            if (!optionsByItem.has(itemId)) {
+                optionsByItem.set(itemId, {
+                    itemId,
+                    itemName: itemsById[itemId]?.name || itemId,
+                    options: [],
+                    selectedKey: '',
+                    defaultKey: ''
+                });
+            }
+
+            optionsByItem.get(itemId)!.options.push({
+                key: `${building.id}:${recipeIndex}`,
+                buildingId: building.id,
+                buildingName: building.name,
+                recipeIndex,
+                outputRate: recipe.output.amount_per_minute
+            });
+        }
+    }
+
+    const result: PlannerRecipeOptionsItem[] = [];
+    optionsByItem.forEach((entry) => {
+        if (entry.options.length <= 1) return;
+
+        entry.options.sort((a, b) => {
+            if (a.outputRate !== b.outputRate) return a.outputRate - b.outputRate;
+            const nameDiff = a.buildingName.localeCompare(b.buildingName);
+            if (nameDiff !== 0) return nameDiff;
+            return a.recipeIndex - b.recipeIndex;
+        });
+
+        entry.defaultKey = entry.options[0].key;
+        const selectedKey = recipeSelections[entry.itemId];
+        const hasSelected = !!selectedKey && entry.options.some((option) => option.key === selectedKey);
+        entry.selectedKey = hasSelected ? selectedKey! : entry.defaultKey;
+        result.push(entry);
+    });
+
+    return result.sort((a, b) => a.itemName.localeCompare(b.itemName));
+}
+
 regSub(SUB_IDS.PLANNER_AVAILABLE_CORPORATION_LEVELS,
     (selectedItem: string | null, corporations: Corporation[]): CorporationLevelInfo[] => {
         if (!selectedItem) return [];
@@ -318,7 +427,8 @@ regSub(SUB_IDS.PLANNER_PRODUCTION_FLOW,
         selectedItem: string | null,
         targetAmount: number,
         buildings: DbBuilding[],
-        selectedCorporationLevel: CorporationLevelSelection | null
+        selectedCorporationLevel: CorporationLevelSelection | null,
+        recipeSelections: Record<string, string>
     ): ProductionFlowResult => {
         if (!selectedItem) {
             return { nodes: [], edges: [] };
@@ -328,11 +438,32 @@ regSub(SUB_IDS.PLANNER_PRODUCTION_FLOW,
         // Only include launcher if a corporation level is selected
         const includeLauncher = selectedCorporationLevel !== null;
         return buildProductionFlow(
-            { targetItemId: selectedItem, targetAmount: validAmount, includeLauncher },
+            { targetItemId: selectedItem, targetAmount: validAmount, includeLauncher, recipeSelections },
             buildings
         );
     },
-    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_TARGET_AMOUNT], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL]]);
+    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_TARGET_AMOUNT], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL], [SUB_IDS.PLANNER_RECIPE_SELECTIONS]]);
+
+regSub(SUB_IDS.PLANNER_RECIPE_OPTIONS,
+    (
+        selectedItem: string | null,
+        productionFlow: ProductionFlowResult,
+        buildings: DbBuilding[],
+        itemsById: Record<string, Item>,
+        recipeSelections: Record<string, string>
+    ): PlannerRecipeOptionsItem[] => {
+        if (!selectedItem || !productionFlow?.nodes?.length) return [];
+
+        const outputItems = new Set<string>();
+        for (const node of productionFlow.nodes) {
+            if (node.nodeType === 'production') {
+                outputItems.add(node.outputItem);
+            }
+        }
+
+        return buildRecipeOptionsForOutputItems(outputItems, buildings, itemsById, recipeSelections);
+    },
+    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PLANNER_RECIPE_SELECTIONS]]);
 
 regSub(SUB_IDS.PLANNER_FLOW_GRAPH,
     (productionFlow: ProductionFlowResult, items: Item[]): { nodes: Node[]; edges: Edge[] } => {
@@ -943,7 +1074,6 @@ const EMPTY_PRODUCTION_PLAN_SECTION_STATS: ProductionPlanSectionStats = {
 const isLauncherEnabled = (corporationLevel?: CorporationLevelSelection | null): boolean =>
     corporationLevel !== null && corporationLevel !== undefined;
 
-
 regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID,
     (section: Production | null, buildings: DbBuilding[]): ProductionFlowResult => {
         if (!section || !section.selectedItemId) {
@@ -951,14 +1081,17 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID,
         }
 
         const validAmount = section.targetAmount > 0 ? section.targetAmount : 1;
+        const inputBuildings = section.inputs || [];
+        const recipeSelections = sanitizeRecipeSelectionsForInputItems(section.recipeSelections, inputBuildings);
 
         return buildProductionFlow(
             {
                 targetItemId: section.selectedItemId,
                 targetAmount: validAmount,
-                inputBuildings: section.inputs,
+                inputBuildings,
                 rawProductionDisabled: true,
                 includeLauncher: isLauncherEnabled(section.corporationLevel),
+                recipeSelections,
             },
             buildings
         );
@@ -971,7 +1104,14 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW,
         buildings: DbBuilding[],
         basesById: BasesById
     ): ProductionFlowResult => {
-        const { selectedItemId, targetAmount, selectedCorporationLevel, selectedInputIds, baseId } = modalState;
+        const {
+            selectedItemId,
+            targetAmount,
+            selectedCorporationLevel,
+            selectedInputIds,
+            recipeSelections,
+            baseId
+        } = modalState;
 
         if (!selectedItemId) {
             return EMPTY_PRODUCTION_FLOW;
@@ -980,6 +1120,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW,
         const validAmount = targetAmount > 0 ? targetAmount : 1;
         const base = baseId ? basesById[baseId] || null : null;
         const inputBuildings = getSelectedFlowInputBuildings(base, selectedInputIds || []);
+        const sanitizedRecipeSelections = sanitizeRecipeSelectionsForInputItems(recipeSelections, inputBuildings);
 
         return buildProductionFlow(
             {
@@ -987,12 +1128,54 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW,
                 targetAmount: validAmount,
                 inputBuildings,
                 rawProductionDisabled: true,
-                includeLauncher: isLauncherEnabled(selectedCorporationLevel)
+                includeLauncher: isLauncherEnabled(selectedCorporationLevel),
+                recipeSelections: sanitizedRecipeSelections
             },
             buildings
         );
     },
     () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.BASES_BY_ID_MAP]]);
+
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS,
+    (
+        modalState: CreateProductionPlanModalState,
+        productionFlow: ProductionFlowResult,
+        buildings: DbBuilding[],
+        itemsById: Record<string, Item>,
+        basesById: BasesById
+    ): PlannerRecipeOptionsItem[] => {
+        if (!modalState.selectedItemId || !productionFlow?.nodes?.length) return [];
+
+        const base = modalState.baseId ? basesById[modalState.baseId] || null : null;
+        const inputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || []);
+        const inputItemIds = new Set(
+            inputBuildings
+                .map((input) => input.selectedItemId)
+                .filter((id): id is string => !!id)
+        );
+
+        const outputItems = new Set<string>();
+        for (const node of productionFlow.nodes) {
+            if (node.nodeType === 'production') {
+                if (inputItemIds.has(node.outputItem)) continue;
+                outputItems.add(node.outputItem);
+            }
+        }
+
+        return buildRecipeOptionsForOutputItems(
+            outputItems,
+            buildings,
+            itemsById,
+            modalState.recipeSelections || {}
+        );
+    },
+    () => [
+        [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE],
+        [SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW],
+        [SUB_IDS.BUILDINGS_LIST],
+        [SUB_IDS.ITEMS_BY_ID_MAP],
+        [SUB_IDS.BASES_BY_ID_MAP]
+    ]);
 
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS,
     (corporations: Corporation[], modalState: CreateProductionPlanModalState): CorporationLevelInfo[] => {

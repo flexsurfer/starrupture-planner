@@ -13,13 +13,18 @@ export const usePlannerDefaultOutput = () => {
 
     // Helper function to find the default output rate for an item
     const getDefaultOutputRate = useCallback((itemId: string): number => {
+        let bestRate: number | null = null;
         for (const building of buildings) {
             for (const recipe of building.recipes || []) {
                 if (recipe.output.id === itemId) {
-                    return recipe.output.amount_per_minute;
+                    const rate = recipe.output.amount_per_minute;
+                    if (bestRate === null || rate < bestRate) {
+                        bestRate = rate;
+                    }
                 }
             }
         }
+        if (bestRate !== null) return bestRate;
         return 60; // fallback if not found
     }, [buildings]);
 

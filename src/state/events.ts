@@ -18,7 +18,11 @@ import { buildItemsMap, parseCorporations, extractCategories } from './data-util
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '../components/planner/core/types';
 import { getSectionTypeForBuilding, buildActivePlanOccupancy } from '../components/mybases/utils';
-import { getProductionInputIds, getSelectedFlowInputBuildings } from '../utils/productionPlanInputs';
+import {
+    getProductionInputIds,
+    getSelectedFlowInputBuildings,
+    sanitizeRecipeSelectionsForInputItems,
+} from '../utils/productionPlanInputs';
 import { calculateMaxTargetFromInputs } from '../utils/matchInputsCalculation';
 
 // Common function to update draftDb with version data
@@ -91,19 +95,25 @@ function persistEnergyGroupsEffect(draftDb: AppState): [string, EnergyGroup[]] {
     return [EFFECT_IDS.SET_ENERGY_GROUPS, current(draftDb.energyGroups)];
 }
 
-// Helper function to set target amount to default output rate for an item
-function setTargetAmountToDefault(draftDb: AppState, itemId: string) {
-    // Find the default output rate for the item (same logic as usePlannerDefaultOutput)
-    for (const building of draftDb.buildingsList) {
+/** Slowest `amount_per_minute` among all recipes that output `itemId` (matches production-flow default). */
+function getSlowestOutputRateForItem(buildings: Building[], itemId: string): number {
+    let bestRate: number | null = null;
+    for (const building of buildings) {
         for (const recipe of building.recipes || []) {
             if (recipe.output.id === itemId) {
-                draftDb.plannerTargetAmount = recipe.output.amount_per_minute;
-                return;
+                const rate = recipe.output.amount_per_minute;
+                if (bestRate === null || rate < bestRate) {
+                    bestRate = rate;
+                }
             }
         }
     }
-    // fallback if not found
-    draftDb.plannerTargetAmount = 60;
+    if (bestRate !== null) return bestRate;
+    return 60;
+}
+
+function setTargetAmountToDefault(draftDb: AppState, itemId: string) {
+    draftDb.plannerTargetAmount = getSlowestOutputRateForItem(draftDb.buildingsList, itemId);
 }
 
 /**
@@ -126,6 +136,19 @@ function computeRequiredBuildings(flow: ProductionFlowResult): PlanRequiredBuild
         }
     });
     return Array.from(map.values());
+}
+
+/** Keeps only input snapshots that are actually consumed by the provided flow. */
+function computeUsedInputSnapshots(flow: ProductionFlowResult, inputBuildings: BaseBuilding[] = []): BaseBuilding[] {
+    const usedInputIdSet = new Set<string>();
+    flow.nodes.forEach(node => {
+        if (node.nodeType === 'input' && node.baseBuildingId) {
+            usedInputIdSet.add(node.baseBuildingId);
+        }
+    });
+
+    if (usedInputIdSet.size === 0) return [];
+    return inputBuildings.filter((inputBuilding) => usedInputIdSet.has(inputBuilding.id));
 }
 
 function buildTotalBuildingCountByType(base: Base): Map<string, number> {
@@ -179,7 +202,12 @@ regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion,
     }
     
     // Load saved data version if valid
-    if (localStoreDataVersion && (localStoreDataVersion === 'earlyaccess' || localStoreDataVersion === 'playtest')) {
+    if (
+        localStoreDataVersion &&
+        (localStoreDataVersion === 'earlyaccess' ||
+            localStoreDataVersion === 'playtest' ||
+            localStoreDataVersion === 'update1_PTB')
+    ) {
         updateDraftDbWithVersionData(draftDb as AppState, localStoreDataVersion);
     }
     
@@ -208,6 +236,7 @@ regEvent(EVENT_IDS.UI_SET_ACTIVE_TAB, ({ draftDb }, newTab: TabType) => {
 regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftDb }, itemId: string, corporationLevel?: CorporationLevelSelection) => {
     draftDb.plannerSelectedItemId = itemId;
     draftDb.plannerSelectedCorporationLevel = corporationLevel || null;
+    draftDb.plannerRecipeSelections = {};
     draftDb.uiActiveTab = 'planner';
     setTargetAmountToDefault(draftDb as AppState, itemId);
 });
@@ -216,11 +245,21 @@ regEvent(EVENT_IDS.PLANNER_SET_SELECTED_ITEM, ({ draftDb }, itemId: string | nul
     draftDb.plannerSelectedItemId = itemId;
     // Reset corporation level when item changes
     draftDb.plannerSelectedCorporationLevel = null;
+    draftDb.plannerRecipeSelections = {};
     setTargetAmountToDefault(draftDb as AppState, itemId || '');
 });
 
 regEvent(EVENT_IDS.PLANNER_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, corporationLevel: CorporationLevelSelection | null) => {
     draftDb.plannerSelectedCorporationLevel = corporationLevel;
+});
+
+regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTION, ({ draftDb }, itemId: string, recipeKey: string | null) => {
+    if (!itemId) return;
+    if (!recipeKey) {
+        delete draftDb.plannerRecipeSelections[itemId];
+        return;
+    }
+    draftDb.plannerRecipeSelections[itemId] = recipeKey;
 });
 
 regEvent(EVENT_IDS.APP_SET_DATA_VERSION, ({ draftDb }, version: DataVersion) => {
@@ -543,6 +582,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftDb }, editSectionId?: str
             targetAmount: editSection.targetAmount,
             selectedCorporationLevel: editSection.corporationLevel || null,
             selectedInputIds: getProductionInputIds(editSection.inputs),
+            recipeSelections: { ...(editSection.recipeSelections || {}) },
             matchInputs: false,
         };
     } else {
@@ -555,6 +595,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftDb }, editSectionId?: str
             targetAmount: 60,
             selectedCorporationLevel: null,
             selectedInputIds: [],
+            recipeSelections: {},
             matchInputs: false,
         };
     }
@@ -570,6 +611,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE, ({ draftDb }) => {
         targetAmount: 60,
         selectedCorporationLevel: null,
         selectedInputIds: [],
+        recipeSelections: {},
         matchInputs: false,
     };
 });
@@ -584,11 +626,12 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
     
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
-    
+
     // Get production flow to extract used inputs
     const validAmount = targetAmount > 0 ? targetAmount : 1;
     const includeLauncher = selectedCorporationLevel !== null;
     const selectedInputBuildings = getSelectedFlowInputBuildings(base, modal.selectedInputIds || []);
+    const recipeSelections = sanitizeRecipeSelectionsForInputItems(modal.recipeSelections, selectedInputBuildings);
     
     const flow = buildProductionFlow(
         { 
@@ -596,31 +639,13 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
             targetAmount: validAmount, 
             inputBuildings: selectedInputBuildings,
             rawProductionDisabled: true,
-            includeLauncher
+            includeLauncher,
+            recipeSelections,
         },
         draftDb.buildingsList
     );
     
-    // Extract used inputs from the production flow nodes
-    const usedInputIdSet = new Set<string>();
-    flow.nodes.forEach(node => {
-        if (node.nodeType === 'input' && node.baseBuildingId) {
-            usedInputIdSet.add(node.baseBuildingId);
-        }
-    });
-    const usedInputSnapshots: BaseBuilding[] = [];
-    const baseBuildingsById = new Map<string, BaseBuilding>(
-        base.buildings.map((building: BaseBuilding) => [building.id, building])
-    );
-    const selectedInputBuildingsById = new Map<string, BaseBuilding>(
-        selectedInputBuildings.map((building: BaseBuilding) => [building.id, building])
-    );
-    usedInputIdSet.forEach((baseBuildingId) => {
-        const baseBuilding = baseBuildingsById.get(baseBuildingId) || selectedInputBuildingsById.get(baseBuildingId);
-        if (baseBuilding) {
-            usedInputSnapshots.push({ ...baseBuilding });
-        }
-    });
+    const usedInputSnapshots = computeUsedInputSnapshots(flow, selectedInputBuildings).map((input) => ({ ...input }));
     
     const requiredBuildings = computeRequiredBuildings(flow);
 
@@ -634,6 +659,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
             section.corporationLevel = selectedCorporationLevel;
             section.inputs = usedInputSnapshots;
             section.requiredBuildings = requiredBuildings;
+            section.recipeSelections = { ...recipeSelections };
         }
     } else {
         // Create new section
@@ -648,6 +674,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
             inputs: usedInputSnapshots,
             status: 'inactive',
             requiredBuildings,
+            recipeSelections: { ...recipeSelections },
         };
         base.productions.push(newSection);
     }
@@ -664,18 +691,36 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_NAME, ({ draftDb }, name: string) =
 regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftDb }, itemId: string) => {
     draftDb.productionPlanModalState.selectedItemId = itemId;
     draftDb.productionPlanModalState.selectedCorporationLevel = null;
+    draftDb.productionPlanModalState.recipeSelections = {};
 
     if (itemId) {
-        for (const building of draftDb.buildingsList) {
-            for (const recipe of building.recipes || []) {
-                if (recipe.output.id === itemId) {
-                    draftDb.productionPlanModalState.targetAmount = recipe.output.amount_per_minute;
-                    applyMatchInputs(draftDb as AppState);
-                    return;
-                }
-            }
-        }
+        draftDb.productionPlanModalState.targetAmount = getSlowestOutputRateForItem(
+            draftDb.buildingsList,
+            itemId
+        );
+        applyMatchInputs(draftDb as AppState);
     }
+});
+
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, ({ draftDb }, itemId: string, recipeKey: string | null) => {
+    if (!itemId) return;
+
+    const modalState = draftDb.productionPlanModalState;
+    const base = modalState.baseId ? getBaseById(draftDb.basesList, modalState.baseId) : undefined;
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || []);
+    const inputItemIds = new Set(
+        selectedInputBuildings
+            .map((input) => input.selectedItemId)
+            .filter((id): id is string => !!id)
+    );
+    if (inputItemIds.has(itemId)) return;
+
+    if (!recipeKey) {
+        delete modalState.recipeSelections[itemId];
+    } else {
+        modalState.recipeSelections[itemId] = recipeKey;
+    }
+    applyMatchInputs(draftDb as AppState);
 });
 
 regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, ({ draftDb }, amount: number) => {
@@ -695,12 +740,17 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draf
 });
 
 regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftDb }, baseBuildingId: string) => {
-    const selectedInputIds = draftDb.productionPlanModalState.selectedInputIds;
+    const modalState = draftDb.productionPlanModalState;
+    const selectedInputIds = modalState.selectedInputIds;
     const index = selectedInputIds.indexOf(baseBuildingId);
     if (index >= 0) {
         selectedInputIds.splice(index, 1);
     } else {
         selectedInputIds.push(baseBuildingId);
     }
+    const base = modalState.baseId ? getBaseById(draftDb.basesList, modalState.baseId) : undefined;
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, selectedInputIds || []);
+    const sanitizedRecipeSelections = sanitizeRecipeSelectionsForInputItems(modalState.recipeSelections, selectedInputBuildings);
+    modalState.recipeSelections = sanitizedRecipeSelections;
     applyMatchInputs(draftDb as AppState);
 });

@@ -113,6 +113,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         targetItemId,
         targetAmount = 60,
         inputBuildings = [],
+        recipeSelections = {},
         rawProductionDisabled = false,
         includeLauncher = false
     } = params;
@@ -123,17 +124,42 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     // ── Lookup caches ────────────────────────────────────────────────────
     const buildingById = new Map(buildings.filter(Boolean).map(b => [b.id, b]));
 
-    const recipeCache = new Map<string, RecipeInfo | null>();
+    const recipeOptionsCache = new Map<string, RecipeInfo[]>();
     for (const building of buildings) {
         if (!building?.recipes) continue;
         building.recipes.forEach((recipe, i) => {
-            if (!recipeCache.has(recipe.output.id)) {
-                recipeCache.set(recipe.output.id, { building, recipe, recipeIndex: i });
+            if (!recipeOptionsCache.has(recipe.output.id)) {
+                recipeOptionsCache.set(recipe.output.id, []);
             }
+            recipeOptionsCache.get(recipe.output.id)!.push({ building, recipe, recipeIndex: i });
         });
     }
 
-    const getRecipe = (itemId: string): RecipeInfo | null => recipeCache.get(itemId) ?? null;
+    recipeOptionsCache.forEach((options) => {
+        options.sort((a, b) => {
+            const rateDiff = a.recipe.output.amount_per_minute - b.recipe.output.amount_per_minute;
+            if (rateDiff !== 0) return rateDiff;
+            const nameDiff = a.building.name.localeCompare(b.building.name);
+            if (nameDiff !== 0) return nameDiff;
+            return a.recipeIndex - b.recipeIndex;
+        });
+    });
+
+    const getRecipe = (itemId: string): RecipeInfo | null => {
+        const options = recipeOptionsCache.get(itemId) ?? [];
+        if (options.length === 0) return null;
+
+        const selectedKey = recipeSelections[itemId];
+        if (selectedKey) {
+            const selected = options.find(
+                ({ building, recipeIndex }) => `${building.id}:${recipeIndex}` === selectedKey
+            );
+            if (selected) return selected;
+        }
+
+        // Slow-rate recipe is default.
+        return options[0];
+    };
 
     // "Raw" = leaf node in production graph (no recipe OR zero-input recipe).
     // Raw items CAN be produced via their recipes when rawProductionDisabled=false.

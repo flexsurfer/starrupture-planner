@@ -1,20 +1,20 @@
 import React from 'react';
-import type { Item, Recipe, Building } from '../../state/db';
+import type { Item } from '../../state/db';
 import { RecipeCard } from './RecipeCard';
 import { BuildingImage } from './BuildingImage';
 import { UsedInRecipes } from './UsedInRecipes';
+import type { ItemRecipe } from '../items';
 
 interface RecipeModalProps {
   isOpen: boolean;
   onClose: () => void;
   item: Item | null;
-  recipe: Recipe | null;
-  building: Building | null;
+  itemRecipes: ItemRecipe[];
 }
 
-export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item, recipe, building }) => {
+export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item, itemRecipes }) => {
 
-  if (!isOpen || !item || !recipe || !building) {
+  if (!isOpen || !item || itemRecipes.length === 0) {
     return null;
   }
 
@@ -33,20 +33,23 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item,
           </button>
         </div>
 
-        {/* Building Info */}
-        <div className="flex items-center gap-2">
-          <BuildingImage buildingId={building.id} building={building} size="small" />
-          <span className="text-sm font-medium">{building.name}</span>
-        </div>
+        {/* Scrollable content */}
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {/* Production Recipes */}
+          <div className="space-y-4 mb-4 lg:mb-6">
+            {itemRecipes.map(({ recipe, building }, idx) => (
+              <div key={idx} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <BuildingImage buildingId={building.id} building={building} size="small" />
+                  <span className="text-sm font-medium">{building.name}</span>
+                </div>
 
-        {/* Recipe Card */}
-        <RecipeCard
-          recipe={recipe}
-          className="mb-4 lg:mb-6 flex-shrink-0"
-        />
+                <RecipeCard recipe={recipe} />
+              </div>
+            ))}
+          </div>
 
-        {/* Recipes where this item is used as input - scrollable */}
-        <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* Recipes where this item is used as input */}
           <UsedInRecipes itemId={item.id} itemName={item.name} />
         </div>
 

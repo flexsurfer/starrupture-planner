@@ -27,7 +27,8 @@ export const ItemsTable = ({
 
   // Mobile Card Component
   const ItemCard = ({ itemData }: { itemData: ItemTableData }) => {
-    const { item, producingBuilding, corporationUsage } = itemData;
+    const { item, producingBuildings, corporationUsage } = itemData;
+    const hasProductions = producingBuildings.length > 0;
     
     return (
       <div className="card bg-base-100 shadow-sm border border-base-300 p-3">
@@ -43,9 +44,19 @@ export const ItemsTable = ({
         </div>
 
         {/* Production Info */}
-        <div className="mb-2 flex flex-row gap-1">
+        <div className="mb-2 flex flex-row gap-1 items-start">
           <div className="text-xs text-base-content/70">Production:</div>
-          <div className="text-xs font-medium">{producingBuilding}</div>
+          {hasProductions ? (
+            <div className="flex flex-wrap gap-1">
+              {producingBuildings.map((buildingName) => (
+                <span key={buildingName} className="badge badge-ghost badge-xs">
+                  {buildingName}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs font-medium text-base-content/60">Raw Material</div>
+          )}
         </div>
 
         {/* Corporations */}
@@ -69,20 +80,24 @@ export const ItemsTable = ({
 
         {/* Actions */}
         <div className="flex flex-row gap-3">
-          <button 
-            className="btn btn-sm btn-outline flex-1"
-            onClick={() => openRecipeModal(item)}
-          >
-            Recipe
-          </button>
-          <button
-            className="btn btn-sm btn-primary flex-1"
-            onClick={() => {
-              dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, item.id]);
-            }}
-          >
-            Planner
-          </button>
+          {hasProductions && (
+            <button
+              className="btn btn-sm btn-outline flex-1"
+              onClick={() => openRecipeModal(item)}
+            >
+              Recipe
+            </button>
+          )}
+          {item.type !== 'raw' && (
+            <button
+              className="btn btn-sm btn-primary flex-1"
+              onClick={() => {
+                dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, item.id]);
+              }}
+            >
+              Planner
+            </button>
+          )}
         </div>
       </div>
     );
@@ -107,7 +122,7 @@ export const ItemsTable = ({
               <ItemRow
                 key={itemData.item.id}
                 item={itemData.item}
-                producingBuilding={itemData.producingBuilding}
+                producingBuildings={itemData.producingBuildings}
                 corporationUsage={itemData.corporationUsage}
                 getCorporationId={getCorporationId}
                 openRecipeModal={openRecipeModal}

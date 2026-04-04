@@ -9,9 +9,6 @@
         "components": [],
         "rewards": [
           {
-            "name": "Habitat"
-          },
-          {
             "name": "Basic Habitat Modules"
           },
           {
@@ -78,29 +75,11 @@
         "components": [
           {
             "id": "powder_calcium",
-            "points": 12
+            "points": 25
           },
           {
             "id": "powder_wolfram",
-            "points": 18
-          }
-        ],
-        "rewards": [
-          {
-            "name": "Lesser Dietician LEM"
-          },
-          {
-            "name": "Lesser Irrigator LEM"
-          }
-        ]
-      },
-      {
-        "level": 6,
-        "xp": 37800,
-        "components": [
-          {
-            "id": "ceramics",
-            "points": 25
+            "points": 12
           }
         ],
         "rewards": [
@@ -110,12 +89,31 @@
         ]
       },
       {
+        "level": 6,
+        "xp": 37800,
+        "components": [
+          {
+            "id": "tube",
+            "points": 30
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Helium-3 Extractor"
+          }
+        ]
+      },
+      {
         "level": 7,
         "xp": 69700,
         "components": [
           {
-            "id": "glass",
-            "points": 46
+            "id": "heat_sheet",
+            "points": 35
+          },
+          {
+            "id": "applicator",
+            "points": 70
           }
         ],
         "rewards": [
@@ -130,15 +128,15 @@
         "components": [
           {
             "id": "chemicals",
-            "points": 46
+            "points": 30
           }
         ],
         "rewards": [
           {
-            "name": "Dietician LEM"
+            "name": "Pressurizer"
           },
           {
-            "name": "Irrigator LEM"
+            "name": "Sulfur Extractor"
           }
         ]
       },
@@ -148,11 +146,11 @@
         "components": [
           {
             "id": "hardening_agent",
-            "points": 60
+            "points": 55
           },
           {
-            "id": "pressurized_helium",
-            "points": 20
+            "id": "goethiteore",
+            "points": 80
           }
         ],
         "rewards": [
@@ -168,11 +166,18 @@
           {
             "id": "liquid_helium",
             "points": 120
+          },
+          {
+            "id": "substancefhs-135-493",
+            "points": 180
           }
         ],
         "rewards": [
           {
-            "name": "Resister LEM"
+            "name": "Dietician LEM"
+          },
+          {
+            "name": "Irrigator LEM"
           }
         ]
       },
@@ -181,8 +186,34 @@
         "xp": 368300,
         "components": [
           {
-            "id": "ion_injector",
-            "points": 246
+            "id": "condenser",
+            "points": 500
+          },
+          {
+            "id": "nanosyringe",
+            "points": 300
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Oil Extractor"
+          },
+          {
+            "name": "Refinery"
+          }
+        ]
+      },
+      {
+        "level": 12,
+        "xp": 499200,
+        "components": [
+          {
+            "id": "syntheticprotein",
+            "points": 280
+          },
+          {
+            "id": "organiccompound",
+            "points": 150
           }
         ],
         "rewards": [
@@ -191,6 +222,40 @@
           },
           {
             "name": "Greater Dietician LEM"
+          }
+        ]
+      },
+      {
+        "level": 13,
+        "xp": 658000,
+        "components": [
+          {
+            "id": "rnastabilizer",
+            "points": 450
+          },
+          {
+            "id": "biofilament",
+            "points": 700
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (70)"
+          }
+        ]
+      },
+      {
+        "level": 14,
+        "xp": 847400,
+        "components": [
+          {
+            "id": "syntheticdna",
+            "points": 900
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (100)"
           }
         ]
       }
@@ -266,7 +331,7 @@
           },
           {
             "id": "titanium_sheet",
-            "points": 16
+            "points": 15
           }
         ],
         "rewards": [
@@ -281,7 +346,7 @@
         "components": [
           {
             "id": "titanium_beam",
-            "points": 35
+            "points": 25
           },
           {
             "id": "titanium_sheet",
@@ -290,7 +355,7 @@
         ],
         "rewards": [
           {
-            "name": "Greater Miner LEM"
+            "name": "Recycler"
           }
         ]
       },
@@ -300,12 +365,16 @@
         "components": [
           {
             "id": "tube",
-            "points": 25
+            "points": 15
+          },
+          {
+            "id": "ceramics",
+            "points": 45
           }
         ],
         "rewards": [
           {
-            "name": "Helium-3 Extractor"
+            "name": "Greater Miner LEM"
           }
         ]
       },
@@ -315,30 +384,11 @@
         "components": [
           {
             "id": "glass",
-            "points": 70
+            "points": 35
           },
           {
             "id": "synthetic_silicon",
-            "points": 46
-          }
-        ],
-        "rewards": [
-          {
-            "name": "Large Habitat"
-          }
-        ]
-      },
-      {
-        "level": 8,
-        "xp": 116000,
-        "components": [
-          {
-            "id": "electronics",
-            "points": 116
-          },
-          {
-            "id": "synthetic_silicon",
-            "points": 46
+            "points": 50
           }
         ],
         "rewards": [
@@ -348,20 +398,39 @@
         ]
       },
       {
-        "level": 9,
-        "xp": 179400,
+        "level": 8,
+        "xp": 116000,
         "components": [
           {
+            "id": "electronics",
+            "points": 80
+          },
+          {
             "id": "impeller",
-            "points": 120
+            "points": 100
           }
         ],
         "rewards": [
           {
-            "name": "Refinery"
+            "name": "Quartz Ore (30)"
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "xp": 179400,
+        "components": [
+          {
+            "id": "turbine",
+            "points": 300
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Laser Drill"
           },
           {
-            "name": "Sulfur Extractor"
+            "name": "Pyro Forge"
           }
         ]
       },
@@ -370,8 +439,12 @@
         "xp": 262600,
         "components": [
           {
-            "id": "turbine",
-            "points": 175
+            "id": "pump",
+            "points": 400
+          },
+          {
+            "id": "goethitepowder",
+            "points": 100
           }
         ],
         "rewards": [
@@ -386,7 +459,11 @@
         "components": [
           {
             "id": "scanner",
-            "points": 246
+            "points": 500
+          },
+          {
+            "id": "epoxy",
+            "points": 180
           }
         ],
         "rewards": [
@@ -395,6 +472,78 @@
           },
           {
             "name": "Greater Lifegiver LEM"
+          }
+        ]
+      },
+      {
+        "level": 12,
+        "xp": 499200,
+        "components": [
+          {
+            "id": "uberfilament",
+            "points": 210
+          },
+          {
+            "id": "pseudorubberinsulator",
+            "points": 270
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Constructorizer"
+          }
+        ]
+      },
+      {
+        "level": 13,
+        "xp": 658000,
+        "components": [
+          {
+            "id": "plasticdust",
+            "points": 350
+          },
+          {
+            "id": "scafolding",
+            "points": 600
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Facturer"
+          }
+        ]
+      },
+      {
+        "level": 14,
+        "xp": 847400,
+        "components": [
+          {
+            "id": "airlock",
+            "points": 600
+          },
+          {
+            "id": "converter",
+            "points": 800
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (70)"
+          }
+        ]
+      },
+      {
+        "level": 15,
+        "xp": 1070100,
+        "components": [
+          {
+            "id": "dome",
+            "points": 1000
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (100)"
           }
         ]
       }
@@ -417,6 +566,9 @@
           },
           {
             "name": "Platform Modules"
+          },
+          {
+            "name": "Orbital Cargo Launcher"
           }
         ]
       },
@@ -431,7 +583,7 @@
         ],
         "rewards": [
           {
-            "name": "UPP-7 Pistol"
+            "name": "Equipment Upgrade Station"
           }
         ]
       },
@@ -450,7 +602,7 @@
         ],
         "rewards": [
           {
-            "name": "Grenade"
+            "name": "Dash"
           }
         ]
       },
@@ -459,17 +611,17 @@
         "xp": 6400,
         "components": [
           {
-            "id": "titanium_sheet",
+            "id": "wolfram_plate",
             "points": 15
           },
           {
-            "id": "wolfram_plate",
+            "id": "titanium_sheet",
             "points": 15
           }
         ],
         "rewards": [
           {
-            "name": "Equipment Upgrade Station"
+            "name": "Grenade"
           }
         ]
       },
@@ -498,7 +650,7 @@
         "components": [
           {
             "id": "stabilizer",
-            "points": 35
+            "points": 60
           }
         ],
         "rewards": [
@@ -517,7 +669,7 @@
           },
           {
             "id": "stabilizer",
-            "points": 35
+            "points": 45
           }
         ],
         "rewards": [
@@ -531,8 +683,12 @@
         "xp": 116000,
         "components": [
           {
-            "id": "applicator",
-            "points": 46
+            "id": "electronics",
+            "points": 70
+          },
+          {
+            "id": "goethiteore",
+            "points": 110
           }
         ],
         "rewards": [
@@ -546,12 +702,12 @@
         "xp": 179400,
         "components": [
           {
-            "id": "battery",
-            "points": 120
+            "id": "valve",
+            "points": 150
           },
           {
-            "id": "nozzle",
-            "points": 45
+            "id": "uberwolfram",
+            "points": 100
           }
         ],
         "rewards": [
@@ -565,8 +721,12 @@
         "xp": 262600,
         "components": [
           {
-            "id": "lens",
-            "points": 175
+            "id": "reinforcedhousing",
+            "points": 130
+          },
+          {
+            "id": "accumulator",
+            "points": 220
           }
         ],
         "rewards": [
@@ -580,8 +740,31 @@
         "xp": 368300,
         "components": [
           {
-            "id": "condenser",
-            "points": 246
+            "id": "ion_injector",
+            "points": 550
+          },
+          {
+            "id": "onboardinstruments",
+            "points": 150
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (50)"
+          }
+        ]
+      },
+      {
+        "level": 12,
+        "xp": 499200,
+        "components": [
+          {
+            "id": "carbonsonar",
+            "points": 370
+          },
+          {
+            "id": "ionstabilizer",
+            "points": 300
           }
         ],
         "rewards": [
@@ -590,6 +773,40 @@
           },
           {
             "name": "Greater Lifegiver LEM"
+          }
+        ]
+      },
+      {
+        "level": 13,
+        "xp": 658000,
+        "components": [
+          {
+            "id": "trackingdevice",
+            "points": 800
+          },
+          {
+            "id": "quantumtranqualizer",
+            "points": 450
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (70)"
+          }
+        ]
+      },
+      {
+        "level": 14,
+        "xp": 847400,
+        "components": [
+          {
+            "id": "ionbomb",
+            "points": 1000
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (100)"
           }
         ]
       }
@@ -647,17 +864,17 @@
         "xp": 6400,
         "components": [
           {
-            "id": "calcite_sheets",
-            "points": 15
-          },
-          {
             "id": "block_calcium",
             "points": 4
+          },
+          {
+            "id": "calcite_sheets",
+            "points": 15
           }
         ],
         "rewards": [
           {
-            "name": "Lesser Infiltrator LEM"
+            "name": "Extendable Walkway"
           }
         ]
       },
@@ -672,7 +889,7 @@
         ],
         "rewards": [
           {
-            "name": "Wind Turbine v.1"
+            "name": "Development Station"
           }
         ]
       },
@@ -681,13 +898,17 @@
         "xp": 37800,
         "components": [
           {
-            "id": "heat_sheet",
-            "points": 25
+            "id": "rotor",
+            "points": 15
+          },
+          {
+            "id": "glass",
+            "points": 55
           }
         ],
         "rewards": [
           {
-            "name": "Base Core Amplifier v.1"
+            "name": "Lesser Infiltrator LEM"
           }
         ]
       },
@@ -697,16 +918,16 @@
         "components": [
           {
             "id": "chemicals",
-            "points": 70
+            "points": 30
           },
           {
-            "id": "helium",
-            "points": 5
+            "id": "nozzle",
+            "points": 150
           }
         ],
         "rewards": [
           {
-            "name": "Greater Infiltrator LEM"
+            "name": "Base Core Amplifier v.1"
           }
         ]
       },
@@ -715,13 +936,17 @@
         "xp": 116000,
         "components": [
           {
-            "id": "valve",
-            "points": 100
+            "id": "battery",
+            "points": 70
+          },
+          {
+            "id": "goethiteore",
+            "points": 110
           }
         ],
         "rewards": [
           {
-            "name": "Solar Generator v.2"
+            "name": "Infiltrator LEM"
           }
         ]
       },
@@ -730,13 +955,17 @@
         "xp": 179400,
         "components": [
           {
-            "id": "electromagnetic_coil",
-            "points": 120
+            "id": "goethiteingot",
+            "points": 80
+          },
+          {
+            "id": "generator",
+            "points": 180
           }
         ],
         "rewards": [
           {
-            "name": "Base Core Amplifier v.2"
+            "name": "Wind Turbine v.1"
           }
         ]
       },
@@ -745,13 +974,17 @@
         "xp": 262600,
         "components": [
           {
-            "id": "generator",
-            "points": 175
+            "id": "reinforcedhousing",
+            "points": 140
+          },
+          {
+            "id": "pressure_tank",
+            "points": 280
           }
         ],
         "rewards": [
           {
-            "name": "Wind Turbine v.2"
+            "name": "Quartz Ore (40)"
           }
         ]
       },
@@ -761,12 +994,84 @@
         "components": [
           {
             "id": "laser_emitter",
-            "points": 246
+            "points": 500
+          },
+          {
+            "id": "grenade",
+            "points": 190
           }
         ],
         "rewards": [
           {
             "name": "Inventory Upgrade (+8)"
+          }
+        ]
+      },
+      {
+        "level": 12,
+        "xp": 499200,
+        "components": [
+          {
+            "id": "aerogel",
+            "points": 180
+          },
+          {
+            "id": "basicfuel",
+            "points": 220
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Greater Infiltrator LEM"
+          }
+        ]
+      },
+      {
+        "level": 13,
+        "xp": 658000,
+        "components": [
+          {
+            "id": "rtsc",
+            "points": 550
+          },
+          {
+            "id": "anti-radiationcovers",
+            "points": 350
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Chemical Generator"
+          }
+        ]
+      },
+      {
+        "level": 14,
+        "xp": 847400,
+        "components": [
+          {
+            "id": "cyclotrone",
+            "points": 800
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (70)"
+          }
+        ]
+      },
+      {
+        "level": 15,
+        "xp": 1070100,
+        "components": [
+          {
+            "id": "rtscgenerator",
+            "points": 1000
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (100)"
           }
         ]
       }
@@ -783,9 +1088,6 @@
         "rewards": [
           {
             "name": "Corporate Terminal"
-          },
-          {
-            "name": "Orbital Cargo Launcher"
           },
           {
             "name": "Rail v.1"
@@ -856,12 +1158,12 @@
         "xp": 17600,
         "components": [
           {
-            "id": "titanium_housing",
-            "points": 35
-          },
-          {
             "id": "wolfram_plate",
             "points": 12
+          },
+          {
+            "id": "titanium_housing",
+            "points": 35
           }
         ],
         "rewards": [
@@ -878,17 +1180,16 @@
         "xp": 37800,
         "components": [
           {
-            "id": "heat_sheet",
-            "points": 25
-          },
-          {
-            "id": "titanium_housing",
-            "points": 25
+            "id": "stator",
+            "points": 50
           }
         ],
         "rewards": [
           {
-            "name": "Rail v.2"
+            "name": "Zipline"
+          },
+          {
+            "name": "Zipline Pole"
           }
         ]
       },
@@ -897,8 +1198,12 @@
         "xp": 69700,
         "components": [
           {
-            "id": "stator",
-            "points": 46
+            "id": "heat_sheet",
+            "points": 40
+          },
+          {
+            "id": "synthetic_silicon",
+            "points": 50
           }
         ],
         "rewards": [
@@ -915,27 +1220,8 @@
         "xp": 116000,
         "components": [
           {
-            "id": "nozzle",
-            "points": 46
-          },
-          {
             "id": "supermagnet",
-            "points": 116
-          }
-        ],
-        "rewards": [
-          {
-            "name": "Storage Depot v.2"
-          }
-        ]
-      },
-      {
-        "level": 9,
-        "xp": 179400,
-        "components": [
-          {
-            "id": "electronics",
-            "points": 46
+            "points": 90
           },
           {
             "id": "hardening_agent",
@@ -944,7 +1230,26 @@
         ],
         "rewards": [
           {
-            "name": "Large Personal Storage"
+            "name": "Roundabout Rail Connector"
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "xp": 179400,
+        "components": [
+          {
+            "id": "electromagnetic_coil",
+            "points": 110
+          },
+          {
+            "id": "goethitelattice",
+            "points": 90
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Teleporter"
           }
         ]
       },
@@ -953,12 +1258,12 @@
         "xp": 262600,
         "components": [
           {
-            "id": "pressurized_helium",
-            "points": 10
+            "id": "lens",
+            "points": 260
           },
           {
-            "id": "pump",
-            "points": 175
+            "id": "reinforcedframe",
+            "points": 150
           }
         ],
         "rewards": [
@@ -976,12 +1281,20 @@
         "components": [
           {
             "id": "electromagnet",
-            "points": 246
+            "points": 350
+          },
+          {
+            "id": "aerogel",
+            "points": 200
+          },
+          {
+            "id": "uberoil",
+            "points": 300
           }
         ],
         "rewards": [
           {
-            "name": "Rail v.3"
+            "name": "Quartz Ore (50)"
           }
         ]
       },
@@ -990,8 +1303,16 @@
         "xp": 499200,
         "components": [
           {
-            "id": "pressure_tank",
-            "points": 210
+            "id": "heatshield",
+            "points": 400
+          },
+          {
+            "id": "rocketfuel",
+            "points": 250
+          },
+          {
+            "id": "superconductor",
+            "points": 500
           }
         ],
         "rewards": [
@@ -1005,13 +1326,32 @@
         "xp": 658000,
         "components": [
           {
-            "id": "superconductor",
-            "points": 400
+            "id": "rocketengine",
+            "points": 800
+          },
+          {
+            "id": "ionthrusters",
+            "points": 600
           }
         ],
         "rewards": [
           {
-            "name": "Expandable Storage"
+            "name": "Quartz Ore (70)"
+          }
+        ]
+      },
+      {
+        "level": 14,
+        "xp": 847400,
+        "components": [
+          {
+            "id": "satellitebody",
+            "points": 1000
+          }
+        ],
+        "rewards": [
+          {
+            "name": "Quartz Ore (100)"
           }
         ]
       }

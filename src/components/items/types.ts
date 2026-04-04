@@ -25,7 +25,7 @@ export interface CorporationUsage {
 /** Item row view-model used by item table subscriptions/components. */
 export interface ItemTableData {
   item: Item;
-  producingBuilding: string;
+  producingBuildings: string[];
   corporationUsage: CorporationUsage[];
 }
 

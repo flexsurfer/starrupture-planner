@@ -7,7 +7,7 @@ import { EVENT_IDS } from '../../../state/event-ids';
 
 interface ItemRowProps {
   item: Item;
-  producingBuilding: string;
+  producingBuildings: string[];
   corporationUsage: CorporationUsage[];
   getCorporationId: (name: string) => string;
   openRecipeModal: (item: Item) => void;
@@ -15,11 +15,13 @@ interface ItemRowProps {
 
 export const ItemRow = ({ 
   item, 
-  producingBuilding, 
+  producingBuildings, 
   corporationUsage, 
   getCorporationId,
   openRecipeModal 
 }: ItemRowProps) => {
+  const hasProductions = producingBuildings.length > 0;
+
   return (
     <tr className="hover">
       {/* Item Column - Icon + Name */}
@@ -39,18 +41,30 @@ export const ItemRow = ({
       
       {/* Production Column */}
       <td className="py-1.5">
-        <div className="text-xs">{producingBuilding}</div>
+        {hasProductions ? (
+          <div className="flex flex-wrap gap-1">
+            {producingBuildings.map((buildingName) => (
+              <span key={buildingName} className="badge badge-ghost badge-sm text-xs">
+                {buildingName}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs text-base-content/60">Raw Material</div>
+        )}
       </td>
       
       {/* Actions Column */}
       <td className="py-1.5">
         <div className="flex gap-1">
-          <button 
-            className="btn btn-xs btn-outline"
-            onClick={() => openRecipeModal(item)}
-          >
-            Recipe
-          </button>
+          {hasProductions && (
+            <button
+              className="btn btn-xs btn-outline"
+              onClick={() => openRecipeModal(item)}
+            >
+              Recipe
+            </button>
+          )}
           {item.type !== 'raw' && (
             <button
               className="btn btn-xs btn-primary"

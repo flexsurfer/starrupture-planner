@@ -6,12 +6,10 @@ import type { BuildingSectionType } from '../types';
 // These are simple, reusable checks for specific building characteristics.
 // ============================================================================
 
-/** Buildings that extract raw resources (no inputs required) */
-const EXTRACTOR_IDS = new Set(['ore_excavator', 'sulfur_extractor', 'helium_extractor']);
-
-const isExtractor = (b: Building) => EXTRACTOR_IDS.has(b.id);
+/** Buildings that extract raw resources via a recipe with no inputs */
+const isRawExtractor = (b: Building) => b.type === 'production' && (b.recipes || []).some((recipe) => recipe.inputs.length === 0);
 const isReceiver = (b: Building) => b.id === 'package_receiver';
-const isDispatcher = (b: Building) => b.id === 'orbital_cargo_launcher' || b.id === 'package_dispatcher';;
+const isDispatcher = (b: Building) => b.id === 'orbital_cargo_launcher' || b.id === 'exportertier2' || b.id === 'package_dispatcher';
 const isDroneMerger = (b: Building) => b.id === 'drone_merger_3_to_1';
 
 // ============================================================================
@@ -29,7 +27,7 @@ export function isBuildingAvailableForSection(building: Building, section: Build
     case 'inputs':
       // Extractors and receivers bring resources into the base
       // Drone merger can be used for input
-      return isExtractor(building) || isReceiver(building) || isDroneMerger(building) || building.type === 'storage';
+      return isRawExtractor(building) || isReceiver(building) || isDroneMerger(building) || building.type === 'storage';
 
     case 'energy':
       // Generators produce power, amplifiers increase heat capacity
@@ -37,7 +35,7 @@ export function isBuildingAvailableForSection(building: Building, section: Build
 
     case 'production':
       // Production buildings (except extractors) and storage
-      return (building.type === 'production' && !isExtractor(building)) || building.type === 'storage';
+      return (building.type === 'production' && !isRawExtractor(building)) || building.type === 'storage';
 
     case 'outputs':
       // Dispatchers send items out, storage can also be used for output staging
@@ -56,8 +54,7 @@ export function isBuildingAvailableForSection(building: Building, section: Build
 /**
  * Returns all buildings that can be added to a specific section.
  */
-export function getAvailableBuildingsForSection(allBuildings: Building[],sectionType: BuildingSectionType): Building[] {
-  
+export function getAvailableBuildingsForSection(allBuildings: Building[], sectionType: BuildingSectionType): Building[] {
   return allBuildings.filter(building => isBuildingAvailableForSection(building, sectionType));
 }
 

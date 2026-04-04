@@ -6,10 +6,11 @@ import {
   ItemsSearch, 
   ItemsStats, 
   ItemsTable,
-  findItemRecipe 
+  findItemRecipes 
 } from "./items";
 import { RecipeModal } from "./ui";
-import type { Item, Recipe, Building } from "../state/db";
+import type { Item, Building } from "../state/db";
+import type { ItemRecipe } from "./items";
 import { useSubscription } from "@flexsurfer/reflex";
 import { SUB_IDS } from "../state/sub-ids";
 
@@ -25,40 +26,32 @@ const ItemsPage = () => {
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     item: Item | null;
-    recipe: Recipe | null;
-    building: Building | null;
+    recipes: ItemRecipe[];
   }>({
     isOpen: false,
     item: null,
-    recipe: null,
-    building: null,
+    recipes: [],
   });
 
   // Get data for modal
   const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_LIST]);
 
   const openRecipeModal = (item: Item) => {
-    const recipeData = findItemRecipe(item.id, buildings);
+    const recipes = findItemRecipes(item.id, buildings);
+    if (recipes.length === 0) return;
 
-    if (recipeData) {
-      setModalState({
-        isOpen: true,
-        item,
-        recipe: recipeData.recipe,
-        building: recipeData.building,
-      });
-    } else {
-      // Handle case where no recipe exists (raw materials)
-      console.log('No recipe found for:', item.name);
-    }
+    setModalState({
+      isOpen: true,
+      item,
+      recipes,
+    });
   };
 
   const closeRecipeModal = () => {
     setModalState({
       isOpen: false,
       item: null,
-      recipe: null,
-      building: null,
+      recipes: [],
     });
   };
 
@@ -95,8 +88,7 @@ const ItemsPage = () => {
         isOpen={modalState.isOpen}
         onClose={closeRecipeModal}
         item={modalState.item}
-        recipe={modalState.recipe}
-        building={modalState.building}
+        itemRecipes={modalState.recipes}
       />
     </div>
   );

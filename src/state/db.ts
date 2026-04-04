@@ -10,12 +10,17 @@ import itemsDataPlaytest from '../data/playtest/items_catalog.json';
 import buildingsDataPlaytest from '../data/playtest/buildings_and_recipes.json';
 import corporationsDataPlaytest from '../data/playtest/corporations_components.json';
 
+import itemsDataUpdate1PTB from '../data/update1_PTB/items_catalog.json';
+import buildingsDataUpdate1PTB from '../data/update1_PTB/buildings_and_recipes.json';
+import corporationsDataUpdate1PTB from '../data/update1_PTB/corporations_components.json';
+
 // Data version types and constants
-export type DataVersion = 'earlyaccess' | 'playtest';
+export type DataVersion = 'earlyaccess' | 'playtest' | 'update1_PTB';
 
 const DATA_VERSIONS: { id: DataVersion; label: string }[] = [
     { id: 'earlyaccess', label: 'Early Access' },
     { id: 'playtest', label: 'Playtest' },
+    { id: 'update1_PTB', label: 'Update 1 PTB' },
 ];
 
 const DEFAULT_DATA_VERSION: DataVersion = 'earlyaccess';
@@ -31,6 +36,11 @@ const versionedData = {
         items: itemsDataPlaytest,
         buildings: buildingsDataPlaytest,
         corporations: corporationsDataPlaytest
+    },
+    update1_PTB: {
+        items: itemsDataUpdate1PTB,
+        buildings: buildingsDataUpdate1PTB,
+        corporations: corporationsDataUpdate1PTB
     },
 };
 
@@ -64,6 +74,7 @@ export interface CoreLevel {
 export interface Building {
     id: string;
     name: string;
+    upgrade?: string; // Optional id of upgraded building variant (for example v.2)
     type?: string;
     power?: number;
     heat?: number;
@@ -142,6 +153,7 @@ export interface Production {
     targetAmount: number;
     active?: boolean;
     corporationLevel?: CorporationLevelSelection | null;
+    recipeSelections?: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
     inputs?: BaseBuilding[]; // Snapshot of BaseBuilding inputs (not linked to base)
     status?: 'active' | 'inactive' | 'error'; // Plan status: active when running, inactive when stopped, error when inputs insufficient
     requiredBuildings?: PlanRequiredBuilding[]; // Aggregated building requirements, populated on save
@@ -185,6 +197,7 @@ export interface CreateProductionPlanModalState {
     targetAmount: number;
     selectedCorporationLevel: CorporationLevelSelection | null;
     selectedInputIds: string[];
+    recipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
     matchInputs: boolean;
 }
 
@@ -208,6 +221,7 @@ export interface AppState {
     uiActiveTab: TabType;
     plannerSelectedItemId: string | null;
     plannerSelectedCorporationLevel: CorporationLevelSelection | null;
+    plannerRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
     plannerTargetAmount: number;
     basesList: Base[];
     energyGroups: EnergyGroup[];
@@ -244,6 +258,7 @@ const appState: AppState = {
     itemsSearchTerm: '',
     plannerSelectedItemId: null,
     plannerSelectedCorporationLevel: null,
+    plannerRecipeSelections: {},
     plannerTargetAmount: 60,
     basesSelectedBaseId: null,
     uiConfirmationDialog: {
@@ -265,6 +280,7 @@ const appState: AppState = {
         targetAmount: 60,
         selectedCorporationLevel: null,
         selectedInputIds: [],
+        recipeSelections: {},
         matchInputs: false,
     },
 };

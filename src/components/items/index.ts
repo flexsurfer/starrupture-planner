@@ -16,7 +16,7 @@ export { CorporationUsageBadge } from "./components/CorporationUsageBadge";
 
 // Hooks and utilities
 export { useItemsData, getCategoryDisplayName, getCategoryBadgeClass } from "./hooks/useItemsData";
-export { findItemRecipe, hasRecipe } from "./utils/recipeUtils";
+export { findItemRecipe, findItemRecipes, hasRecipe } from "./utils/recipeUtils";
 export type { ItemRecipe } from "./utils/recipeUtils";
 
 // Types
