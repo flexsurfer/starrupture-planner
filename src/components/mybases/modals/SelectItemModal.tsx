@@ -3,6 +3,7 @@ import { useSubscription } from '@flexsurfer/reflex';
 import type { Building as DbBuilding, Item } from '../../../state/db';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { ItemImage } from '../../ui';
+import { isRawExtractor } from '../utils';
 
 interface SelectItemModalProps {
   isOpen: boolean;
@@ -130,11 +131,11 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
               step="0.01"
               required
             />
-            <div className="label">
-              <span className="label-text-alt text-base-content/30 text-xs">
-                Note: For extractors, options for output rate are 60, 120, or 240 per minute
-              </span>
-            </div>
+            {isRawExtractor(building) && (
+              <p className="mt-1.5 text-xs text-base-content/50 leading-snug w-full min-w-0 whitespace-normal">
+                Output depends on node purity and extractor tier. Enter your in-game value.
+              </p>
+            )}
           </div>
 
           <div className="modal-action">

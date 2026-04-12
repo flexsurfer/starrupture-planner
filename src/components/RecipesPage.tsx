@@ -50,11 +50,11 @@ const RecipesPage = () => {
         <div className="card-body">
           {/* Building Header - Clickable & Sticky */}
           <div
-            className="flex items-center gap-4 mb-4 cursor-pointer hover:bg-base-200 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg transition-colors sticky top-0 z-10 bg-base-100"
+            className="flex items-start gap-4 mb-4 cursor-pointer hover:bg-base-200 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg transition-colors sticky top-0 z-10 bg-base-100"
             onClick={onToggle}
           >
             <BuildingIcon building={building} />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h2 className="card-title text-xl">{building.name}</h2>
               <div className="flex gap-2 flex-wrap items-center">
                 <div className="badge badge-outline">

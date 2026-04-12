@@ -87,8 +87,8 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
 
                     {normalizedOptions.map(({ entry, selectedOption }) => (
                         <div key={entry.itemId} className="rounded-md border border-base-300 bg-base-200/40 p-2 mb-2 last:mb-0">
-                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                                <div className="flex items-center gap-2 min-w-0" title={`Selected building: ${selectedOption.buildingName}`}>
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                                <div className="flex items-start gap-2 min-w-0" title={`Selected building: ${selectedOption.buildingName}`}>
                                     <div className="flex flex-col items-center gap-1 flex-shrink-0">
                                         <div className="badge badge-success badge-xs font-medium">
                                             {selectedOption.outputRate}/min

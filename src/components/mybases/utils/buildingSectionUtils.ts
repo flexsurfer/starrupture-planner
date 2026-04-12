@@ -7,10 +7,12 @@ import type { BuildingSectionType } from '../types';
 // ============================================================================
 
 /** Buildings that extract raw resources via a recipe with no inputs */
-const isRawExtractor = (b: Building) => b.type === 'production' && (b.recipes || []).some((recipe) => recipe.inputs.length === 0);
+export const isRawExtractor = (b: Building) =>
+  b.type === 'production' && (b.recipes || []).some((recipe) => recipe.inputs.length === 0);
 const isReceiver = (b: Building) => b.id === 'package_receiver';
 const isDispatcher = (b: Building) => b.id === 'orbital_cargo_launcher' || b.id === 'exportertier2' || b.id === 'package_dispatcher';
 const isDroneMerger = (b: Building) => b.id === 'drone_merger_3_to_1';
+const isTeleporter = (b: Building) => b.id === 'teleporter';
 
 // ============================================================================
 // Section Classification
@@ -43,8 +45,8 @@ export function isBuildingAvailableForSection(building: Building, section: Build
       return isDispatcher(building) || building.type === 'storage' || isDroneMerger(building);
 
     case 'infrastructure':
-      // Habitat and defense buildings
-      return building.type === 'habitat' || building.type === 'defense';
+      // Habitat, defense, and teleporter
+      return building.type === 'habitat' || building.type === 'defense' || isTeleporter(building);
 
     default:
       return false;
@@ -68,7 +70,7 @@ export function getAvailableBuildingsForSection(allBuildings: Building[], sectio
  * Priority order:
  * 1. 'inputs' - Extractors, receivers, and drone_merger_3_to_1
  * 2. 'energy' - Generators and temperature
- * 3. 'infrastructure' - Habitat and defense
+ * 3. 'infrastructure' - Habitat, defense, and teleporter
  * 4. 'production' - Production buildings (not extractors) and storage
  * 5. 'outputs' - Dispatchers, storage, and drone_merger_3_to_1
  * 

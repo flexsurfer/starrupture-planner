@@ -1280,7 +1280,7 @@
         "inputs": [
           {
             "id": "block_calcium",
-            "amount_per_minute": 60
+            "amount_per_minute": 40
           }
         ]
       },
@@ -1363,7 +1363,7 @@
       {
         "output": {
           "id": "heat_sheet",
-          "amount_per_minute": 45
+          "amount_per_minute": 75
         },
         "inputs": [
           {
@@ -1828,21 +1828,21 @@
       {
         "output": {
           "id": "ore_wolfram",
-          "amount_per_minute": 300
+          "amount_per_minute": 180
         },
         "inputs": []
       },
       {
         "output": {
           "id": "ore_calcium",
-          "amount_per_minute": 300
+          "amount_per_minute": 180
         },
         "inputs": []
       },
       {
         "output": {
           "id": "ore_titanium",
-          "amount_per_minute": 300
+          "amount_per_minute": 180
         },
         "inputs": []
       }
@@ -2573,7 +2573,7 @@
           },
           {
             "id": "ore_sulfur",
-            "amount_per_minute": 120
+            "amount_per_minute": 90
           },
           {
             "id": "powder_calcium",
@@ -2617,10 +2617,6 @@
           },
           {
             "id": "chemicals",
-            "amount_per_minute": 20
-          },
-          {
-            "id": "refinedoil",
             "amount_per_minute": 20
           }
         ]

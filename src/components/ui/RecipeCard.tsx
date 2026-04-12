@@ -46,9 +46,9 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
   return (
     <div className={`card bg-base-200 shadow-sm border border-base-300 ${className}`}>
       <div className="card-body p-4">
-        <div className="flex items-center gap-4 mb-3">
+        <div className="flex items-start gap-4 mb-3">
           {/* Output */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 shrink-0">
             <h4 className="text-sm font-medium text-base-content/70">Output</h4>
             <RecipeItemIcon 
               itemId={recipe.output.id} 
@@ -58,10 +58,10 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
             />
           </div>
           
-          {/* Arrow */}
-          <div className="flex items-center justify-center px-2">
+          {/* Arrow — stretch so the glyph stays vertically centered while columns stay top-aligned */}
+          <div className="flex items-center justify-center px-2 self-stretch">
             <svg 
-              className="w-6 h-6 text-base-content/50" 
+              className="w-6 h-6 text-base-content/50 shrink-0" 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -71,11 +71,11 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
           </div>
 
           {/* Inputs */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
             <h4 className="text-sm font-medium text-base-content/70">
               {recipe.inputs.length > 0 ? "Inputs" : "Raw Material"}
             </h4>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-start">
               {recipe.inputs.length > 0 ? (
                 recipe.inputs.map((input, idx) => (
                   <RecipeItemIcon 

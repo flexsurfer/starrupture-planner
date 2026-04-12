@@ -8,6 +8,7 @@ export {
   isBuildingAvailableForSection,
   getAvailableBuildingsForSection,
   getSectionTypeForBuilding,
+  isRawExtractor,
 } from './buildingSectionUtils';
 
 export {
