@@ -1,59 +1,16 @@
 import { initAppDb } from '@flexsurfer/reflex';
-import { buildItemsMap, parseCorporations, extractCategories, type RawCorporationsData } from './data-utils';
+import type { RawCorporationsData } from './data-utils';
+import type { DataVersion } from './gameDataVersion';
+import { DATA_VERSIONS, DEFAULT_DATA_VERSION } from './gameDataVersion';
 
-// Import versioned data
-import itemsDataEarlyAccess from '../data/earlyaccess/items_catalog.json';
-import buildingsDataEarlyAccess from '../data/earlyaccess/buildings_and_recipes.json';
-import corporationsDataEarlyAccess from '../data/earlyaccess/corporations_components.json';
+export type { DataVersion } from './gameDataVersion';
+export { DATA_VERSIONS, DEFAULT_DATA_VERSION, isValidDataVersion } from './gameDataVersion';
 
-import itemsDataPlaytest from '../data/playtest/items_catalog.json';
-import buildingsDataPlaytest from '../data/playtest/buildings_and_recipes.json';
-import corporationsDataPlaytest from '../data/playtest/corporations_components.json';
-
-import itemsDataUpdate1PTB from '../data/update1_PTB/items_catalog.json';
-import buildingsDataUpdate1PTB from '../data/update1_PTB/buildings_and_recipes.json';
-import corporationsDataUpdate1PTB from '../data/update1_PTB/corporations_components.json';
-
-import itemsDataUpdate1 from '../data/update1/items_catalog.json';
-import buildingsDataUpdate1 from '../data/update1/buildings_and_recipes.json';
-import corporationsDataUpdate1 from '../data/update1/corporations_components.json';
-
-// Data version types and constants
-export type DataVersion = 'earlyaccess' | 'playtest' | 'update1_PTB' | 'update1';
-
-const DATA_VERSIONS: { id: DataVersion; label: string }[] = [
-    { id: 'earlyaccess', label: 'Early Access' },
-    { id: 'playtest', label: 'Playtest' },
-    { id: 'update1_PTB', label: 'Update 1 PTB' },
-    { id: 'update1', label: 'Update 1' },
-];
-
-const DEFAULT_DATA_VERSION: DataVersion = 'earlyaccess';
-
-// Versioned data maps
-const versionedData = {
-    earlyaccess: {
-        items: itemsDataEarlyAccess,
-        buildings: buildingsDataEarlyAccess,
-        corporations: corporationsDataEarlyAccess
-    },
-    playtest: {
-        items: itemsDataPlaytest,
-        buildings: buildingsDataPlaytest,
-        corporations: corporationsDataPlaytest
-    },
-    update1_PTB: {
-        items: itemsDataUpdate1PTB,
-        buildings: buildingsDataUpdate1PTB,
-        corporations: corporationsDataUpdate1PTB
-    },
-    update1: {
-        items: itemsDataUpdate1,
-        buildings: buildingsDataUpdate1,
-        corporations: corporationsDataUpdate1
-    },
+export type AppVersionedGameData = {
+    items: Item[];
+    buildings: Building[];
+    corporations: RawCorporationsData;
 };
-
 
 export interface Item {
     id: string;
@@ -214,11 +171,8 @@ export interface CreateProductionPlanModalState {
 export interface AppState {
     appDataVersion: DataVersion;
     appDataVersions: { id: DataVersion; label: string }[];
-    appVersionedData: Record<DataVersion, {
-        items: Item[];
-        buildings: Building[];
-        corporations: RawCorporationsData;
-    }>;
+    /** Populated as versions are fetched from `/game-data/{version}/`. */
+    appVersionedData: Partial<Record<DataVersion, AppVersionedGameData>>;
     itemsList: Item[];
     itemsById: Record<string, Item>;
     itemsSelectedCategory: string;
@@ -228,6 +182,8 @@ export interface AppState {
     buildingsList: Building[];
     corporationsList: Corporation[];
     uiTheme: 'light' | 'dark';
+    /** True while a user-requested game-data fetch is in flight (not used for `APP_INIT` load). */
+    uiGameDataLoadPending: boolean;
     uiActiveTab: TabType;
     plannerSelectedItemId: string | null;
     plannerSelectedCorporationLevel: CorporationLevelSelection | null;
@@ -240,28 +196,22 @@ export interface AppState {
     productionPlanModalState: CreateProductionPlanModalState;
 }
 
-
-// Initialize with default version data
-const defaultData = versionedData[DEFAULT_DATA_VERSION];
-const defaultItems = defaultData.items as Item[];
-const defaultBuildings = defaultData.buildings as Building[];
-const defaultCorporations = parseCorporations(defaultData.corporations as RawCorporationsData);
-
+/** Before `/game-data/{version}/` JSON loads; `APP_INIT` sets `appDataVersion` from coeffects. */
 const appState: AppState = {
-    //Data
     appDataVersion: DEFAULT_DATA_VERSION,
     appDataVersions: DATA_VERSIONS,
-    appVersionedData: versionedData,
-    itemsList: defaultItems,
-    itemsById: buildItemsMap(defaultItems),
-    itemsCategories: extractCategories(defaultItems),
-    buildingsList: defaultBuildings,
-    corporationsList: defaultCorporations,
+    appVersionedData: {},
+    itemsList: [],
+    itemsById: {},
+    itemsCategories: [],
+    buildingsList: [],
+    corporationsList: [],
     basesList: [],
     energyGroups: [],
 
     //UI
     uiTheme: 'dark',
+    uiGameDataLoadPending: false,
     uiActiveTab: 'items',
     itemsSelectedCategory: 'all',
     itemsSelectedBuilding: 'all',

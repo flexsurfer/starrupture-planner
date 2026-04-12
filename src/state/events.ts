@@ -7,6 +7,7 @@ import type {
     Item,
     Building,
     AppState,
+    AppVersionedGameData,
     Base,
     BaseBuilding,
     EnergyGroup,
@@ -15,6 +16,7 @@ import type {
     CorporationLevelSelection,
 } from './db';
 import { buildItemsMap, parseCorporations, extractCategories } from './data-utils';
+import { DEFAULT_DATA_VERSION, isValidDataVersion } from './gameDataVersion';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '../components/planner/core/types';
 import { getSectionTypeForBuilding, buildActivePlanOccupancy } from '../components/mybases/utils';
@@ -28,6 +30,10 @@ import { calculateMaxTargetFromInputs } from '../utils/matchInputsCalculation';
 // Common function to update draftDb with version data
 function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
     const data = draftDb.appVersionedData[version];
+    if (!data) {
+        console.error(`[app] Missing game data for version "${version}"`);
+        return;
+    }
     const items = data.items as Item[];
     const buildings = data.buildings as Building[];
     const corporations = parseCorporations(data.corporations);
@@ -195,27 +201,29 @@ regEvent(EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG, ({ draftDb }) => {
     draftDb.uiConfirmationDialog = {};
 });
 
+function resolveDataVersionFromCoeffect(raw: string | null | undefined): DataVersion {
+    if (isValidDataVersion(raw)) {
+        return raw;
+    }
+    return DEFAULT_DATA_VERSION;
+}
+
 /** Initialization event */
 regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion, localStoreBases, localStoreEnergyGroups }) => {
     if (localStoreTheme) {
         draftDb.uiTheme = localStoreTheme;
     }
-    
-    // Load saved data version if valid
-    if (
-        localStoreDataVersion &&
-        (localStoreDataVersion === 'earlyaccess' ||
-            localStoreDataVersion === 'playtest' ||
-            localStoreDataVersion === 'update1_PTB' ||
-            localStoreDataVersion === 'update1')
-    ) {
-        updateDraftDbWithVersionData(draftDb as AppState, localStoreDataVersion);
-    }
-    
+
+    const dataVersion = resolveDataVersionFromCoeffect(localStoreDataVersion);
+    draftDb.appDataVersion = dataVersion;
+
     draftDb.basesList = Array.isArray(localStoreBases) ? localStoreBases : [];
     draftDb.energyGroups = Array.isArray(localStoreEnergyGroups) ? localStoreEnergyGroups : [];
 
-    return [[EFFECT_IDS.SET_THEME, draftDb.uiTheme]];
+    return [
+        [EFFECT_IDS.SET_THEME, draftDb.uiTheme],
+        [EFFECT_IDS.LOAD_GAME_DATA, dataVersion],
+    ];
 }, [[EFFECT_IDS.GET_THEME], [EFFECT_IDS.GET_DATA_VERSION], [EFFECT_IDS.GET_BASES], [EFFECT_IDS.GET_ENERGY_GROUPS]]);
 
 regEvent(EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, ({ draftDb }, category: string) => {
@@ -263,12 +271,39 @@ regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTION, ({ draftDb }, itemId: string, r
     draftDb.plannerRecipeSelections[itemId] = recipeKey;
 });
 
-regEvent(EVENT_IDS.APP_SET_DATA_VERSION, ({ draftDb }, version: DataVersion) => {
-    if (draftDb.appDataVersion === version) return;
+regEvent(EVENT_IDS.APP_REQUEST_LOAD_GAME_DATA, ({ draftDb }, version: DataVersion) => {
+    if (version === draftDb.appDataVersion) return;
+    if (draftDb.uiGameDataLoadPending) return;
 
+    draftDb.uiGameDataLoadPending = true;
+    return [[EFFECT_IDS.LOAD_GAME_DATA, version]];
+});
+
+regEvent(EVENT_IDS.APP_GAME_DATA_LOAD_FAILED, ({ draftDb }) => {
+    draftDb.uiGameDataLoadPending = false;
+});
+
+regEvent(EVENT_IDS.APP_SET_DATA_VERSION, ({ draftDb }, version: DataVersion, bundle?: AppVersionedGameData) => {
+    if (bundle) {
+        draftDb.appVersionedData[version] = bundle;
+    }
+
+    if (!draftDb.appVersionedData[version]) {
+        return;
+    }
+
+    const versionChanged = draftDb.appDataVersion !== version;
     updateDraftDbWithVersionData(draftDb as AppState, version);
 
-    return [[EFFECT_IDS.SET_DATA_VERSION, version]];
+    if (bundle !== undefined) {
+        draftDb.uiGameDataLoadPending = false;
+    }
+
+    // Persist when switching version, or when hydrating (bundle present) so first visit writes localStorage.
+    if (versionChanged || bundle !== undefined) {
+        return [[EFFECT_IDS.SET_DATA_VERSION, version]];
+    }
+    return undefined;
 });
 
 regEvent(EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, ({ draftDb }, targetAmount: number) => {

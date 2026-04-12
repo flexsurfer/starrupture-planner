@@ -1,5 +1,7 @@
 export const EVENT_IDS = {
     APP_INIT: 'appInit',
+    APP_REQUEST_LOAD_GAME_DATA: 'appRequestLoadGameData',
+    APP_GAME_DATA_LOAD_FAILED: 'appGameDataLoadFailed',
     APP_SET_DATA_VERSION: 'appSetDataVersion',
 
     UI_SET_THEME: 'uiSetTheme',

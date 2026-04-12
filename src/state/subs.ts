@@ -64,6 +64,7 @@ regSub(SUB_IDS.ITEMS_CATEGORIES, "itemsCategories");
 regSub(SUB_IDS.BUILDINGS_LIST, "buildingsList");
 regSub(SUB_IDS.CORPORATIONS_LIST, "corporationsList");
 regSub(SUB_IDS.UI_THEME, "uiTheme");
+regSub(SUB_IDS.UI_GAME_DATA_LOAD_PENDING, "uiGameDataLoadPending");
 regSub(SUB_IDS.UI_ACTIVE_TAB, "uiActiveTab");
 regSub(SUB_IDS.PLANNER_SELECTED_ITEM_ID, "plannerSelectedItemId");
 regSub(SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL, "plannerSelectedCorporationLevel");

@@ -1,6 +1,8 @@
-import { regCoeffect, regEffect } from "@flexsurfer/reflex";
+import { dispatch, regCoeffect, regEffect } from "@flexsurfer/reflex";
 import { EFFECT_IDS } from "./effect-ids";
+import { EVENT_IDS } from "./event-ids";
 import type { DataVersion, Base, EnergyGroup } from "./db";
+import { gameDataBundleToAppVersioned, loadGameDataVersion } from "./gameDataLoader";
 import { readBasesFromStorage, writeBasesToStorage } from "./bases-storage";
 import { readEnergyGroupsFromStorage, writeEnergyGroupsToStorage } from "./energy-groups-storage";
 
@@ -63,6 +65,18 @@ regEffect(EFFECT_IDS.SET_DATA_VERSION, (version: DataVersion) => {
 regCoeffect(EFFECT_IDS.GET_DATA_VERSION, (coeffects) => {
     coeffects.localStoreDataVersion = localStorage.getItem('dataVersion') as DataVersion | null;
     return coeffects;
+});
+
+regEffect(EFFECT_IDS.LOAD_GAME_DATA, (version: DataVersion) => {
+    void loadGameDataVersion(version)
+        .then((raw) => {
+            dispatch([EVENT_IDS.APP_SET_DATA_VERSION, version, gameDataBundleToAppVersioned(raw)]);
+        })
+        .catch((e) => {
+            console.error('Failed to load game data:', e);
+            window.alert('Could not load game data. Check your connection and reload the page.');
+            dispatch([EVENT_IDS.APP_GAME_DATA_LOAD_FAILED]);
+        });
 });
 
 regEffect(EFFECT_IDS.SET_BASES, (bases: Base[]) => {

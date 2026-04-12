@@ -3,6 +3,7 @@ export const SUB_IDS = {
     APP_DATA_VERSIONS: 'appDataVersions',
 
     UI_THEME: 'uiTheme',
+    UI_GAME_DATA_LOAD_PENDING: 'uiGameDataLoadPending',
     UI_ACTIVE_TAB: 'uiActiveTab',
     UI_CONFIRMATION_DIALOG: 'uiConfirmationDialog',
 
