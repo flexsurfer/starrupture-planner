@@ -14,13 +14,18 @@ import itemsDataUpdate1PTB from '../data/update1_PTB/items_catalog.json';
 import buildingsDataUpdate1PTB from '../data/update1_PTB/buildings_and_recipes.json';
 import corporationsDataUpdate1PTB from '../data/update1_PTB/corporations_components.json';
 
+import itemsDataUpdate1 from '../data/update1/items_catalog.json';
+import buildingsDataUpdate1 from '../data/update1/buildings_and_recipes.json';
+import corporationsDataUpdate1 from '../data/update1/corporations_components.json';
+
 // Data version types and constants
-export type DataVersion = 'earlyaccess' | 'playtest' | 'update1_PTB';
+export type DataVersion = 'earlyaccess' | 'playtest' | 'update1_PTB' | 'update1';
 
 const DATA_VERSIONS: { id: DataVersion; label: string }[] = [
     { id: 'earlyaccess', label: 'Early Access' },
     { id: 'playtest', label: 'Playtest' },
     { id: 'update1_PTB', label: 'Update 1 PTB' },
+    { id: 'update1', label: 'Update 1' },
 ];
 
 const DEFAULT_DATA_VERSION: DataVersion = 'earlyaccess';
@@ -41,6 +46,11 @@ const versionedData = {
         items: itemsDataUpdate1PTB,
         buildings: buildingsDataUpdate1PTB,
         corporations: corporationsDataUpdate1PTB
+    },
+    update1: {
+        items: itemsDataUpdate1,
+        buildings: buildingsDataUpdate1,
+        corporations: corporationsDataUpdate1
     },
 };
 

@@ -206,7 +206,8 @@ regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion,
         localStoreDataVersion &&
         (localStoreDataVersion === 'earlyaccess' ||
             localStoreDataVersion === 'playtest' ||
-            localStoreDataVersion === 'update1_PTB')
+            localStoreDataVersion === 'update1_PTB' ||
+            localStoreDataVersion === 'update1')
     ) {
         updateDraftDbWithVersionData(draftDb as AppState, localStoreDataVersion);
     }
