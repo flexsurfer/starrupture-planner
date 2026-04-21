@@ -1642,7 +1642,6 @@ regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
         if (!selectedBase) return [];
 
         const plans = selectedBase.productions || [];
-        if (plans.length === 0) return [];
 
         const coverageByItem = new Map<string, number>();
         for (const baseBuilding of selectedBase.buildings) {
@@ -1656,41 +1655,110 @@ regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
         }
 
         const requirementsByItem = new Map<string, MaterialBalanceRow>();
+        const rawRequirementKeys = new Set<string>();
 
         for (const plan of plans) {
-            if (!plan.selectedItemId || plan.targetAmount <= 0) continue;
+            if (plan.selectedItemId && plan.targetAmount > 0) {
+                const flow = buildProductionFlow(
+                    {
+                        targetItemId: plan.selectedItemId,
+                        targetAmount: plan.targetAmount,
+                        inputBuildings: [],
+                        rawProductionDisabled: true,
+                        includeLauncher: isLauncherEnabled(plan.corporationLevel),
+                        recipeSelections: plan.recipeSelections || {},
+                    },
+                    buildings
+                );
 
-            const flow = buildProductionFlow(
-                {
-                    targetItemId: plan.selectedItemId,
-                    targetAmount: plan.targetAmount,
-                    inputBuildings: [],
-                    rawProductionDisabled: true,
-                    includeLauncher: isLauncherEnabled(plan.corporationLevel),
-                    recipeSelections: plan.recipeSelections || {},
-                },
-                buildings
-            );
+                for (const deficit of flow.rawMaterialDeficits || []) {
+                    rawRequirementKeys.add(`${plan.id}:${deficit.itemId}`);
+                    const item = itemsById[deficit.itemId] || { id: deficit.itemId, name: deficit.itemId, type: 'unknown' };
+                    const existing = requirementsByItem.get(deficit.itemId);
+                    if (existing) {
+                        existing.perPlan[plan.id] = (existing.perPlan[plan.id] || 0) + deficit.required;
+                        existing.totalRequired += deficit.required;
+                        continue;
+                    }
 
-            for (const deficit of flow.rawMaterialDeficits || []) {
-                const item = itemsById[deficit.itemId] || { id: deficit.itemId, name: deficit.itemId, type: 'unknown' };
-                const existing = requirementsByItem.get(deficit.itemId);
-                if (existing) {
-                    existing.perPlan[plan.id] = deficit.required;
-                    existing.totalRequired += deficit.required;
-                    continue;
+                    requirementsByItem.set(deficit.itemId, {
+                        itemId: deficit.itemId,
+                        item,
+                        perPlan: { [plan.id]: deficit.required },
+                        totalRequired: deficit.required,
+                        covered: 0,
+                        available: 0,
+                        missing: 0,
+                    });
                 }
 
-                requirementsByItem.set(deficit.itemId, {
-                    itemId: deficit.itemId,
-                    item,
-                    perPlan: { [plan.id]: deficit.required },
-                    totalRequired: deficit.required,
-                    covered: 0,
-                    available: 0,
-                    missing: 0,
-                });
+                const flowWithInputs = buildProductionFlow(
+                    {
+                        targetItemId: plan.selectedItemId,
+                        targetAmount: plan.targetAmount,
+                        inputBuildings: plan.inputs || [],
+                        rawProductionDisabled: true,
+                        includeLauncher: isLauncherEnabled(plan.corporationLevel),
+                        recipeSelections: plan.recipeSelections || {},
+                    },
+                    buildings
+                );
+
+                const planInputRequiredByItem = new Map<string, number>();
+                for (const node of flowWithInputs.nodes) {
+                    if (node.nodeType !== 'input' || !node.outputItem) continue;
+                    if (!node.outputAmount || node.outputAmount <= 0) continue;
+                    if (!node.buildingCount || node.buildingCount <= 0) continue;
+
+                    const required = node.buildingCount * node.outputAmount;
+                    if (required <= 0) continue;
+
+                    planInputRequiredByItem.set(
+                        node.outputItem,
+                        (planInputRequiredByItem.get(node.outputItem) || 0) + required
+                    );
+                }
+
+                for (const [itemId, required] of planInputRequiredByItem) {
+                    if (required <= 0) continue;
+
+                    // Raw requirements are already accounted for via production deficits.
+                    if (rawRequirementKeys.has(`${plan.id}:${itemId}`)) continue;
+
+                    const item = itemsById[itemId] || { id: itemId, name: itemId, type: 'unknown' };
+                    const existing = requirementsByItem.get(itemId);
+                    if (existing) {
+                        existing.perPlan[plan.id] = (existing.perPlan[plan.id] || 0) + required;
+                        existing.totalRequired += required;
+                        continue;
+                    }
+
+                    requirementsByItem.set(itemId, {
+                        itemId,
+                        item,
+                        perPlan: { [plan.id]: required },
+                        totalRequired: required,
+                        covered: 0,
+                        available: 0,
+                        missing: 0,
+                    });
+                }
             }
+        }
+
+        // Also show configured inputs that are currently unused by all plans.
+        for (const [itemId, available] of coverageByItem) {
+            if (requirementsByItem.has(itemId)) continue;
+            const item = itemsById[itemId] || { id: itemId, name: itemId, type: 'unknown' };
+            requirementsByItem.set(itemId, {
+                itemId,
+                item,
+                perPlan: {},
+                totalRequired: 0,
+                covered: 0,
+                available,
+                missing: 0,
+            });
         }
 
         return Array.from(requirementsByItem.values())

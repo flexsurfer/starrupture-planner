@@ -1,27 +1,36 @@
 import React from 'react';
-import { dispatch } from '@flexsurfer/reflex';
-import type { PlanSummaryRow } from '../types';
+import { dispatch, useSubscription } from '@flexsurfer/reflex';
+import type { PlanSummaryRow, ProductionPlanRequirementsStatus } from '../types';
 import { EVENT_IDS } from '../../../state/event-ids';
+import { SUB_IDS } from '../../../state/sub-ids';
 import { ItemImage } from '../../ui';
 
-const STATUS_BADGE_CLASS: Record<PlanSummaryRow['status'], string> = {
-  active: 'badge-success',
-  inactive: 'badge-ghost',
-  error: 'badge-error',
-};
-
-function formatPlanStatus(status: PlanSummaryRow['status']): string {
-  if (status === 'active') return 'Active';
-  if (status === 'error') return 'Error';
-  return 'Inactive';
+function formatPlanStatus(status: ProductionPlanRequirementsStatus['planStatus']): string {
+  return status === 'inactive' ? 'Inactive' : 'Active';
 }
 
 interface PlanProductionCardProps {
   plan: PlanSummaryRow;
+  baseId: string;
 }
 
-export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan }) => (
-  <div className="rounded-xl border border-base-300 bg-base-200/40 p-3">
+export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan, baseId }) => {
+  const requirementsStatus = useSubscription<ProductionPlanRequirementsStatus>([
+    SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
+    baseId,
+    plan.id,
+  ]);
+
+  const effectiveStatus = requirementsStatus?.planStatus || plan.status;
+  const hasError = requirementsStatus?.hasError ?? effectiveStatus === 'error';
+  const badgeClass = hasError
+    ? 'badge-error'
+    : effectiveStatus === 'inactive'
+      ? 'badge-ghost'
+      : 'badge-success';
+
+  return (
+    <div className="rounded-xl border border-base-300 bg-base-200/40 p-3">
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 items-center gap-3">
         {plan.targetItem ? (
@@ -44,8 +53,8 @@ export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan }) 
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <span className={`badge badge-sm ${STATUS_BADGE_CLASS[plan.status]}`}>
-          {formatPlanStatus(plan.status)}
+        <span className={`badge badge-sm ${badgeClass}`}>
+          {formatPlanStatus(effectiveStatus)}
         </span>
         <button
           type="button"
@@ -76,4 +85,5 @@ export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan }) 
       </div>
     </div>
   </div>
-);
+  );
+};

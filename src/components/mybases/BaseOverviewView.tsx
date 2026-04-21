@@ -38,7 +38,7 @@ export const BaseOverviewView: React.FC = () => {
           ) : (
             <div className="grid gap-3 lg:grid-cols-2">
               {planRows.map((plan) => (
-                <PlanProductionCard key={plan.id} plan={plan} />
+                <PlanProductionCard key={plan.id} plan={plan} baseId={selectedBaseId} />
               ))}
             </div>
           )}

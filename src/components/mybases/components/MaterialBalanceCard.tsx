@@ -15,7 +15,7 @@ interface MaterialBalanceCardProps {
 
 export const MaterialBalanceCard: React.FC<MaterialBalanceCardProps> = ({ plans, rows }) => {
   const totalRequired = rows.reduce((sum, row) => sum + row.totalRequired, 0);
-  const totalCovered = rows.reduce((sum, row) => sum + row.covered, 0);
+  const totalAvailable = rows.reduce((sum, row) => sum + row.available, 0);
   const totalMissing = rows.reduce((sum, row) => sum + row.missing, 0);
   const totalSurplus = rows.reduce((sum, row) => sum + Math.max(0, row.available - row.totalRequired), 0);
 
@@ -32,7 +32,7 @@ export const MaterialBalanceCard: React.FC<MaterialBalanceCardProps> = ({ plans,
         <div className="flex flex-wrap gap-2">
           <span className="badge badge-ghost badge-sm">{rows.length} material{rows.length !== 1 ? 's' : ''}</span>
           <span className="badge badge-neutral badge-sm">{formatRate(totalRequired)}/min required</span>
-          <span className="badge badge-outline badge-sm">{formatRate(totalCovered)}/min covered</span>
+          <span className="badge badge-outline badge-sm">{formatRate(totalAvailable)}/min available</span>
           {totalMissing > 0 && (
             <span className="badge badge-error badge-sm">{formatRate(totalMissing)}/min missing</span>
           )}
@@ -50,8 +50,8 @@ export const MaterialBalanceCard: React.FC<MaterialBalanceCardProps> = ({ plans,
             <table className="table table-xs">
               <CoverageTableHeader
                 plans={plans}
-                totalLabel="Total"
-                coverageLabel="Covered"
+                totalLabel="Total Needed"
+                coverageLabel="Available"
                 gapLabel="Balance"
               />
               <tbody>
@@ -89,9 +89,9 @@ export const MaterialBalanceCard: React.FC<MaterialBalanceCardProps> = ({ plans,
                       <td className="px-2 py-2 text-center font-mono text-[11px]">{formatRate(row.totalRequired)}</td>
                       <td
                         className="px-2 py-2 text-center font-mono text-[11px] text-base-content/80"
-                        title={`Available from buildings: ${formatRate(row.available)}/min`}
+                        title={`Total available from configured input buildings: ${formatRate(row.available)}/min`}
                       >
-                        {formatRate(row.covered)}
+                        {formatRate(row.available)}
                       </td>
                       <td className={`px-2 py-2 text-center font-mono text-[11px] ${balanceClass}`}>
                         {balanceLabel}/min
