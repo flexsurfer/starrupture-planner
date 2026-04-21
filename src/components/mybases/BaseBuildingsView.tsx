@@ -3,7 +3,7 @@ import { dispatch, useSubscription } from '@flexsurfer/reflex';
 import { EVENT_IDS } from '../../state/event-ids';
 import { SUB_IDS } from '../../state/sub-ids';
 import type { Base } from '../../state/db';
-import type { BuildingSectionType } from './types';
+import type { AddBuildingRequest, BuildingSectionType } from './types';
 import {
   BuildingSection,
   AddBuildingCardModal,
@@ -15,9 +15,19 @@ export const BaseBuildingsView: React.FC = () => {
 
   const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
 
-  const handleAddBuilding = useCallback((buildingTypeId: string, name?: string, description?: string) => {
+  const handleAddBuilding = useCallback((request: AddBuildingRequest) => {
     if (selectedBase && addBuildingSection) {
-      dispatch([EVENT_IDS.BASES_ADD_BUILDING, selectedBase.id, buildingTypeId, addBuildingSection, name, description]);
+      dispatch([
+        EVENT_IDS.BASES_ADD_BUILDINGS,
+        selectedBase.id,
+        request.buildingTypeId,
+        addBuildingSection,
+        request.count,
+        request.name,
+        request.description,
+        request.selectedItemId ?? null,
+        request.ratePerMinute ?? null,
+      ]);
       setAddBuildingSection(null);
     }
   }, [selectedBase, addBuildingSection]);

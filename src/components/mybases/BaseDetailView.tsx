@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../state/sub-ids';
 import type { Base } from '../../state/db';
-import { BaseCoreInfo, BaseBuildingsView, BasePlansView, CreateProductionPlanModal } from './index';
+import { BaseCoreInfo, BaseOverviewView, BaseBuildingsView, BasePlansView, CreateProductionPlanModal } from './index';
 
-type BaseDetailTab = 'plans' | 'buildings';
+type BaseDetailTab = 'base' | 'plans' | 'buildings';
 
 export const BaseDetailView: React.FC = () => {
   const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
-  const [activeTab, setActiveTab] = useState<BaseDetailTab>('plans');
+  const [activeTab, setActiveTab] = useState<BaseDetailTab>('base');
 
   // Early return if no base selected
   if (!selectedBase) {
@@ -31,6 +31,17 @@ export const BaseDetailView: React.FC = () => {
           className="tabs tabs-bordered tabs-lg flex-shrink-0 mb-4"
           aria-label="Base sections"
         >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'base'}
+            id="base-tab-overview"
+            aria-controls="base-panel-overview"
+            className={`tab text-xl font-bold flex items-center gap-2 ${activeTab === 'base' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('base')}
+          >
+            Base
+          </button>
           <button
             type="button"
             role="tab"
@@ -62,22 +73,33 @@ export const BaseDetailView: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-auto min-h-0">
-          <div
-            id="base-panel-plans"
-            role="tabpanel"
-            aria-labelledby="base-tab-plans"
-            hidden={activeTab !== 'plans'}
-          >
-            <BasePlansView />
-          </div>
-          <div
-            id="base-panel-buildings"
-            role="tabpanel"
-            aria-labelledby="base-tab-buildings"
-            hidden={activeTab !== 'buildings'}
-          >
-            <BaseBuildingsView />
-          </div>
+          {activeTab === 'base' && (
+            <div
+              id="base-panel-overview"
+              role="tabpanel"
+              aria-labelledby="base-tab-overview"
+            >
+              <BaseOverviewView />
+            </div>
+          )}
+          {activeTab === 'plans' && (
+            <div
+              id="base-panel-plans"
+              role="tabpanel"
+              aria-labelledby="base-tab-plans"
+            >
+              <BasePlansView />
+            </div>
+          )}
+          {activeTab === 'buildings' && (
+            <div
+              id="base-panel-buildings"
+              role="tabpanel"
+              aria-labelledby="base-tab-buildings"
+            >
+              <BaseBuildingsView />
+            </div>
+          )}
         </div>
       </div>
 

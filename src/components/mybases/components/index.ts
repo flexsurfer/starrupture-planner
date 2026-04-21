@@ -15,3 +15,7 @@ export { ShareBasesStatsButton } from './ShareBasesStatsButton';
 export { EnergyGroupSelector } from './EnergyGroupSelector';
 export { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
 export { ProductionPlanSection } from './ProductionPlanSection';
+export { PlanProductionCard } from './PlanProductionCard';
+export { CoverageTableHeader } from './CoverageTableHeader';
+export { MaterialBalanceCard } from './MaterialBalanceCard';
+export { BuildingCoverageCard } from './BuildingCoverageCard';

@@ -19,7 +19,14 @@ import { buildItemsMap, parseCorporations, extractCategories } from './data-util
 import { DEFAULT_DATA_VERSION, isValidDataVersion } from './gameDataVersion';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '../components/planner/core/types';
-import { getSectionTypeForBuilding, buildActivePlanOccupancy } from '../components/mybases/utils';
+import {
+    getSectionTypeForBuilding,
+    buildActivePlanOccupancy,
+    getPreferredSectionTypeForBuildingType,
+    reconcileBaseBuildingTypeCount,
+    sanitizeBulkBuildingCount,
+    sanitizeBuildingCount,
+} from '../components/mybases/utils';
 import {
     getProductionInputIds,
     getSelectedFlowInputBuildings,
@@ -361,23 +368,107 @@ regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null)
     draftDb.basesSelectedBaseId = baseId;
 });
 
+interface CreateBaseBuildingOptions {
+    buildingTypeId: string;
+    sectionType: string;
+    name?: string;
+    description?: string;
+    selectedItemId?: string;
+    ratePerMinute?: number;
+}
+
 /** Creates a new BaseBuilding object with a unique ID. */
-function createBaseBuilding(buildingTypeId: string, sectionType: string, name?: string, description?: string): BaseBuilding {
+function createBaseBuilding({
+    buildingTypeId,
+    sectionType,
+    name,
+    description,
+    selectedItemId,
+    ratePerMinute,
+}: CreateBaseBuildingOptions): BaseBuilding {
     return {
         id: createEntityId('building'),
         buildingTypeId,
         sectionType,
         ...(name ? { name } : {}),
         ...(description ? { description } : {}),
+        ...(selectedItemId ? { selectedItemId } : {}),
+        ...(ratePerMinute && ratePerMinute > 0 ? { ratePerMinute } : {}),
     };
 }
 
 regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
-        base.buildings.push(createBaseBuilding(buildingTypeId, sectionType, name, description));
+        base.buildings.push(createBaseBuilding({ buildingTypeId, sectionType, name, description }));
         return [persistBasesEffect(draftDb as AppState)];
     }
+});
+
+regEvent(
+    EVENT_IDS.BASES_ADD_BUILDINGS,
+    (
+        { draftDb },
+        baseId: string,
+        buildingTypeId: string,
+        sectionType: string,
+        count: number,
+        name?: string,
+        description?: string,
+        selectedItemId?: string | null,
+        ratePerMinute?: number | null
+    ) => {
+        const base = getBaseById(draftDb.basesList, baseId);
+        if (!base) return;
+
+        const normalizedCount = sanitizeBulkBuildingCount(count);
+        const normalizedRatePerMinute = typeof ratePerMinute === 'number' && ratePerMinute > 0
+            ? ratePerMinute
+            : undefined;
+
+        for (let index = 0; index < normalizedCount; index += 1) {
+            base.buildings.push(
+                createBaseBuilding({
+                    buildingTypeId,
+                    sectionType,
+                    name,
+                    description,
+                    selectedItemId: selectedItemId || undefined,
+                    ratePerMinute: normalizedRatePerMinute,
+                })
+            );
+        }
+
+        return [persistBasesEffect(draftDb as AppState)];
+    }
+);
+
+regEvent(EVENT_IDS.BASES_SET_BUILDING_TYPE_COUNT, ({ draftDb }, baseId: string, buildingTypeId: string, rawTargetCount: number) => {
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (!base) return;
+
+    const building = draftDb.buildingsList.find((candidate: Building) => candidate.id === buildingTypeId);
+    if (!building || building.id === 'base_core') return;
+
+    const targetCount = sanitizeBuildingCount(rawTargetCount);
+    const preferredSectionType = getPreferredSectionTypeForBuildingType(
+        base,
+        buildingTypeId,
+        getSectionTypeForBuilding(building)
+    );
+
+    const nextBuildings = reconcileBaseBuildingTypeCount({
+        base,
+        buildingTypeId,
+        targetCount,
+        preferredSectionType,
+        createId: () => createEntityId('building'),
+    });
+
+    if (nextBuildings === base.buildings) return;
+    base.buildings = nextBuildings;
+
+    return [persistBasesEffect(draftDb as AppState)];
 });
 
 regEvent(EVENT_IDS.BASES_REMOVE_BUILDING, ({ draftDb }, buildingId: string) => {
@@ -577,7 +668,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftDb }, baseId: 
 
     const newBuildings: BaseBuilding[] = [];
     const createPlanBuilding = (buildingId: string, sectionType: string): BaseBuilding => {
-        const newBuilding = createBaseBuilding(buildingId, sectionType);
+        const newBuilding = createBaseBuilding({ buildingTypeId: buildingId, sectionType });
         if (buildingId === 'orbital_cargo_launcher' && plan.selectedItemId) {
             newBuilding.selectedItemId = plan.selectedItemId;
             newBuilding.ratePerMinute = 10;

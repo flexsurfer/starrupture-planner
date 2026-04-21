@@ -23,3 +23,11 @@ export {
 export {
   calculateSharedInputShortages,
 } from './sharedInputShortages';
+
+export {
+  MAX_BULK_BUILDING_COUNT,
+  sanitizeBuildingCount,
+  sanitizeBulkBuildingCount,
+  getPreferredSectionTypeForBuildingType,
+  reconcileBaseBuildingTypeCount,
+} from './baseBuildingCounts';

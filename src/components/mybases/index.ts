@@ -25,10 +25,14 @@ export type {
   SharedInputShortage,
   ProductionPlanSectionViewModel,
   ProductionPlanRequirementsStatus,
+  PlanSummaryRow,
+  MaterialBalanceRow,
+  BuildingCoverageRow,
 } from './types';
 
 // Main view components
 export { BaseDetailView } from './BaseDetailView';
+export { BaseOverviewView } from './BaseOverviewView';
 export { BaseBuildingsView } from './BaseBuildingsView';
 export { BasePlansView } from './BasePlansView';
 

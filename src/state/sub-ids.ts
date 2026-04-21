@@ -77,4 +77,8 @@ export const SUB_IDS = {
     PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID: 'productionPlanModalSelectedItemId',
     PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS: 'productionPlanModalRawMaterialDeficits',
     PRODUCTION_PLAN_MODAL_FORM_VALIDITY: 'productionPlanModalFormValidity',
+
+    BASES_OVERVIEW_PLAN_ROWS: 'basesOverviewPlanRows',
+    BASES_OVERVIEW_MATERIAL_BALANCE_ROWS: 'basesOverviewMaterialBalanceRows',
+    BASES_OVERVIEW_BUILDING_COVERAGE_ROWS: 'basesOverviewBuildingCoverageRows',
 }

@@ -12,6 +12,18 @@ import type { BaseBuilding, Building, Item, Production } from '../../state/db';
 export type BuildingSectionType = 'inputs' | 'energy' | 'production' | 'outputs' | 'infrastructure';
 
 /**
+ * Request payload used when creating one or more base buildings from the UI.
+ */
+export interface AddBuildingRequest {
+  buildingTypeId: string;
+  count: number;
+  name?: string;
+  description?: string;
+  selectedItemId?: string;
+  ratePerMinute?: number;
+}
+
+/**
  * Stats for a base's core information display.
  * Used in both the detail view (BaseCoreInfo) and the card view (BaseCard).
  */
@@ -183,4 +195,46 @@ export interface ProductionPlanRequirementsStatus {
   hasError: boolean;
   itemName: string;
   corporationName: string | null;
+}
+
+/**
+ * Overview-level plan summary used by BaseOverviewView and its child components.
+ */
+export interface PlanSummaryRow {
+  id: string;
+  name: string;
+  selectedItemId: string;
+  targetItem: Item | null;
+  itemName: string;
+  targetAmount: number;
+  status: 'active' | 'inactive' | 'error';
+  requiredBuildingCount: number;
+  inputCount: number;
+  corporationLabel: string;
+}
+
+/**
+ * Per-item material balance across all plans in a base.
+ */
+export interface MaterialBalanceRow {
+  itemId: string;
+  item: Item;
+  perPlan: Record<string, number>;
+  totalRequired: number;
+  covered: number;
+  available: number;
+  missing: number;
+}
+
+/**
+ * Per-building-type coverage across all plans in a base.
+ */
+export interface BuildingCoverageRow {
+  buildingId: string;
+  building: Building;
+  perPlan: Record<string, number>;
+  totalRequired: number;
+  covered: number;
+  owned: number;
+  missing: number;
 }

@@ -49,6 +49,9 @@ import type {
     SharedInputShortage,
     ProductionPlanSectionViewModel,
     ProductionPlanRequirementsStatus,
+    PlanSummaryRow,
+    MaterialBalanceRow,
+    BuildingCoverageRow,
 } from '../components/mybases/types';
 //============================================================
 // Root subscriptions
@@ -1527,11 +1530,187 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS,
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALIDITY,
     (
         modalState: CreateProductionPlanModalState,
-        selectedItemId: string,
-        rawMaterialDeficits: RawMaterialDeficitWithName[]
+        selectedItemId: string
     ): boolean => {
         const { name, targetAmount } = modalState;
-        const hasDeficits = rawMaterialDeficits.length > 0;
-        return !!(name.trim() && selectedItemId && targetAmount > 0 && !hasDeficits);
+        return !!(name.trim() && selectedItemId && targetAmount > 0);
     },
-    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID], [SUB_IDS.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS]]);
+    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID]]);
+
+//============================================================
+// Base Overview subscriptions
+//============================================================
+
+function derivePlanStatus(plan: Production): PlanSummaryRow['status'] {
+    if (plan.status === 'active' || plan.status === 'inactive' || plan.status === 'error') {
+        return plan.status;
+    }
+    return plan.active ? 'active' : 'inactive';
+}
+
+const PLAN_STATUS_SORT_WEIGHT: Record<PlanSummaryRow['status'], number> = {
+    active: 0,
+    error: 1,
+    inactive: 2,
+};
+
+function comparePlanSummaryRows(left: PlanSummaryRow, right: PlanSummaryRow): number {
+    const statusDelta = PLAN_STATUS_SORT_WEIGHT[left.status] - PLAN_STATUS_SORT_WEIGHT[right.status];
+    if (statusDelta !== 0) return statusDelta;
+
+    const itemDelta = left.itemName.localeCompare(right.itemName);
+    if (itemDelta !== 0) return itemDelta;
+
+    return left.name.localeCompare(right.name);
+}
+
+regSub(SUB_IDS.BASES_OVERVIEW_PLAN_ROWS,
+    (selectedBase: Base | null, corporations: Corporation[], itemsById: Record<string, Item>): PlanSummaryRow[] => {
+        if (!selectedBase) return [];
+
+        const corporationNameById = new Map(
+            corporations.map((corporation) => [corporation.id, corporation.name])
+        );
+
+        return (selectedBase.productions || [])
+            .map((plan) => ({
+                id: plan.id,
+                name: plan.name,
+                selectedItemId: plan.selectedItemId,
+                targetItem: itemsById[plan.selectedItemId] || null,
+                itemName: itemsById[plan.selectedItemId]?.name || plan.selectedItemId,
+                targetAmount: plan.targetAmount,
+                status: derivePlanStatus(plan),
+                requiredBuildingCount: (plan.requiredBuildings || []).reduce((sum, rb) => sum + rb.count, 0),
+                inputCount: (plan.inputs || []).length,
+                corporationLabel: plan.corporationLevel
+                    ? `${corporationNameById.get(plan.corporationLevel.corporationId) || 'Corporation'} Lv.${plan.corporationLevel.level}`
+                    : 'None',
+            }))
+            .sort(comparePlanSummaryRows);
+    },
+    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.CORPORATIONS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+
+regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
+    (selectedBase: Base | null, buildings: DbBuilding[], itemsById: Record<string, Item>): MaterialBalanceRow[] => {
+        if (!selectedBase) return [];
+
+        const plans = selectedBase.productions || [];
+        if (plans.length === 0) return [];
+
+        const coverageByItem = new Map<string, number>();
+        for (const baseBuilding of selectedBase.buildings) {
+            if (baseBuilding.sectionType !== 'inputs') continue;
+            if (!baseBuilding.selectedItemId) continue;
+            if (!baseBuilding.ratePerMinute || baseBuilding.ratePerMinute <= 0) continue;
+            coverageByItem.set(
+                baseBuilding.selectedItemId,
+                (coverageByItem.get(baseBuilding.selectedItemId) || 0) + baseBuilding.ratePerMinute
+            );
+        }
+
+        const requirementsByItem = new Map<string, MaterialBalanceRow>();
+
+        for (const plan of plans) {
+            if (!plan.selectedItemId || plan.targetAmount <= 0) continue;
+
+            const flow = buildProductionFlow(
+                {
+                    targetItemId: plan.selectedItemId,
+                    targetAmount: plan.targetAmount,
+                    inputBuildings: [],
+                    rawProductionDisabled: true,
+                    includeLauncher: isLauncherEnabled(plan.corporationLevel),
+                    recipeSelections: plan.recipeSelections || {},
+                },
+                buildings
+            );
+
+            for (const deficit of flow.rawMaterialDeficits || []) {
+                const item = itemsById[deficit.itemId] || { id: deficit.itemId, name: deficit.itemId, type: 'unknown' };
+                const existing = requirementsByItem.get(deficit.itemId);
+                if (existing) {
+                    existing.perPlan[plan.id] = deficit.required;
+                    existing.totalRequired += deficit.required;
+                    continue;
+                }
+
+                requirementsByItem.set(deficit.itemId, {
+                    itemId: deficit.itemId,
+                    item,
+                    perPlan: { [plan.id]: deficit.required },
+                    totalRequired: deficit.required,
+                    covered: 0,
+                    available: 0,
+                    missing: 0,
+                });
+            }
+        }
+
+        return Array.from(requirementsByItem.values())
+            .map((row) => {
+                const available = coverageByItem.get(row.itemId) || 0;
+                const covered = Math.min(row.totalRequired, available);
+                const missing = Math.max(0, row.totalRequired - available);
+                return { ...row, covered, available, missing };
+            })
+            .sort((left, right) => {
+                if (left.missing !== right.missing) return right.missing - left.missing;
+                if (left.totalRequired !== right.totalRequired) return right.totalRequired - left.totalRequired;
+                return left.item.name.localeCompare(right.item.name);
+            });
+    },
+    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+
+regSub(SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS,
+    (selectedBase: Base | null, buildings: DbBuilding[]): BuildingCoverageRow[] => {
+        if (!selectedBase) return [];
+
+        const plans = selectedBase.productions || [];
+        if (plans.length === 0) return [];
+
+        const ownedCounts = new Map<string, number>();
+        for (const baseBuilding of selectedBase.buildings) {
+            ownedCounts.set(baseBuilding.buildingTypeId, (ownedCounts.get(baseBuilding.buildingTypeId) || 0) + 1);
+        }
+
+        const buildingById = new Map(buildings.map((building) => [building.id, building]));
+        const requirementsByBuilding = new Map<string, BuildingCoverageRow>();
+
+        for (const plan of plans) {
+            for (const requiredBuilding of plan.requiredBuildings || []) {
+                const building = buildingById.get(requiredBuilding.buildingId) || {
+                    id: requiredBuilding.buildingId,
+                    name: requiredBuilding.buildingId,
+                    recipes: [],
+                };
+
+                const existing = requirementsByBuilding.get(requiredBuilding.buildingId);
+                if (existing) {
+                    existing.perPlan[plan.id] = requiredBuilding.count;
+                    existing.totalRequired += requiredBuilding.count;
+                    continue;
+                }
+
+                requirementsByBuilding.set(requiredBuilding.buildingId, {
+                    buildingId: requiredBuilding.buildingId,
+                    building,
+                    perPlan: { [plan.id]: requiredBuilding.count },
+                    totalRequired: requiredBuilding.count,
+                    covered: 0,
+                    owned: 0,
+                    missing: 0,
+                });
+            }
+        }
+
+        return Array.from(requirementsByBuilding.values())
+            .map((row) => {
+                const owned = ownedCounts.get(row.buildingId) || 0;
+                const covered = Math.min(row.totalRequired, owned);
+                const missing = Math.max(0, row.totalRequired - owned);
+                return { ...row, covered, owned, missing };
+            })
+            .sort((left, right) => right.totalRequired - left.totalRequired);
+    },
+    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_LIST]]);
