@@ -99,13 +99,15 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
         buildingRequirements,
         inputRequirements,
         sharedInputShortages,
+        hasRawMaterialShortage,
+        hasMaterialShortage,
         allRequirementsSatisfied,
         hasError,
         showManageButton,
     } = data;
-    const hasSharedInputShortage = sharedInputShortages.length > 0;
-    const showBuildingWarning = !section.active && !allRequirementsSatisfied;
-    const showInputWarning = hasSharedInputShortage;
+    const showBuildingWarning = !allRequirementsSatisfied;
+    const showInputWarning = sharedInputShortages.length > 0;
+    const showMaterialWarning = hasRawMaterialShortage;
 
     const toggleCollapse = () => {
         setIsCollapsed((prev) => !prev);
@@ -128,7 +130,7 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                                     hasError 
                                         ? 'badge-error' 
                                         : section.active 
-                                            ? (allRequirementsSatisfied && !hasSharedInputShortage ? 'badge-success' : 'badge-warning') 
+                                            ? (allRequirementsSatisfied && !hasMaterialShortage ? 'badge-success' : 'badge-warning') 
                                             : 'badge-dash'
                                 }`}>
                                     {section.active ? 'Active' : 'Inactive'}
@@ -237,11 +239,16 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                             Delete
                         </button>
                     </div>
-                    {(showBuildingWarning || showInputWarning) && (
+                    {(showBuildingWarning || showInputWarning || showMaterialWarning) && (
                         <div className="flex flex-col items-end mt-1 space-y-1 text-right" onClick={(e) => e.stopPropagation()}>
                             {showBuildingWarning && (
                                 <p className="text-xs text-warning font-medium">
                                     Not enough production buildings in base. Use the &quot;manage buildings&quot; button.
+                                </p>
+                            )}
+                            {showMaterialWarning && (
+                                <p className="text-xs text-warning font-medium">
+                                    Missing materials for this plan.
                                 </p>
                             )}
                             {showInputWarning && sharedInputShortages.map((shortage) => (

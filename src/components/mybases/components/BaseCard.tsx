@@ -32,12 +32,12 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId }) => {
     plan.id,
   ]);
 
-  const { allRequirementsSatisfied, hasError, itemName, corporationName } = planData;
+  const { allRequirementsSatisfied, hasError, hasMaterialShortage, itemName, corporationName } = planData;
 
   const badgeClass = hasError
     ? 'badge-error'
     : plan.active
-      ? (allRequirementsSatisfied ? 'badge-success' : 'badge-warning')
+      ? (allRequirementsSatisfied && !hasMaterialShortage ? 'badge-success' : 'badge-warning')
       : 'badge-dash';
 
   return (

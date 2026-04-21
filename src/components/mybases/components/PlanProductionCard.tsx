@@ -23,11 +23,17 @@ export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan, ba
 
   const effectiveStatus = requirementsStatus?.planStatus || plan.status;
   const hasError = requirementsStatus?.hasError ?? effectiveStatus === 'error';
+  const hasWarning = !hasError && effectiveStatus === 'active' && (
+    requirementsStatus?.allRequirementsSatisfied === false ||
+    requirementsStatus?.hasMaterialShortage === true
+  );
   const badgeClass = hasError
     ? 'badge-error'
     : effectiveStatus === 'inactive'
       ? 'badge-ghost'
-      : 'badge-success';
+      : hasWarning
+        ? 'badge-warning'
+        : 'badge-success';
 
   return (
     <div className="rounded-xl border border-base-300 bg-base-200/40 p-3">

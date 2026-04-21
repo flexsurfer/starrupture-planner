@@ -187,6 +187,8 @@ export interface ProductionPlanSectionViewModel {
   buildingRequirements: BuildingRequirement[];
   inputRequirements: InputRequirement[];
   sharedInputShortages: SharedInputShortage[];
+  hasRawMaterialShortage: boolean;
+  hasMaterialShortage: boolean;
   allRequirementsSatisfied: boolean;
   planStatus: string;
   hasError: boolean;
@@ -198,6 +200,7 @@ export interface ProductionPlanRequirementsStatus {
   allRequirementsSatisfied: boolean;
   planStatus: string;
   hasError: boolean;
+  hasMaterialShortage: boolean;
   itemName: string;
   corporationName: string | null;
 }

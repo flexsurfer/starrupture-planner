@@ -1284,6 +1284,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_STATS_BY_ID,
 regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
     (
         section: Production | null,
+        productionFlow: ProductionFlowResult,
         base: Base | null,
         itemsMap: Record<string, Item>,
         buildings: DbBuilding[],
@@ -1428,6 +1429,8 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
                 itemName,
             };
         });
+        const hasRawMaterialShortage = (productionFlow.rawMaterialDeficits || []).length > 0;
+        const hasMaterialShortage = sharedInputShortages.length > 0 || hasRawMaterialShortage;
 
         // Determine plan status: error if inputs insufficient, otherwise use section.status or derive from active state
         const planStatus = section.status || (section.active ? 'active' : 'inactive');
@@ -1444,6 +1447,8 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
             buildingRequirements,
             inputRequirements,
             sharedInputShortages,
+            hasRawMaterialShortage,
+            hasMaterialShortage,
             allRequirementsSatisfied,
             planStatus,
             hasError,
@@ -1452,6 +1457,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
     },
     (baseId: string, sectionId: string) => [
         [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId],
+        [SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId],
         [SUB_IDS.BASES_BASE_BY_ID, baseId],
         [SUB_IDS.ITEMS_BY_ID_MAP],
         [SUB_IDS.BUILDINGS_LIST],
@@ -1466,6 +1472,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
                 allRequirementsSatisfied: false,
                 planStatus: 'inactive',
                 hasError: false,
+                hasMaterialShortage: false,
                 itemName: '',
                 corporationName: null
             };
@@ -1474,6 +1481,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
             allRequirementsSatisfied: sectionData.allRequirementsSatisfied,
             planStatus: sectionData.planStatus,
             hasError: sectionData.hasError,
+            hasMaterialShortage: sectionData.hasMaterialShortage,
             itemName: sectionData.itemName,
             corporationName: sectionData.corporationName
         };
