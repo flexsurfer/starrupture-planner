@@ -26,7 +26,7 @@ export const EVENT_IDS = {
     BASES_SET_CORE_LEVEL: 'basesSetCoreLevel',
     BASES_ADD_BUILDING: 'basesAddBuilding',
     BASES_ADD_BUILDINGS: 'basesAddBuildings',
-    BASES_SET_BUILDING_TYPE_COUNT: 'basesSetBuildingTypeCount',
+    BASES_SET_BUILDING_SECTION_TYPE_COUNT: 'basesSetBuildingSectionTypeCount',
     BASES_REMOVE_BUILDING: 'basesRemoveBuilding',
     BASES_UPDATE_BUILDING_ITEM_SELECTION: 'basesUpdateBuildingItemSelection',
     BASES_SET_ENERGY_GROUP: 'basesSetEnergyGroup',

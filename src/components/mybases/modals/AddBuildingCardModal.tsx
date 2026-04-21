@@ -35,6 +35,8 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const supportsItemConfiguration = sectionType === 'inputs' || sectionType === 'outputs';
   const mustConfigureItem = supportsItemConfiguration && requireItemConfiguration;
   const selectedItem = selectedItemId ? itemsById[selectedItemId] || null : null;
+  const supportsCount = sectionType === 'production' || sectionType === 'energy';
+  const selectedBuildingSupportsCount = !!selectedBuilding && supportsCount;
 
   if (!isOpen) {
     return null;
@@ -49,6 +51,9 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
       setSelectedBuilding(building);
       setSelectedItemId('');
       setRatePerMinute('');
+      if (!supportsCount) {
+        setCount('1');
+      }
     }
   };
 
@@ -57,10 +62,23 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
     setRatePerMinute(String(configuredRatePerMinute));
   };
 
+  const handleCountChange = (nextValue: string) => {
+    if (!/^\d*$/.test(nextValue)) return;
+
+    if (nextValue === '') {
+      setCount('');
+      return;
+    }
+
+    setCount(String(sanitizeBulkBuildingCount(Number(nextValue))));
+  };
+
   const handleConfirm = () => {
     if (!selectedBuilding) return;
 
-    const normalizedCount = sanitizeBulkBuildingCount(Number(count) || 1);
+    const normalizedCount = selectedBuildingSupportsCount
+      ? sanitizeBulkBuildingCount(Number(count))
+      : 1;
     const normalizedRate = Number(ratePerMinute);
     const hasConfiguredItem = !!selectedItemId && normalizedRate > 0;
 
@@ -150,23 +168,27 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
 
         {/* Bottom section - fixed */}
         <div className="px-6 pb-6 pt-3 flex-shrink-0 border-t border-base-300 bg-base-100">
-          <div className="flex gap-3 mb-4">
-            <div className="form-control w-28">
-              <label className="label py-1">
-                <span className="label-text text-xs">Count</span>
-              </label>
-              <input
-                type="number"
-                min="1"
-                max={MAX_BULK_BUILDING_COUNT}
-                step="1"
-                className="input input-bordered input-sm w-full"
-                value={count}
-                onChange={(e) => setCount(e.target.value)}
-                onBlur={() => setCount(String(sanitizeBulkBuildingCount(Number(count) || 1)))}
-              />
+          {selectedBuildingSupportsCount && (
+            <div className="flex gap-3 mb-4">
+              <div className="form-control w-28">
+                <label className="label py-1">
+                  <span className="label-text text-xs">Count</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="1"
+                  max={MAX_BULK_BUILDING_COUNT}
+                  step="1"
+                  className="input input-bordered input-sm w-full"
+                  value={count}
+                  onChange={(e) => handleCountChange(e.target.value)}
+                  onBlur={() => setCount(String(sanitizeBulkBuildingCount(Number(count))))}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {supportsItemConfiguration && selectedBuilding && (
             <div className="mb-4 rounded-lg border border-base-300 bg-base-200/40 p-3">
@@ -266,6 +288,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
       <div className="modal-backdrop" onClick={resetAndClose}></div>
       {selectedBuilding && supportsItemConfiguration && (
         <SelectItemModal
+          key={selectedBuilding.id}
           isOpen={showSelectItemModal}
           building={selectedBuilding}
           currentItemId={selectedItemId || undefined}

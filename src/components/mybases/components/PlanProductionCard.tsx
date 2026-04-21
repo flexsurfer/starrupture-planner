@@ -57,20 +57,20 @@ export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan }) 
       </div>
     </div>
 
-    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-      <div className="rounded-lg border border-base-300 bg-base-100/80 px-2 py-1.5">
+    <div className="mt-3 flex gap-2 overflow-x-auto pb-1 text-xs">
+      <div className="min-w-[130px] rounded-lg border border-base-300 bg-base-100/80 px-2 py-1.5">
         <div className="text-base-content/55">Plan</div>
         <div className="truncate font-medium" title={plan.name}>{plan.name}</div>
       </div>
-      <div className="rounded-lg border border-base-300 bg-base-100/80 px-2 py-1.5">
+      <div className="min-w-[90px] rounded-lg border border-base-300 bg-base-100/80 px-2 py-1.5">
         <div className="text-base-content/55">Buildings</div>
         <div className="font-medium">{plan.requiredBuildingCount}</div>
       </div>
-      <div className="rounded-lg border border-base-300 bg-base-100/80 px-2 py-1.5">
+      <div className="min-w-[90px] rounded-lg border border-base-300 bg-base-100/80 px-2 py-1.5">
         <div className="text-base-content/55">Inputs</div>
         <div className="font-medium">{plan.inputCount}</div>
       </div>
-      <div className="rounded-lg border border-base-300 bg-base-100/80 px-2 py-1.5">
+      <div className="min-w-[150px] rounded-lg border border-base-300 bg-base-100/80 px-2 py-1.5">
         <div className="text-base-content/55">Corporation</div>
         <div className="font-medium truncate" title={plan.corporationLabel}>{plan.corporationLabel}</div>
       </div>

@@ -19,11 +19,13 @@ import { buildItemsMap, parseCorporations, extractCategories } from './data-util
 import { DEFAULT_DATA_VERSION, isValidDataVersion } from './gameDataVersion';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '../components/planner/core/types';
+import type { BuildingSectionType } from '../components/mybases/types';
 import {
     getSectionTypeForBuilding,
+    isBuildingAvailableForSection,
+    isBuildingCountAvailable,
     buildActivePlanOccupancy,
-    getPreferredSectionTypeForBuildingType,
-    reconcileBaseBuildingTypeCount,
+    reconcileBaseBuildingSectionTypeCount,
     sanitizeBulkBuildingCount,
     sanitizeBuildingCount,
 } from '../components/mybases/utils';
@@ -420,8 +422,11 @@ regEvent(
     ) => {
         const base = getBaseById(draftDb.basesList, baseId);
         if (!base) return;
+        const building = draftDb.buildingsList.find((candidate: Building) => candidate.id === buildingTypeId);
 
-        const normalizedCount = sanitizeBulkBuildingCount(count);
+        const normalizedCount = building && isBuildingCountAvailable(building)
+            ? sanitizeBulkBuildingCount(count)
+            : 1;
         const normalizedRatePerMinute = typeof ratePerMinute === 'number' && ratePerMinute > 0
             ? ratePerMinute
             : undefined;
@@ -443,25 +448,21 @@ regEvent(
     }
 );
 
-regEvent(EVENT_IDS.BASES_SET_BUILDING_TYPE_COUNT, ({ draftDb }, baseId: string, buildingTypeId: string, rawTargetCount: number) => {
+regEvent(EVENT_IDS.BASES_SET_BUILDING_SECTION_TYPE_COUNT, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: BuildingSectionType, rawTargetCount: number) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
     const building = draftDb.buildingsList.find((candidate: Building) => candidate.id === buildingTypeId);
     if (!building || building.id === 'base_core') return;
+    if (sectionType !== 'energy' && sectionType !== 'production') return;
+    if (!isBuildingAvailableForSection(building, sectionType)) return;
 
     const targetCount = sanitizeBuildingCount(rawTargetCount);
-    const preferredSectionType = getPreferredSectionTypeForBuildingType(
+    const nextBuildings = reconcileBaseBuildingSectionTypeCount({
         base,
         buildingTypeId,
-        getSectionTypeForBuilding(building)
-    );
-
-    const nextBuildings = reconcileBaseBuildingTypeCount({
-        base,
-        buildingTypeId,
+        sectionType,
         targetCount,
-        preferredSectionType,
         createId: () => createEntityId('building'),
     });
 

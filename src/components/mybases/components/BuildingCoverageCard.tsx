@@ -1,12 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback } from 'react';
 import { dispatch } from '@flexsurfer/reflex';
 import type { PlanSummaryRow, BuildingCoverageRow } from '../types';
 import { EVENT_IDS } from '../../../state/event-ids';
-import { sanitizeBuildingCount } from '../utils';
 import { BuildingImage } from '../../ui';
 import { CoverageTableHeader } from './CoverageTableHeader';
-
-const BUILDING_COUNT_INPUT_DEBOUNCE_MS = 300;
+import { BuildingCountControl } from './BuildingCountControl';
 
 interface BuildingCoverageControlProps {
   baseId: string;
@@ -14,104 +12,22 @@ interface BuildingCoverageControlProps {
 }
 
 const BuildingCoverageControl: React.FC<BuildingCoverageControlProps> = ({ baseId, row }) => {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const debounceTimeoutRef = useRef<number | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-
   const setOwnedCount = useCallback((nextCount: number) => {
-    dispatch([EVENT_IDS.BASES_SET_BUILDING_TYPE_COUNT, baseId, row.buildingId, sanitizeBuildingCount(nextCount)]);
+    dispatch([
+      EVENT_IDS.BASES_SET_BUILDING_SECTION_TYPE_COUNT,
+      baseId,
+      row.buildingId,
+      'production',
+      nextCount,
+    ]);
   }, [baseId, row.buildingId]);
 
-  const clearPendingUpdate = useCallback(() => {
-    if (debounceTimeoutRef.current !== null) {
-      window.clearTimeout(debounceTimeoutRef.current);
-      debounceTimeoutRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => () => {
-    clearPendingUpdate();
-  }, [clearPendingUpdate]);
-
-  useEffect(() => {
-    if (!isEditing && inputRef.current && inputRef.current.value !== String(row.owned)) {
-      inputRef.current.value = String(row.owned);
-    }
-  }, [isEditing, row.owned]);
-
-  const getCurrentOwnedCount = useCallback(() => {
-    return sanitizeBuildingCount(Number(inputRef.current?.value || row.owned));
-  }, [row.owned]);
-
-  const commitOwnedCount = useCallback((nextCount: number) => {
-    const sanitizedCount = sanitizeBuildingCount(nextCount);
-    if (inputRef.current) {
-      inputRef.current.value = String(sanitizedCount);
-    }
-
-    if (sanitizedCount !== row.owned) {
-      setOwnedCount(sanitizedCount);
-    }
-  }, [row.owned, setOwnedCount]);
-
-  const scheduleOwnedCountUpdate = useCallback((nextValue: string) => {
-    clearPendingUpdate();
-    debounceTimeoutRef.current = window.setTimeout(() => {
-      debounceTimeoutRef.current = null;
-      const sanitizedCount = sanitizeBuildingCount(Number(nextValue || '0'));
-      if (sanitizedCount !== row.owned) {
-        setOwnedCount(sanitizedCount);
-      }
-    }, BUILDING_COUNT_INPUT_DEBOUNCE_MS);
-  }, [clearPendingUpdate, row.owned, setOwnedCount]);
-
   return (
-    <div className="join">
-      <button
-        type="button"
-        className="btn btn-xs join-item"
-        onClick={() => {
-          clearPendingUpdate();
-          setIsEditing(false);
-          commitOwnedCount(getCurrentOwnedCount() - 1);
-        }}
-        disabled={row.owned === 0}
-        aria-label={`Decrease ${row.building.name} count`}
-      >
-        -
-      </button>
-      <input
-        aria-label={`${row.building.name} owned count`}
-        className="input input-bordered input-xs join-item w-16 text-center font-mono"
-        inputMode="numeric"
-        defaultValue={String(row.owned)}
-        ref={inputRef}
-        onFocus={() => setIsEditing(true)}
-        onChange={(event) => {
-          const nextValue = event.target.value;
-          if (/^\d*$/.test(nextValue)) {
-            scheduleOwnedCountUpdate(nextValue);
-          }
-        }}
-        onBlur={() => {
-          setIsEditing(false);
-          clearPendingUpdate();
-          commitOwnedCount(getCurrentOwnedCount());
-        }}
-      />
-      <button
-        type="button"
-        className="btn btn-xs join-item"
-        onClick={() => {
-          clearPendingUpdate();
-          setIsEditing(false);
-          commitOwnedCount(getCurrentOwnedCount() + 1);
-        }}
-        aria-label={`Increase ${row.building.name} count`}
-      >
-        +
-      </button>
-    </div>
+    <BuildingCountControl
+      value={row.owned}
+      ariaLabel={`${row.building.name} owned count`}
+      onChange={setOwnedCount}
+    />
   );
 };
 

@@ -50,9 +50,9 @@ export const MaterialBalanceCard: React.FC<MaterialBalanceCardProps> = ({ plans,
             <table className="table table-xs">
               <CoverageTableHeader
                 plans={plans}
-                totalLabel="Total /min"
-                coverageLabel="Covered /min"
-                gapLabel="Balance /min"
+                totalLabel="Total"
+                coverageLabel="Covered"
+                gapLabel="Balance"
               />
               <tbody>
                 {rows.map((row) => {
@@ -94,7 +94,7 @@ export const MaterialBalanceCard: React.FC<MaterialBalanceCardProps> = ({ plans,
                         {formatRate(row.covered)}
                       </td>
                       <td className={`px-2 py-2 text-center font-mono text-[11px] ${balanceClass}`}>
-                        {balanceLabel}
+                        {balanceLabel}/min
                       </td>
                     </tr>
                   );

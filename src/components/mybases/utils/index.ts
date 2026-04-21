@@ -5,6 +5,7 @@
  */
 
 export {
+  isBuildingCountAvailable,
   isBuildingAvailableForSection,
   getAvailableBuildingsForSection,
   getSectionTypeForBuilding,
@@ -28,6 +29,5 @@ export {
   MAX_BULK_BUILDING_COUNT,
   sanitizeBuildingCount,
   sanitizeBulkBuildingCount,
-  getPreferredSectionTypeForBuildingType,
-  reconcileBaseBuildingTypeCount,
+  reconcileBaseBuildingSectionTypeCount,
 } from './baseBuildingCounts';

@@ -28,7 +28,7 @@ import { generateReactFlowData } from '../components/planner/visualization/plann
 import { getItemName } from '../utils/itemUtils';
 import type { Node, Edge } from '@xyflow/react';
 import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } from '../components/mybases/utils/baseCoreUtils';
-import { getAvailableBuildingsForSection } from '../components/mybases/utils/buildingSectionUtils';
+import { getAvailableBuildingsForSection, isBuildingAvailableForSection } from '../components/mybases/utils/buildingSectionUtils';
 import { buildActivePlanOccupancy } from '../components/mybases/utils/activePlanOccupancy';
 import { calculateSharedInputShortages } from '../components/mybases/utils/sharedInputShortages';
 import { getSelectedFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '../utils/productionPlanInputs';
@@ -874,7 +874,7 @@ regSub(SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID,
     () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS,
-    (base: Base | null, buildingsById: BuildingsByIdMap, _baseId: string, sectionType: string): BuildingSectionBuilding[] => {
+    (base: Base | null, buildingsById: BuildingsByIdMap, _baseId: string, sectionType: BuildingSectionType): BuildingSectionBuilding[] => {
         if (!base) return [];
 
         const sectionBuildings = base.buildings.filter(b => b.sectionType === sectionType);
@@ -919,18 +919,64 @@ regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS,
                 }
             });
 
-        return sectionBuildings
-            .map(baseBuilding => {
+        const entries = sectionBuildings
+            .map((baseBuilding): BuildingSectionBuilding | null => {
                 const building = buildingsById[baseBuilding.buildingTypeId];
                 if (!building) return null;
                 const planNames = Array.from(planNamesByBuildingId.get(baseBuilding.id) || []);
                 return {
+                    id: baseBuilding.id,
+                    buildingTypeId: baseBuilding.buildingTypeId,
+                    sectionType,
                     baseBuilding,
                     building,
+                    count: 1,
+                    isGrouped: false,
                     activePlanNames: planNames,
                 };
             })
             .filter((b): b is BuildingSectionBuilding => b !== null);
+
+        if (sectionType !== 'energy' && sectionType !== 'production') {
+            return entries;
+        }
+
+        const groupedEntries = new Map<string, {
+            id: string;
+            buildingTypeId: string;
+            sectionType: BuildingSectionType;
+            building: DbBuilding;
+            count: number;
+            activePlanNames: Set<string>;
+        }>();
+
+        for (const entry of entries) {
+            const existing = groupedEntries.get(entry.buildingTypeId);
+            if (existing) {
+                existing.count += 1;
+                entry.activePlanNames.forEach((planName) => existing.activePlanNames.add(planName));
+                continue;
+            }
+
+            groupedEntries.set(entry.buildingTypeId, {
+                id: `${sectionType}:${entry.buildingTypeId}`,
+                buildingTypeId: entry.buildingTypeId,
+                sectionType,
+                building: entry.building,
+                count: 1,
+                activePlanNames: new Set(entry.activePlanNames),
+            });
+        }
+
+        return Array.from(groupedEntries.values()).map((entry) => ({
+            id: entry.id,
+            buildingTypeId: entry.buildingTypeId,
+            sectionType: entry.sectionType,
+            building: entry.building,
+            count: entry.count,
+            isGrouped: true,
+            activePlanNames: Array.from(entry.activePlanNames),
+        }));
     },
     (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
 
@@ -1671,6 +1717,7 @@ regSub(SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS,
 
         const ownedCounts = new Map<string, number>();
         for (const baseBuilding of selectedBase.buildings) {
+            if (baseBuilding.sectionType !== 'production') continue;
             ownedCounts.set(baseBuilding.buildingTypeId, (ownedCounts.get(baseBuilding.buildingTypeId) || 0) + 1);
         }
 
@@ -1679,11 +1726,8 @@ regSub(SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS,
 
         for (const plan of plans) {
             for (const requiredBuilding of plan.requiredBuildings || []) {
-                const building = buildingById.get(requiredBuilding.buildingId) || {
-                    id: requiredBuilding.buildingId,
-                    name: requiredBuilding.buildingId,
-                    recipes: [],
-                };
+                const building = buildingById.get(requiredBuilding.buildingId);
+                if (!building || !isBuildingAvailableForSection(building, 'production')) continue;
 
                 const existing = requirementsByBuilding.get(requiredBuilding.buildingId);
                 if (existing) {

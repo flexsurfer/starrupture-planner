@@ -40,7 +40,7 @@ export const BaseDetailView: React.FC = () => {
             className={`tab text-xl font-bold flex items-center gap-2 ${activeTab === 'base' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('base')}
           >
-            Base
+            Production
           </button>
           <button
             type="button"

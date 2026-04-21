@@ -49,8 +49,13 @@ export interface BaseDetailStats {
  * Combines the base building instance, building type info, and active plan names.
  */
 export interface BuildingSectionBuilding {
-  baseBuilding: BaseBuilding;
+  id: string;
+  buildingTypeId: string;
+  sectionType: BuildingSectionType;
+  baseBuilding?: BaseBuilding;
   building: Building;
+  count: number;
+  isGrouped: boolean;
   activePlanNames: string[];
 }
 

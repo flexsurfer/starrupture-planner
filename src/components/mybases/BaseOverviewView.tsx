@@ -21,13 +21,10 @@ export const BaseOverviewView: React.FC = () => {
     <div className="space-y-4 lg:space-y-6">
       <div className="card border border-base-300 bg-base-100 shadow-sm">
         <div className="card-body gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="card-title text-xl">Production</h2>
-            </div>
+          <div className="flex justify-end">
             <button
               type="button"
-              className="btn btn-primary btn-sm self-start sm:self-center"
+              className="btn btn-primary btn-sm"
               onClick={() => dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN])}
             >
               Add Plan

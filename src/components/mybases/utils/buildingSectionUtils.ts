@@ -60,6 +60,10 @@ export function getAvailableBuildingsForSection(allBuildings: Building[], sectio
   return allBuildings.filter(building => isBuildingAvailableForSection(building, sectionType));
 }
 
+export function isBuildingCountAvailable(building: Building): boolean {
+  return isBuildingAvailableForSection(building, 'energy') || isBuildingAvailableForSection(building, 'production');
+}
+
 /**
  * Determines the appropriate section type for a building based on its characteristics.
  * This is the inverse of isBuildingAvailableForSection - given a building, determine its section.
