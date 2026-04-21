@@ -16,22 +16,6 @@ export const BasePlansView: React.FC = () => {
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      {/* Production Plan Sections */}
-      {selectedBaseId && sectionIds.map((sectionId) => (
-        <ProductionPlanSectionComponent
-          key={sectionId}
-          baseId={selectedBaseId}
-          sectionId={sectionId}
-        />
-      ))}
-
-      {/* Empty state when no plans */}
-      {sectionIds.length === 0 && (
-        <div className="text-center text-base-content/60">
-          <p className="text-sm">No production plans yet. Create a production plan to calculate the buildings needed to produce items at a specific rate.</p>
-        </div>
-      )}
-
       {/* Add Production Plan Button */}
       <div className="card bg-base-200 border border-dashed border-base-300 hover:border-primary cursor-pointer transition-colors"
         onClick={handleOpenProductionPlanModal}
@@ -54,6 +38,22 @@ export const BasePlansView: React.FC = () => {
           <span className="text-sm text-base-content/70">Add Production Plan</span>
         </div>
       </div>
+
+      {/* Production Plan Sections */}
+      {selectedBaseId && sectionIds.map((sectionId) => (
+        <ProductionPlanSectionComponent
+          key={sectionId}
+          baseId={selectedBaseId}
+          sectionId={sectionId}
+        />
+      ))}
+
+      {/* Empty state when no plans */}
+      {sectionIds.length === 0 && (
+        <div className="text-center text-base-content/60">
+          <p className="text-sm">No production plans yet. Create a production plan to calculate the buildings needed to produce items at a specific rate.</p>
+        </div>
+      )}
     </div>
   );
 };
