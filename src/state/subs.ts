@@ -1671,7 +1671,7 @@ regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
                     {
                         targetItemId: plan.selectedItemId,
                         targetAmount: plan.targetAmount,
-                        inputBuildings: [],
+                        inputBuildings: plan.inputs || [],
                         rawProductionDisabled: true,
                         includeLauncher: isLauncherEnabled(plan.corporationLevel),
                         recipeSelections: plan.recipeSelections || {},
