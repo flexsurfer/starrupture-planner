@@ -6,6 +6,8 @@ export interface MatchInputsParams {
     inputBuildings: BaseBuilding[];
     buildings: Building[];
     includeLauncher: boolean;
+    /** Per-output recipe overrides (same keys as production flow / modal). */
+    recipeSelections?: Record<string, string>;
 }
 
 /**
@@ -14,7 +16,7 @@ export interface MatchInputsParams {
  * capacity is exceeded. Accounts for the full multi-level recipe chain.
  */
 export function calculateMaxTargetFromInputs(params: MatchInputsParams): number | null {
-    const { selectedItemId, inputBuildings, buildings, includeLauncher } = params;
+    const { selectedItemId, inputBuildings, buildings, includeLauncher, recipeSelections } = params;
     if (!selectedItemId || inputBuildings.length === 0) return null;
 
     const flowParams = {
@@ -22,6 +24,7 @@ export function calculateMaxTargetFromInputs(params: MatchInputsParams): number 
         inputBuildings,
         rawProductionDisabled: true,
         includeLauncher,
+        recipeSelections: recipeSelections ?? {},
     };
 
     const probeFlow = buildProductionFlow({ ...flowParams, targetAmount: 1 }, buildings);

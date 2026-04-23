@@ -79,6 +79,34 @@ const buildings: Building[] = [
     },
 ];
 
+/** Two buildings producing the same item at different rates (mirrors planner “v1 / v2” alternatives). */
+const altRotorBuildings: Building[] = [
+    {
+        id: 'fabricator',
+        name: 'Fabricator',
+        power: 10,
+        heat: 10,
+        recipes: [
+            {
+                output: { id: 'rotor', amount_per_minute: 10 },
+                inputs: [{ id: 'bar_titanium', amount_per_minute: 20 }],
+            },
+        ],
+    },
+    {
+        id: 'craftertier2',
+        name: 'Fabricator v.2',
+        power: 25,
+        heat: 8,
+        recipes: [
+            {
+                output: { id: 'rotor', amount_per_minute: 60 },
+                inputs: [{ id: 'bar_titanium', amount_per_minute: 10 }],
+            },
+        ],
+    },
+];
+
 function makeInput(id: string, itemId: string, rate: number): BaseBuilding {
     return {
         id,
@@ -358,6 +386,27 @@ describe('calculateMaxTargetFromInputs', () => {
             });
             expect(result).not.toBeNull();
             verifyNoDeficitsAtResult(result!, 'titanium_housing', inputs);
+        });
+    });
+
+    describe('recipeSelections (alternative target recipe)', () => {
+        it('uses selected alternative when computing max target', () => {
+            const inputs = [makeInput('i1', 'bar_titanium', 120)];
+            const slowDefault = calculateMaxTargetFromInputs({
+                selectedItemId: 'rotor',
+                inputBuildings: inputs,
+                buildings: altRotorBuildings,
+                includeLauncher: false,
+            });
+            const withAlt = calculateMaxTargetFromInputs({
+                selectedItemId: 'rotor',
+                inputBuildings: inputs,
+                buildings: altRotorBuildings,
+                includeLauncher: false,
+                recipeSelections: { rotor: 'craftertier2:0' },
+            });
+            expect(slowDefault).toBe(60);
+            expect(withAlt).toBe(720);
         });
     });
 

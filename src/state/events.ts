@@ -83,7 +83,8 @@ function findEnergyGroupByName(groups: EnergyGroup[], name: string): EnergyGroup
 function applyMatchInputs(draftDb: AppState): void {
     if (!draftDb.productionPlanModalState.matchInputs) return;
 
-    const { selectedItemId, selectedInputIds, baseId, selectedCorporationLevel } = draftDb.productionPlanModalState;
+    const { selectedItemId, selectedInputIds, baseId, selectedCorporationLevel, recipeSelections } =
+        draftDb.productionPlanModalState;
     if (!selectedItemId || !baseId || !selectedInputIds?.length) return;
 
     const base = getBaseById(draftDb.basesList, baseId);
@@ -94,6 +95,7 @@ function applyMatchInputs(draftDb: AppState): void {
         inputBuildings: getSelectedFlowInputBuildings(base, selectedInputIds),
         buildings: draftDb.buildingsList,
         includeLauncher: selectedCorporationLevel !== null,
+        recipeSelections,
     });
     if (maxAmount !== null && maxAmount > 0) {
         draftDb.productionPlanModalState.targetAmount = maxAmount;
