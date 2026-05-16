@@ -24,12 +24,15 @@ import {
     getSectionTypeForBuilding,
     isBuildingAvailableForSection,
     isBuildingCountAvailable,
+    isRawExtractor,
     buildActivePlanOccupancy,
     reconcileBaseBuildingSectionTypeCount,
     sanitizeBulkBuildingCount,
     sanitizeBuildingCount,
 } from '../components/mybases/utils';
 import {
+    computeRequiredBuildings,
+    getFlowInputBuildings,
     getProductionInputIds,
     getSelectedFlowInputBuildings,
     sanitizeRecipeSelectionsForInputItems,
@@ -92,7 +95,7 @@ function applyMatchInputs(draftDb: AppState): void {
 
     const maxAmount = calculateMaxTargetFromInputs({
         selectedItemId,
-        inputBuildings: getSelectedFlowInputBuildings(base, selectedInputIds),
+        inputBuildings: getSelectedFlowInputBuildings(base, selectedInputIds, draftDb.basesList),
         buildings: draftDb.buildingsList,
         includeLauncher: selectedCorporationLevel !== null,
         recipeSelections,
@@ -133,27 +136,6 @@ function setTargetAmountToDefault(draftDb: AppState, itemId: string) {
     draftDb.plannerTargetAmount = getSlowestOutputRateForItem(draftDb.buildingsList, itemId);
 }
 
-/**
- * Aggregates the building requirements from a production flow.
- * Stored on the plan so that subscriptions can check requirements
- * without recomputing the full flow.
- */
-function computeRequiredBuildings(flow: ProductionFlowResult): PlanRequiredBuilding[] {
-    const map = new Map<string, PlanRequiredBuilding>();
-    flow.nodes.forEach(node => {
-        if (node.nodeType === 'input') return;
-        const existing = map.get(node.buildingId);
-        if (existing) {
-            existing.count += Math.ceil(node.buildingCount);
-        } else {
-            map.set(node.buildingId, {
-                buildingId: node.buildingId,
-                count: Math.ceil(node.buildingCount),
-            });
-        }
-    });
-    return Array.from(map.values());
-}
 
 /** Keeps only input snapshots that are actually consumed by the provided flow. */
 function computeUsedInputSnapshots(flow: ProductionFlowResult, inputBuildings: BaseBuilding[] = []): BaseBuilding[] {
@@ -379,6 +361,7 @@ interface CreateBaseBuildingOptions {
     description?: string;
     selectedItemId?: string;
     ratePerMinute?: number;
+    linkedOutput?: BaseBuilding['linkedOutput'];
 }
 
 /** Creates a new BaseBuilding object with a unique ID. */
@@ -389,6 +372,7 @@ function createBaseBuilding({
     description,
     selectedItemId,
     ratePerMinute,
+    linkedOutput,
 }: CreateBaseBuildingOptions): BaseBuilding {
     return {
         id: createEntityId('building'),
@@ -398,7 +382,28 @@ function createBaseBuilding({
         ...(description ? { description } : {}),
         ...(selectedItemId ? { selectedItemId } : {}),
         ...(ratePerMinute && ratePerMinute > 0 ? { ratePerMinute } : {}),
+        ...(linkedOutput ? { linkedOutput } : {}),
     };
+}
+
+function getLinkedInputBuildingTypeId(buildings: Building[]): string | undefined {
+    const packageReceiver = buildings.find((building) => building.id === 'package_receiver');
+    if (packageReceiver) return packageReceiver.id;
+
+    const fallback = buildings.find((building) =>
+        isBuildingAvailableForSection(building, 'inputs') && !isRawExtractor(building)
+    );
+    return fallback?.id;
+}
+
+function getConfiguredOutputBuilding(base: Base, outputBuildingId: string): BaseBuilding | undefined {
+    return base.buildings.find((building: BaseBuilding) =>
+        building.id === outputBuildingId &&
+        building.sectionType === 'outputs' &&
+        !!building.selectedItemId &&
+        !!building.ratePerMinute &&
+        building.ratePerMinute > 0
+    );
 }
 
 regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string) => {
@@ -420,7 +425,8 @@ regEvent(
         name?: string,
         description?: string,
         selectedItemId?: string | null,
-        ratePerMinute?: number | null
+        ratePerMinute?: number | null,
+        linkedOutput?: BaseBuilding['linkedOutput'] | null
     ) => {
         const base = getBaseById(draftDb.basesList, baseId);
         if (!base) return;
@@ -432,6 +438,7 @@ regEvent(
         const normalizedRatePerMinute = typeof ratePerMinute === 'number' && ratePerMinute > 0
             ? ratePerMinute
             : undefined;
+        const normalizedLinkedOutput = linkedOutput || undefined;
 
         for (let index = 0; index < normalizedCount; index += 1) {
             base.buildings.push(
@@ -442,6 +449,7 @@ regEvent(
                     description,
                     selectedItemId: selectedItemId || undefined,
                     ratePerMinute: normalizedRatePerMinute,
+                    linkedOutput: normalizedLinkedOutput,
                 })
             );
         }
@@ -493,13 +501,41 @@ regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: s
             if (itemId && ratePerMinute) {
                 building.selectedItemId = itemId;
                 building.ratePerMinute = ratePerMinute;
+                building.linkedOutput = undefined;
             } else {
                 building.selectedItemId = undefined;
                 building.ratePerMinute = undefined;
+                building.linkedOutput = undefined;
             }
             return [persistBasesEffect(draftDb as AppState)];
         }
     }
+});
+
+regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT, ({ draftDb }, baseId: string, buildingId: string, sourceBaseId: string, sourceOutputBuildingId: string) => {
+    const base = getBaseById(draftDb.basesList, baseId);
+    const sourceBase = getBaseById(draftDb.basesList, sourceBaseId);
+    if (!base || !sourceBase) return;
+
+    const inputBuilding = base.buildings.find((building: BaseBuilding) => building.id === buildingId);
+    if (!inputBuilding || inputBuilding.sectionType !== 'inputs') return;
+
+    const inputBuildingType = draftDb.buildingsList.find((building: Building) => building.id === inputBuilding.buildingTypeId);
+    if (!inputBuildingType || isRawExtractor(inputBuildingType)) return;
+
+    const sourceOutput = getConfiguredOutputBuilding(sourceBase, sourceOutputBuildingId);
+    if (!sourceOutput?.selectedItemId || !sourceOutput.ratePerMinute) return;
+
+    inputBuilding.selectedItemId = sourceOutput.selectedItemId;
+    inputBuilding.ratePerMinute = sourceOutput.ratePerMinute;
+    inputBuilding.linkedOutput = {
+        baseId: sourceBaseId,
+        buildingId: sourceOutputBuildingId,
+        itemIdSnapshot: sourceOutput.selectedItemId,
+        ratePerMinuteSnapshot: sourceOutput.ratePerMinute,
+    };
+
+    return [persistBasesEffect(draftDb as AppState)];
 });
 
 //===============================================
@@ -636,7 +672,20 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftDb }, baseId: 
     const plan = base.productions.find((s: Production) => s.id === planId);
     if (!plan) return;
 
-    const requiredBuildings = plan.requiredBuildings || [];
+    const planInputBuildings = getFlowInputBuildings(plan.inputs || [], draftDb.basesList);
+    const recipeSelections = sanitizeRecipeSelectionsForInputItems(plan.recipeSelections || {}, planInputBuildings);
+    const flow = buildProductionFlow(
+        {
+            targetItemId: plan.selectedItemId,
+            targetAmount: plan.targetAmount > 0 ? plan.targetAmount : 1,
+            inputBuildings: planInputBuildings,
+            rawProductionDisabled: true,
+            includeLauncher: plan.corporationLevel !== null && plan.corporationLevel !== undefined,
+            recipeSelections,
+        },
+        draftDb.buildingsList
+    );
+    const requiredBuildings = computeRequiredBuildings(flow);
     if (requiredBuildings.length === 0) return;
 
     const existingCountByType = flag === 'missing'
@@ -760,7 +809,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
     // Get production flow to extract used inputs
     const validAmount = targetAmount > 0 ? targetAmount : 1;
     const includeLauncher = selectedCorporationLevel !== null;
-    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modal.selectedInputIds || []);
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modal.selectedInputIds || [], draftDb.basesList);
     const recipeSelections = sanitizeRecipeSelectionsForInputItems(modal.recipeSelections, selectedInputBuildings);
     
     const flow = buildProductionFlow(
@@ -837,7 +886,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, ({ draftDb }, ite
 
     const modalState = draftDb.productionPlanModalState;
     const base = modalState.baseId ? getBaseById(draftDb.basesList, modalState.baseId) : undefined;
-    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || []);
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || [], draftDb.basesList);
     const inputItemIds = new Set(
         selectedInputBuildings
             .map((input) => input.selectedItemId)
@@ -879,8 +928,76 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftDb }, baseBuildin
         selectedInputIds.push(baseBuildingId);
     }
     const base = modalState.baseId ? getBaseById(draftDb.basesList, modalState.baseId) : undefined;
-    const selectedInputBuildings = getSelectedFlowInputBuildings(base, selectedInputIds || []);
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, selectedInputIds || [], draftDb.basesList);
     const sanitizedRecipeSelections = sanitizeRecipeSelectionsForInputItems(modalState.recipeSelections, selectedInputBuildings);
     modalState.recipeSelections = sanitizedRecipeSelections;
     applyMatchInputs(draftDb as AppState);
+});
+
+regEvent(
+    EVENT_IDS.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT,
+    (
+        { draftDb },
+        sourceBaseId: string,
+        sourceOutputBuildingId: string,
+        targetBuildingTypeId?: string,
+        name?: string,
+        description?: string
+    ) => {
+    const modalState = draftDb.productionPlanModalState;
+    const targetBaseId = modalState.baseId;
+    if (!targetBaseId || !sourceBaseId || !sourceOutputBuildingId) return;
+
+    const targetBase = getBaseById(draftDb.basesList, targetBaseId);
+    const sourceBase = getBaseById(draftDb.basesList, sourceBaseId);
+    if (!targetBase || !sourceBase) return;
+
+    const sourceOutput = getConfiguredOutputBuilding(sourceBase, sourceOutputBuildingId);
+    if (!sourceOutput?.selectedItemId || !sourceOutput.ratePerMinute) return;
+
+    const targetBuilding = targetBuildingTypeId
+        ? draftDb.buildingsList.find((building: Building) => building.id === targetBuildingTypeId)
+        : undefined;
+    const inputBuildingTypeId = (targetBuilding &&
+        isBuildingAvailableForSection(targetBuilding, 'inputs') &&
+        !isRawExtractor(targetBuilding))
+        ? targetBuilding.id
+        : getLinkedInputBuildingTypeId(draftDb.buildingsList);
+    if (!inputBuildingTypeId) return;
+
+    const existingLinkedInput = targetBase.buildings.find((building: BaseBuilding) =>
+        building.sectionType === 'inputs' &&
+        building.buildingTypeId === inputBuildingTypeId &&
+        building.linkedOutput?.baseId === sourceBaseId &&
+        building.linkedOutput?.buildingId === sourceOutputBuildingId
+    );
+
+    const linkedInput = existingLinkedInput || createBaseBuilding({
+        buildingTypeId: inputBuildingTypeId,
+        sectionType: 'inputs',
+        name,
+        description,
+        selectedItemId: sourceOutput.selectedItemId,
+        ratePerMinute: sourceOutput.ratePerMinute,
+        linkedOutput: {
+            baseId: sourceBaseId,
+            buildingId: sourceOutputBuildingId,
+            itemIdSnapshot: sourceOutput.selectedItemId,
+            ratePerMinuteSnapshot: sourceOutput.ratePerMinute,
+        },
+    });
+
+    if (!existingLinkedInput) {
+        targetBase.buildings.push(linkedInput);
+    }
+
+    if (!modalState.selectedInputIds.includes(linkedInput.id)) {
+        modalState.selectedInputIds.push(linkedInput.id);
+    }
+
+    const selectedInputBuildings = getSelectedFlowInputBuildings(targetBase, modalState.selectedInputIds || [], draftDb.basesList);
+    modalState.recipeSelections = sanitizeRecipeSelectionsForInputItems(modalState.recipeSelections, selectedInputBuildings);
+    applyMatchInputs(draftDb as AppState);
+
+    return [persistBasesEffect(draftDb as AppState)];
 });

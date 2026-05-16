@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useSubscription } from '@flexsurfer/reflex';
 import type { Building, Item } from '../../../state/db';
 import { SUB_IDS } from '../../../state/sub-ids';
-import type { AddBuildingRequest, BuildingSectionType } from '../types';
+import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem } from '../types';
 import { BuildingImage, ItemImage } from '../../ui';
 import { isRawExtractor, MAX_BULK_BUILDING_COUNT, sanitizeBulkBuildingCount } from '../utils';
 import { SelectItemModal } from './SelectItemModal';
+import { LinkOutputModal } from './LinkOutputModal';
 
 interface AddBuildingCardModalProps {
   isOpen: boolean;
@@ -30,27 +31,36 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const [count, setCount] = useState('1');
   const [selectedItemId, setSelectedItemId] = useState('');
   const [ratePerMinute, setRatePerMinute] = useState('');
+  const [selectedLinkedOutput, setSelectedLinkedOutput] = useState<LinkableOutputItem | null>(null);
+  const [configurationMode, setConfigurationMode] = useState<'manual' | 'linked'>('manual');
   const [showSelectItemModal, setShowSelectItemModal] = useState(false);
+  const [showLinkOutputModal, setShowLinkOutputModal] = useState(false);
 
   const supportsItemConfiguration = sectionType === 'inputs' || sectionType === 'outputs';
   const mustConfigureItem = supportsItemConfiguration && requireItemConfiguration;
   const selectedItem = selectedItemId ? itemsById[selectedItemId] || null : null;
   const supportsCount = sectionType === 'production' || sectionType === 'energy';
   const selectedBuildingSupportsCount = !!selectedBuilding && supportsCount;
+  const selectedBuildingSupportsLinking = !!selectedBuilding && sectionType === 'inputs' && !isRawExtractor(selectedBuilding);
 
   if (!isOpen) {
     return null;
   }
 
+  const resetItemAndLinkState = () => {
+    setSelectedItemId('');
+    setRatePerMinute('');
+    setSelectedLinkedOutput(null);
+    setConfigurationMode('manual');
+  };
+
   const handleBuildingClick = (building: Building) => {
     if (selectedBuilding?.id === building.id) {
       setSelectedBuilding(null);
-      setSelectedItemId('');
-      setRatePerMinute('');
+      resetItemAndLinkState();
     } else {
       setSelectedBuilding(building);
-      setSelectedItemId('');
-      setRatePerMinute('');
+      resetItemAndLinkState();
       if (!supportsCount) {
         setCount('1');
       }
@@ -60,6 +70,15 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const handleItemConfigured = (itemId: string, configuredRatePerMinute: number) => {
     setSelectedItemId(itemId);
     setRatePerMinute(String(configuredRatePerMinute));
+    setSelectedLinkedOutput(null);
+    setConfigurationMode('manual');
+  };
+
+  const handleLinkedOutputConfigured = (output: LinkableOutputItem) => {
+    setSelectedLinkedOutput(output);
+    setSelectedItemId(output.item.id);
+    setRatePerMinute(String(output.ratePerMinute));
+    setConfigurationMode('linked');
   };
 
   const handleCountChange = (nextValue: string) => {
@@ -80,9 +99,10 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
       ? sanitizeBulkBuildingCount(Number(count))
       : 1;
     const normalizedRate = Number(ratePerMinute);
+    const hasLinkedOutput = configurationMode === 'linked' && selectedLinkedOutput !== null;
     const hasConfiguredItem = !!selectedItemId && normalizedRate > 0;
 
-    if (mustConfigureItem && !hasConfiguredItem) {
+    if (mustConfigureItem && !hasConfiguredItem && !hasLinkedOutput) {
       return;
     }
 
@@ -93,6 +113,14 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
       description: customDescription.trim() || undefined,
       selectedItemId: hasConfiguredItem ? selectedItemId : undefined,
       ratePerMinute: hasConfiguredItem ? normalizedRate : undefined,
+      linkedOutput: hasLinkedOutput
+        ? {
+            baseId: selectedLinkedOutput.baseId,
+            buildingId: selectedLinkedOutput.baseBuildingId,
+            itemIdSnapshot: selectedLinkedOutput.item.id,
+            ratePerMinuteSnapshot: selectedLinkedOutput.ratePerMinute,
+          }
+        : undefined,
     });
     resetAndClose();
   };
@@ -102,8 +130,8 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
     setCustomName('');
     setCustomDescription('');
     setCount('1');
-    setSelectedItemId('');
-    setRatePerMinute('');
+    resetItemAndLinkState();
+    setShowLinkOutputModal(false);
     onClose();
   };
 
@@ -210,20 +238,54 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                   )}
                 </div>
 
+                {selectedBuildingSupportsLinking && (
+                  <div className="join w-fit">
+                    <button
+                      type="button"
+                      className={`btn btn-xs join-item ${configurationMode === 'manual' ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={resetItemAndLinkState}
+                    >
+                      Manual
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-xs join-item ${configurationMode === 'linked' ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setConfigurationMode('linked')}
+                    >
+                      Linked output
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline"
-                    onClick={() => setShowSelectItemModal(true)}
-                  >
-                    {selectedItem ? 'Change material' : 'Select material'}
-                  </button>
-                  {selectedItem && (
+                  {configurationMode === 'linked' && selectedBuildingSupportsLinking ? (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline"
+                      onClick={() => setShowLinkOutputModal(true)}
+                    >
+                      {selectedLinkedOutput ? 'Change linked output' : 'Link output'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline"
+                      onClick={() => setShowSelectItemModal(true)}
+                    >
+                      {selectedItem ? 'Change material' : 'Select material'}
+                    </button>
+                  )}
+                  {selectedItem && configurationMode === 'manual' && (
                     <span className="text-xs text-base-content/70">
-                      {selectedItem.name} • {ratePerMinute}/min
+                      {selectedItem.name} - {ratePerMinute}/min
                     </span>
                   )}
-                  {!selectedItem && !mustConfigureItem && (
+                  {selectedLinkedOutput && configurationMode === 'linked' && (
+                    <span className="text-xs text-base-content/70">
+                      {selectedLinkedOutput.baseName} / {selectedLinkedOutput.item.name} - {selectedLinkedOutput.ratePerMinute}/min
+                    </span>
+                  )}
+                  {!selectedItem && !selectedLinkedOutput && !mustConfigureItem && (
                     <span className="text-xs text-base-content/55">No material configured</span>
                   )}
                 </div>
@@ -277,7 +339,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
             <button
               type="button"
               className="btn btn-primary btn-sm"
-              disabled={!selectedBuilding || (mustConfigureItem && (!selectedItemId || Number(ratePerMinute) <= 0))}
+              disabled={!selectedBuilding || (mustConfigureItem && !selectedLinkedOutput && (!selectedItemId || Number(ratePerMinute) <= 0))}
               onClick={handleConfirm}
             >
               Add
@@ -297,6 +359,16 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
           onConfirm={(itemId, configuredRatePerMinute) => {
             handleItemConfigured(itemId, configuredRatePerMinute);
             setShowSelectItemModal(false);
+          }}
+        />
+      )}
+      {selectedBuildingSupportsLinking && (
+        <LinkOutputModal
+          isOpen={showLinkOutputModal}
+          onClose={() => setShowLinkOutputModal(false)}
+          onSelect={(output) => {
+            handleLinkedOutputConfigured(output);
+            setShowLinkOutputModal(false);
           }}
         />
       )}

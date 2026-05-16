@@ -27,6 +27,7 @@ export const BaseBuildingsView: React.FC = () => {
         request.description,
         request.selectedItemId ?? null,
         request.ratePerMinute ?? null,
+        request.linkedOutput ?? null,
       ]);
       setAddBuildingSection(null);
     }

@@ -74,6 +74,7 @@ export const SUB_IDS = {
     PRODUCTION_PLAN_MODAL_HEADER_DATA: 'productionPlanModalHeaderData',
     PRODUCTION_PLAN_MODAL_FORM_VALUES: 'productionPlanModalFormValues',
     PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA: 'productionPlanModalInputSelectorData',
+    PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS: 'productionPlanModalLinkableOutputs',
     PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID: 'productionPlanModalSelectedItemId',
     PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS: 'productionPlanModalRawMaterialDeficits',
     PRODUCTION_PLAN_MODAL_FORM_VALIDITY: 'productionPlanModalFormValidity',

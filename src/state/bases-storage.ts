@@ -7,7 +7,7 @@ import type {
 } from './db';
 
 const BASES_STORAGE_KEY = 'bases';
-const BASES_SCHEMA_VERSION = 2 as const;
+const BASES_SCHEMA_VERSION = 3 as const;
 
 export interface BasesStorageEnvelope {
     schemaVersion: number;
@@ -34,6 +34,28 @@ function normalizeBases(rawBases: unknown): Base[] {
     if (!Array.isArray(rawBases)) {
         return [];
     }
+
+    const normalizeLinkedOutput = (rawLinkedOutput: unknown): BaseBuilding['linkedOutput'] | undefined => {
+        if (typeof rawLinkedOutput !== 'object' || rawLinkedOutput === null) {
+            return undefined;
+        }
+
+        const linkedOutput = rawLinkedOutput as Partial<NonNullable<BaseBuilding['linkedOutput']>>;
+        if (typeof linkedOutput.baseId !== 'string' || typeof linkedOutput.buildingId !== 'string') {
+            return undefined;
+        }
+
+        return {
+            baseId: linkedOutput.baseId,
+            buildingId: linkedOutput.buildingId,
+            ...(typeof linkedOutput.itemIdSnapshot === 'string'
+                ? { itemIdSnapshot: linkedOutput.itemIdSnapshot }
+                : {}),
+            ...(typeof linkedOutput.ratePerMinuteSnapshot === 'number' && Number.isFinite(linkedOutput.ratePerMinuteSnapshot)
+                ? { ratePerMinuteSnapshot: linkedOutput.ratePerMinuteSnapshot }
+                : {}),
+        };
+    };
 
     const normalizeBuilding = (rawBuilding: unknown): BaseBuilding | null => {
         if (typeof rawBuilding !== 'object' || rawBuilding === null) {
@@ -62,6 +84,7 @@ function normalizeBases(rawBases: unknown): Base[] {
         const description = typeof building.description === 'string' && building.description.trim()
             ? building.description.trim()
             : undefined;
+        const linkedOutput = normalizeLinkedOutput(building.linkedOutput);
 
         const normalized: BaseBuilding = {
             id: building.id,
@@ -73,6 +96,7 @@ function normalizeBases(rawBases: unknown): Base[] {
         if (ratePerMinute !== undefined) normalized.ratePerMinute = ratePerMinute;
         if (name !== undefined) normalized.name = name;
         if (description !== undefined) normalized.description = description;
+        if (linkedOutput !== undefined) normalized.linkedOutput = linkedOutput;
 
         return normalized;
     };

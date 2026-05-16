@@ -91,7 +91,14 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                                                 size="small"
                                                 className="w-4 h-4 flex-shrink-0"
                                             />
-                                            <span className="truncate flex-1">{req.itemName}</span>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate">{req.itemName}</div>
+                                                {req.linkedOutput && (
+                                                    <div className="text-[11px] text-base-content/60 truncate">
+                                                        {req.linkedOutput.baseName} / {req.linkedOutput.outputName}
+                                                    </div>
+                                                )}
+                                            </div>
                                             <span className="text-xs text-base-content/60 flex-shrink-0">{req.ratePerMinute}/min</span>
                                         </div>
                                         <div className="flex items-center gap-2 ml-2">

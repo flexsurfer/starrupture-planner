@@ -24,6 +24,19 @@ export const InputsSelector: React.FC = () => {
     const handleAddInputBuildings = useCallback((request: AddBuildingRequest) => {
         if (!selectedBaseId) return;
 
+        if (request.linkedOutput) {
+            dispatch([
+                EVENT_IDS.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT,
+                request.linkedOutput.baseId,
+                request.linkedOutput.buildingId,
+                request.buildingTypeId,
+                request.name,
+                request.description,
+            ]);
+            setShowAddInputModal(false);
+            return;
+        }
+
         dispatch([
             EVENT_IDS.BASES_ADD_BUILDINGS,
             selectedBaseId,
@@ -68,16 +81,24 @@ export const InputsSelector: React.FC = () => {
                         {inputItems.map((inputItem) => {
                             const isSelected = selectedInputIds.includes(inputItem.baseBuildingId);
                             const hasNameOrDescription = inputItem.name || inputItem.description;
+                            const hasLinkError = !!inputItem.linkedOutput && inputItem.linkedOutput.status !== 'ok';
+                            const linkLabel = inputItem.linkedOutput
+                                ? `${inputItem.linkedOutput.baseName} / ${inputItem.linkedOutput.outputName}`
+                                : '';
                             return (
                                 <div
                                     key={inputItem.baseBuildingId}
                                     onClick={() => handleInputToggle(inputItem.baseBuildingId)}
                                     className={`flex flex-col gap-1 border rounded-lg px-2 py-1 cursor-pointer transition-colors ${
-                                        isSelected
+                                        hasLinkError
+                                            ? 'bg-error/10 border-error'
+                                            : isSelected
                                             ? 'bg-primary/20 border-primary'
                                             : 'border-base-300 hover:bg-base-300/50'
                                     }`}
-                                    title={`${inputItem.building.name}: ${inputItem.item.name} - ${inputItem.ratePerMinute}/min`}
+                                    title={inputItem.linkedOutput
+                                        ? `${linkLabel} - ${inputItem.item.name} - ${inputItem.ratePerMinute}/min`
+                                        : `${inputItem.building.name}: ${inputItem.item.name} - ${inputItem.ratePerMinute}/min`}
                                 >
                                     {hasNameOrDescription && (
                                         <div className="flex flex-col gap-1 min-w-0">
@@ -92,6 +113,14 @@ export const InputsSelector: React.FC = () => {
                                                 </span>
                                             )}
                                         </div>
+                                    )}
+                                    {inputItem.linkedOutput && (
+                                        <span
+                                            className={`badge badge-xs w-fit ${hasLinkError ? 'badge-error' : 'badge-outline'}`}
+                                            title={linkLabel}
+                                        >
+                                            {hasLinkError ? 'Link broken' : linkLabel}
+                                        </span>
                                     )}
                                     <div className="flex items-center gap-1.5 mt-auto">
                                         <BuildingImage

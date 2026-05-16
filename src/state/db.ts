@@ -96,6 +96,13 @@ export interface CorporationLevelSelection {
     level: number;
 }
 
+export interface LinkedOutputReference {
+    baseId: string;
+    buildingId: string;
+    itemIdSnapshot?: string;
+    ratePerMinuteSnapshot?: number;
+}
+
 // Base-related types
 export interface BaseBuilding {
     id: string;
@@ -103,6 +110,7 @@ export interface BaseBuilding {
     sectionType: string; // Section where this building was added (e.g., 'inputs', 'production', 'outputs')
     selectedItemId?: string; // Selected item for input buildings
     ratePerMinute?: number; // Rate per minute for the selected item
+    linkedOutput?: LinkedOutputReference; // Optional live link from this input to an output building
     name?: string; // Optional custom name for this building instance
     description?: string; // Optional custom description for this building instance
 }

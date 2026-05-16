@@ -5,6 +5,7 @@
  */
 
 import type { BaseBuilding, Building, Item, Production } from '../../state/db';
+import type { LinkedOutputStatus } from '../../utils/productionPlanInputs';
 
 /**
  * Section types for categorizing buildings in a base.
@@ -21,6 +22,7 @@ export interface AddBuildingRequest {
   description?: string;
   selectedItemId?: string;
   ratePerMinute?: number;
+  linkedOutput?: BaseBuilding['linkedOutput'];
 }
 
 /**
@@ -81,15 +83,35 @@ export interface BaseInputItem {
   building: Building;
   name: string;
   description: string;
+  linkedOutput?: {
+    status: LinkedOutputStatus;
+    baseId: string;
+    buildingId: string;
+    baseName: string;
+    outputName: string;
+  };
 }
 
 /**
  * Represents an output item configured on a base building.
  */
 export interface BaseOutputItem {
+  /** Unique ID of this building instance in the base */
+  baseBuildingId: string;
   item: Item;
   ratePerMinute: number;
   building: Building;
+  name: string;
+  description: string;
+}
+
+/**
+ * Configured output that can be linked into a production plan as an input.
+ */
+export interface LinkableOutputItem extends BaseOutputItem {
+  baseId: string;
+  baseName: string;
+  isCurrentBase: boolean;
 }
 
 /**
@@ -162,6 +184,11 @@ export interface InputRequirement {
   itemName: string;
   ratePerMinute: number;
   isSatisfied: boolean;
+  linkedOutput?: {
+    status: LinkedOutputStatus;
+    baseName: string;
+    outputName: string;
+  };
 }
 
 /**

@@ -29,6 +29,7 @@ export const EVENT_IDS = {
     BASES_SET_BUILDING_SECTION_TYPE_COUNT: 'basesSetBuildingSectionTypeCount',
     BASES_REMOVE_BUILDING: 'basesRemoveBuilding',
     BASES_UPDATE_BUILDING_ITEM_SELECTION: 'basesUpdateBuildingItemSelection',
+    BASES_UPDATE_BUILDING_LINKED_OUTPUT: 'basesUpdateBuildingLinkedOutput',
     BASES_SET_ENERGY_GROUP: 'basesSetEnergyGroup',
 
     ENERGY_GROUP_CREATE: 'energyGroupCreate',
@@ -47,6 +48,7 @@ export const EVENT_IDS = {
     PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'productionPlanModalSetSelectedCorporationLevel',
     PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'productionPlanModalSetRecipeSelection',
     PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'productionPlanModalToggleInput',
+    PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'productionPlanModalLinkOutputInput',
     PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'productionPlanModalSetMatchInputs',
     PRODUCTION_PLAN_MODAL_SUBMIT: 'productionPlanModalSubmit',
 }

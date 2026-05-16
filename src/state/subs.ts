@@ -31,7 +31,15 @@ import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } fro
 import { getAvailableBuildingsForSection, isBuildingAvailableForSection } from '../components/mybases/utils/buildingSectionUtils';
 import { buildActivePlanOccupancy } from '../components/mybases/utils/activePlanOccupancy';
 import { calculateSharedInputShortages } from '../components/mybases/utils/sharedInputShortages';
-import { getSelectedFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '../utils/productionPlanInputs';
+import {
+    computeRequiredBuildings,
+    getFlowInputBuildings,
+    getSelectedFlowInputBuildings,
+    resolveInputBuilding,
+    resolveLinkedOutput,
+    sanitizeRecipeSelectionsForInputItems,
+} from '../utils/productionPlanInputs';
+import type { LinkedOutputStatus } from '../utils/productionPlanInputs';
 import type { CorporationWithStats } from '../components/corporations/types';
 import type { CorporationUsage, ItemTableData, ItemsHelperLookups } from '../components/items/types';
 import type {
@@ -40,6 +48,7 @@ import type {
     BuildingSectionStats,
     BaseInputItem,
     BaseOutputItem,
+    LinkableOutputItem,
     BaseDefenseBuilding,
     BuildingSectionType,
     MyBasesStats,
@@ -221,7 +230,14 @@ regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID,
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return [];
 
-        if (building.id === 'package_receiver' || building.id === 'package_dispatcher' || building.id === 'orbital_cargo_launcher' || building.type === 'storage' || building.id === 'drone_merger_3_to_1') {
+        if (
+            building.id === 'package_receiver'
+            || building.id === 'package_dispatcher'
+            || building.id === 'orbital_cargo_launcher'
+            || building.id === 'exportertier2'
+            || building.type === 'storage'
+            || building.id === 'drone_merger_3_to_1'
+        ) {
             // For package_receiver, output buildings, and drone_merger_3_to_1, all items are available
             return [...items].sort((a, b) => a.name.localeCompare(b.name));
         } else {
@@ -633,33 +649,64 @@ interface ConfiguredSectionItem {
     building: DbBuilding;
     name: string;
     description: string;
+    linkedOutput?: {
+        status: LinkedOutputStatus;
+        baseId: string;
+        buildingId: string;
+        baseName: string;
+        outputName: string;
+    };
 }
 
 function collectConfiguredSectionItems(
     base: Base,
     buildingsById: BuildingsByIdMap,
     itemsMap: Record<string, Item>,
-    sectionType: 'inputs' | 'outputs'
+    sectionType: 'inputs' | 'outputs',
+    allBases: Base[] = [base]
 ): ConfiguredSectionItem[] {
     const items: ConfiguredSectionItem[] = [];
 
     for (const baseBuilding of base.buildings) {
         if (baseBuilding.sectionType !== sectionType) continue;
-        if (!baseBuilding.selectedItemId || !baseBuilding.ratePerMinute) continue;
+        const resolvedBuilding = sectionType === 'inputs'
+            ? resolveInputBuilding(baseBuilding, allBases)
+            : baseBuilding;
+        const itemId = resolvedBuilding.selectedItemId || baseBuilding.linkedOutput?.itemIdSnapshot;
+        const ratePerMinute = resolvedBuilding.ratePerMinute || baseBuilding.linkedOutput?.ratePerMinuteSnapshot;
+        if (!itemId || !ratePerMinute) continue;
 
-        const building = buildingsById[baseBuilding.buildingTypeId];
+        const building = buildingsById[resolvedBuilding.buildingTypeId];
         if (!building) continue;
 
-        const item = itemsMap[baseBuilding.selectedItemId];
-        if (!item) continue;
+        const item = itemsMap[itemId] || { id: itemId, name: itemId, type: 'unknown' };
+        const linkedOutputResolution = baseBuilding.linkedOutput
+            ? resolveLinkedOutput(baseBuilding, allBases)
+            : null;
+        const linkedOutputSourceBuilding = linkedOutputResolution?.sourceOutput
+            ? buildingsById[linkedOutputResolution.sourceOutput.buildingTypeId]
+            : null;
+        const linkedOutput = baseBuilding.linkedOutput
+            ? {
+                status: linkedOutputResolution?.status || 'missing-output',
+                baseId: baseBuilding.linkedOutput.baseId,
+                buildingId: baseBuilding.linkedOutput.buildingId,
+                baseName: linkedOutputResolution?.sourceBase?.name || 'Missing base',
+                outputName:
+                    linkedOutputResolution?.sourceOutput?.name ||
+                    linkedOutputSourceBuilding?.name ||
+                    baseBuilding.linkedOutput.buildingId,
+            }
+            : undefined;
 
         items.push({
             baseBuildingId: baseBuilding.id,
             item,
-            ratePerMinute: baseBuilding.ratePerMinute,
+            ratePerMinute,
             building,
             name: baseBuilding.name || '',
             description: baseBuilding.description || '',
+            linkedOutput,
         });
     }
 
@@ -822,20 +869,21 @@ regSub(SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID,
     () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP], [SUB_IDS.BASES_LIST]]);
 
 regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID,
-    (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, baseId: string): BaseInputItem[] => {
+    (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, allBases: Base[], baseId: string): BaseInputItem[] => {
         const base = basesById[baseId];
         if (!base) return [];
 
-        return collectConfiguredSectionItems(base, buildingsById, itemsMap, 'inputs').map((entry) => ({
+        return collectConfiguredSectionItems(base, buildingsById, itemsMap, 'inputs', allBases).map((entry) => ({
             baseBuildingId: entry.baseBuildingId,
             item: entry.item,
             ratePerMinute: entry.ratePerMinute,
             building: entry.building,
             name: entry.name,
             description: entry.description,
+            linkedOutput: entry.linkedOutput,
         }));
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.BASES_LIST]]);
 
 regSub(SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID,
     (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, baseId: string): BaseOutputItem[] => {
@@ -843,9 +891,12 @@ regSub(SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID,
         if (!base) return [];
 
         return collectConfiguredSectionItems(base, buildingsById, itemsMap, 'outputs').map((entry) => ({
+            baseBuildingId: entry.baseBuildingId,
             item: entry.item,
             ratePerMinute: entry.ratePerMinute,
             building: entry.building,
+            name: entry.name,
+            description: entry.description,
         }));
     },
     () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
@@ -1125,13 +1176,13 @@ const isLauncherEnabled = (corporationLevel?: CorporationLevelSelection | null):
     corporationLevel !== null && corporationLevel !== undefined;
 
 regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID,
-    (section: Production | null, buildings: DbBuilding[]): ProductionFlowResult => {
+    (section: Production | null, buildings: DbBuilding[], allBases: Base[]): ProductionFlowResult => {
         if (!section || !section.selectedItemId) {
             return EMPTY_PRODUCTION_FLOW;
         }
 
         const validAmount = section.targetAmount > 0 ? section.targetAmount : 1;
-        const inputBuildings = section.inputs || [];
+        const inputBuildings = getFlowInputBuildings(section.inputs || [], allBases);
         const recipeSelections = sanitizeRecipeSelectionsForInputItems(section.recipeSelections, inputBuildings);
 
         return buildProductionFlow(
@@ -1146,7 +1197,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID,
             buildings
         );
     },
-    (baseId: string, sectionId: string) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId], [SUB_IDS.BUILDINGS_LIST]]);
+    (baseId: string, sectionId: string) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.BASES_LIST]]);
 
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW,
     (
@@ -1169,7 +1220,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW,
 
         const validAmount = targetAmount > 0 ? targetAmount : 1;
         const base = baseId ? basesById[baseId] || null : null;
-        const inputBuildings = getSelectedFlowInputBuildings(base, selectedInputIds || []);
+        const inputBuildings = getSelectedFlowInputBuildings(base, selectedInputIds || [], Object.values(basesById));
         const sanitizedRecipeSelections = sanitizeRecipeSelectionsForInputItems(recipeSelections, inputBuildings);
 
         return buildProductionFlow(
@@ -1197,7 +1248,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS,
         if (!modalState.selectedItemId || !productionFlow?.nodes?.length) return [];
 
         const base = modalState.baseId ? basesById[modalState.baseId] || null : null;
-        const inputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || []);
+        const inputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || [], Object.values(basesById));
         const inputItemIds = new Set(
             inputBuildings
                 .map((input) => input.selectedItemId)
@@ -1286,6 +1337,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
         section: Production | null,
         productionFlow: ProductionFlowResult,
         base: Base | null,
+        allBases: Base[],
         itemsMap: Record<string, Item>,
         buildings: DbBuilding[],
         buildingsById: BuildingsByIdMap,
@@ -1307,8 +1359,11 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
             : null;
 
         // Stats — calculated from buildings map by looking up building types
-        const requiredBuildings = section.requiredBuildings || [];
-        const sectionInputs = section.inputs || [];
+        const requiredBuildings = productionFlow.nodes.length > 0
+            ? computeRequiredBuildings(productionFlow)
+            : section.requiredBuildings || [];
+        const sectionInputSnapshots = section.inputs || [];
+        const sectionInputs = sectionInputSnapshots.map((input) => resolveInputBuilding(input, allBases));
 
         // Calculate heat/power from required buildings
         let totalHeat = 0;
@@ -1387,13 +1442,34 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
         const inputRequirements: InputRequirement[] = [];
         let allInputsSatisfied = true;
 
-        if (sectionInputs.length > 0) {
-            sectionInputs.forEach((inputBuilding: BaseBuilding) => {
+        if (sectionInputSnapshots.length > 0) {
+            sectionInputSnapshots.forEach((inputBuilding: BaseBuilding) => {
+                const resolvedInput = resolveInputBuilding(inputBuilding, allBases);
                 const matchingBaseBuilding = baseBuildingsById.get(inputBuilding.id);
-                const building = buildingsById[inputBuilding.buildingTypeId] || null;
-                const item = inputBuilding.selectedItemId ? itemsMap[inputBuilding.selectedItemId] : null;
+                const building = buildingsById[resolvedInput.buildingTypeId] || null;
+                const itemId = resolvedInput.selectedItemId || inputBuilding.linkedOutput?.itemIdSnapshot || '';
+                const item = itemId ? itemsMap[itemId] || { id: itemId, name: itemId, type: 'unknown' } : null;
+                const ratePerMinute = resolvedInput.ratePerMinute || inputBuilding.linkedOutput?.ratePerMinuteSnapshot || 0;
+                const linkedOutputResolution = inputBuilding.linkedOutput
+                    ? resolveLinkedOutput(inputBuilding, allBases)
+                    : null;
+                const linkedOutputSourceBuilding = linkedOutputResolution?.sourceOutput
+                    ? buildingsById[linkedOutputResolution.sourceOutput.buildingTypeId]
+                    : null;
+                const linkedOutputStatus = resolvedInput.linkedOutputStatus || linkedOutputResolution?.status;
 
-                const isSatisfied = !!(
+                const isLinkedInputSatisfied = !!(
+                    inputBuilding.linkedOutput &&
+                    matchingBaseBuilding &&
+                    matchingBaseBuilding.sectionType === 'inputs' &&
+                    matchingBaseBuilding.linkedOutput?.baseId === inputBuilding.linkedOutput.baseId &&
+                    matchingBaseBuilding.linkedOutput?.buildingId === inputBuilding.linkedOutput.buildingId &&
+                    linkedOutputStatus === 'ok' &&
+                    building &&
+                    item
+                );
+                const isManualInputSatisfied = !!(
+                    !inputBuilding.linkedOutput &&
                     matchingBaseBuilding &&
                     matchingBaseBuilding.sectionType === 'inputs' &&
                     matchingBaseBuilding.selectedItemId === inputBuilding.selectedItemId &&
@@ -1401,22 +1477,33 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
                     building &&
                     item
                 );
+                const isSatisfied = inputBuilding.linkedOutput ? isLinkedInputSatisfied : isManualInputSatisfied;
 
                 if (!isSatisfied) allInputsSatisfied = false;
 
                 inputRequirements.push({
                     baseBuildingId: inputBuilding.id,
-                    buildingId: building?.id || inputBuilding.buildingTypeId,
-                    buildingName: building?.name || inputBuilding.buildingTypeId,
-                    itemId: inputBuilding.selectedItemId || '',
+                    buildingId: building?.id || resolvedInput.buildingTypeId,
+                    buildingName: building?.name || resolvedInput.buildingTypeId,
+                    itemId,
                     itemName: item?.name || inputBuilding.selectedItemId || '',
-                    ratePerMinute: inputBuilding.ratePerMinute || 0,
+                    ratePerMinute,
                     isSatisfied,
+                    linkedOutput: inputBuilding.linkedOutput
+                        ? {
+                            status: linkedOutputStatus || 'missing-output',
+                            baseName: linkedOutputResolution?.sourceBase?.name || 'Missing base',
+                            outputName:
+                                linkedOutputResolution?.sourceOutput?.name ||
+                                linkedOutputSourceBuilding?.name ||
+                                inputBuilding.linkedOutput.buildingId,
+                        }
+                        : undefined,
                 });
             });
         }
 
-        const sharedInputShortages: SharedInputShortage[] = calculateSharedInputShortages(base, section.id, buildings).map((shortage) => {
+        const sharedInputShortages: SharedInputShortage[] = calculateSharedInputShortages(base, section.id, buildings, allBases).map((shortage) => {
             const matchingBaseInput = baseInputBuildingsById.get(shortage.baseBuildingId);
             const customInputName = (matchingBaseInput?.name || '').trim();
             const itemId = shortage.itemId || matchingBaseInput?.selectedItemId || '';
@@ -1459,6 +1546,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
         [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId],
         [SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId],
         [SUB_IDS.BASES_BASE_BY_ID, baseId],
+        [SUB_IDS.BASES_LIST],
         [SUB_IDS.ITEMS_BY_ID_MAP],
         [SUB_IDS.BUILDINGS_LIST],
         [SUB_IDS.BUILDINGS_BY_ID_MAP],
@@ -1543,6 +1631,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
         basesById: BasesById,
         buildingsById: BuildingsByIdMap,
         itemsMap: Record<string, Item>,
+        allBases: Base[],
         modalState: CreateProductionPlanModalState
     ): { inputItems: BaseInputItem[]; selectedInputIds: string[] } => {
         const { baseId, selectedInputIds } = modalState;
@@ -1551,7 +1640,7 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
         const base = basesById[baseId];
         if (!base) return { inputItems: [], selectedInputIds: [] };
 
-        const inputItems = collectConfiguredSectionItems(base, buildingsById, itemsMap, 'inputs')
+        const inputItems = collectConfiguredSectionItems(base, buildingsById, itemsMap, 'inputs', allBases)
             .map((entry) => ({
                 baseBuildingId: entry.baseBuildingId,
                 item: entry.item,
@@ -1559,11 +1648,51 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
                 building: entry.building,
                 name: entry.name,
                 description: entry.description,
+                linkedOutput: entry.linkedOutput,
             }));
 
         return { inputItems, selectedInputIds: selectedInputIds || [] };
     },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.BASES_LIST], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+
+regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS,
+    (
+        bases: Base[],
+        buildingsById: BuildingsByIdMap,
+        itemsMap: Record<string, Item>,
+        modalState: CreateProductionPlanModalState
+    ): LinkableOutputItem[] => {
+        const currentBaseId = modalState.baseId;
+        const linkableOutputs: LinkableOutputItem[] = [];
+        const excludedOutputBuildingIds = new Set(['orbital_cargo_launcher', 'exportertier2']);
+
+        for (const base of bases) {
+            for (const entry of collectConfiguredSectionItems(base, buildingsById, itemsMap, 'outputs')) {
+                if (excludedOutputBuildingIds.has(entry.building.id)) {
+                    continue;
+                }
+                linkableOutputs.push({
+                    baseId: base.id,
+                    baseName: base.name,
+                    isCurrentBase: base.id === currentBaseId,
+                    baseBuildingId: entry.baseBuildingId,
+                    item: entry.item,
+                    ratePerMinute: entry.ratePerMinute,
+                    building: entry.building,
+                    name: entry.name,
+                    description: entry.description,
+                });
+            }
+        }
+
+        return linkableOutputs.sort((left, right) => {
+            if (left.isCurrentBase !== right.isCurrentBase) return left.isCurrentBase ? -1 : 1;
+            const baseDelta = left.baseName.localeCompare(right.baseName);
+            if (baseDelta !== 0) return baseDelta;
+            return left.item.name.localeCompare(right.item.name);
+        });
+    },
+    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
 
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID,
     (modalState: CreateProductionPlanModalState): string => {
@@ -1646,7 +1775,7 @@ regSub(SUB_IDS.BASES_OVERVIEW_PLAN_ROWS,
     () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.CORPORATIONS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
-    (selectedBase: Base | null, buildings: DbBuilding[], itemsById: Record<string, Item>): MaterialBalanceRow[] => {
+    (selectedBase: Base | null, allBases: Base[], buildings: DbBuilding[], itemsById: Record<string, Item>): MaterialBalanceRow[] => {
         if (!selectedBase) return [];
 
         const plans = selectedBase.productions || [];
@@ -1654,11 +1783,13 @@ regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
         const coverageByItem = new Map<string, number>();
         for (const baseBuilding of selectedBase.buildings) {
             if (baseBuilding.sectionType !== 'inputs') continue;
-            if (!baseBuilding.selectedItemId) continue;
-            if (!baseBuilding.ratePerMinute || baseBuilding.ratePerMinute <= 0) continue;
+            const resolvedInput = resolveInputBuilding(baseBuilding, allBases);
+            if (resolvedInput.linkedOutput && resolvedInput.linkedOutputStatus !== 'ok') continue;
+            if (!resolvedInput.selectedItemId) continue;
+            if (!resolvedInput.ratePerMinute || resolvedInput.ratePerMinute <= 0) continue;
             coverageByItem.set(
-                baseBuilding.selectedItemId,
-                (coverageByItem.get(baseBuilding.selectedItemId) || 0) + baseBuilding.ratePerMinute
+                resolvedInput.selectedItemId,
+                (coverageByItem.get(resolvedInput.selectedItemId) || 0) + resolvedInput.ratePerMinute
             );
         }
 
@@ -1671,7 +1802,7 @@ regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
                     {
                         targetItemId: plan.selectedItemId,
                         targetAmount: plan.targetAmount,
-                        inputBuildings: plan.inputs || [],
+                        inputBuildings: getFlowInputBuildings(plan.inputs || [], allBases),
                         rawProductionDisabled: true,
                         includeLauncher: isLauncherEnabled(plan.corporationLevel),
                         recipeSelections: plan.recipeSelections || {},
@@ -1704,7 +1835,7 @@ regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
                     {
                         targetItemId: plan.selectedItemId,
                         targetAmount: plan.targetAmount,
-                        inputBuildings: plan.inputs || [],
+                        inputBuildings: getFlowInputBuildings(plan.inputs || [], allBases),
                         rawProductionDisabled: true,
                         includeLauncher: isLauncherEnabled(plan.corporationLevel),
                         recipeSelections: plan.recipeSelections || {},
@@ -1782,7 +1913,7 @@ regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
                 return left.item.name.localeCompare(right.item.name);
             });
     },
-    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS,
     (selectedBase: Base | null, buildings: DbBuilding[]): BuildingCoverageRow[] => {

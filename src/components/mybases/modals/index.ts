@@ -5,6 +5,7 @@
  */
 
 export { AddBuildingCardModal } from './AddBuildingCardModal';
+export { LinkOutputModal } from './LinkOutputModal';
 export { CreateBaseModal } from './CreateBaseModal';
 export { RenameBaseModal } from './RenameBaseModal';
 export { SelectItemModal } from './SelectItemModal';

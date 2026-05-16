@@ -74,7 +74,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-2xl">
+      <div className="modal-box max-w-3xl">
         <h3 className="font-bold text-lg mb-4">Select Item for {building.name}</h3>
         
         <form onSubmit={handleSubmit}>
@@ -93,7 +93,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
                 autoFocus
               />
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 min-h-64 max-h-64 overflow-y-auto p-2 border border-base-300 rounded-lg">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 min-h-72 max-h-72 overflow-y-auto p-2 rounded-lg bg-base-200/30">
               {filteredItems.map((item) => {
                 const isSelected = selectedItemId === item.id;
                 return (
@@ -101,8 +101,8 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
                     key={item.id}
                     type="button"
                     onClick={() => handleItemSelect(item.id)}
-                    className={`btn btn-sm flex flex-col items-center gap-1 p-2 h-auto ${
-                      isSelected ? 'btn-primary' : 'btn-outline'
+                    className={`btn btn-sm flex flex-col items-center gap-1 p-2 h-auto shadow-none ${
+                      isSelected ? 'btn-primary border-transparent' : 'btn-ghost border-transparent bg-base-100 hover:bg-base-200'
                     }`}
                   >
                     <ItemImage

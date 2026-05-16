@@ -18,6 +18,7 @@ export type {
   BuildingSectionStats,
   BaseInputItem,
   BaseOutputItem,
+  LinkableOutputItem,
   BaseDefenseBuilding,
   ProductionPlanSectionStats,
   BuildingRequirement,
@@ -52,6 +53,7 @@ export {
 // Modals
 export {
   AddBuildingCardModal,
+  LinkOutputModal,
   CreateBaseModal,
   RenameBaseModal,
   CreateProductionPlanModal,
