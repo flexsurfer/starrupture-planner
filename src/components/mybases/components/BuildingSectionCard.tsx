@@ -1,13 +1,136 @@
 import React, { useCallback, useState } from 'react';
 import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import type { Item } from '../../../state/db';
+import type { Base, BaseBuilding, Building, Item } from '../../../state/db';
 import { EVENT_IDS } from '../../../state/event-ids';
 import { SUB_IDS } from '../../../state/sub-ids';
 import type { BuildingSectionBuilding } from '../types';
 import { sanitizeBuildingCount } from '../utils';
 import { BuildingImage, ItemImage } from '../../ui';
-import { SelectItemModal } from '../modals';
+import { LinkOutputModal, SelectItemModal } from '../modals';
 import { BuildingCountControl } from './BuildingCountControl';
+import { resolveInputBuilding, resolveLinkedOutput } from '../../../utils/productionPlanInputs';
+import type { ResolvedInputBuilding } from '../../../utils/productionPlanInputs';
+import type { LinkableOutputItem } from '../types';
+
+interface LinkedInputData {
+  resolved: ResolvedInputBuilding;
+  hasError: boolean;
+  label: string;
+}
+
+/**
+ * Subscribes to BASES_LIST only when rendered (i.e. only for linked input cards).
+ * Keeps the parent BuildingSectionCard free from that subscription.
+ */
+const useLinkedInputData = (baseBuilding: BaseBuilding): LinkedInputData => {
+  const allBases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]) || [];
+  const buildingsById = useSubscription<Record<string, Building>>([SUB_IDS.BUILDINGS_BY_ID_MAP]);
+
+  const resolved = resolveInputBuilding(baseBuilding, allBases);
+  const resolution = resolveLinkedOutput(baseBuilding, allBases);
+  const sourceOutputBuilding = resolution.sourceOutput
+    ? buildingsById[resolution.sourceOutput.buildingTypeId]
+    : null;
+
+  const baseName = resolution.sourceBase?.name || 'Missing base';
+  const outputName =
+    resolution.sourceOutput?.name ||
+    sourceOutputBuilding?.name ||
+    baseBuilding.linkedOutput?.buildingId ||
+    '';
+  const label = `${baseName}${outputName ? ` / ${outputName}` : ''}`;
+  const hasError = !!resolved.linkedOutput && resolved.linkedOutputStatus !== 'ok';
+
+  return { resolved, hasError, label };
+};
+
+interface LinkedInputBadgeProps {
+  baseBuilding: BaseBuilding;
+}
+
+const LinkedInputBadge: React.FC<LinkedInputBadgeProps> = ({ baseBuilding }) => {
+  const { hasError, label } = useLinkedInputData(baseBuilding);
+
+  return (
+    <div
+      className={`badge badge-xs w-fit max-w-full truncate ${hasError ? 'badge-error' : 'badge-outline'}`}
+      title={hasError ? `Broken linked output: ${label}` : `Linked output: ${label}`}
+    >
+      {hasError ? 'Broken link' : label}
+    </div>
+  );
+};
+
+interface LinkedInputItemButtonProps {
+  baseBuilding: BaseBuilding;
+  baseId: string;
+}
+
+const LinkedInputItemButton: React.FC<LinkedInputItemButtonProps> = ({ baseBuilding, baseId }) => {
+  const [showLinkOutputModal, setShowLinkOutputModal] = useState(false);
+  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+  const { resolved, hasError, label } = useLinkedInputData(baseBuilding);
+  const selectedItem = resolved.selectedItemId ? itemsMap[resolved.selectedItemId] : null;
+
+  const handleConfirmLinkedOutput = (output: LinkableOutputItem) => {
+    dispatch([
+      EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT,
+      baseId,
+      baseBuilding.id,
+      output.baseId,
+      output.baseBuildingId,
+    ]);
+    setShowLinkOutputModal(false);
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setShowLinkOutputModal(true)}
+        className={`flex-shrink-0 w-20 min-h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 transition-colors bg-base-100 px-1 ${
+          hasError
+            ? 'border-error hover:border-error'
+            : 'border-base-300 hover:border-primary'
+        }`}
+        title={`${hasError ? 'Edit broken linked output' : 'Edit linked output'}: ${label}`}
+      >
+        {selectedItem ? (
+          <>
+            <ItemImage
+              itemId={selectedItem.id}
+              item={selectedItem}
+              size="small"
+              className="w-8 h-8"
+            />
+            <span className="text-xs text-center">{resolved.ratePerMinute}/min</span>
+            <span className={`badge badge-xs px-1 min-h-0 h-4 ${hasError ? 'badge-error' : 'badge-outline'}`}>
+              Linked
+            </span>
+          </>
+        ) : (
+          <svg
+            className="w-6 h-6 text-base-content/50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+        )}
+      </button>
+      <LinkOutputModal
+        isOpen={showLinkOutputModal}
+        onClose={() => setShowLinkOutputModal(false)}
+        onSelect={handleConfirmLinkedOutput}
+      />
+    </>
+  );
+};
 
 interface BuildingSectionCardProps {
   sectionBuilding: BuildingSectionBuilding;
@@ -22,17 +145,17 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
 
   const { baseBuilding, building, count, isGrouped, sectionType, activePlanNames } = sectionBuilding;
   const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+
+  const isInputBuilding = !isGrouped && baseBuilding?.sectionType === 'inputs';
+  const isOutputBuilding = !isGrouped && baseBuilding?.sectionType === 'outputs';
+  const isLinkedInput = isInputBuilding && !!baseBuilding?.linkedOutput;
+
   const selectedItem = baseBuilding?.selectedItemId ? itemsMap[baseBuilding.selectedItemId] : null;
   const displayName = baseBuilding?.name || building.name;
   const description = baseBuilding?.description;
   const totalPower = (building.power || 0) * count;
   const totalHeat = (building.heat || 0) * count;
-  
-  // Use the stored sectionType - item selection is only for inputs and outputs
-  const isInputBuilding = !isGrouped && baseBuilding?.sectionType === 'inputs';
-  const isOutputBuilding = !isGrouped && baseBuilding?.sectionType === 'outputs';
-  
-  // Check if this building is part of any active plan
+
   const isInActivePlan = activePlanNames.length > 0;
   const sectionLabel = sectionType[0].toUpperCase() + sectionType.slice(1);
 
@@ -65,10 +188,6 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
     dispatch([EVENT_IDS.BASES_REMOVE_BUILDING, baseBuilding.id]);
   };
 
-  const handleItemSelectClick = () => {
-    setShowSelectItemModal(true);
-  };
-
   const handleConfirmItemSelection = (itemId: string, ratePerMinute: number) => {
     if (!baseBuilding) return;
     dispatch([EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, baseId, baseBuilding.id, itemId, ratePerMinute]);
@@ -94,6 +213,9 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
                 <div className="text-xs text-base-content/60 line-clamp-2" title={description}>
                   {description}
                 </div>
+              )}
+              {isLinkedInput && baseBuilding && (
+                <LinkedInputBadge baseBuilding={baseBuilding} />
               )}
               {isInActivePlan && (
                 <div className="flex flex-wrap gap-1">
@@ -127,11 +249,13 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
                   />
                 )}
               </div>
-              {/* Item selection area - left of image (for input and output buildings) */}
-              {(isInputBuilding || isOutputBuilding) && baseBuilding && (
+              {/* Item selection area */}
+              {isLinkedInput && baseBuilding ? (
+                <LinkedInputItemButton baseBuilding={baseBuilding} baseId={baseId} />
+              ) : (isInputBuilding || isOutputBuilding) && baseBuilding ? (
                 <button
-                  onClick={handleItemSelectClick}
-                  className="flex-shrink-0 w-16 h-16 border-2 border-dashed border-base-300 hover:border-primary rounded-lg flex flex-col items-center justify-center gap-1 transition-colors bg-base-100"
+                  onClick={() => setShowSelectItemModal(true)}
+                  className="flex-shrink-0 w-20 min-h-20 border-2 border-dashed border-base-300 hover:border-primary rounded-lg flex flex-col items-center justify-center gap-1 transition-colors bg-base-100 px-1"
                   title={selectedItem ? `${selectedItem.name} - ${baseBuilding.ratePerMinute}/min` : 'Select item'}
                 >
                   {selectedItem ? (
@@ -160,7 +284,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
                     </svg>
                   )}
                 </button>
-              )}
+              ) : null}
 
             </div>
 
@@ -189,7 +313,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
         </div>
       </div>
 
-      {(isInputBuilding || isOutputBuilding) && baseBuilding && (
+      {(isInputBuilding || isOutputBuilding) && !isLinkedInput && baseBuilding && (
         <SelectItemModal
           isOpen={showSelectItemModal}
           building={building}

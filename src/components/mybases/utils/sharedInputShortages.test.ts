@@ -102,4 +102,70 @@ describe('calculateSharedInputShortages', () => {
         const shortages = calculateSharedInputShortages(base, 'plan_b', TEST_BUILDINGS);
         expect(shortages).toEqual([]);
     });
+
+    it('aggregates linked output usage across bases', () => {
+        const sourceOutput: BaseBuilding = {
+            id: 'output_ore_1',
+            buildingTypeId: 'ore_excavator',
+            sectionType: 'outputs',
+            selectedItemId: 'ore_iron',
+            ratePerMinute: 60,
+        };
+        const linkedInputA: BaseBuilding = {
+            id: 'input_link_a',
+            buildingTypeId: 'ore_excavator',
+            sectionType: 'inputs',
+            selectedItemId: 'ore_iron',
+            ratePerMinute: 60,
+            linkedOutput: {
+                baseId: 'base_source',
+                buildingId: 'output_ore_1',
+                itemIdSnapshot: 'ore_iron',
+                ratePerMinuteSnapshot: 60,
+            },
+        };
+        const linkedInputB: BaseBuilding = {
+            ...linkedInputA,
+            id: 'input_link_b',
+        };
+        const sourceBase: Base = {
+            id: 'base_source',
+            name: 'Source',
+            buildings: [sourceOutput],
+            productions: [],
+        };
+        const activeConsumerBase: Base = {
+            id: 'base_a',
+            name: 'Consumer A',
+            buildings: [linkedInputA],
+            productions: [
+                createPlan('plan_a', [{ ...linkedInputA }], { active: true }),
+            ],
+        };
+        const currentConsumerBase: Base = {
+            id: 'base_b',
+            name: 'Consumer B',
+            buildings: [linkedInputB],
+            productions: [
+                createPlan('plan_b', [{ ...linkedInputB }], { active: false }),
+            ],
+        };
+
+        const shortages = calculateSharedInputShortages(
+            currentConsumerBase,
+            'plan_b',
+            TEST_BUILDINGS,
+            [sourceBase, activeConsumerBase, currentConsumerBase]
+        );
+
+        expect(shortages).toEqual([
+            {
+                baseBuildingId: 'input_link_b',
+                itemId: 'ore_iron',
+                requiredPerMinute: 120,
+                availablePerMinute: 60,
+                missingPerMinute: 60,
+            },
+        ]);
+    });
 });
