@@ -3,42 +3,36 @@ import { dispatch, useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../state/sub-ids';
 import { EVENT_IDS } from '../state/event-ids';
 import type { Base, EnergyGroup } from '../state/db';
+import type { BaseDetailTab } from './mybases';
 import {
   EmptyState,
   BasesList,
   CreateBaseModal,
-  RenameBaseModal,
   ManageEnergyGroupsModal,
   BaseDetailView,
   MyBasesStats,
+  MyBasesLogisticsView,
 } from './mybases';
+
+type MyBasesView = 'bases' | 'logistics';
 
 const MyBasesPage = () => {
   const bases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]);
   const energyGroups = useSubscription<EnergyGroup[]>([SUB_IDS.ENERGY_GROUPS_LIST]);
   const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
+  const [activeView, setActiveView] = useState<MyBasesView>('bases');
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEnergyGroupsModal, setShowEnergyGroupsModal] = useState(false);
-  const [renameBaseId, setRenameBaseId] = useState<string | null>(null);
 
   // Handlers
   const handleCreateBase = useCallback((name: string) => {
     dispatch([EVENT_IDS.BASES_CREATE_BASE, name]);
   }, []);
 
-  const handleOpenBase = useCallback((baseId: string) => {
-    dispatch([EVENT_IDS.BASES_SET_SELECTED_BASE, baseId]);
-  }, []);
-
-  const handleRenameBase = useCallback((baseId: string) => {
-    setRenameBaseId(baseId);
-  }, []);
-
-  const handleConfirmRename = useCallback((baseId: string, newName: string) => {
-    dispatch([EVENT_IDS.BASES_UPDATE_BASE_NAME, baseId, newName]);
-    setRenameBaseId(null);
+  const handleOpenBase = useCallback((baseId: string, tab: BaseDetailTab = 'base') => {
+    dispatch([EVENT_IDS.BASES_OPEN_BASE, baseId, tab]);
   }, []);
 
   const handleDeleteBase = useCallback((baseId: string) => {
@@ -66,8 +60,6 @@ const MyBasesPage = () => {
   }
 
   // Render overview
-  const renameBase = bases.find(b => b.id === renameBaseId);
-
   return (
     <div className="h-full p-2 lg:p-3 flex flex-col">
       {/* Header */}
@@ -119,17 +111,65 @@ const MyBasesPage = () => {
         </div>
       </div>
 
+      <div
+        role="tablist"
+        className="tabs tabs-bordered tabs-lg flex-shrink-0 mb-4 overflow-x-auto"
+        aria-label="My Bases sections"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === 'bases'}
+          id="my-bases-tab-bases"
+          aria-controls="my-bases-panel-bases"
+          className={`tab text-xl font-bold flex items-center gap-2 ${activeView === 'bases' ? 'tab-active' : ''}`}
+          onClick={() => setActiveView('bases')}
+        >
+          Bases
+          {bases.length > 0 && (
+            <span className="badge badge-sm badge-primary">{bases.length}</span>
+          )}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === 'logistics'}
+          id="my-bases-tab-logistics"
+          aria-controls="my-bases-panel-logistics"
+          className={`tab text-xl font-bold flex items-center gap-2 ${activeView === 'logistics' ? 'tab-active' : ''}`}
+          onClick={() => setActiveView('logistics')}
+        >
+          Logistics
+        </button>
+      </div>
+
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {bases.length === 0 ? (
-          <EmptyState onCreateBase={() => setShowCreateModal(true)} />
-        ) : (
-          <BasesList
-            bases={bases}
-            onOpen={handleOpenBase}
-            onRename={handleRenameBase}
-            onDelete={handleDeleteBase}
-          />
+        {activeView === 'bases' && (
+          <div
+            id="my-bases-panel-bases"
+            role="tabpanel"
+            aria-labelledby="my-bases-tab-bases"
+          >
+            {bases.length === 0 ? (
+              <EmptyState onCreateBase={() => setShowCreateModal(true)} />
+            ) : (
+              <BasesList
+                bases={bases}
+                onOpen={handleOpenBase}
+                onDelete={handleDeleteBase}
+              />
+            )}
+          </div>
+        )}
+        {activeView === 'logistics' && (
+          <div
+            id="my-bases-panel-logistics"
+            role="tabpanel"
+            aria-labelledby="my-bases-tab-logistics"
+          >
+            <MyBasesLogisticsView />
+          </div>
         )}
       </div>
 
@@ -139,15 +179,6 @@ const MyBasesPage = () => {
         onClose={() => setShowCreateModal(false)}
         onCreate={handleCreateBase}
       />
-      {renameBase && (
-        <RenameBaseModal
-          isOpen={renameBaseId !== null}
-          baseId={renameBaseId}
-          currentName={renameBase.name}
-          onClose={() => setRenameBaseId(null)}
-          onRename={handleConfirmRename}
-        />
-      )}
       <ManageEnergyGroupsModal
         isOpen={showEnergyGroupsModal}
         onClose={() => setShowEnergyGroupsModal(false)}

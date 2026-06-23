@@ -44,6 +44,7 @@ export const SUB_IDS = {
     BASES_BY_ID_MAP: 'basesByIdMap',
     BASES_BASE_BY_ID: 'basesBaseById',
     BASES_SELECTED_BASE_ID: 'basesSelectedBaseId',
+    BASES_SELECTED_DETAIL_TAB: 'basesSelectedDetailTab',
     BASES_SELECTED_BASE: 'basesSelectedBase',
     BASES_SELECTED_BASE_DETAIL_STATS: 'basesSelectedBaseDetailStats',
     BASES_DETAIL_STATS_BY_BASE_ID: 'basesDetailStatsByBaseId',
@@ -55,6 +56,9 @@ export const SUB_IDS = {
     BASES_AVAILABLE_BUILDINGS_FOR_SECTION: 'basesAvailableBuildingsForSection',
     BASES_CORE_LEVELS: 'basesCoreLevels',
     BASES_STATS_SUMMARY: 'basesStatsSummary',
+    BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID: 'basesLogisticsViewModelByBaseId',
+    BASES_LOGISTICS_VIEW_MODELS: 'basesLogisticsViewModels',
+    BASES_ALL_DETAIL_STATS: 'basesAllDetailStats',
 
     ENERGY_GROUPS_LIST: 'energyGroups',
     ENERGY_GROUPS_BY_ID_MAP: 'energyGroupsByIdMap',

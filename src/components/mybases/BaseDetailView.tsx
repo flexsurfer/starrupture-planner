@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
+import { dispatch, useSubscription } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../state/sub-ids';
+import { EVENT_IDS } from '../../state/event-ids';
 import type { Base } from '../../state/db';
-import { BaseCoreInfo, BaseOverviewView, BaseBuildingsView, BasePlansView, CreateProductionPlanModal } from './index';
-
-type BaseDetailTab = 'base' | 'plans' | 'buildings';
+import { BaseCoreInfo, BaseOverviewView, BaseBuildingsView, BasePlansView, CreateProductionPlanModal, RenameBaseModal } from './index';
+import type { BaseDetailTab } from './types';
 
 export const BaseDetailView: React.FC = () => {
   const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
-  const [activeTab, setActiveTab] = useState<BaseDetailTab>('base');
+  const activeTab = useSubscription<BaseDetailTab>([SUB_IDS.BASES_SELECTED_DETAIL_TAB]) || 'base';
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const setActiveTab = (tab: BaseDetailTab) => {
+    dispatch([EVENT_IDS.BASES_SET_DETAIL_TAB, tab]);
+  };
 
   // Early return if no base selected
   if (!selectedBase) {
@@ -17,18 +21,22 @@ export const BaseDetailView: React.FC = () => {
 
   const plansCount = selectedBase.productions?.length || 0;
   const buildingsCount = selectedBase.buildings?.length || 0;
+  const handleRenameBase = (baseId: string, newName: string) => {
+    dispatch([EVENT_IDS.BASES_UPDATE_BASE_NAME, baseId, newName]);
+    setShowRenameModal(false);
+  };
 
   return (
     <div className="h-full p-2 lg:p-3 flex flex-col">
       {/* Core Info and Stats - Fixed, not scrollable */}
       <div className="mb-4 flex-shrink-0">
-        <BaseCoreInfo />
+        <BaseCoreInfo onRename={() => setShowRenameModal(true)} />
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
         <div
           role="tablist"
-          className="tabs tabs-bordered tabs-lg flex-shrink-0 mb-4"
+          className="tabs tabs-bordered tabs-lg flex-shrink-0 mb-4 overflow-x-auto"
           aria-label="Base sections"
         >
           <button
@@ -104,6 +112,13 @@ export const BaseDetailView: React.FC = () => {
       </div>
 
       <CreateProductionPlanModal />
+      <RenameBaseModal
+        isOpen={showRenameModal}
+        baseId={selectedBase.id}
+        currentName={selectedBase.name}
+        onClose={() => setShowRenameModal(false)}
+        onRename={handleRenameBase}
+      />
     </div>
   );
 };

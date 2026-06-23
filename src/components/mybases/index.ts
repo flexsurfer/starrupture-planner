@@ -24,11 +24,16 @@ export type {
   BuildingRequirement,
   InputRequirement,
   SharedInputShortage,
+  BaseDetailTab,
   ProductionPlanSectionViewModel,
   ProductionPlanRequirementsStatus,
   PlanSummaryRow,
   MaterialBalanceRow,
   BuildingCoverageRow,
+  LogisticsInputLink,
+  LogisticsOutput,
+  LogisticsIncomingInput,
+  BaseLogisticsViewModel,
 } from './types';
 
 // Main view components
@@ -36,6 +41,7 @@ export { BaseDetailView } from './BaseDetailView';
 export { BaseOverviewView } from './BaseOverviewView';
 export { BaseBuildingsView } from './BaseBuildingsView';
 export { BasePlansView } from './BasePlansView';
+export { MyBasesLogisticsView } from './MyBasesLogisticsView';
 
 // Components
 export {

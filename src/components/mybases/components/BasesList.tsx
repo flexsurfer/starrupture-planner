@@ -1,18 +1,17 @@
 import React from 'react';
 import type { Base } from '../../../state/db';
+import type { BaseDetailTab } from '../types';
 import { BaseCard } from './BaseCard';
 
 interface BasesListProps {
   bases: Base[];
-  onOpen: (baseId: string) => void;
-  onRename: (baseId: string) => void;
+  onOpen: (baseId: string, tab?: BaseDetailTab) => void;
   onDelete: (baseId: string) => void;
 }
 
 export const BasesList: React.FC<BasesListProps> = ({
   bases,
   onOpen,
-  onRename,
   onDelete,
 }) => {
   if (bases.length === 0) {
@@ -26,7 +25,6 @@ export const BasesList: React.FC<BasesListProps> = ({
           key={base.id}
           base={base}
           onOpen={onOpen}
-          onRename={onRename}
           onDelete={onDelete}
         />
       ))}

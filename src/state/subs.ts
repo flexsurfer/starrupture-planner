@@ -61,7 +61,9 @@ import type {
     PlanSummaryRow,
     MaterialBalanceRow,
     BuildingCoverageRow,
+    BaseLogisticsViewModel,
 } from '../components/mybases/types';
+import { buildAllBaseLogisticsViewModels, buildBaseLogisticsViewModel } from '../components/mybases/utils/logistics';
 //============================================================
 // Root subscriptions
 //============================================================
@@ -84,6 +86,7 @@ regSub(SUB_IDS.PLANNER_RECIPE_SELECTIONS, "plannerRecipeSelections");
 regSub(SUB_IDS.PLANNER_TARGET_AMOUNT, "plannerTargetAmount");
 regSub(SUB_IDS.BASES_LIST, "basesList");
 regSub(SUB_IDS.BASES_SELECTED_BASE_ID, "basesSelectedBaseId");
+regSub(SUB_IDS.BASES_SELECTED_DETAIL_TAB, "basesSelectedDetailTab");
 regSub(SUB_IDS.UI_CONFIRMATION_DIALOG, "uiConfirmationDialog");
 regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, "productionPlanModalState");
 regSub(SUB_IDS.ENERGY_GROUPS_LIST, "energyGroups");
@@ -704,7 +707,7 @@ function collectConfiguredSectionItems(
             item,
             ratePerMinute,
             building,
-            name: baseBuilding.name || '',
+            name: baseBuilding.name || building.name || item.name,
             description: baseBuilding.description || '',
             linkedOutput,
         });
@@ -836,6 +839,7 @@ function calculateBaseDetailStats(
         totalHeat,
         energyGeneration: effectiveGeneration,
         energyConsumption: effectiveConsumption,
+        localEnergyGeneration: energyGeneration,
         energyGridConsumption,
         baseCoreHeatCapacity,
         heatPercentage,
@@ -867,6 +871,46 @@ regSub(SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID,
         return calculateBaseDetailStats(base, buildingsById, energyGroupsById, allBases);
     },
     () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP], [SUB_IDS.BASES_LIST]]);
+
+regSub(SUB_IDS.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID,
+    (
+        bases: Base[],
+        buildingsById: BuildingsByIdMap,
+        itemsById: Record<string, Item>,
+        baseId: string
+    ): BaseLogisticsViewModel | null => {
+        return buildBaseLogisticsViewModel({
+            selectedBaseId: baseId,
+            bases,
+            buildingsById,
+            itemsById,
+        });
+    },
+    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+
+regSub(SUB_IDS.BASES_LOGISTICS_VIEW_MODELS,
+    (
+        bases: Base[],
+        buildingsById: BuildingsByIdMap,
+        itemsById: Record<string, Item>
+    ): BaseLogisticsViewModel[] => {
+        return buildAllBaseLogisticsViewModels({
+            bases,
+            buildingsById,
+            itemsById,
+        });
+    },
+    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+
+regSub(SUB_IDS.BASES_ALL_DETAIL_STATS,
+    (bases: Base[], buildingsById: BuildingsByIdMap, energyGroupsById: Record<string, EnergyGroup>): Record<string, BaseDetailStats> => {
+        const result: Record<string, BaseDetailStats> = {};
+        for (const base of bases) {
+            result[base.id] = calculateBaseDetailStats(base, buildingsById, energyGroupsById, bases);
+        }
+        return result;
+    },
+    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP]]);
 
 regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID,
     (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, allBases: Base[], baseId: string): BaseInputItem[] => {

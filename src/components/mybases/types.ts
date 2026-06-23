@@ -4,13 +4,15 @@
  * Central location for all shared types used across mybases components and subscriptions.
  */
 
-import type { BaseBuilding, Building, Item, Production } from '../../state/db';
+import type { BaseBuilding, BaseDetailTab as DbBaseDetailTab, Building, Item, Production } from '../../state/db';
 import type { LinkedOutputStatus } from '../../utils/productionPlanInputs';
 
 /**
  * Section types for categorizing buildings in a base.
  */
 export type BuildingSectionType = 'inputs' | 'energy' | 'production' | 'outputs' | 'infrastructure';
+
+export type BaseDetailTab = DbBaseDetailTab;
 
 /**
  * Request payload used when creating one or more base buildings from the UI.
@@ -36,6 +38,7 @@ export interface BaseDetailStats {
   totalHeat: number;
   energyGeneration: number;
   energyConsumption: number;
+  localEnergyGeneration: number;
   energyGridConsumption: number;
   baseCoreHeatCapacity: number;
   heatPercentage: number;
@@ -259,6 +262,50 @@ export interface MaterialBalanceRow {
   covered: number;
   available: number;
   missing: number;
+}
+
+/** Input connected to a logistics output. */
+export interface LogisticsInputLink {
+  baseId: string;
+  baseName: string;
+  baseBuildingId: string;
+  buildingTypeId: string;
+  buildingName: string;
+  name: string;
+  itemId?: string;
+  itemName?: string;
+  ratePerMinute?: number;
+  linkedOutputStatus?: LinkedOutputStatus;
+}
+
+/** Output row for the logistics tab. */
+export interface LogisticsOutput {
+  baseBuildingId: string;
+  buildingTypeId: string;
+  buildingName: string;
+  name: string;
+  itemId?: string;
+  itemName?: string;
+  ratePerMinute: number;
+  capacityPerMinute?: number;
+  availableCapacityPerMinute?: number;
+  linkedInputs: LogisticsInputLink[];
+}
+
+/** Input row on the selected base. */
+export interface LogisticsIncomingInput extends LogisticsInputLink {
+  sourceBaseId?: string;
+  sourceBaseName?: string;
+  sourceOutputBuildingId?: string;
+  sourceOutputName?: string;
+}
+
+/** Combined logistics view model for one selected base. */
+export interface BaseLogisticsViewModel {
+  baseId: string;
+  baseName: string;
+  outputs: LogisticsOutput[];
+  incomingInputs: LogisticsIncomingInput[];
 }
 
 /**

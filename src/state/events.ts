@@ -3,6 +3,7 @@ import { EVENT_IDS } from './event-ids';
 import { EFFECT_IDS } from './effect-ids';
 import type {
     TabType,
+    BaseDetailTab,
     DataVersion,
     Item,
     Building,
@@ -319,6 +320,7 @@ regEvent(EVENT_IDS.BASES_CREATE_BASE, ({ draftDb }, name: string) => {
     
     draftDb.basesList.push(newBase);
     draftDb.basesSelectedBaseId = baseId;
+    draftDb.basesSelectedDetailTab = 'base';
     
     return [persistBasesEffect(draftDb as AppState)];
 });
@@ -346,12 +348,23 @@ regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftDb }, baseId: string) => {
     draftDb.basesList = draftDb.basesList.filter((b: Base) => b.id !== baseId);
     if (draftDb.basesSelectedBaseId === baseId) {
         draftDb.basesSelectedBaseId = null;
+        draftDb.basesSelectedDetailTab = 'base';
     }
     return [persistBasesEffect(draftDb as AppState)];
 });
 
+regEvent(EVENT_IDS.BASES_OPEN_BASE, ({ draftDb }, baseId: string, tab: BaseDetailTab = 'base') => {
+    draftDb.basesSelectedBaseId = baseId;
+    draftDb.basesSelectedDetailTab = tab;
+});
+
 regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null) => {
     draftDb.basesSelectedBaseId = baseId;
+    draftDb.basesSelectedDetailTab = 'base';
+});
+
+regEvent(EVENT_IDS.BASES_SET_DETAIL_TAB, ({ draftDb }, tab: BaseDetailTab) => {
+    draftDb.basesSelectedDetailTab = tab;
 });
 
 interface CreateBaseBuildingOptions {

@@ -6,7 +6,11 @@ import React, { useCallback } from 'react';
 import type { Base } from '../../../state/db';
 import { EnergyGroupSelector } from './EnergyGroupSelector';
 
-export const BaseCoreInfo: React.FC = () => {
+interface BaseCoreInfoProps {
+  onRename?: () => void;
+}
+
+export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
 
   const detailStats = useSubscription<BaseDetailStats | null>([SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS]);
   const coreLevels = useSubscription<{ level: number; heatCapacity: number }[]>([SUB_IDS.BASES_CORE_LEVELS]);
@@ -60,7 +64,18 @@ export const BaseCoreInfo: React.FC = () => {
 
           {/* Base Name and Description */}
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-base sm:text-lg truncate">{baseName}</h2>
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="font-semibold text-base sm:text-lg truncate">{baseName}</h2>
+              {onRename && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-ghost shrink-0 text-base-content/55 hover:text-base-content"
+                  onClick={onRename}
+                >
+                  Rename
+                </button>
+              )}
+            </div>
             <p className="hidden sm:block text-xs text-base-content/70 mt-1">
               The Core defines the buildable area for this Base. Buildings can only be placed inside the Core area.
             </p>

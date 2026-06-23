@@ -83,6 +83,7 @@ export interface Corporation {
 }
 
 export type TabType = 'items' | 'recipes' | 'corporations' | 'planner' | 'mybases';
+export type BaseDetailTab = 'base' | 'plans' | 'buildings';
 
 export interface Tab {
     id: TabType;
@@ -200,6 +201,7 @@ export interface AppState {
     basesList: Base[];
     energyGroups: EnergyGroup[];
     basesSelectedBaseId: string | null;
+    basesSelectedDetailTab: BaseDetailTab;
     uiConfirmationDialog: ConfirmationDialog;
     productionPlanModalState: CreateProductionPlanModalState;
 }
@@ -229,6 +231,7 @@ const appState: AppState = {
     plannerRecipeSelections: {},
     plannerTargetAmount: 60,
     basesSelectedBaseId: null,
+    basesSelectedDetailTab: 'base',
     uiConfirmationDialog: {
         isOpen: false,
         title: '',
