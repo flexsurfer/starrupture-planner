@@ -32,6 +32,8 @@ export const EVENT_IDS = {
     BASES_REMOVE_BUILDING: 'basesRemoveBuilding',
     BASES_UPDATE_BUILDING_ITEM_SELECTION: 'basesUpdateBuildingItemSelection',
     BASES_UPDATE_BUILDING_LINKED_OUTPUT: 'basesUpdateBuildingLinkedOutput',
+    BASES_UPDATE_OUTPUT_PLAN_LINK: 'basesUpdateOutputPlanLink',
+    BASES_TOGGLE_CARD_SECTION_COLLAPSED: 'basesToggleCardSectionCollapsed',
     BASES_SET_ENERGY_GROUP: 'basesSetEnergyGroup',
 
     ENERGY_GROUP_CREATE: 'energyGroupCreate',

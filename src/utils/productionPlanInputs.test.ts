@@ -119,6 +119,58 @@ describe('production plan linked inputs', () => {
         expect(inputs[0].selectedItemId).toBe('ore_copper');
     });
 
+    it('resolves linked inputs from plan-linked output allocations', () => {
+        const sourceBase = makeSourceBase({
+            selectedItemId: undefined,
+            ratePerMinute: undefined,
+            sourceProductionId: 'plan_ore',
+            allocationMode: 'auto',
+        });
+        sourceBase.productions = [{
+            id: 'plan_ore',
+            name: 'Ore',
+            selectedItemId: 'ore_copper',
+            targetAmount: 150,
+        }];
+
+        const resolved = resolveInputBuilding(linkedInput('base_source', 'output_ore'), [sourceBase]);
+
+        expect(resolved.linkedOutputStatus).toBe('ok');
+        expect(resolved.selectedItemId).toBe('ore_copper');
+        expect(resolved.ratePerMinute).toBe(150);
+    });
+
+    it('keeps exhausted plan-linked outputs valid with zero throughput', () => {
+        const sourceBase = makeSourceBase({
+            id: 'output_first',
+            selectedItemId: undefined,
+            ratePerMinute: undefined,
+            sourceProductionId: 'plan_ore',
+            allocationMode: 'auto',
+            priority: 1,
+        });
+        sourceBase.buildings.push({
+            id: 'output_second',
+            buildingTypeId: 'package_dispatcher',
+            sectionType: 'outputs',
+            sourceProductionId: 'plan_ore',
+            allocationMode: 'auto',
+            priority: 2,
+        });
+        sourceBase.productions = [{
+            id: 'plan_ore',
+            name: 'Ore',
+            selectedItemId: 'ore_copper',
+            targetAmount: 100,
+        }];
+
+        const resolved = resolveInputBuilding(linkedInput('base_source', 'output_second'), [sourceBase]);
+
+        expect(resolved.linkedOutputStatus).toBe('ok');
+        expect(resolved.selectedItemId).toBe('ore_copper');
+        expect(resolved.ratePerMinute).toBe(0);
+    });
+
     it('works with a pre-built Map<string, Base>', () => {
         const bases: Base[] = [makeSourceBase()];
         const basesMap = buildBasesById(bases);

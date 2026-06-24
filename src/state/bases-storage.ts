@@ -7,7 +7,7 @@ import type {
 } from './db';
 
 const BASES_STORAGE_KEY = 'bases';
-const BASES_SCHEMA_VERSION = 3 as const;
+const BASES_SCHEMA_VERSION = 4 as const;
 
 export interface BasesStorageEnvelope {
     schemaVersion: number;
@@ -97,6 +97,26 @@ function normalizeBases(rawBases: unknown): Base[] {
         if (name !== undefined) normalized.name = name;
         if (description !== undefined) normalized.description = description;
         if (linkedOutput !== undefined) normalized.linkedOutput = linkedOutput;
+
+        if (typeof building.sourceProductionId === 'string' && building.sourceProductionId) {
+            normalized.sourceProductionId = building.sourceProductionId;
+        }
+
+        if (building.allocationMode === 'auto' || building.allocationMode === 'fixed') {
+            normalized.allocationMode = building.allocationMode;
+        }
+
+        if (typeof building.requestedRatePerMinute === 'number' && Number.isFinite(building.requestedRatePerMinute)) {
+            normalized.requestedRatePerMinute = building.requestedRatePerMinute;
+        }
+
+        if (typeof building.capacityPerMinute === 'number' && Number.isFinite(building.capacityPerMinute)) {
+            normalized.capacityPerMinute = building.capacityPerMinute;
+        }
+
+        if (typeof building.priority === 'number' && Number.isFinite(building.priority)) {
+            normalized.priority = building.priority;
+        }
 
         return normalized;
     };

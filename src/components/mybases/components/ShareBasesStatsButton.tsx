@@ -22,7 +22,7 @@ const getButtonLabel = (state: ShareButtonState): { desktop: string; mobile: str
         desktop: 'Preparing...',
         mobile: '...',
         title: 'Generating your share card.',
-        className: 'btn-primary',
+        className: 'btn-ghost text-base-content/65',
       };
     case 'shared':
       return {
@@ -57,7 +57,7 @@ const getButtonLabel = (state: ShareButtonState): { desktop: string; mobile: str
         desktop: 'Share',
         mobile: 'Share',
         title: 'Generate a stats card and share it in Discord.',
-        className: 'btn-primary',
+        className: 'btn-ghost text-base-content/65',
       };
   }
 };
@@ -125,7 +125,7 @@ export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ st
 
   return (
     <button
-      className={`btn btn-sm whitespace-nowrap btn-outline ${buttonInfo.className} ${className ?? ''}`}
+      className={`btn btn-sm whitespace-nowrap ${buttonInfo.className} ${className ?? ''}`}
       onClick={onShare}
       title={buttonInfo.title}
       disabled={bases.length === 0 || state === 'sharing'}

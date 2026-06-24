@@ -1,12 +1,20 @@
 import React from 'react';
 import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import type { PlanSummaryRow, ProductionPlanRequirementsStatus } from '../types';
+import type { BaseLogisticsViewModel, BaseOutputItem, PlanSummaryRow, ProductionPlanRequirementsStatus } from '../types';
+import type { Base } from '../../../state/db';
 import { EVENT_IDS } from '../../../state/event-ids';
 import { SUB_IDS } from '../../../state/sub-ids';
-import { ItemImage } from '../../ui';
+import { BuildingImage, ItemImage } from '../../ui';
+import { getPlanOutputAllocationSummary } from '../../../utils/planOutputAllocations';
 
 function formatPlanStatus(status: ProductionPlanRequirementsStatus['planStatus']): string {
   return status === 'inactive' ? 'Inactive' : 'Active';
+}
+
+function formatRate(value: number | undefined): string {
+  if (!value || value <= 0) return '0';
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
 interface PlanProductionCardProps {
@@ -20,6 +28,9 @@ export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan, ba
     baseId,
     plan.id,
   ]);
+  const base = useSubscription<Base | null>([SUB_IDS.BASES_BASE_BY_ID, baseId]);
+  const outputItems = useSubscription<BaseOutputItem[]>([SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID, baseId]) || [];
+  const logistics = useSubscription<BaseLogisticsViewModel | null>([SUB_IDS.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID, baseId]);
 
   const effectiveStatus = requirementsStatus?.planStatus || plan.status;
   const hasError = requirementsStatus?.hasError ?? effectiveStatus === 'error';
@@ -34,6 +45,8 @@ export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan, ba
       : hasWarning
         ? 'badge-warning'
         : 'badge-success';
+  const outputSummary = base ? getPlanOutputAllocationSummary(base, plan.id) : null;
+  const linkedOutputs = outputSummary?.outputs || [];
 
   return (
     <div className="rounded-xl border border-base-300 bg-base-200/40 p-3">
@@ -90,6 +103,75 @@ export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan, ba
         <div className="font-medium truncate" title={plan.corporationLabel}>{plan.corporationLabel}</div>
       </div>
     </div>
+
+    {outputSummary && linkedOutputs.length > 0 && (
+      <div className="mt-3 rounded-lg border border-base-300/45 bg-base-100/45 px-3 py-2">
+        <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+          <div className="font-semibold text-base-content/70">Outputs</div>
+          <div className="font-mono text-base-content/60" title={`${formatRate(outputSummary.producedRatePerMinute)}/min produced`}>
+            {formatRate(outputSummary.assignedRatePerMinute)}/min assigned
+            {outputSummary.remainingRatePerMinute > 0 && (
+              <span className="text-warning"> · {formatRate(outputSummary.remainingRatePerMinute)}/min left</span>
+            )}
+          </div>
+        </div>
+        <div className="space-y-1">
+          {linkedOutputs.slice(0, 3).map((output) => {
+            const outputItem = outputItems.find((entry) => entry.baseBuildingId === output.id);
+            const logisticsOutput = logistics?.outputs.find((entry) => entry.baseBuildingId === output.id);
+            const linkedInputs = logisticsOutput?.linkedInputs || [];
+            const targetLabel = linkedInputs.length === 1
+              ? linkedInputs[0].baseName
+              : linkedInputs.length > 1
+                ? `${linkedInputs.length} targets`
+                : '';
+            const hasWarning = output.isOverCapacity || output.isUnderSupplied;
+            const outputName = output.name || outputItem?.building.name || output.buildingTypeId;
+            const hasCapacity = typeof output.capacityPerMinuteResolved === 'number' && Number.isFinite(output.capacityPerMinuteResolved);
+
+            return (
+              <div
+                key={output.id}
+                className="flex items-center gap-2 rounded-md border border-base-300/40 bg-base-100/45 px-2 py-1.5"
+              >
+                <BuildingImage
+                  buildingId={output.buildingTypeId}
+                  building={outputItem?.building}
+                  size="small"
+                  className="h-5 w-5 shrink-0 rounded opacity-85"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-xs font-medium text-base-content/75" title={outputName}>
+                    {outputName}
+                  </div>
+                  {(hasWarning || targetLabel) && (
+                    <div
+                      className={`truncate text-[11px] ${targetLabel && !hasWarning ? 'text-info' : 'text-base-content/45'}`}
+                      title={linkedInputs.map((entry) => entry.baseName).join(', ')}
+                    >
+                      {hasWarning ? 'limited by source/capacity' : `to ${targetLabel}`}
+                    </div>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="font-mono text-xs text-base-content/75">
+                    {formatRate(output.effectiveRatePerMinute)}/min
+                  </span>
+                  {hasCapacity && (
+                    <span className="rounded bg-base-200/70 px-1.5 py-0.5 font-mono text-[10px] text-base-content/50">
+                      cap {formatRate(output.capacityPerMinuteResolved)}/min
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {linkedOutputs.length > 3 && (
+            <div className="text-[11px] text-base-content/45">+{linkedOutputs.length - 3} more outputs</div>
+          )}
+        </div>
+      </div>
+    )}
   </div>
   );
 };

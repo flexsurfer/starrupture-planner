@@ -1,7 +1,8 @@
 import type { Base, BaseBuilding, PlanRequiredBuilding } from '../state/db';
 import type { ProductionFlowResult } from '../components/planner/core/types';
+import { resolveOutputBuilding } from './planOutputAllocations';
 
-export type LinkedOutputStatus = 'ok' | 'missing-base' | 'missing-output' | 'unconfigured-output';
+export type LinkedOutputStatus = 'ok' | 'missing-base' | 'missing-output' | 'missing-plan' | 'unconfigured-output';
 
 export interface LinkedOutputResolution {
     status: LinkedOutputStatus;
@@ -47,11 +48,24 @@ export function resolveLinkedOutput(
         return { status: 'missing-output', sourceBase };
     }
 
-    if (!sourceOutput.selectedItemId || !sourceOutput.ratePerMinute || sourceOutput.ratePerMinute <= 0) {
-        return { status: 'unconfigured-output', sourceBase, sourceOutput };
+    const resolvedSourceOutput = resolveOutputBuilding(sourceOutput, sourceBase);
+    if (resolvedSourceOutput.outputResolutionStatus === 'missing-plan') {
+        return { status: 'missing-plan', sourceBase, sourceOutput: resolvedSourceOutput };
     }
 
-    return { status: 'ok', sourceBase, sourceOutput };
+    if (
+        resolvedSourceOutput.outputResolutionStatus === 'allocated' &&
+        resolvedSourceOutput.selectedItemId &&
+        typeof resolvedSourceOutput.ratePerMinute === 'number'
+    ) {
+        return { status: 'ok', sourceBase, sourceOutput: resolvedSourceOutput };
+    }
+
+    if (!resolvedSourceOutput.selectedItemId || !resolvedSourceOutput.ratePerMinute || resolvedSourceOutput.ratePerMinute <= 0) {
+        return { status: 'unconfigured-output', sourceBase, sourceOutput: resolvedSourceOutput };
+    }
+
+    return { status: 'ok', sourceBase, sourceOutput: resolvedSourceOutput };
 }
 
 export function resolveInputBuilding(input: BaseBuilding, bases: BaseLookup): ResolvedInputBuilding {

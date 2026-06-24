@@ -41,6 +41,8 @@ export const SUB_IDS = {
     PLANNER_SELECTABLE_ITEMS: 'plannerSelectableItems',
 
     BASES_LIST: 'basesList',
+    BASES_CARD_COLLAPSED_SECTIONS: 'basesCardCollapsedSections',
+    BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID: 'basesCardCollapsedSectionsByBaseId',
     BASES_BY_ID_MAP: 'basesByIdMap',
     BASES_BASE_BY_ID: 'basesBaseById',
     BASES_SELECTED_BASE_ID: 'basesSelectedBaseId',

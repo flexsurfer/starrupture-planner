@@ -24,7 +24,7 @@ export const BaseOverviewView: React.FC = () => {
           <div className="flex justify-end">
             <button
               type="button"
-              className="btn btn-primary btn-sm"
+              className="btn btn-ghost btn-sm text-base-content/65"
               onClick={() => dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN])}
             >
               Add Plan

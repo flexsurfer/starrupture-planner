@@ -9,6 +9,8 @@ import type {
     Base,
     BasesById,
     BaseBuilding,
+    BaseCardCollapsedSections,
+    BaseCardSectionKey,
     EnergyGroup,
     Production,
     CreateProductionPlanModalState,
@@ -64,6 +66,8 @@ import type {
     BaseLogisticsViewModel,
 } from '../components/mybases/types';
 import { buildAllBaseLogisticsViewModels, buildBaseLogisticsViewModel } from '../components/mybases/utils/logistics';
+import { resolveOutputBuilding } from '../utils/planOutputAllocations';
+import { resolveBaseCardCollapsedSections } from './base-card-sections';
 //============================================================
 // Root subscriptions
 //============================================================
@@ -85,6 +89,7 @@ regSub(SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL, "plannerSelectedCorporationLe
 regSub(SUB_IDS.PLANNER_RECIPE_SELECTIONS, "plannerRecipeSelections");
 regSub(SUB_IDS.PLANNER_TARGET_AMOUNT, "plannerTargetAmount");
 regSub(SUB_IDS.BASES_LIST, "basesList");
+regSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS, "basesCardCollapsedSections");
 regSub(SUB_IDS.BASES_SELECTED_BASE_ID, "basesSelectedBaseId");
 regSub(SUB_IDS.BASES_SELECTED_DETAIL_TAB, "basesSelectedDetailTab");
 regSub(SUB_IDS.UI_CONFIRMATION_DIALOG, "uiConfirmationDialog");
@@ -674,10 +679,13 @@ function collectConfiguredSectionItems(
         if (baseBuilding.sectionType !== sectionType) continue;
         const resolvedBuilding = sectionType === 'inputs'
             ? resolveInputBuilding(baseBuilding, allBases)
-            : baseBuilding;
-        const itemId = resolvedBuilding.selectedItemId || baseBuilding.linkedOutput?.itemIdSnapshot;
-        const ratePerMinute = resolvedBuilding.ratePerMinute || baseBuilding.linkedOutput?.ratePerMinuteSnapshot;
-        if (!itemId || !ratePerMinute) continue;
+            : resolveOutputBuilding(baseBuilding, base);
+        const itemId = resolvedBuilding.selectedItemId ?? baseBuilding.linkedOutput?.itemIdSnapshot;
+        const ratePerMinute = resolvedBuilding.ratePerMinute ?? baseBuilding.linkedOutput?.ratePerMinuteSnapshot;
+        const hasRate = typeof ratePerMinute === 'number' && Number.isFinite(ratePerMinute);
+        const hasPositiveRate = hasRate && ratePerMinute > 0;
+        const includeZeroRateOutput = sectionType === 'outputs' && !!baseBuilding.sourceProductionId && hasRate;
+        if (!itemId || (!hasPositiveRate && !includeZeroRateOutput)) continue;
 
         const building = buildingsById[resolvedBuilding.buildingTypeId];
         if (!building) continue;
@@ -739,6 +747,15 @@ regSub(SUB_IDS.BASES_BASE_BY_ID,
         return basesById[baseId] || null;
     },
     () => [[SUB_IDS.BASES_BY_ID_MAP]]);
+
+regSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID,
+    (
+        collapsedSectionsByBaseId: Record<string, BaseCardCollapsedSections> | undefined,
+        baseId: string
+    ): Record<BaseCardSectionKey, boolean> => {
+        return resolveBaseCardCollapsedSections(collapsedSectionsByBaseId?.[baseId]);
+    },
+    () => [[SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS]]);
 
 /** Pooled energy context — aggregated generation/consumption across an energy group. */
 interface PooledEnergyContext {

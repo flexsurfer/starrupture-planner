@@ -10,6 +10,8 @@ import { LinkOutputModal, SelectItemModal } from '../modals';
 import { BuildingCountControl } from './BuildingCountControl';
 import { resolveInputBuilding, resolveLinkedOutput } from '../../../utils/productionPlanInputs';
 import type { ResolvedInputBuilding } from '../../../utils/productionPlanInputs';
+import { resolveOutputBuilding } from '../../../utils/planOutputAllocations';
+import type { ResolvedOutputBuilding } from '../../../utils/planOutputAllocations';
 import type { LinkableOutputItem } from '../types';
 
 interface LinkedInputData {
@@ -132,6 +134,140 @@ const LinkedInputItemButton: React.FC<LinkedInputItemButtonProps> = ({ baseBuild
   );
 };
 
+function formatRate(value: number | undefined): string {
+  if (!value || value <= 0) return '0';
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+interface OutputPlanLinkControlsProps {
+  baseId: string;
+  base: Base | null;
+  baseBuilding: BaseBuilding;
+  resolvedOutput: ResolvedOutputBuilding;
+}
+
+const OutputPlanLinkControls: React.FC<OutputPlanLinkControlsProps> = ({
+  baseId,
+  base,
+  baseBuilding,
+  resolvedOutput,
+}) => {
+  const plans = base?.productions || [];
+  const isPlanLinked = !!baseBuilding.sourceProductionId;
+  const selectedPlanId = baseBuilding.sourceProductionId || '';
+  const selectedPlan = plans.find((plan) => plan.id === selectedPlanId);
+
+  const updatePlanLink = (payload: {
+    sourceProductionId?: string | null;
+    capacityPerMinute?: number | null;
+    priority?: number | null;
+  }) => {
+    const hasSourceProductionId = Object.prototype.hasOwnProperty.call(payload, 'sourceProductionId');
+    dispatch([
+      EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK,
+      baseId,
+      baseBuilding.id,
+      {
+        sourceProductionId: (hasSourceProductionId ? payload.sourceProductionId : selectedPlanId) || null,
+        allocationMode: 'auto',
+        capacityPerMinute: payload.capacityPerMinute ?? baseBuilding.capacityPerMinute ?? null,
+        priority: payload.priority ?? baseBuilding.priority ?? null,
+      },
+    ]);
+  };
+
+  const handlePlanChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextPlanId = event.target.value;
+    updatePlanLink({ sourceProductionId: nextPlanId || null });
+  };
+
+  const handleCapacityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(event.target.value);
+    if (!Number.isFinite(value) || value <= 0) return;
+    updatePlanLink({ capacityPerMinute: value });
+  };
+
+  const handlePriorityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(event.target.value);
+    if (!Number.isFinite(value) || value < 0) return;
+    updatePlanLink({ priority: value });
+  };
+
+  const warning =
+    resolvedOutput.outputResolutionStatus === 'missing-plan'
+      ? 'Missing plan'
+      : resolvedOutput.isOverCapacity
+      ? 'Capacity limit'
+      : resolvedOutput.isUnderSupplied
+      ? 'Source shortage'
+      : '';
+
+  return (
+    <div className="rounded-lg border border-base-300 bg-base-100/70 p-2 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] text-base-content/60 shrink-0">Source</span>
+        <select
+          className="select select-bordered select-xs w-full min-w-0"
+          value={selectedPlanId}
+          onChange={handlePlanChange}
+        >
+          <option value="">Manual</option>
+          {plans.map((plan) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {isPlanLinked && (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="form-control">
+              <span className="label-text text-[10px] mb-1">Capacity/min</span>
+              <input
+                type="number"
+                min={1}
+                className="input input-bordered input-xs"
+                value={resolvedOutput.capacityPerMinuteResolved || ''}
+                onChange={handleCapacityChange}
+              />
+            </label>
+            <label className="form-control">
+              <span className="label-text text-[10px] mb-1">Priority</span>
+              <input
+                type="number"
+                min={0}
+                className="input input-bordered input-xs"
+                value={baseBuilding.priority ?? 0}
+                onChange={handlePriorityChange}
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap gap-1 text-[11px]">
+            <span className="badge badge-xs badge-outline font-mono">
+              {formatRate(resolvedOutput.effectiveRatePerMinute)}/min
+            </span>
+            <span className="rounded bg-base-200/70 px-1.5 py-0.5 font-mono text-[10px] text-base-content/55">
+              cap {formatRate(resolvedOutput.capacityPerMinuteResolved)}/min
+            </span>
+            {selectedPlan && (
+              <span className="badge badge-xs badge-primary truncate max-w-full" title={selectedPlan.name}>
+                {selectedPlan.name}
+              </span>
+            )}
+            {warning && (
+              <span className="badge badge-xs badge-outline">{warning}</span>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 interface BuildingSectionCardProps {
   sectionBuilding: BuildingSectionBuilding;
   baseId: string;
@@ -145,12 +281,19 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
 
   const { baseBuilding, building, count, isGrouped, sectionType, activePlanNames } = sectionBuilding;
   const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+  const base = useSubscription<Base | null>([SUB_IDS.BASES_BASE_BY_ID, baseId]);
 
   const isInputBuilding = !isGrouped && baseBuilding?.sectionType === 'inputs';
   const isOutputBuilding = !isGrouped && baseBuilding?.sectionType === 'outputs';
   const isLinkedInput = isInputBuilding && !!baseBuilding?.linkedOutput;
+  const resolvedOutput = isOutputBuilding && baseBuilding
+    ? resolveOutputBuilding(baseBuilding, base || undefined)
+    : null;
+  const isPlanLinkedOutput = !!resolvedOutput?.sourceProductionId;
 
-  const selectedItem = baseBuilding?.selectedItemId ? itemsMap[baseBuilding.selectedItemId] : null;
+  const selectedItemId = isOutputBuilding ? resolvedOutput?.selectedItemId : baseBuilding?.selectedItemId;
+  const selectedRatePerMinute = isOutputBuilding ? resolvedOutput?.ratePerMinute : baseBuilding?.ratePerMinute;
+  const selectedItem = selectedItemId ? itemsMap[selectedItemId] : null;
   const displayName = baseBuilding?.name || building.name;
   const description = baseBuilding?.description;
   const totalPower = (building.power || 0) * count;
@@ -254,9 +397,13 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
                 <LinkedInputItemButton baseBuilding={baseBuilding} baseId={baseId} />
               ) : (isInputBuilding || isOutputBuilding) && baseBuilding ? (
                 <button
-                  onClick={() => setShowSelectItemModal(true)}
+                  onClick={() => {
+                    if (!isPlanLinkedOutput) {
+                      setShowSelectItemModal(true);
+                    }
+                  }}
                   className="flex-shrink-0 w-20 min-h-20 border-2 border-dashed border-base-300 hover:border-primary rounded-lg flex flex-col items-center justify-center gap-1 transition-colors bg-base-100 px-1"
-                  title={selectedItem ? `${selectedItem.name} - ${baseBuilding.ratePerMinute}/min` : 'Select item'}
+                  title={selectedItem ? `${selectedItem.name} - ${selectedRatePerMinute}/min` : 'Select item'}
                 >
                   {selectedItem ? (
                     <>
@@ -266,7 +413,12 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
                         size="small"
                         className="w-8 h-8"
                       />
-                      <span className="text-xs text-center">{baseBuilding.ratePerMinute}/min</span>
+                      <span className="text-xs text-center">{formatRate(selectedRatePerMinute)}/min</span>
+                      {isPlanLinkedOutput && (
+                        <span className="badge badge-xs px-1 min-h-0 h-4 badge-primary">
+                          Plan
+                        </span>
+                      )}
                     </>
                   ) : (
                     <svg
@@ -289,6 +441,15 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
             </div>
 
             {/* Right side content */}
+            {isOutputBuilding && baseBuilding && resolvedOutput && (
+              <OutputPlanLinkControls
+                baseId={baseId}
+                base={base}
+                baseBuilding={baseBuilding}
+                resolvedOutput={resolvedOutput}
+              />
+            )}
+
             <div className="flex-1 flex flex-row">
 
               {/* Power and Heat info */}
@@ -313,7 +474,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
         </div>
       </div>
 
-      {(isInputBuilding || isOutputBuilding) && !isLinkedInput && baseBuilding && (
+      {(isInputBuilding || isOutputBuilding) && !isLinkedInput && !isPlanLinkedOutput && baseBuilding && (
         <SelectItemModal
           isOpen={showSelectItemModal}
           building={building}

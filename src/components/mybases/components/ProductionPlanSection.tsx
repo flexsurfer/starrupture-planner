@@ -2,10 +2,12 @@ import React, { useState, useCallback } from 'react';
 import { useSubscription, dispatch } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
 import { EVENT_IDS } from '../../../state/event-ids';
+import type { Base } from '../../../state/db';
 import type { ProductionPlanSectionViewModel } from '../types';
 import type { ProductionFlowResult } from '../../planner/core/types';
 import { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
 import { BuildingRequirementsModal } from '../modals';
+import { getPlanOutputAllocationSummary } from '../../../utils/planOutputAllocations';
 
 interface ProductionPlanSectionProps {
     baseId: string;
@@ -19,7 +21,8 @@ interface ProductionFlowDiagramProps {
     sectionId: string;
 }
 
-const formatRatePerMinute = (value: number): string => {
+const formatRatePerMinute = (value: number | undefined): string => {
+    if (!value || value <= 0) return '0';
     const rounded = Math.round(value * 10) / 10;
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 };
@@ -46,6 +49,7 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
 
     // Single subscription for all component data
     const data = useSubscription<ProductionPlanSectionViewModel>([SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId]);
+    const allBases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]) || [];
 
     // Extract values for useCallback dependencies (use safe defaults)
     // These must be extracted before any early returns to satisfy React hooks rules
@@ -108,6 +112,11 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
     const showBuildingWarning = !allRequirementsSatisfied;
     const showInputWarning = sharedInputShortages.length > 0;
     const showMaterialWarning = hasRawMaterialShortage;
+    const base = allBases.find((candidate) => candidate.id === selectedBaseId);
+    const outputSummary = base && section
+        ? getPlanOutputAllocationSummary(base, section.id)
+        : null;
+    const hasLinkedOutputs = !!outputSummary && outputSummary.outputs.length > 0;
 
     const toggleCollapse = () => {
         setIsCollapsed((prev) => !prev);
@@ -172,6 +181,19 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                                     <>
                                         <span className="text-xs text-base-content/40">|</span>
                                         <span className="text-sm">⚡ -{stats.totalPowerConsumption} MW</span>
+                                    </>
+                                )}
+                                {hasLinkedOutputs && outputSummary && (
+                                    <>
+                                        <span className="text-xs text-base-content/40">|</span>
+                                        <span
+                                            className={`badge badge-outline ${
+                                                outputSummary.remainingRatePerMinute > 0 ? 'badge-warning' : ''
+                                            }`}
+                                            title={`${formatRatePerMinute(outputSummary.remainingRatePerMinute)}/min remaining`}
+                                        >
+                                            Outputs {formatRatePerMinute(outputSummary.assignedRatePerMinute)}/min assigned
+                                        </span>
                                     </>
                                 )}
                             </div>

@@ -86,7 +86,7 @@ const MyBasesPage = () => {
           </div>
           <div className="flex gap-2">
             <button
-              className="btn btn-outline btn-sm whitespace-nowrap"
+              className="btn btn-primary btn-sm whitespace-nowrap"
               onClick={() => setShowCreateModal(true)}
             >
               Create Base

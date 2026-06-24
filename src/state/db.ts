@@ -104,6 +104,10 @@ export interface LinkedOutputReference {
     ratePerMinuteSnapshot?: number;
 }
 
+export type OutputAllocationMode = 'auto' | 'fixed';
+export type BaseCardSectionKey = 'productionPlans' | 'outputs' | 'inputs' | 'defense';
+export type BaseCardCollapsedSections = Partial<Record<BaseCardSectionKey, boolean>>;
+
 // Base-related types
 export interface BaseBuilding {
     id: string;
@@ -112,6 +116,11 @@ export interface BaseBuilding {
     selectedItemId?: string; // Selected item for input buildings
     ratePerMinute?: number; // Rate per minute for the selected item
     linkedOutput?: LinkedOutputReference; // Optional live link from this input to an output building
+    sourceProductionId?: string; // Optional plan-linked output source for outputs.
+    allocationMode?: OutputAllocationMode; // How a plan-linked output consumes plan production.
+    requestedRatePerMinute?: number; // Fixed requested output rate when allocationMode is fixed.
+    capacityPerMinute?: number; // Optional logistics endpoint capacity override.
+    priority?: number; // Lower values are filled first for plan-linked outputs.
     name?: string; // Optional custom name for this building instance
     description?: string; // Optional custom description for this building instance
 }
@@ -200,6 +209,7 @@ export interface AppState {
     plannerTargetAmount: number;
     basesList: Base[];
     energyGroups: EnergyGroup[];
+    basesCardCollapsedSections: Record<string, BaseCardCollapsedSections>;
     basesSelectedBaseId: string | null;
     basesSelectedDetailTab: BaseDetailTab;
     uiConfirmationDialog: ConfirmationDialog;
@@ -218,6 +228,7 @@ const appState: AppState = {
     corporationsList: [],
     basesList: [],
     energyGroups: [],
+    basesCardCollapsedSections: {},
 
     //UI
     uiTheme: 'dark',

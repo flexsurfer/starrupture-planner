@@ -17,13 +17,13 @@ export const BasePlansView: React.FC = () => {
   return (
     <div className="space-y-4 lg:space-y-6">
       {/* Add Production Plan Button */}
-      <div className="card bg-base-200 border border-dashed border-base-300 hover:border-primary cursor-pointer transition-colors"
+      <div className="card bg-base-200 border border-dashed border-base-300 hover:border-base-content/40 cursor-pointer transition-colors"
         onClick={handleOpenProductionPlanModal}
       >
         <div className="card-body flex-row items-center justify-center gap-2 py-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 text-primary"
+            className="h-5 w-5 text-base-content/55"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

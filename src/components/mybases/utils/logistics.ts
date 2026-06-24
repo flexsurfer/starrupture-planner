@@ -9,6 +9,11 @@ import {
   resolveInputBuilding,
   resolveLinkedOutput,
 } from '../../../utils/productionPlanInputs';
+import {
+  PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE,
+  resolveOutputBuilding,
+  resolveOutputCapacityPerMinute,
+} from '../../../utils/planOutputAllocations';
 import type {
   BaseLogisticsViewModel,
   LogisticsIncomingInput,
@@ -19,7 +24,7 @@ import { isRawExtractor } from './buildingSectionUtils';
 
 export const LOGISTICS_DEFAULT_OUTPUT_BUILDING_ID = 'package_dispatcher';
 export const LOGISTICS_DEFAULT_INPUT_BUILDING_ID = 'package_receiver';
-export const PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE = 200;
+export { PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE };
 
 const LOGISTICS_EXCLUDED_OUTPUT_BUILDING_IDS = new Set([
   'orbital_cargo_launcher',
@@ -43,11 +48,7 @@ export function isLogisticsInput(baseBuilding: BaseBuilding, buildingsById: Buil
 }
 
 export function getLogisticsOutputCapacityPerMinute(baseBuilding: BaseBuilding): number | undefined {
-  if (baseBuilding.buildingTypeId === LOGISTICS_DEFAULT_OUTPUT_BUILDING_ID) {
-    return PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE;
-  }
-
-  return undefined;
+  return resolveOutputCapacityPerMinute(baseBuilding);
 }
 
 function getItemName(itemsById: Record<string, Item>, itemId: string | undefined): string | undefined {
@@ -64,8 +65,8 @@ function buildInputLink(
 ): LogisticsInputLink {
   const resolved = resolveInputBuilding(input, allBases);
   const building = buildingsById[input.buildingTypeId];
-  const itemId = resolved.selectedItemId || input.linkedOutput?.itemIdSnapshot;
-  const ratePerMinute = resolved.ratePerMinute || input.linkedOutput?.ratePerMinuteSnapshot;
+  const itemId = resolved.selectedItemId ?? input.linkedOutput?.itemIdSnapshot;
+  const ratePerMinute = resolved.ratePerMinute ?? input.linkedOutput?.ratePerMinuteSnapshot;
 
   return {
     baseId: base.id,
@@ -141,9 +142,10 @@ function buildOutputs(
   return selectedBase.buildings
     .filter(isLogisticsOutput)
     .map((output) => {
+      const resolvedOutput = resolveOutputBuilding(output, selectedBase);
       const building = buildingsById[output.buildingTypeId];
-      const itemId = output.selectedItemId;
-      const ratePerMinute = output.ratePerMinute || 0;
+      const itemId = resolvedOutput.selectedItemId;
+      const ratePerMinute = resolvedOutput.ratePerMinute ?? 0;
       const capacityPerMinute = getLogisticsOutputCapacityPerMinute(output);
 
       return {

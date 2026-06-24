@@ -11,6 +11,7 @@ import type {
     AppVersionedGameData,
     Base,
     BaseBuilding,
+    BaseCardSectionKey,
     EnergyGroup,
     Production,
     PlanRequiredBuilding,
@@ -39,6 +40,8 @@ import {
     sanitizeRecipeSelectionsForInputItems,
 } from '../utils/productionPlanInputs';
 import { calculateMaxTargetFromInputs } from '../utils/matchInputsCalculation';
+import { getDefaultOutputCapacityPerMinute } from '../utils/planOutputAllocations';
+import { getDefaultBaseCardSectionCollapsed } from './base-card-sections';
 
 // Common function to update draftDb with version data
 function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
@@ -346,6 +349,10 @@ regEvent(EVENT_IDS.BASES_SET_CORE_LEVEL, ({ draftDb }, level: number) => {
 
 regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftDb }, baseId: string) => {
     draftDb.basesList = draftDb.basesList.filter((b: Base) => b.id !== baseId);
+    if (!draftDb.basesCardCollapsedSections) {
+        draftDb.basesCardCollapsedSections = {};
+    }
+    delete draftDb.basesCardCollapsedSections[baseId];
     if (draftDb.basesSelectedBaseId === baseId) {
         draftDb.basesSelectedBaseId = null;
         draftDb.basesSelectedDetailTab = 'base';
@@ -365,6 +372,22 @@ regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null)
 
 regEvent(EVENT_IDS.BASES_SET_DETAIL_TAB, ({ draftDb }, tab: BaseDetailTab) => {
     draftDb.basesSelectedDetailTab = tab;
+});
+
+regEvent(EVENT_IDS.BASES_TOGGLE_CARD_SECTION_COLLAPSED, ({ draftDb }, baseId: string, sectionKey: BaseCardSectionKey) => {
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (!base) return;
+
+    if (!draftDb.basesCardCollapsedSections) {
+        draftDb.basesCardCollapsedSections = {};
+    }
+
+    const baseSections = draftDb.basesCardCollapsedSections[baseId] || {};
+    const currentValue = baseSections[sectionKey] ?? getDefaultBaseCardSectionCollapsed(sectionKey);
+    draftDb.basesCardCollapsedSections[baseId] = {
+        ...baseSections,
+        [sectionKey]: !currentValue,
+    };
 });
 
 interface CreateBaseBuildingOptions {
@@ -547,6 +570,68 @@ regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT, ({ draftDb }, baseId: st
         itemIdSnapshot: sourceOutput.selectedItemId,
         ratePerMinuteSnapshot: sourceOutput.ratePerMinute,
     };
+
+    return [persistBasesEffect(draftDb as AppState)];
+});
+
+interface UpdateOutputPlanLinkPayload {
+    sourceProductionId?: string | null;
+    allocationMode?: BaseBuilding['allocationMode'];
+    requestedRatePerMinute?: number | null;
+    capacityPerMinute?: number | null;
+    priority?: number | null;
+}
+
+regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftDb }, baseId: string, buildingId: string, payload: UpdateOutputPlanLinkPayload) => {
+    const base = getBaseById(draftDb.basesList, baseId);
+    if (!base) return;
+
+    const output = base.buildings.find((building: BaseBuilding) => building.id === buildingId);
+    if (!output || output.sectionType !== 'outputs') return;
+
+    const sourceProductionId = payload?.sourceProductionId || null;
+    if (!sourceProductionId) {
+        output.sourceProductionId = undefined;
+        output.allocationMode = undefined;
+        output.requestedRatePerMinute = undefined;
+        output.capacityPerMinute = undefined;
+        output.priority = undefined;
+        return [persistBasesEffect(draftDb as AppState)];
+    }
+
+    const sourcePlan = base.productions.find((plan: Production) => plan.id === sourceProductionId);
+    if (!sourcePlan) return;
+
+    output.sourceProductionId = sourceProductionId;
+    output.allocationMode = payload.allocationMode === 'fixed' ? 'fixed' : 'auto';
+
+    const requestedRatePerMinute = payload.requestedRatePerMinute;
+    if (typeof requestedRatePerMinute === 'number' && Number.isFinite(requestedRatePerMinute) && requestedRatePerMinute > 0) {
+        output.requestedRatePerMinute = requestedRatePerMinute;
+    } else if (output.allocationMode !== 'fixed') {
+        output.requestedRatePerMinute = undefined;
+    }
+
+    const capacityPerMinute = payload.capacityPerMinute;
+    if (typeof capacityPerMinute === 'number' && Number.isFinite(capacityPerMinute) && capacityPerMinute > 0) {
+        output.capacityPerMinute = capacityPerMinute;
+    } else if (!output.capacityPerMinute) {
+        const defaultCapacity = getDefaultOutputCapacityPerMinute(output.buildingTypeId);
+        output.capacityPerMinute = defaultCapacity;
+    }
+
+    const priority = payload.priority;
+    if (typeof priority === 'number' && Number.isFinite(priority) && priority >= 0) {
+        output.priority = priority;
+    } else if (typeof output.priority !== 'number') {
+        const linkedOutputsCount = base.buildings.filter((building: BaseBuilding) =>
+            building.sectionType === 'outputs' &&
+            building.sourceProductionId === sourceProductionId
+        ).length;
+        output.priority = linkedOutputsCount;
+    }
+
+    output.selectedItemId = sourcePlan.selectedItemId;
 
     return [persistBasesEffect(draftDb as AppState)];
 });

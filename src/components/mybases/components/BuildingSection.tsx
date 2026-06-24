@@ -82,7 +82,7 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
               <div className="text-center py-8">
                 <p className="text-sm text-base-content/70 mb-4">{description}</p>
                 <button
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-ghost btn-sm text-base-content/65"
                   onClick={onAdd}
                 >
                   <svg
@@ -113,11 +113,11 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
                 ))}
                 {/* Add button when section has buildings */}
                 <div
-                  className="card bg-base-200 border border-dashed border-base-300 hover:border-primary cursor-pointer transition-colors"
+                  className="card bg-base-200 border border-dashed border-base-300 hover:border-base-content/40 cursor-pointer transition-colors"
                   onClick={onAdd}
                 >
                   <div className="card-body p-3 flex items-center justify-center min-h-[150px]">
-                    <div className="btn btn-circle btn-primary btn-sm pointer-events-none">
+                    <div className="btn btn-circle btn-ghost btn-sm pointer-events-none text-base-content/65">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-6 w-6"
