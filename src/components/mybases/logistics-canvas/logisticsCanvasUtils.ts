@@ -101,7 +101,11 @@ export function buildLogisticsCanvasData({
     dagreGraph.setNode(nodeId, { width: BASE_NODE_WIDTH, height: BASE_NODE_HEIGHT });
   }
 
-  // Build energy grid nodes — sum local generation/consumption per group
+  // Build energy grid nodes — sum local generation/consumption per group.
+  // Grids are laid out manually (floating above their member bases) rather than
+  // through dagre, and each base gets a single net energy edge on dedicated
+  // top/bottom handles so energy never shares a point with item links.
+  const gridMembers = new Map<string, string[]>();
   if (showEnergy) {
     const groupMap = new Map<string, { generation: number; consumption: number; baseCount: number }>();
     for (const model of models) {
@@ -135,47 +139,36 @@ export function buildLogisticsCanvasData({
         position: { x: 0, y: 0 },
         data: gridNodeData as unknown as Record<string, unknown>,
       });
-      dagreGraph.setNode(nodeId, { width: GRID_NODE_WIDTH, height: GRID_NODE_HEIGHT });
 
-      // Edges from bases to grid and grid to bases (using local values)
+      // One net energy edge per base: producer -> grid (orange) or grid -> consumer (red).
+      const members: string[] = [];
       for (const model of models) {
         const stats = baseStats[model.baseId];
         if (stats?.energyGroupId !== groupId) continue;
         const baseNodeId = `base-${model.baseId}`;
-        const gen = stats.localEnergyGeneration ?? 0;
-        const cons = stats.energyConsumption ?? 0;
+        members.push(baseNodeId);
 
-        if (gen > 0) {
-          const edgeId = `energy-${model.baseId}-to-${groupId}`;
-          edges.push({
-            id: edgeId,
-            source: baseNodeId,
-            target: nodeId,
-            type: 'default',
-            animated: true,
-            style: { stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '5 5' },
-            label: `+${Math.round(gen)} MW`,
-            labelStyle: { fontSize: 10, fill: '#f59e0b' },
-            data: { type: 'energy', baseId: model.baseId, groupId } as unknown as Record<string, unknown>,
-          });
-          dagreGraph.setEdge(baseNodeId, nodeId);
-        }
-        if (cons > 0) {
-          const edgeId = `energy-${groupId}-to-${model.baseId}`;
-          edges.push({
-            id: edgeId,
-            source: nodeId,
-            target: baseNodeId,
-            type: 'default',
-            animated: true,
-            style: { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '5 5' },
-            label: `-${Math.round(cons)} MW`,
-            labelStyle: { fontSize: 10, fill: '#ef4444' },
-            data: { type: 'energy', baseId: model.baseId, groupId } as unknown as Record<string, unknown>,
-          });
-          dagreGraph.setEdge(nodeId, baseNodeId);
-        }
+        const net = (stats.localEnergyGeneration ?? 0) - (stats.energyConsumption ?? 0);
+        if (net === 0) continue;
+
+        const isProducer = net > 0;
+        const magnitude = Math.abs(net);
+        const color = isProducer ? '#f59e0b' : '#ef4444';
+        edges.push({
+          id: `energy-${model.baseId}-${groupId}`,
+          source: isProducer ? baseNodeId : nodeId,
+          target: isProducer ? nodeId : baseNodeId,
+          sourceHandle: 'energy-out',
+          targetHandle: 'energy-in',
+          type: 'default',
+          animated: true,
+          style: { stroke: color, strokeWidth: 2, strokeDasharray: '5 5' },
+          label: `${isProducer ? '+' : '-'}${Math.round(magnitude)} MW`,
+          labelStyle: { fontSize: 10, fill: color },
+          data: { type: 'energy', baseId: model.baseId, groupId } as unknown as Record<string, unknown>,
+        });
       }
+      gridMembers.set(nodeId, members);
     }
   }
 
@@ -208,6 +201,8 @@ export function buildLogisticsCanvasData({
             id: edgeId,
             source: sourceId,
             target: targetId,
+            sourceHandle: 'item-out',
+            targetHandle: 'item-in',
             type: 'default',
             animated: !isBroken,
             style: {
@@ -254,6 +249,8 @@ export function buildLogisticsCanvasData({
           id: edgeId,
           source: sourceId,
           target: targetId,
+          sourceHandle: 'item-out',
+          targetHandle: 'item-in',
           type: 'default',
           style: { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '4 4' },
           label: `BROKEN: ${input.itemName || 'unknown'}`,
@@ -271,22 +268,44 @@ export function buildLogisticsCanvasData({
     }
   }
 
-  // Apply dagre layout
+  // Apply dagre layout (base nodes + item links only — grids are placed manually)
   dagre.layout(dagreGraph);
 
-  // Position nodes from dagre output
+  // Position base nodes from dagre output
+  const basePositions = new Map<string, { x: number; y: number }>();
   for (const node of nodes) {
+    if (node.type === 'energyGrid') continue;
     const positioned = dagreGraph.node(node.id);
     if (positioned) {
-      const width = node.type === 'energyGrid' ? GRID_NODE_WIDTH : BASE_NODE_WIDTH;
-      const height = node.type === 'energyGrid' ? GRID_NODE_HEIGHT : BASE_NODE_HEIGHT;
       node.position = {
-        x: positioned.x - width / 2,
-        y: positioned.y - height / 2,
+        x: positioned.x - BASE_NODE_WIDTH / 2,
+        y: positioned.y - BASE_NODE_HEIGHT / 2,
       };
       node.sourcePosition = ReactFlowPosition.Right;
       node.targetPosition = ReactFlowPosition.Left;
+      basePositions.set(node.id, node.position);
     }
+  }
+
+  // Float each energy grid above the horizontal span of its member bases so its
+  // vertical energy edges stay clear of the horizontal item links.
+  const GRID_VERTICAL_GAP = 80;
+  for (const node of nodes) {
+    if (node.type !== 'energyGrid') continue;
+    const memberPositions = (gridMembers.get(node.id) || [])
+      .map((id) => basePositions.get(id))
+      .filter((p): p is { x: number; y: number } => !!p);
+    if (memberPositions.length === 0) {
+      node.position = { x: 0, y: 0 };
+      continue;
+    }
+    const avgCenterX =
+      memberPositions.reduce((sum, p) => sum + p.x + BASE_NODE_WIDTH / 2, 0) / memberPositions.length;
+    const minY = Math.min(...memberPositions.map((p) => p.y));
+    node.position = {
+      x: avgCenterX - GRID_NODE_WIDTH / 2,
+      y: minY - GRID_NODE_HEIGHT - GRID_VERTICAL_GAP,
+    };
   }
 
   return { nodes, edges };

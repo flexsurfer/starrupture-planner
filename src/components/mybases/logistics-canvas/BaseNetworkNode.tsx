@@ -37,8 +37,12 @@ export const BaseNetworkNode: React.FC<NodeProps> = memo(({ data }) => {
 
   return (
     <div className="rounded-xl border-2 border-base-300 bg-base-100 shadow-lg min-w-[220px] max-w-[280px] overflow-hidden">
-      <Handle type="target" position={Position.Left} className="!w-3 !h-3 !bg-primary" />
-      <Handle type="source" position={Position.Right} className="!w-3 !h-3 !bg-secondary" />
+      {/* Item link handles (left = in, right = out) */}
+      <Handle id="item-in" type="target" position={Position.Left} className="!w-3 !h-3 !bg-primary" />
+      <Handle id="item-out" type="source" position={Position.Right} className="!w-3 !h-3 !bg-secondary" />
+      {/* Energy handles (top) — kept separate from item links so the two never share a point */}
+      <Handle id="energy-in" type="target" position={Position.Top} className="!w-2.5 !h-2.5 !bg-warning" style={{ left: '42%' }} />
+      <Handle id="energy-out" type="source" position={Position.Top} className="!w-2.5 !h-2.5 !bg-warning" style={{ left: '58%' }} />
 
       {/* Header */}
       <div className={`px-3 py-2 border-b border-base-300 ${d.hasWarnings ? 'bg-warning/10' : 'bg-base-200/50'}`}>

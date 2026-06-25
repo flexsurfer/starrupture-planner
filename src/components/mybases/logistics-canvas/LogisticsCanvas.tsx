@@ -5,6 +5,7 @@ import {
   Controls,
   MiniMap,
   Background,
+  Panel,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -96,10 +97,13 @@ const LogisticsCanvasInner: React.FC = () => {
   const baseStatsMap = useSubscription<Record<string, BaseDetailStats> | null>([SUB_IDS.BASES_ALL_DETAIL_STATS]);
 
   const [selectedEdgeData, setSelectedEdgeData] = useState<EdgeDetailData | null>(null);
-  const activeLayers = useMemo<Set<LayerFilter>>(
-    () => new Set(['links', 'energy', 'broken']),
-    []
-  );
+  // Energy grids are hidden by default — toggled via the on-canvas button.
+  const [showEnergy, setShowEnergy] = useState(false);
+  const activeLayers = useMemo<Set<LayerFilter>>(() => {
+    const layers = new Set<LayerFilter>(['links', 'broken']);
+    if (showEnergy) layers.add('energy');
+    return layers;
+  }, [showEnergy]);
 
   // Build canvas data
   const canvasData = useMemo(() => {
@@ -160,6 +164,20 @@ const LogisticsCanvasInner: React.FC = () => {
         nodesConnectable={false}
         attributionPosition="bottom-left"
       >
+        <Panel position="top-right">
+          <button
+            type="button"
+            onClick={() => setShowEnergy((v) => !v)}
+            aria-pressed={showEnergy}
+            title={showEnergy ? 'Hide energy grids' : 'Show energy grids'}
+            className={`btn btn-sm gap-1.5 shadow ${
+              showEnergy ? 'btn-warning' : 'bg-base-100 border border-base-300 text-base-content/80'
+            }`}
+          >
+            <span>⚡</span>
+            <span>Energy grids: {showEnergy ? 'On' : 'Off'}</span>
+          </button>
+        </Panel>
         <Background />
         <Controls showInteractive={false} />
         <MiniMap

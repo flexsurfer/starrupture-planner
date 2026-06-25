@@ -24,8 +24,9 @@ export const EnergyGridNode: React.FC<NodeProps> = memo(({ data }) => {
     <div className={`rounded-xl border-2 shadow-lg min-w-[180px] overflow-hidden ${
       isDeficit ? 'border-error/60 bg-error/5' : 'border-warning/60 bg-warning/5'
     }`}>
-      <Handle type="target" position={Position.Left} className="!w-3 !h-3 !bg-warning" />
-      <Handle type="source" position={Position.Right} className="!w-3 !h-3 !bg-warning" />
+      {/* Energy handles on the bottom — grid floats above its member bases */}
+      <Handle id="energy-in" type="target" position={Position.Bottom} className="!w-2.5 !h-2.5 !bg-warning" style={{ left: '42%' }} />
+      <Handle id="energy-out" type="source" position={Position.Bottom} className="!w-2.5 !h-2.5 !bg-warning" style={{ left: '58%' }} />
 
       {/* Header */}
       <div className="px-3 py-2 border-b border-warning/30 bg-warning/10">

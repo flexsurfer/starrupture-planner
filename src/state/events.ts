@@ -451,26 +451,6 @@ function getLinkedInputBuildingTypeId(buildings: Building[]): string | undefined
     return fallback?.id;
 }
 
-function getConfiguredOutputBuilding(base: Base, outputBuildingId: string): BaseBuilding | undefined {
-    const output = base.buildings.find((building: BaseBuilding) =>
-        building.id === outputBuildingId &&
-        building.sectionType === 'outputs'
-    );
-    if (!output) return undefined;
-
-    const resolvedOutput = resolveOutputBuilding(output, base);
-    if (
-        resolvedOutput.selectedItemId &&
-        typeof resolvedOutput.ratePerMinute === 'number' &&
-        Number.isFinite(resolvedOutput.ratePerMinute) &&
-        resolvedOutput.ratePerMinute > 0
-    ) {
-        return resolvedOutput;
-    }
-
-    return undefined;
-}
-
 function getOutputBuilding(base: Base, outputBuildingId: string): BaseBuilding | undefined {
     return base.buildings.find((building: BaseBuilding) =>
         building.id === outputBuildingId &&
@@ -634,6 +614,17 @@ regEvent(
                 const resolvedNewOutput = resolveOutputBuilding(newBuilding, base);
                 unlinkInputsLinkedToOutput(draftDb as AppState, baseId, newBuilding.id, normalizedLinkedInputRef);
                 linkInputToOutput(draftDb as AppState, normalizedLinkedInputRef, baseId, newBuilding, resolvedNewOutput);
+            }
+
+            if (sectionType === 'inputs' && normalizedLinkedOutput) {
+                // Enforce 1:1: a freshly linked input takes over the source output,
+                // detaching any other input previously bound to it.
+                unlinkInputsLinkedToOutput(
+                    draftDb as AppState,
+                    normalizedLinkedOutput.baseId,
+                    normalizedLinkedOutput.buildingId,
+                    { baseId, buildingId: newBuilding.id }
+                );
             }
         }
 
@@ -1203,8 +1194,17 @@ regEvent(
     const sourceBase = getBaseById(draftDb.basesList, sourceBaseId);
     if (!targetBase || !sourceBase) return;
 
-    const sourceOutput = getConfiguredOutputBuilding(sourceBase, sourceOutputBuildingId);
-    if (!sourceOutput?.selectedItemId || !sourceOutput.ratePerMinute) return;
+    const sourceOutput = getOutputBuilding(sourceBase, sourceOutputBuildingId);
+    if (!sourceOutput) return;
+
+    const resolvedSourceOutput = resolveOutputBuilding(sourceOutput, sourceBase);
+    if (
+        !resolvedSourceOutput.selectedItemId ||
+        !resolvedSourceOutput.ratePerMinute ||
+        resolvedSourceOutput.ratePerMinute <= 0
+    ) {
+        return;
+    }
 
     const targetBuilding = targetBuildingTypeId
         ? draftDb.buildingsList.find((building: Building) => building.id === targetBuildingTypeId)
@@ -1228,19 +1228,17 @@ regEvent(
         sectionType: 'inputs',
         name,
         description,
-        selectedItemId: sourceOutput.selectedItemId,
-        ratePerMinute: sourceOutput.ratePerMinute,
-        linkedOutput: {
-            baseId: sourceBaseId,
-            buildingId: sourceOutputBuildingId,
-            itemIdSnapshot: sourceOutput.selectedItemId,
-            ratePerMinuteSnapshot: sourceOutput.ratePerMinute,
-        },
     });
 
     if (!existingLinkedInput) {
         targetBase.buildings.push(linkedInput);
     }
+
+    // Reuse the shared 1:1 helpers: detach any input previously bound to this
+    // output (in any base), then bind it to the plan's input.
+    const inputRef = { baseId: targetBaseId, buildingId: linkedInput.id };
+    unlinkInputsLinkedToOutput(draftDb as AppState, sourceBaseId, sourceOutputBuildingId, inputRef);
+    linkInputToOutput(draftDb as AppState, inputRef, sourceBaseId, sourceOutput, resolvedSourceOutput);
 
     if (!modalState.selectedInputIds.includes(linkedInput.id)) {
         modalState.selectedInputIds.push(linkedInput.id);
