@@ -14,6 +14,11 @@ export type BuildingSectionType = 'inputs' | 'energy' | 'production' | 'outputs'
 
 export type BaseDetailTab = DbBaseDetailTab;
 
+export interface LinkedInputReference {
+  baseId: string;
+  buildingId: string;
+}
+
 /**
  * Request payload used when creating one or more base buildings from the UI.
  */
@@ -25,6 +30,12 @@ export interface AddBuildingRequest {
   selectedItemId?: string;
   ratePerMinute?: number;
   linkedOutput?: BaseBuilding['linkedOutput'];
+  sourceProductionId?: string;
+  allocationMode?: BaseBuilding['allocationMode'];
+  requestedRatePerMinute?: number;
+  capacityPerMinute?: number;
+  priority?: number;
+  linkedInputRef?: LinkedInputReference;
 }
 
 /**

@@ -17,6 +17,7 @@ import type {
   ProductionPlanRequirementsStatus,
 } from '../types';
 import {
+  isLogisticsExcludedOutputBuildingId,
   isRawExtractor,
 } from '../utils';
 import { AddBuildingCardModal } from '../modals';
@@ -312,6 +313,12 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
       request.selectedItemId ?? null,
       request.ratePerMinute ?? null,
       request.linkedOutput ?? null,
+      request.sourceProductionId ?? null,
+      request.allocationMode ?? null,
+      request.requestedRatePerMinute ?? null,
+      request.capacityPerMinute ?? null,
+      request.priority ?? null,
+      request.linkedInputRef ?? null,
     ]);
     handleCloseAddModal();
   };
@@ -482,7 +489,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
                     const sourcePlanName = resolvedOutput?.sourceProduction?.name;
                     const capacityPerMinute = resolvedOutput?.capacityPerMinuteResolved;
                     const isPlanLinked = !!sourcePlanName;
-                    const isExcluded = building.id === 'orbital_cargo_launcher' || building.id === 'exportertier2';
+                    const isExcluded = isLogisticsExcludedOutputBuildingId(building.id);
                     const logisticsOutput = !isExcluded
                       ? logistics?.outputs.find((o) => o.baseBuildingId === baseBuildingId)
                       : undefined;
@@ -668,6 +675,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
         <AddBuildingCardModal
           isOpen={showAddBuildingModal}
           sectionType={addBuildingSection}
+          baseId={base.id}
           onClose={handleCloseAddModal}
           onAdd={handleAddBuilding}
           requireItemConfiguration

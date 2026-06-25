@@ -19,6 +19,7 @@ import type {
     ProductionFlowResult,
     RawMaterialDeficit,
 } from './types';
+import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '../../../constants/buildingIds';
 
 // ============================================================================
 // Constants & helpers
@@ -48,7 +49,7 @@ interface RecipeInfo {
     recipeIndex: number;
 }
 
-const LAUNCHER_BUILDING_ID = 'orbital_cargo_launcher';
+const LAUNCHER_BUILDING_ID = ORBITAL_CARGO_LAUNCHER_BUILDING_ID;
 const LAUNCHER_RATE_PER_MINUTE = 10;
 
 /** All mutable state accumulated during the demand-fulfillment pass. */

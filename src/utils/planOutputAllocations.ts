@@ -1,4 +1,8 @@
 import type { Base, BaseBuilding, OutputAllocationMode, Production } from '../state/db';
+import {
+    ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
+    PACKAGE_DISPATCHER_BUILDING_ID,
+} from '../constants/buildingIds';
 
 export const PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE = 200;
 export const ORBITAL_CARGO_LAUNCHER_CAPACITY_PER_MINUTE = 10;
@@ -26,11 +30,11 @@ function isPositiveNumber(value: unknown): value is number {
 }
 
 export function getDefaultOutputCapacityPerMinute(buildingTypeId: string): number | undefined {
-    if (buildingTypeId === 'package_dispatcher') {
+    if (buildingTypeId === PACKAGE_DISPATCHER_BUILDING_ID) {
         return PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE;
     }
 
-    if (buildingTypeId === 'orbital_cargo_launcher') {
+    if (buildingTypeId === ORBITAL_CARGO_LAUNCHER_BUILDING_ID) {
         return ORBITAL_CARGO_LAUNCHER_CAPACITY_PER_MINUTE;
     }
 

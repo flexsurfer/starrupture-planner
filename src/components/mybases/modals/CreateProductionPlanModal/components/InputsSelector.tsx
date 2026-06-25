@@ -47,6 +47,7 @@ export const InputsSelector: React.FC = () => {
             request.description,
             request.selectedItemId ?? null,
             request.ratePerMinute ?? null,
+            request.linkedOutput ?? null,
         ]);
         setShowAddInputModal(false);
     }, [selectedBaseId]);
@@ -149,6 +150,7 @@ export const InputsSelector: React.FC = () => {
             <AddBuildingCardModal
                 isOpen={showAddInputModal}
                 sectionType="inputs"
+                baseId={selectedBaseId || undefined}
                 onClose={() => setShowAddInputModal(false)}
                 onAdd={handleAddInputBuildings}
                 requireItemConfiguration

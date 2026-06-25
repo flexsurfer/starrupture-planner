@@ -20,22 +20,24 @@ import type {
   LogisticsInputLink,
   LogisticsOutput,
 } from '../types';
-import { isRawExtractor } from './buildingSectionUtils';
+import {
+  PACKAGE_DISPATCHER_BUILDING_ID,
+  PACKAGE_RECEIVER_BUILDING_ID,
+} from '../../../constants/buildingIds';
+import {
+  isLogisticsExcludedOutputBuildingId,
+  isRawExtractor,
+} from './buildingSectionUtils';
 
-export const LOGISTICS_DEFAULT_OUTPUT_BUILDING_ID = 'package_dispatcher';
-export const LOGISTICS_DEFAULT_INPUT_BUILDING_ID = 'package_receiver';
+export const LOGISTICS_DEFAULT_OUTPUT_BUILDING_ID = PACKAGE_DISPATCHER_BUILDING_ID;
+export const LOGISTICS_DEFAULT_INPUT_BUILDING_ID = PACKAGE_RECEIVER_BUILDING_ID;
 export { PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE };
-
-const LOGISTICS_EXCLUDED_OUTPUT_BUILDING_IDS = new Set([
-  'orbital_cargo_launcher',
-  'exportertier2',
-]);
 
 const formatFallbackName = (building: BaseBuilding): string => building.name || building.buildingTypeId;
 
 export function isLogisticsOutput(baseBuilding: BaseBuilding): boolean {
   return baseBuilding.sectionType === 'outputs'
-    && !LOGISTICS_EXCLUDED_OUTPUT_BUILDING_IDS.has(baseBuilding.buildingTypeId);
+    && !isLogisticsExcludedOutputBuildingId(baseBuilding.buildingTypeId);
 }
 
 export function isLogisticsInput(baseBuilding: BaseBuilding, buildingsById: BuildingsByIdMap): boolean {

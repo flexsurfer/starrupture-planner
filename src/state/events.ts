@@ -21,7 +21,7 @@ import { buildItemsMap, parseCorporations, extractCategories } from './data-util
 import { DEFAULT_DATA_VERSION, isValidDataVersion } from './gameDataVersion';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '../components/planner/core/types';
-import type { BuildingSectionType } from '../components/mybases/types';
+import type { BuildingSectionType, LinkedInputReference } from '../components/mybases/types';
 import {
     getSectionTypeForBuilding,
     isBuildingAvailableForSection,
@@ -40,7 +40,11 @@ import {
     sanitizeRecipeSelectionsForInputItems,
 } from '../utils/productionPlanInputs';
 import { calculateMaxTargetFromInputs } from '../utils/matchInputsCalculation';
-import { getDefaultOutputCapacityPerMinute } from '../utils/planOutputAllocations';
+import { getDefaultOutputCapacityPerMinute, resolveOutputBuilding } from '../utils/planOutputAllocations';
+import {
+    ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
+    PACKAGE_RECEIVER_BUILDING_ID,
+} from '../constants/buildingIds';
 import { getDefaultBaseCardSectionCollapsed } from './base-card-sections';
 
 // Common function to update draftDb with version data
@@ -398,6 +402,11 @@ interface CreateBaseBuildingOptions {
     selectedItemId?: string;
     ratePerMinute?: number;
     linkedOutput?: BaseBuilding['linkedOutput'];
+    sourceProductionId?: string;
+    allocationMode?: BaseBuilding['allocationMode'];
+    requestedRatePerMinute?: number;
+    capacityPerMinute?: number;
+    priority?: number;
 }
 
 /** Creates a new BaseBuilding object with a unique ID. */
@@ -409,6 +418,11 @@ function createBaseBuilding({
     selectedItemId,
     ratePerMinute,
     linkedOutput,
+    sourceProductionId,
+    allocationMode,
+    requestedRatePerMinute,
+    capacityPerMinute,
+    priority,
 }: CreateBaseBuildingOptions): BaseBuilding {
     return {
         id: createEntityId('building'),
@@ -419,11 +433,16 @@ function createBaseBuilding({
         ...(selectedItemId ? { selectedItemId } : {}),
         ...(ratePerMinute && ratePerMinute > 0 ? { ratePerMinute } : {}),
         ...(linkedOutput ? { linkedOutput } : {}),
+        ...(sourceProductionId ? { sourceProductionId } : {}),
+        ...(allocationMode ? { allocationMode } : {}),
+        ...(requestedRatePerMinute && requestedRatePerMinute > 0 ? { requestedRatePerMinute } : {}),
+        ...(capacityPerMinute && capacityPerMinute > 0 ? { capacityPerMinute } : {}),
+        ...(typeof priority === 'number' && Number.isFinite(priority) && priority >= 0 ? { priority } : {}),
     };
 }
 
 function getLinkedInputBuildingTypeId(buildings: Building[]): string | undefined {
-    const packageReceiver = buildings.find((building) => building.id === 'package_receiver');
+    const packageReceiver = buildings.find((building) => building.id === PACKAGE_RECEIVER_BUILDING_ID);
     if (packageReceiver) return packageReceiver.id;
 
     const fallback = buildings.find((building) =>
@@ -433,13 +452,89 @@ function getLinkedInputBuildingTypeId(buildings: Building[]): string | undefined
 }
 
 function getConfiguredOutputBuilding(base: Base, outputBuildingId: string): BaseBuilding | undefined {
+    const output = base.buildings.find((building: BaseBuilding) =>
+        building.id === outputBuildingId &&
+        building.sectionType === 'outputs'
+    );
+    if (!output) return undefined;
+
+    const resolvedOutput = resolveOutputBuilding(output, base);
+    if (
+        resolvedOutput.selectedItemId &&
+        typeof resolvedOutput.ratePerMinute === 'number' &&
+        Number.isFinite(resolvedOutput.ratePerMinute) &&
+        resolvedOutput.ratePerMinute > 0
+    ) {
+        return resolvedOutput;
+    }
+
+    return undefined;
+}
+
+function getOutputBuilding(base: Base, outputBuildingId: string): BaseBuilding | undefined {
     return base.buildings.find((building: BaseBuilding) =>
         building.id === outputBuildingId &&
-        building.sectionType === 'outputs' &&
-        !!building.selectedItemId &&
-        !!building.ratePerMinute &&
-        building.ratePerMinute > 0
+        building.sectionType === 'outputs'
     );
+}
+
+function unlinkInputsLinkedToOutput(
+    draftDb: AppState,
+    sourceBaseId: string,
+    sourceOutputBuildingId: string,
+    exceptInputRef?: LinkedInputReference
+): void {
+    draftDb.basesList.forEach((base: Base) => {
+        base.buildings.forEach((building: BaseBuilding) => {
+            if (building.sectionType !== 'inputs') return;
+            if (building.linkedOutput?.baseId !== sourceBaseId) return;
+            if (building.linkedOutput?.buildingId !== sourceOutputBuildingId) return;
+            if (exceptInputRef?.baseId === base.id && exceptInputRef.buildingId === building.id) return;
+
+            building.linkedOutput = undefined;
+        });
+    });
+}
+
+function linkInputToOutput(
+    draftDb: AppState,
+    inputRef: LinkedInputReference,
+    sourceBaseId: string,
+    sourceOutput: BaseBuilding,
+    resolvedOutput: BaseBuilding
+): void {
+    const inputBase = getBaseById(draftDb.basesList, inputRef.baseId);
+    if (!inputBase) return;
+
+    const inputBuilding = inputBase.buildings.find((building: BaseBuilding) => building.id === inputRef.buildingId);
+    if (!inputBuilding || inputBuilding.sectionType !== 'inputs') return;
+
+    const inputBuildingType = draftDb.buildingsList.find((building: Building) => building.id === inputBuilding.buildingTypeId);
+    if (!inputBuildingType || isRawExtractor(inputBuildingType)) return;
+
+    if (resolvedOutput.selectedItemId && resolvedOutput.ratePerMinute && resolvedOutput.ratePerMinute > 0) {
+        inputBuilding.selectedItemId = resolvedOutput.selectedItemId;
+        inputBuilding.ratePerMinute = resolvedOutput.ratePerMinute;
+    }
+
+    const nextLinkedOutput: BaseBuilding['linkedOutput'] = {
+        baseId: sourceBaseId,
+        buildingId: sourceOutput.id,
+    };
+
+    const snapshotItemId = resolvedOutput.selectedItemId || inputBuilding.selectedItemId;
+    const snapshotRatePerMinute = resolvedOutput.ratePerMinute && resolvedOutput.ratePerMinute > 0
+        ? resolvedOutput.ratePerMinute
+        : inputBuilding.ratePerMinute;
+
+    if (snapshotItemId) {
+        nextLinkedOutput.itemIdSnapshot = snapshotItemId;
+    }
+    if (snapshotRatePerMinute && snapshotRatePerMinute > 0) {
+        nextLinkedOutput.ratePerMinuteSnapshot = snapshotRatePerMinute;
+    }
+
+    inputBuilding.linkedOutput = nextLinkedOutput;
 }
 
 regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string) => {
@@ -462,7 +557,13 @@ regEvent(
         description?: string,
         selectedItemId?: string | null,
         ratePerMinute?: number | null,
-        linkedOutput?: BaseBuilding['linkedOutput'] | null
+        linkedOutput?: BaseBuilding['linkedOutput'] | null,
+        sourceProductionId?: string | null,
+        allocationMode?: BaseBuilding['allocationMode'] | null,
+        requestedRatePerMinute?: number | null,
+        capacityPerMinute?: number | null,
+        priority?: number | null,
+        linkedInputRef?: LinkedInputReference | null
     ) => {
         const base = getBaseById(draftDb.basesList, baseId);
         if (!base) return;
@@ -475,19 +576,65 @@ regEvent(
             ? ratePerMinute
             : undefined;
         const normalizedLinkedOutput = linkedOutput || undefined;
+        const sourcePlan = sectionType === 'outputs' && sourceProductionId
+            ? base.productions.find((plan: Production) => plan.id === sourceProductionId)
+            : undefined;
+        const normalizedSourceProductionId = sourcePlan?.id;
+        const normalizedAllocationMode = normalizedSourceProductionId
+            ? (allocationMode === 'fixed' ? 'fixed' : 'auto')
+            : undefined;
+        const normalizedRequestedRatePerMinute = normalizedAllocationMode === 'fixed' &&
+            typeof requestedRatePerMinute === 'number' &&
+            Number.isFinite(requestedRatePerMinute) &&
+            requestedRatePerMinute > 0
+            ? requestedRatePerMinute
+            : undefined;
+        const normalizedCapacityPerMinute = normalizedSourceProductionId
+            ? (
+                typeof capacityPerMinute === 'number' &&
+                Number.isFinite(capacityPerMinute) &&
+                capacityPerMinute > 0
+                    ? capacityPerMinute
+                    : getDefaultOutputCapacityPerMinute(buildingTypeId)
+            )
+            : undefined;
+        const normalizedPriority = normalizedSourceProductionId
+            ? (
+                typeof priority === 'number' && Number.isFinite(priority) && priority >= 0
+                    ? priority
+                    : base.buildings.filter((candidate: BaseBuilding) =>
+                        candidate.sectionType === 'outputs' &&
+                        candidate.sourceProductionId === normalizedSourceProductionId
+                    ).length
+            )
+            : undefined;
+        const normalizedLinkedInputRef = sectionType === 'outputs' && linkedInputRef?.baseId && linkedInputRef?.buildingId
+            ? linkedInputRef
+            : null;
 
         for (let index = 0; index < normalizedCount; index += 1) {
-            base.buildings.push(
-                createBaseBuilding({
-                    buildingTypeId,
-                    sectionType,
-                    name,
-                    description,
-                    selectedItemId: selectedItemId || undefined,
-                    ratePerMinute: normalizedRatePerMinute,
-                    linkedOutput: normalizedLinkedOutput,
-                })
-            );
+            const newBuilding = createBaseBuilding({
+                buildingTypeId,
+                sectionType,
+                name,
+                description,
+                selectedItemId: sourcePlan?.selectedItemId || selectedItemId || undefined,
+                ratePerMinute: normalizedSourceProductionId ? undefined : normalizedRatePerMinute,
+                linkedOutput: normalizedSourceProductionId ? undefined : normalizedLinkedOutput,
+                sourceProductionId: normalizedSourceProductionId,
+                allocationMode: normalizedAllocationMode,
+                requestedRatePerMinute: normalizedRequestedRatePerMinute,
+                capacityPerMinute: normalizedCapacityPerMinute,
+                priority: typeof normalizedPriority === 'number' ? normalizedPriority + index : undefined,
+            });
+
+            base.buildings.push(newBuilding);
+
+            if (normalizedLinkedInputRef) {
+                const resolvedNewOutput = resolveOutputBuilding(newBuilding, base);
+                unlinkInputsLinkedToOutput(draftDb as AppState, baseId, newBuilding.id, normalizedLinkedInputRef);
+                linkInputToOutput(draftDb as AppState, normalizedLinkedInputRef, baseId, newBuilding, resolvedNewOutput);
+            }
         }
 
         return [persistBasesEffect(draftDb as AppState)];
@@ -538,10 +685,20 @@ regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: s
                 building.selectedItemId = itemId;
                 building.ratePerMinute = ratePerMinute;
                 building.linkedOutput = undefined;
+                building.sourceProductionId = undefined;
+                building.allocationMode = undefined;
+                building.requestedRatePerMinute = undefined;
+                building.capacityPerMinute = undefined;
+                building.priority = undefined;
             } else {
                 building.selectedItemId = undefined;
                 building.ratePerMinute = undefined;
                 building.linkedOutput = undefined;
+                building.sourceProductionId = undefined;
+                building.allocationMode = undefined;
+                building.requestedRatePerMinute = undefined;
+                building.capacityPerMinute = undefined;
+                building.priority = undefined;
             }
             return [persistBasesEffect(draftDb as AppState)];
         }
@@ -559,17 +716,13 @@ regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT, ({ draftDb }, baseId: st
     const inputBuildingType = draftDb.buildingsList.find((building: Building) => building.id === inputBuilding.buildingTypeId);
     if (!inputBuildingType || isRawExtractor(inputBuildingType)) return;
 
-    const sourceOutput = getConfiguredOutputBuilding(sourceBase, sourceOutputBuildingId);
-    if (!sourceOutput?.selectedItemId || !sourceOutput.ratePerMinute) return;
+    const sourceOutput = getOutputBuilding(sourceBase, sourceOutputBuildingId);
+    if (!sourceOutput) return;
 
-    inputBuilding.selectedItemId = sourceOutput.selectedItemId;
-    inputBuilding.ratePerMinute = sourceOutput.ratePerMinute;
-    inputBuilding.linkedOutput = {
-        baseId: sourceBaseId,
-        buildingId: sourceOutputBuildingId,
-        itemIdSnapshot: sourceOutput.selectedItemId,
-        ratePerMinuteSnapshot: sourceOutput.ratePerMinute,
-    };
+    const inputRef = { baseId, buildingId };
+    const resolvedSourceOutput = resolveOutputBuilding(sourceOutput, sourceBase);
+    unlinkInputsLinkedToOutput(draftDb as AppState, sourceBaseId, sourceOutputBuildingId, inputRef);
+    linkInputToOutput(draftDb as AppState, inputRef, sourceBaseId, sourceOutput, resolvedSourceOutput);
 
     return [persistBasesEffect(draftDb as AppState)];
 });
@@ -819,7 +972,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftDb }, baseId: 
     const newBuildings: BaseBuilding[] = [];
     const createPlanBuilding = (buildingId: string, sectionType: string): BaseBuilding => {
         const newBuilding = createBaseBuilding({ buildingTypeId: buildingId, sectionType });
-        if (buildingId === 'orbital_cargo_launcher' && plan.selectedItemId) {
+        if (buildingId === ORBITAL_CARGO_LAUNCHER_BUILDING_ID && plan.selectedItemId) {
             newBuilding.selectedItemId = plan.selectedItemId;
             newBuilding.ratePerMinute = 10;
         }

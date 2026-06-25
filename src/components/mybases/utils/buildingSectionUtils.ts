@@ -1,4 +1,12 @@
 import type { Building } from '../../../state/db';
+import {
+  DRONE_MERGER_3_TO_1_BUILDING_ID,
+  ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
+  ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
+  PACKAGE_DISPATCHER_BUILDING_ID,
+  PACKAGE_RECEIVER_BUILDING_ID,
+  TELEPORTER_BUILDING_ID,
+} from '../../../constants/buildingIds';
 import type { BuildingSectionType } from '../types';
 
 // ============================================================================
@@ -9,10 +17,23 @@ import type { BuildingSectionType } from '../types';
 /** Buildings that extract raw resources via a recipe with no inputs */
 export const isRawExtractor = (b: Building) =>
   b.type === 'production' && (b.recipes || []).some((recipe) => recipe.inputs.length === 0);
-const isReceiver = (b: Building) => b.id === 'package_receiver';
-const isDispatcher = (b: Building) => b.id === 'orbital_cargo_launcher' || b.id === 'exportertier2' || b.id === 'package_dispatcher';
-const isDroneMerger = (b: Building) => b.id === 'drone_merger_3_to_1';
-const isTeleporter = (b: Building) => b.id === 'teleporter';
+
+const LOGISTICS_EXCLUDED_OUTPUT_BUILDING_IDS = new Set<string>([
+  ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
+  ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
+]);
+
+export function isLogisticsExcludedOutputBuildingId(buildingId: string): boolean {
+  return LOGISTICS_EXCLUDED_OUTPUT_BUILDING_IDS.has(buildingId);
+}
+
+const isReceiver = (b: Building) => b.id === PACKAGE_RECEIVER_BUILDING_ID;
+const isDispatcher = (b: Building) =>
+  b.id === ORBITAL_CARGO_LAUNCHER_BUILDING_ID ||
+  b.id === ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID ||
+  b.id === PACKAGE_DISPATCHER_BUILDING_ID;
+const isDroneMerger = (b: Building) => b.id === DRONE_MERGER_3_TO_1_BUILDING_ID;
+const isTeleporter = (b: Building) => b.id === TELEPORTER_BUILDING_ID;
 
 // ============================================================================
 // Section Classification

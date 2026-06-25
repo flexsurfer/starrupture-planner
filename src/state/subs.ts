@@ -30,7 +30,18 @@ import { generateReactFlowData } from '../components/planner/visualization/plann
 import { getItemName } from '../utils/itemUtils';
 import type { Node, Edge } from '@xyflow/react';
 import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } from '../components/mybases/utils/baseCoreUtils';
-import { getAvailableBuildingsForSection, isBuildingAvailableForSection } from '../components/mybases/utils/buildingSectionUtils';
+import {
+    getAvailableBuildingsForSection,
+    isBuildingAvailableForSection,
+    isLogisticsExcludedOutputBuildingId,
+} from '../components/mybases/utils/buildingSectionUtils';
+import {
+    DRONE_MERGER_3_TO_1_BUILDING_ID,
+    ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
+    ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
+    PACKAGE_DISPATCHER_BUILDING_ID,
+    PACKAGE_RECEIVER_BUILDING_ID,
+} from '../constants/buildingIds';
 import { buildActivePlanOccupancy } from '../components/mybases/utils/activePlanOccupancy';
 import { calculateSharedInputShortages } from '../components/mybases/utils/sharedInputShortages';
 import {
@@ -239,12 +250,12 @@ regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID,
         if (!building) return [];
 
         if (
-            building.id === 'package_receiver'
-            || building.id === 'package_dispatcher'
-            || building.id === 'orbital_cargo_launcher'
-            || building.id === 'exportertier2'
+            building.id === PACKAGE_RECEIVER_BUILDING_ID
+            || building.id === PACKAGE_DISPATCHER_BUILDING_ID
+            || building.id === ORBITAL_CARGO_LAUNCHER_BUILDING_ID
+            || building.id === ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID
             || building.type === 'storage'
-            || building.id === 'drone_merger_3_to_1'
+            || building.id === DRONE_MERGER_3_TO_1_BUILDING_ID
         ) {
             // For package_receiver, output buildings, and drone_merger_3_to_1, all items are available
             return [...items].sort((a, b) => a.name.localeCompare(b.name));
@@ -1725,11 +1736,10 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS,
     ): LinkableOutputItem[] => {
         const currentBaseId = modalState.baseId;
         const linkableOutputs: LinkableOutputItem[] = [];
-        const excludedOutputBuildingIds = new Set(['orbital_cargo_launcher', 'exportertier2']);
 
         for (const base of bases) {
             for (const entry of collectConfiguredSectionItems(base, buildingsById, itemsMap, 'outputs')) {
-                if (excludedOutputBuildingIds.has(entry.building.id)) {
+                if (isLogisticsExcludedOutputBuildingId(entry.building.id)) {
                     continue;
                 }
                 linkableOutputs.push({

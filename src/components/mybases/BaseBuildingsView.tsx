@@ -28,6 +28,12 @@ export const BaseBuildingsView: React.FC = () => {
         request.selectedItemId ?? null,
         request.ratePerMinute ?? null,
         request.linkedOutput ?? null,
+        request.sourceProductionId ?? null,
+        request.allocationMode ?? null,
+        request.requestedRatePerMinute ?? null,
+        request.capacityPerMinute ?? null,
+        request.priority ?? null,
+        request.linkedInputRef ?? null,
       ]);
       setAddBuildingSection(null);
     }
@@ -96,6 +102,7 @@ export const BaseBuildingsView: React.FC = () => {
         <AddBuildingCardModal
           isOpen={showAddBuildingModal}
           sectionType={addBuildingSection}
+          baseId={selectedBase.id}
           onClose={handleCloseAddModal}
           onAdd={handleAddBuilding}
         />

@@ -9,6 +9,7 @@ export {
   isBuildingAvailableForSection,
   getAvailableBuildingsForSection,
   getSectionTypeForBuilding,
+  isLogisticsExcludedOutputBuildingId,
   isRawExtractor,
 } from './buildingSectionUtils';
 
