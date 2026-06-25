@@ -41,7 +41,11 @@ import {
     sanitizeRecipeSelectionsForInputItems,
 } from '../utils/productionPlanInputs';
 import { calculateMaxTargetFromInputs } from '../utils/matchInputsCalculation';
-import { getDefaultOutputCapacityPerMinute, resolveOutputBuilding } from '../utils/planOutputAllocations';
+import {
+    clearOutputPlanLinksForProduction,
+    getDefaultOutputCapacityPerMinute,
+    resolveOutputBuilding,
+} from '../utils/planOutputAllocations';
 import {
     ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
     PACKAGE_RECEIVER_BUILDING_ID,
@@ -952,6 +956,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, ({ draftDb }, baseId: string,
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.productions = base.productions.filter((s: Production) => s.id !== sectionId);
+        clearOutputPlanLinksForProduction(base, sectionId);
         return [persistBasesEffect(draftDb as AppState)];
     }
 });

@@ -45,6 +45,7 @@ interface EdgeDetailData {
   isBroken?: boolean;
   baseId?: string;
   groupId?: string;
+  groupName?: string;
 }
 
 interface EdgeDetailPanelProps {
@@ -76,10 +77,10 @@ const EdgeDetailPanel: React.FC<EdgeDetailPanelProps> = ({ edgeData, onClose }) 
       {edgeData.isBroken && (
         <div className="text-error font-medium">Link is broken</div>
       )}
-      {edgeData.type === 'energy' && edgeData.groupId && (
+      {edgeData.type === 'energy' && (edgeData.groupName || edgeData.groupId) && (
         <div className="flex justify-between">
           <span className="text-base-content/70">Grid</span>
-          <span className="font-medium">{edgeData.groupId}</span>
+          <span className="font-medium">{edgeData.groupName || edgeData.groupId}</span>
         </div>
       )}
     </div>

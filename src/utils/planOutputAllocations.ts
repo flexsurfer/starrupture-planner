@@ -161,3 +161,21 @@ export function getPlanOutputAllocationSummary(base: Base, planId: string): {
         outputs,
     };
 }
+
+export function clearOutputPlanLinksForProduction(base: Base, planId: string): number {
+    let clearedCount = 0;
+
+    for (const output of base.buildings) {
+        if (output.sectionType !== 'outputs') continue;
+        if (output.sourceProductionId !== planId) continue;
+
+        output.sourceProductionId = undefined;
+        output.allocationMode = undefined;
+        output.requestedRatePerMinute = undefined;
+        output.capacityPerMinute = undefined;
+        output.priority = undefined;
+        clearedCount += 1;
+    }
+
+    return clearedCount;
+}

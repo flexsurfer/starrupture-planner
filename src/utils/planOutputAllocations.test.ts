@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Base } from '../state/db';
 import {
+    clearOutputPlanLinksForProduction,
     getPlanOutputAllocationSummary,
     resolveOutputBuilding,
 } from './planOutputAllocations';
@@ -90,5 +91,54 @@ describe('plan output allocations', () => {
         expect(resolved.outputResolutionStatus).toBe('manual');
         expect(resolved.selectedItemId).toBe('electronics');
         expect(resolved.ratePerMinute).toBe(120);
+    });
+
+    it('clears stale output links when a source production is removed', () => {
+        const base = createBase(450);
+        base.buildings[0].selectedItemId = 'titanium_rod';
+        base.buildings.push({
+            id: 'other_plan_output',
+            buildingTypeId: 'package_dispatcher',
+            sectionType: 'outputs',
+            sourceProductionId: 'other_plan',
+            allocationMode: 'auto',
+            capacityPerMinute: 200,
+            priority: 1,
+        });
+
+        const clearedCount = clearOutputPlanLinksForProduction(base, 'plan_rods');
+
+        expect(clearedCount).toBe(3);
+        expect(base.buildings.slice(0, 3)).toEqual([
+            expect.objectContaining({
+                id: 'dispatcher_1',
+                selectedItemId: 'titanium_rod',
+                sourceProductionId: undefined,
+                allocationMode: undefined,
+                capacityPerMinute: undefined,
+                priority: undefined,
+            }),
+            expect.objectContaining({
+                id: 'dispatcher_2',
+                sourceProductionId: undefined,
+                allocationMode: undefined,
+                capacityPerMinute: undefined,
+                priority: undefined,
+            }),
+            expect.objectContaining({
+                id: 'dispatcher_3',
+                sourceProductionId: undefined,
+                allocationMode: undefined,
+                capacityPerMinute: undefined,
+                priority: undefined,
+            }),
+        ]);
+        expect(base.buildings[3]).toMatchObject({
+            id: 'other_plan_output',
+            sourceProductionId: 'other_plan',
+            allocationMode: 'auto',
+            capacityPerMinute: 200,
+            priority: 1,
+        });
     });
 });

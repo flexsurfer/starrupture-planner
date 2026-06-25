@@ -165,7 +165,7 @@ export function buildLogisticsCanvasData({
           style: { stroke: color, strokeWidth: 2, strokeDasharray: '5 5' },
           label: `${isProducer ? '+' : '-'}${Math.round(magnitude)} MW`,
           labelStyle: { fontSize: 10, fill: color },
-          data: { type: 'energy', baseId: model.baseId, groupId } as unknown as Record<string, unknown>,
+          data: { type: 'energy', baseId: model.baseId, groupId, groupName: group.name } as unknown as Record<string, unknown>,
         });
       }
       gridMembers.set(nodeId, members);
