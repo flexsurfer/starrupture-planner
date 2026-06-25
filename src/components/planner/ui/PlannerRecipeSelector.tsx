@@ -18,6 +18,9 @@ export const PlannerRecipeSelector: React.FC<PlannerRecipeSelectorProps> = ({ cl
         onSelectRecipe={(itemId, optionKey) => {
             dispatch([EVENT_IDS.PLANNER_SET_RECIPE_SELECTION, itemId, optionKey]);
         }}
+        onApplySelections={(selections) => {
+            dispatch([EVENT_IDS.PLANNER_SET_RECIPE_SELECTIONS, selections]);
+        }}
         className={className}
         showChevron
         panelMaxHeightClass="max-h-[65vh]"

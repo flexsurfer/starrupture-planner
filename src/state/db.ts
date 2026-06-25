@@ -149,6 +149,13 @@ export interface EnergyGroup {
     name: string;
 }
 
+/** A named, reusable set of per-output recipe alternative selections. */
+export interface RecipeAlternativePreset {
+    id: string;
+    name: string;
+    selections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
+}
+
 export interface Base {
     id: string;
     name: string;
@@ -206,6 +213,10 @@ export interface AppState {
     plannerSelectedItemId: string | null;
     plannerSelectedCorporationLevel: CorporationLevelSelection | null;
     plannerRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
+    /** Persisted recipe-alternative defaults used to seed new plans and the planner. */
+    pinnedRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
+    /** Persisted, named recipe-alternative sets the user can save and reload. */
+    recipeAlternativePresets: RecipeAlternativePreset[];
     plannerTargetAmount: number;
     basesList: Base[];
     energyGroups: EnergyGroup[];
@@ -240,6 +251,8 @@ const appState: AppState = {
     plannerSelectedItemId: null,
     plannerSelectedCorporationLevel: null,
     plannerRecipeSelections: {},
+    pinnedRecipeSelections: {},
+    recipeAlternativePresets: [],
     plannerTargetAmount: 60,
     basesSelectedBaseId: null,
     basesSelectedDetailTab: 'base',

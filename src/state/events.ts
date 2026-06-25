@@ -13,6 +13,7 @@ import type {
     BaseBuilding,
     BaseCardSectionKey,
     EnergyGroup,
+    RecipeAlternativePreset,
     Production,
     PlanRequiredBuilding,
     CorporationLevelSelection,
@@ -210,7 +211,7 @@ function resolveDataVersionFromCoeffect(raw: string | null | undefined): DataVer
 }
 
 /** Initialization event */
-regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion, localStoreBases, localStoreEnergyGroups }) => {
+regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion, localStoreBases, localStoreEnergyGroups, localStorePinnedRecipes, localStoreRecipePresets }) => {
     if (localStoreTheme) {
         draftDb.uiTheme = localStoreTheme;
     }
@@ -220,12 +221,14 @@ regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion,
 
     draftDb.basesList = Array.isArray(localStoreBases) ? localStoreBases : [];
     draftDb.energyGroups = Array.isArray(localStoreEnergyGroups) ? localStoreEnergyGroups : [];
+    draftDb.pinnedRecipeSelections = localStorePinnedRecipes && typeof localStorePinnedRecipes === 'object' ? localStorePinnedRecipes : {};
+    draftDb.recipeAlternativePresets = Array.isArray(localStoreRecipePresets) ? localStoreRecipePresets : [];
 
     return [
         [EFFECT_IDS.SET_THEME, draftDb.uiTheme],
         [EFFECT_IDS.LOAD_GAME_DATA, dataVersion],
     ];
-}, [[EFFECT_IDS.GET_THEME], [EFFECT_IDS.GET_DATA_VERSION], [EFFECT_IDS.GET_BASES], [EFFECT_IDS.GET_ENERGY_GROUPS]]);
+}, [[EFFECT_IDS.GET_THEME], [EFFECT_IDS.GET_DATA_VERSION], [EFFECT_IDS.GET_BASES], [EFFECT_IDS.GET_ENERGY_GROUPS], [EFFECT_IDS.GET_PINNED_RECIPES], [EFFECT_IDS.GET_RECIPE_PRESETS]]);
 
 regEvent(EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, ({ draftDb }, category: string) => {
     draftDb.itemsSelectedCategory = category;
@@ -246,7 +249,7 @@ regEvent(EVENT_IDS.UI_SET_ACTIVE_TAB, ({ draftDb }, newTab: TabType) => {
 regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftDb }, itemId: string, corporationLevel?: CorporationLevelSelection) => {
     draftDb.plannerSelectedItemId = itemId;
     draftDb.plannerSelectedCorporationLevel = corporationLevel || null;
-    draftDb.plannerRecipeSelections = {};
+    draftDb.plannerRecipeSelections = { ...draftDb.pinnedRecipeSelections };
     draftDb.uiActiveTab = 'planner';
     setTargetAmountToDefault(draftDb as AppState, itemId);
 });
@@ -255,7 +258,7 @@ regEvent(EVENT_IDS.PLANNER_SET_SELECTED_ITEM, ({ draftDb }, itemId: string | nul
     draftDb.plannerSelectedItemId = itemId;
     // Reset corporation level when item changes
     draftDb.plannerSelectedCorporationLevel = null;
-    draftDb.plannerRecipeSelections = {};
+    draftDb.plannerRecipeSelections = { ...draftDb.pinnedRecipeSelections };
     setTargetAmountToDefault(draftDb as AppState, itemId || '');
 });
 
@@ -270,6 +273,52 @@ regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTION, ({ draftDb }, itemId: string, r
         return;
     }
     draftDb.plannerRecipeSelections[itemId] = recipeKey;
+});
+
+/** Replaces the whole planner recipe-alternative selection (used when loading a saved set). */
+regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTIONS, ({ draftDb }, selections: Record<string, string>) => {
+    draftDb.plannerRecipeSelections = { ...(selections || {}) };
+});
+
+/**
+ * Recipe-alternative sets, shared by the planner and the plan modal.
+ * Defaults seed `recipeSelections` for every new plan and the planner; presets
+ * are a named library the user can save and reload. Both are persisted.
+ */
+regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SET_DEFAULTS, ({ draftDb }, selections: Record<string, string>) => {
+    draftDb.pinnedRecipeSelections = { ...(selections || {}) };
+    return [[EFFECT_IDS.SET_PINNED_RECIPES, { ...draftDb.pinnedRecipeSelections }]];
+});
+
+regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SAVE_PRESET, ({ draftDb }, name: string, selections: Record<string, string>) => {
+    const trimmedName = (name || '').trim().replace(/\s+/g, ' ');
+    if (!trimmedName) return;
+
+    const presetSelections = { ...(selections || {}) };
+    const existing = draftDb.recipeAlternativePresets.find(
+        (preset: RecipeAlternativePreset) => preset.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (existing) {
+        // Overwrite a same-named set so re-saving updates in place.
+        existing.selections = presetSelections;
+    } else {
+        draftDb.recipeAlternativePresets.push({
+            id: createEntityId('rap'),
+            name: trimmedName,
+            selections: presetSelections,
+        });
+    }
+
+    return [[EFFECT_IDS.SET_RECIPE_PRESETS, draftDb.recipeAlternativePresets.map((preset: RecipeAlternativePreset) => ({ ...preset }))]];
+});
+
+regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_DELETE_PRESET, ({ draftDb }, presetId: string) => {
+    if (!presetId) return;
+    draftDb.recipeAlternativePresets = draftDb.recipeAlternativePresets.filter(
+        (preset: RecipeAlternativePreset) => preset.id !== presetId
+    );
+    return [[EFFECT_IDS.SET_RECIPE_PRESETS, draftDb.recipeAlternativePresets.map((preset: RecipeAlternativePreset) => ({ ...preset }))]];
 });
 
 regEvent(EVENT_IDS.APP_REQUEST_LOAD_GAME_DATA, ({ draftDb }, version: DataVersion) => {
@@ -1016,7 +1065,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftDb }, editSectionId?: str
             targetAmount: 60,
             selectedCorporationLevel: null,
             selectedInputIds: [],
-            recipeSelections: {},
+            recipeSelections: { ...draftDb.pinnedRecipeSelections },
             matchInputs: false,
         };
     }
@@ -1112,7 +1161,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_NAME, ({ draftDb }, name: string) =
 regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftDb }, itemId: string) => {
     draftDb.productionPlanModalState.selectedItemId = itemId;
     draftDb.productionPlanModalState.selectedCorporationLevel = null;
-    draftDb.productionPlanModalState.recipeSelections = {};
+    draftDb.productionPlanModalState.recipeSelections = { ...draftDb.pinnedRecipeSelections };
 
     if (itemId) {
         draftDb.productionPlanModalState.targetAmount = getSlowestOutputRateForItem(
@@ -1141,6 +1190,16 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, ({ draftDb }, ite
     } else {
         modalState.recipeSelections[itemId] = recipeKey;
     }
+    applyMatchInputs(draftDb as AppState);
+});
+
+/** Replaces the whole modal recipe-alternative selection (used when loading a saved set). */
+regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, ({ draftDb }, selections: Record<string, string>) => {
+    const modalState = draftDb.productionPlanModalState;
+    const base = modalState.baseId ? getBaseById(draftDb.basesList, modalState.baseId) : undefined;
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || [], draftDb.basesList);
+    // Drop selections for items provided as external inputs (mirrors the per-item event).
+    modalState.recipeSelections = sanitizeRecipeSelectionsForInputItems({ ...(selections || {}) }, selectedInputBuildings);
     applyMatchInputs(draftDb as AppState);
 });
 

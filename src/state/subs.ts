@@ -98,6 +98,8 @@ regSub(SUB_IDS.UI_ACTIVE_TAB, "uiActiveTab");
 regSub(SUB_IDS.PLANNER_SELECTED_ITEM_ID, "plannerSelectedItemId");
 regSub(SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL, "plannerSelectedCorporationLevel");
 regSub(SUB_IDS.PLANNER_RECIPE_SELECTIONS, "plannerRecipeSelections");
+regSub(SUB_IDS.PINNED_RECIPE_SELECTIONS, "pinnedRecipeSelections");
+regSub(SUB_IDS.RECIPE_ALTERNATIVE_PRESETS, "recipeAlternativePresets");
 regSub(SUB_IDS.PLANNER_TARGET_AMOUNT, "plannerTargetAmount");
 regSub(SUB_IDS.BASES_LIST, "basesList");
 regSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS, "basesCardCollapsedSections");

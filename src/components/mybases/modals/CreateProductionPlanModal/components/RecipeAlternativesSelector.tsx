@@ -10,5 +10,8 @@ export const RecipeAlternativesSelector: React.FC = () => (
         onSelectRecipe={(itemId, optionKey) => {
             dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, itemId, optionKey]);
         }}
+        onApplySelections={(selections) => {
+            dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, selections]);
+        }}
     />
 );

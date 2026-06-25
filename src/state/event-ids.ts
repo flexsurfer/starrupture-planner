@@ -17,7 +17,12 @@ export const EVENT_IDS = {
     PLANNER_SET_SELECTED_ITEM: 'plannerSetSelectedItem',
     PLANNER_SET_SELECTED_CORPORATION_LEVEL: 'plannerSetSelectedCorporationLevel',
     PLANNER_SET_RECIPE_SELECTION: 'plannerSetRecipeSelection',
+    PLANNER_SET_RECIPE_SELECTIONS: 'plannerSetRecipeSelections',
     PLANNER_SET_TARGET_AMOUNT: 'plannerSetTargetAmount',
+    // Recipe-alternative sets (save/load/default), shared by planner and the plan modal
+    RECIPE_ALTERNATIVES_SET_DEFAULTS: 'recipeAlternativesSetDefaults',
+    RECIPE_ALTERNATIVES_SAVE_PRESET: 'recipeAlternativesSavePreset',
+    RECIPE_ALTERNATIVES_DELETE_PRESET: 'recipeAlternativesDeletePreset',
 
     BASES_CREATE_BASE: 'basesCreateBase',
     BASES_UPDATE_BASE_NAME: 'basesUpdateBaseName',
@@ -51,6 +56,7 @@ export const EVENT_IDS = {
     PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'productionPlanModalSetTargetAmount',
     PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'productionPlanModalSetSelectedCorporationLevel',
     PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'productionPlanModalSetRecipeSelection',
+    PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS: 'productionPlanModalSetRecipeSelections',
     PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'productionPlanModalToggleInput',
     PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'productionPlanModalLinkOutputInput',
     PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'productionPlanModalSetMatchInputs',

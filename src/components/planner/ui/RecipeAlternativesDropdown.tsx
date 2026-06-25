@@ -1,17 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
+import { useSubscription, dispatch } from '@flexsurfer/reflex';
 import { SUB_IDS } from '../../../state/sub-ids';
-import type { Item } from '../../../state/db';
+import { EVENT_IDS } from '../../../state/event-ids';
+import type { Item, RecipeAlternativePreset } from '../../../state/db';
 import type { PlannerRecipeOptionsItem } from '../core/types';
 import { ItemImage, BuildingImage } from '../../ui';
 
 const EMPTY_RECIPE_OPTIONS: PlannerRecipeOptionsItem[] = [];
 const EMPTY_ITEMS_BY_ID: Record<string, Item> = {};
+const EMPTY_PINNED_SELECTIONS: Record<string, string> = {};
+const EMPTY_PRESETS: RecipeAlternativePreset[] = [];
+
+/** True when two `itemId -> recipeKey` maps hold exactly the same entries. */
+function sameSelections(a: Record<string, string>, b: Record<string, string>): boolean {
+    const aKeys = Object.keys(a);
+    if (aKeys.length !== Object.keys(b).length) return false;
+    return aKeys.every((key) => a[key] === b[key]);
+}
 
 export interface RecipeAlternativesDropdownProps {
     /** Reflex subscription id for `PlannerRecipeOptionsItem[]` */
     optionsSubId: (typeof SUB_IDS)[keyof typeof SUB_IDS];
     onSelectRecipe: (itemId: string, optionKey: string) => void;
+    /** Replaces the whole current selection at once (used when loading a saved set). */
+    onApplySelections?: (selections: Record<string, string>) => void;
     className?: string;
     showChevron?: boolean;
     panelMaxHeightClass?: string;
@@ -20,17 +32,25 @@ export interface RecipeAlternativesDropdownProps {
 /**
  * Dropdown for choosing per-output recipe alternatives (buildings/rates).
  * Used by the main planner and the production plan modal with different subs/events.
+ *
+ * The panel header exposes set-level controls: save the current alternatives as a
+ * named set, load a saved set, and make the current alternatives the default for
+ * new plans. Saved sets and the default are global and persisted.
  */
 export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProps> = ({
     optionsSubId,
     onSelectRecipe,
+    onApplySelections,
     className = '',
     showChevron = false,
     panelMaxHeightClass = 'max-h-[60vh]'
 }) => {
     const options = useSubscription<PlannerRecipeOptionsItem[]>([optionsSubId]) ?? EMPTY_RECIPE_OPTIONS;
     const itemsById = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]) ?? EMPTY_ITEMS_BY_ID;
+    const defaultSelections = useSubscription<Record<string, string>>([SUB_IDS.PINNED_RECIPE_SELECTIONS]) ?? EMPTY_PINNED_SELECTIONS;
+    const presets = useSubscription<RecipeAlternativePreset[]>([SUB_IDS.RECIPE_ALTERNATIVE_PRESETS]) ?? EMPTY_PRESETS;
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoadOpen, setIsLoadOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -40,6 +60,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
             if (!rootRef.current) return;
             if (!rootRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
+                setIsLoadOpen(false);
             }
         };
 
@@ -56,6 +77,38 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
         const selectedOption = entry.options.find((option) => option.key === entry.selectedKey) ?? entry.options[0]!;
         return { entry, selectedOption };
     });
+
+    // The current alternatives = non-default overrides among the items on screen.
+    const currentSelections: Record<string, string> = {};
+    for (const entry of options) {
+        if (entry.selectedKey && entry.selectedKey !== entry.defaultKey) {
+            currentSelections[entry.itemId] = entry.selectedKey;
+        }
+    }
+    const hasCustomSelection = Object.keys(currentSelections).length > 0;
+    const isCurrentDefault =
+        Object.keys(defaultSelections).length > 0 && sameSelections(currentSelections, defaultSelections);
+
+    const handleSavePreset = () => {
+        const name = window.prompt('Save current alternatives as:');
+        if (name && name.trim()) {
+            dispatch([EVENT_IDS.RECIPE_ALTERNATIVES_SAVE_PRESET, name.trim(), currentSelections]);
+        }
+    };
+
+    const handleToggleDefault = () => {
+        dispatch([EVENT_IDS.RECIPE_ALTERNATIVES_SET_DEFAULTS, isCurrentDefault ? {} : currentSelections]);
+    };
+
+    const handleLoadPreset = (preset: RecipeAlternativePreset) => {
+        onApplySelections?.({ ...preset.selections });
+        setIsLoadOpen(false);
+    };
+
+    const handleDeletePreset = (event: React.MouseEvent, presetId: string) => {
+        event.stopPropagation();
+        dispatch([EVENT_IDS.RECIPE_ALTERNATIVES_DELETE_PRESET, presetId]);
+    };
 
     return (
         <div ref={rootRef} className={`relative ${className}`.trim()}>
@@ -83,7 +136,81 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                 <div
                     className={`absolute right-0 mt-2 z-30 w-[min(92vw,560px)] ${panelMaxHeightClass} overflow-y-auto rounded-md border border-base-300 bg-base-100 p-2 shadow-xl`}
                 >
-                    <div className="text-xs font-semibold text-base-content/80 mb-2 px-1">Recipe Alternatives</div>
+                    <div className="sticky -top-2 z-10 -mx-2 -mt-2 mb-2 border-b border-base-300 bg-base-100 px-3 pt-2 pb-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-semibold text-base-content/80 mr-auto">Recipe Alternatives</span>
+
+                            <button
+                                type="button"
+                                className="btn btn-xs btn-ghost border border-base-300"
+                                disabled={!hasCustomSelection}
+                                title="Save the current alternatives as a named set"
+                                onClick={handleSavePreset}
+                            >
+                                Save set
+                            </button>
+
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    className="btn btn-xs btn-ghost border border-base-300 gap-1"
+                                    disabled={!presets.length || !onApplySelections}
+                                    title="Load a saved set of alternatives"
+                                    onClick={() => setIsLoadOpen((prev) => !prev)}
+                                >
+                                    Load set
+                                    <span className="opacity-70">({presets.length})</span>
+                                    <span className="text-[10px]">▼</span>
+                                </button>
+
+                                {isLoadOpen && presets.length > 0 && (
+                                    <div className="absolute right-0 mt-1 z-40 w-56 max-h-60 overflow-y-auto rounded-md border border-base-300 bg-base-100 p-1 shadow-xl">
+                                        {presets.map((preset) => (
+                                            <div
+                                                key={preset.id}
+                                                role="button"
+                                                tabIndex={0}
+                                                className="flex items-center gap-2 rounded px-2 py-1 hover:bg-base-200 cursor-pointer"
+                                                onClick={() => handleLoadPreset(preset)}
+                                            >
+                                                <span className="text-xs truncate flex-1" title={preset.name}>
+                                                    {preset.name}
+                                                </span>
+                                                <span className="text-[10px] text-base-content/50">
+                                                    {Object.keys(preset.selections).length}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-ghost btn-xs px-1 text-error/80 hover:text-error"
+                                                    title={`Delete "${preset.name}"`}
+                                                    onClick={(event) => handleDeletePreset(event, preset.id)}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
+                                type="button"
+                                className={`btn btn-xs gap-1 ${isCurrentDefault ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
+                                title={
+                                    isCurrentDefault
+                                        ? 'These alternatives are the default for new plans — click to clear'
+                                        : 'Use the current alternatives as the default for new plans'
+                                }
+                                onClick={handleToggleDefault}
+                            >
+                                {isCurrentDefault ? 'Default ✓' : 'Set as default'}
+                            </button>
+                        </div>
+                        <div className="mt-1 text-[11px] leading-snug text-base-content/60">
+                            Save and load named sets of alternatives, or make the current set the default
+                            machines pre-selected for every new plan.
+                        </div>
+                    </div>
 
                     {normalizedOptions.map(({ entry, selectedOption }) => (
                         <div key={entry.itemId} className="rounded-md border border-base-300 bg-base-200/40 p-2 mb-2 last:mb-0">

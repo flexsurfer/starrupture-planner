@@ -8,4 +8,8 @@ export const EFFECT_IDS = {
     SET_BASES: 'setBases',
     GET_ENERGY_GROUPS: 'getEnergyGroups',
     SET_ENERGY_GROUPS: 'setEnergyGroups',
+    GET_PINNED_RECIPES: 'getPinnedRecipes',
+    SET_PINNED_RECIPES: 'setPinnedRecipes',
+    GET_RECIPE_PRESETS: 'getRecipePresets',
+    SET_RECIPE_PRESETS: 'setRecipePresets',
 }

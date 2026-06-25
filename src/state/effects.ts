@@ -5,6 +5,9 @@ import type { DataVersion, Base, EnergyGroup } from "./db";
 import { gameDataBundleToAppVersioned, loadGameDataVersion } from "./gameDataLoader";
 import { readBasesFromStorage, writeBasesToStorage } from "./bases-storage";
 import { readEnergyGroupsFromStorage, writeEnergyGroupsToStorage } from "./energy-groups-storage";
+import { readPinnedRecipesFromStorage, writePinnedRecipesToStorage } from "./pinned-recipes-storage";
+import { readRecipePresetsFromStorage, writeRecipePresetsToStorage } from "./recipe-presets-storage";
+import type { RecipeAlternativePreset } from "./db";
 
 const BASES_PERSIST_DEBOUNCE_MS = 500;
 
@@ -111,4 +114,40 @@ regCoeffect(EFFECT_IDS.GET_ENERGY_GROUPS, (coeffects) => {
         coeffects.localStoreEnergyGroups = [];
     }
     return coeffects;
-}); 
+});
+
+regEffect(EFFECT_IDS.SET_PINNED_RECIPES, (pinnedRecipeSelections: Record<string, string>) => {
+    try {
+        writePinnedRecipesToStorage(pinnedRecipeSelections);
+    } catch (e) {
+        console.error('Error saving pinned recipes to local storage:', e);
+    }
+});
+
+regCoeffect(EFFECT_IDS.GET_PINNED_RECIPES, (coeffects) => {
+    try {
+        coeffects.localStorePinnedRecipes = readPinnedRecipesFromStorage();
+    } catch (e) {
+        console.error('Error loading pinned recipes from local storage:', e);
+        coeffects.localStorePinnedRecipes = null;
+    }
+    return coeffects;
+});
+
+regEffect(EFFECT_IDS.SET_RECIPE_PRESETS, (presets: RecipeAlternativePreset[]) => {
+    try {
+        writeRecipePresetsToStorage(presets);
+    } catch (e) {
+        console.error('Error saving recipe presets to local storage:', e);
+    }
+});
+
+regCoeffect(EFFECT_IDS.GET_RECIPE_PRESETS, (coeffects) => {
+    try {
+        coeffects.localStoreRecipePresets = readRecipePresetsFromStorage();
+    } catch (e) {
+        console.error('Error loading recipe presets from local storage:', e);
+        coeffects.localStoreRecipePresets = null;
+    }
+    return coeffects;
+});

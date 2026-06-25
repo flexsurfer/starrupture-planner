@@ -31,6 +31,8 @@ export const SUB_IDS = {
     PLANNER_SELECTED_ITEM_ID: 'plannerSelectedItemId',
     PLANNER_SELECTED_CORPORATION_LEVEL: 'plannerSelectedCorporationLevel',
     PLANNER_RECIPE_SELECTIONS: 'plannerRecipeSelections',
+    PINNED_RECIPE_SELECTIONS: 'pinnedRecipeSelections',
+    RECIPE_ALTERNATIVE_PRESETS: 'recipeAlternativePresets',
     PLANNER_RECIPE_OPTIONS: 'plannerRecipeOptions',
     PLANNER_AVAILABLE_CORPORATION_LEVELS: 'plannerAvailableCorporationLevels',
     PLANNER_TARGET_AMOUNT: 'plannerTargetAmount',
