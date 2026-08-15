@@ -6,13 +6,13 @@ import { ItemImage, BuildingImage } from '../../ui';
 interface NodeCardProps {
     node: FlowNode;
     items: Item[];
-    getItemColor: (itemId: string) => string;
+    outputColor: string;
 }
 
 export const NodeCard: React.FC<NodeCardProps> = ({
     node,
     items,
-    getItemColor
+    outputColor
 }) => {
     return (
         <div className="text-center p-2">
@@ -70,7 +70,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
             <div className="text-xs mt-3 mb-2 leading-tight opacity-85">
                 <span >&times;{(Math.floor(node.buildingCount * 10) / 10).toFixed(1)}</span>
                 <span className="opacity-60 mx-0.5">=</span>
-                <span className="font-xs font-medium" style={{ color: getItemColor(node.outputItem) }}>
+                <span className="font-xs font-medium" style={{ color: outputColor }}>
                     {(node.outputAmount * node.buildingCount).toFixed(1)}/min
                 </span>
             </div>

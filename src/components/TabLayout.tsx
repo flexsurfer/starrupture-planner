@@ -7,9 +7,8 @@ import MyBasesPage from './MyBasesPage';
 import PlannerPage from './PlannerPage';
 import { ThemeToggle, GitHubButton, DiscordButton, VersionSelector, ConfirmationDialog } from './ui';
 import { useNavigationSync } from '../hooks/useNavigationSync';
-import { dispatch, useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
+import { appIds } from '@/app/uklad/catalog';
+import { useAppRuntime, useAppSubscription } from '@/state/runtime';
 import type { Tab, TabType } from '@/state/db';
 
 const tabs: Tab[] = [
@@ -21,7 +20,8 @@ const tabs: Tab[] = [
 ];
 
 const TabLayout = () => {
-  const activeTab = useSubscription<TabType>([SUB_IDS.UI_ACTIVE_TAB]);
+  const runtime = useAppRuntime();
+  const activeTab = useAppSubscription([appIds.subscriptions.UI_ACTIVE_TAB]);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -49,7 +49,7 @@ const TabLayout = () => {
   useEffect(() => {
     const currentTab = pathToTab[location.pathname];
     if (currentTab && currentTab !== activeTab) {
-      dispatch([EVENT_IDS.UI_SET_ACTIVE_TAB, currentTab]);
+      runtime.dispatch([appIds.events.UI_SET_ACTIVE_TAB, currentTab]);
     }
     // NOTE: activeTab is intentionally omitted from deps to prevent feedback loop
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,10 +62,10 @@ const TabLayout = () => {
     const path = tabToPath[tabId];
     if (path) {
       navigate(path);
-      dispatch([EVENT_IDS.UI_SET_ACTIVE_TAB, tabId]);
+      runtime.dispatch([appIds.events.UI_SET_ACTIVE_TAB, tabId]);
       if (tabId === 'mybases') {
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE]);
-        dispatch([EVENT_IDS.BASES_SET_SELECTED_BASE, null]);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_CLOSE]);
+        runtime.dispatch([appIds.events.BASES_SET_SELECTED_BASE, null]);
       }
     }
   };

@@ -1,12 +1,10 @@
 import React from 'react';
-import { useSubscription } from '@/state/runtime';
-import { dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { ConfirmationDialog as ConfirmationDialogType } from '@/state/db';
+import { appIds } from '@/app/uklad/catalog';
+import { useAppRuntime, useAppSubscription } from '@/state/runtime';
 
 export const ConfirmationDialog: React.FC = () => {
-  const dialog = useSubscription<ConfirmationDialogType>([SUB_IDS.UI_CONFIRMATION_DIALOG]);
+  const runtime = useAppRuntime();
+  const dialog = useAppSubscription([appIds.subscriptions.UI_CONFIRMATION_DIALOG]);
 
   if (!dialog.isOpen) {
     return null;
@@ -14,14 +12,14 @@ export const ConfirmationDialog: React.FC = () => {
 
   const handleConfirm = () => {
     dialog.onConfirm();
-    dispatch([EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG]);
+    runtime.dispatch([appIds.events.UI_CLOSE_CONFIRMATION_DIALOG]);
   };
 
   const handleCancel = () => {
     if (dialog.onCancel) {
       dialog.onCancel();
     }
-    dispatch([EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG]);
+    runtime.dispatch([appIds.events.UI_CLOSE_CONFIRMATION_DIALOG]);
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {

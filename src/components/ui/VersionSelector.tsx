@@ -4,9 +4,8 @@
  * A dropdown selector for switching between available data versions.
  */
 
-import { dispatch, useSubscription } from "@/state/runtime";
-import { EVENT_IDS } from "@/state/event-ids";
-import { SUB_IDS } from "@/state/sub-ids";
+import { appIds } from '@/app/uklad/catalog';
+import { useAppRuntime, useAppSubscription } from '@/state/runtime';
 import type { DataVersion } from "@/state/db";
 
 interface VersionSelectorProps {
@@ -14,9 +13,10 @@ interface VersionSelectorProps {
 }
 
 const VersionSelector: React.FC<VersionSelectorProps> = ({ className = "" }) => {
-  const currentVersion = useSubscription<DataVersion>([SUB_IDS.APP_DATA_VERSION]);
-  const dataVersions = useSubscription<{ id: DataVersion; label: string }[]>([SUB_IDS.APP_DATA_VERSIONS]);
-  const loadPending = useSubscription<boolean>([SUB_IDS.UI_GAME_DATA_LOAD_PENDING]);
+  const runtime = useAppRuntime();
+  const currentVersion = useAppSubscription([appIds.subscriptions.APP_DATA_VERSION]);
+  const dataVersions = useAppSubscription([appIds.subscriptions.APP_DATA_VERSIONS]);
+  const loadPending = useAppSubscription([appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]);
 
   return (
     <select
@@ -28,7 +28,7 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({ className = "" }) => 
       onChange={(e) => {
         const next = e.target.value as DataVersion;
         if (next === currentVersion || loadPending) return;
-        dispatch([EVENT_IDS.APP_REQUEST_LOAD_GAME_DATA, next]);
+        runtime.dispatch([appIds.events.APP_REQUEST_LOAD_GAME_DATA, next]);
       }}
     >
       {dataVersions.map((version) => (

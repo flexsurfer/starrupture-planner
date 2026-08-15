@@ -5,23 +5,23 @@
  * Uses sun/moon icons to represent the current state.
  */
 
-import { dispatch, useSubscription } from "@/state/runtime";
-import { EVENT_IDS } from "@/state/event-ids";
-import { SUB_IDS } from "@/state/sub-ids";
+import { appIds } from '@/app/uklad/catalog';
+import { useAppRuntime, useAppSubscription } from '@/state/runtime';
 
 interface ThemeToggleProps {
   className?: string;
 }
 
 const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = "" }) => {
-  const theme = useSubscription<'light' | 'dark'>([SUB_IDS.UI_THEME]);
+  const runtime = useAppRuntime();
+  const theme = useAppSubscription([appIds.subscriptions.UI_THEME]);
 
   return (
     <label className={`swap swap-rotate ${className}`}>
       <input
         type="checkbox"
         checked={theme === 'dark'}
-        onChange={(e) => dispatch([EVENT_IDS.UI_SET_THEME, e.target.checked ? 'dark' : 'light'])}
+        onChange={(e) => runtime.dispatch([appIds.events.UI_SET_THEME, e.target.checked ? 'dark' : 'light'])}
       />
       {/* Sun icon - shown in light mode */}
       <svg

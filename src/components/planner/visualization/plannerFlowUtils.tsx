@@ -91,7 +91,7 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items }: FlowDataG
                     <NodeCard
                         node={node}
                         items={items}
-                        getItemColor={getItemColor}
+                        outputColor={getItemColor(node.outputItem)}
                     />
                 ),
             },

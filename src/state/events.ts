@@ -1,15 +1,10 @@
-import { current } from '@ukladjs/core/vanilla';
-import type { UkladContracts, UkladRegistrar } from '@ukladjs/core/vanilla';
+import type { UkladRegistrar } from '@ukladjs/core/vanilla';
+import type { AppContracts } from '@/app/uklad/contracts';
 import { EVENT_IDS } from './event-ids';
-import { EFFECT_IDS } from './effect-ids';
 import type {
-    TabType,
     BaseDetailTab,
-    DataVersion,
-    Item,
     Building,
     AppState,
-    AppVersionedGameData,
     Base,
     BaseBuilding,
     BaseCardSectionKey,
@@ -19,8 +14,6 @@ import type {
     PlanRequiredBuilding,
     CorporationLevelSelection,
 } from './db';
-import { buildItemsMap, parseCorporations, extractCategories } from './data-utils';
-import { DEFAULT_DATA_VERSION, isValidDataVersion } from './gameDataVersion';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '../components/planner/core/types';
 import type { BuildingSectionType, LinkedInputReference } from '../components/mybases/types';
@@ -53,53 +46,7 @@ import {
 } from '../constants/buildingIds';
 import { getDefaultBaseCardSectionCollapsed } from './base-card-sections';
 
-type LegacyEventContext = { draftDb: AppState; [key: string]: unknown };
-type LegacyDynamicValue = ReturnType<typeof JSON.parse>;
-
-export const registerEvents = (registrar: UkladRegistrar<UkladContracts>) => {
-    const persistentEffectIds = new Set([
-        EFFECT_IDS.SET_DATA_VERSION,
-        EFFECT_IDS.SET_BASES,
-        EFFECT_IDS.SET_ENERGY_GROUPS,
-        EFFECT_IDS.SET_PINNED_RECIPES,
-        EFFECT_IDS.SET_RECIPE_PRESETS,
-    ]);
-    const coeffectNames: Record<string, string> = {
-        [EFFECT_IDS.GET_THEME]: 'localStoreTheme',
-        [EFFECT_IDS.GET_DATA_VERSION]: 'localStoreDataVersion',
-        [EFFECT_IDS.GET_BASES]: 'localStoreBases',
-        [EFFECT_IDS.GET_ENERGY_GROUPS]: 'localStoreEnergyGroups',
-        [EFFECT_IDS.GET_PINNED_RECIPES]: 'localStorePinnedRecipes',
-        [EFFECT_IDS.GET_RECIPE_PRESETS]: 'localStoreRecipePresets',
-    };
-    const regEvent = (id: string, handler: (context: LegacyEventContext, ...params: LegacyDynamicValue[]) => Array<[string, unknown]> | void, legacyCoeffects?: Array<[string, ...unknown[]]>) => {
-        const options = legacyCoeffects
-            ? { coeffects: Object.fromEntries(legacyCoeffects.map(([coeffectId]) => [coeffectNames[coeffectId] || coeffectId, coeffectId])) }
-            : undefined;
-        registrar.regEvent(id, ({ draftState, coeffects }, ...params) => {
-            const effects = handler({ draftDb: draftState as AppState, ...coeffects }, ...params) as Array<[string, unknown]> | void;
-            return effects?.filter(([effectId]) => !persistentEffectIds.has(effectId));
-        }, options);
-    };
-
-// Common function to update draftDb with version data
-function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
-    const data = draftDb.appVersionedData[version];
-    if (!data) {
-        console.error(`[app] Missing game data for version "${version}"`);
-        return;
-    }
-    const items = data.items as Item[];
-    const buildings = data.buildings as Building[];
-    const corporations = parseCorporations(data.corporations);
-
-    draftDb.appDataVersion = version;
-    draftDb.itemsList = items;
-    draftDb.itemsById = buildItemsMap(items);
-    draftDb.buildingsList = buildings;
-    draftDb.corporationsList = corporations;
-    draftDb.itemsCategories = extractCategories(items);
-}
+export const registerEvents = (registrar: UkladRegistrar<AppContracts>) => {
 
 function getBaseById(bases: Base[], baseId: string): Base | undefined {
     for (const base of bases) {
@@ -146,16 +93,6 @@ function applyMatchInputs(draftDb: AppState): void {
     if (maxAmount !== null && maxAmount > 0) {
         draftDb.productionPlanModalState.targetAmount = maxAmount;
     }
-}
-
-/** Returns a SET_BASES effect tuple that persists bases. */
-function persistBasesEffect(draftDb: AppState): [string, Base[]] {
-    return [EFFECT_IDS.SET_BASES, current(draftDb.basesList)];
-}
-
-/** Returns a SET_ENERGY_GROUPS effect tuple that persists energy groups. */
-function persistEnergyGroupsEffect(draftDb: AppState): [string, EnergyGroup[]] {
-    return [EFFECT_IDS.SET_ENERGY_GROUPS, current(draftDb.energyGroups)];
 }
 
 /** Slowest `amount_per_minute` among all recipes that output `itemId` (matches production-flow default). */
@@ -215,63 +152,19 @@ function buildAvailableBuildingCountByType(base: Base, excludePlanId?: string | 
     return available;
 }
 
-regEvent(EVENT_IDS.UI_SET_THEME, ({ draftDb }, newTheme: 'light' | 'dark') => {
-    draftDb.uiTheme = newTheme;
-    return [[EFFECT_IDS.SET_THEME, newTheme]];
-});
-
-regEvent(EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG, ({ draftDb }, title: string, message: string, onConfirm: () => void, options?: { confirmLabel?: string; cancelLabel?: string; confirmButtonClass?: string; onCancel?: () => void }) => {
-    draftDb.uiConfirmationDialog = {
-        isOpen: true,
-        title,
-        message,
-        confirmLabel: options?.confirmLabel || 'Confirm',
-        cancelLabel: options?.cancelLabel || 'Cancel',
-        confirmButtonClass: options?.confirmButtonClass || 'btn-primary',
-        onConfirm,
-        onCancel: options?.onCancel,
-    };
-});
-
-regEvent(EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG, ({ draftDb }) => {
-    draftDb.uiConfirmationDialog.isOpen = false;
-});
-
-function resolveDataVersionFromCoeffect(raw: string | null | undefined): DataVersion {
-    if (isValidDataVersion(raw)) {
-        return raw;
-    }
-    return DEFAULT_DATA_VERSION;
-}
-
-/** Initialization event */
-regEvent(EVENT_IDS.APP_INIT, ({ draftDb }) => {
-    const dataVersion = resolveDataVersionFromCoeffect(draftDb.appDataVersion);
-    draftDb.appDataVersion = dataVersion;
-
-    return [
-        [EFFECT_IDS.SET_THEME, draftDb.uiTheme],
-        [EFFECT_IDS.LOAD_GAME_DATA, dataVersion],
-    ];
-});
-
-regEvent(EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, ({ draftDb }, category: string) => {
+registrar.regEvent(EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, ({ draftState: draftDb }, category: string) => {
     draftDb.itemsSelectedCategory = category;
 });
 
-regEvent(EVENT_IDS.ITEMS_SET_SELECTED_BUILDING, ({ draftDb }, building: string) => {
+registrar.regEvent(EVENT_IDS.ITEMS_SET_SELECTED_BUILDING, ({ draftState: draftDb }, building: string) => {
     draftDb.itemsSelectedBuilding = building;
 });
 
-regEvent(EVENT_IDS.ITEMS_SET_SEARCH_TERM, ({ draftDb }, searchTerm: string) => {
+registrar.regEvent(EVENT_IDS.ITEMS_SET_SEARCH_TERM, ({ draftState: draftDb }, searchTerm: string) => {
     draftDb.itemsSearchTerm = searchTerm;
 });
 
-regEvent(EVENT_IDS.UI_SET_ACTIVE_TAB, ({ draftDb }, newTab: TabType) => {
-    draftDb.uiActiveTab = newTab;
-});
-
-regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftDb }, itemId: string, corporationLevel?: CorporationLevelSelection) => {
+registrar.regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftState: draftDb }, itemId: string, corporationLevel?: CorporationLevelSelection) => {
     draftDb.plannerSelectedItemId = itemId;
     draftDb.plannerSelectedCorporationLevel = corporationLevel || null;
     draftDb.plannerRecipeSelections = { ...draftDb.pinnedRecipeSelections };
@@ -279,7 +172,7 @@ regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftDb }, itemId: string, corporationL
     setTargetAmountToDefault(draftDb as AppState, itemId);
 });
 
-regEvent(EVENT_IDS.PLANNER_SET_SELECTED_ITEM, ({ draftDb }, itemId: string | null) => {
+registrar.regEvent(EVENT_IDS.PLANNER_SET_SELECTED_ITEM, ({ draftState: draftDb }, itemId: string | null) => {
     draftDb.plannerSelectedItemId = itemId;
     // Reset corporation level when item changes
     draftDb.plannerSelectedCorporationLevel = null;
@@ -287,11 +180,11 @@ regEvent(EVENT_IDS.PLANNER_SET_SELECTED_ITEM, ({ draftDb }, itemId: string | nul
     setTargetAmountToDefault(draftDb as AppState, itemId || '');
 });
 
-regEvent(EVENT_IDS.PLANNER_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, corporationLevel: CorporationLevelSelection | null) => {
+registrar.regEvent(EVENT_IDS.PLANNER_SET_SELECTED_CORPORATION_LEVEL, ({ draftState: draftDb }, corporationLevel: CorporationLevelSelection | null) => {
     draftDb.plannerSelectedCorporationLevel = corporationLevel;
 });
 
-regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTION, ({ draftDb }, itemId: string, recipeKey: string | null) => {
+registrar.regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTION, ({ draftState: draftDb }, itemId: string, recipeKey: string | null) => {
     if (!itemId) return;
     if (!recipeKey) {
         delete draftDb.plannerRecipeSelections[itemId];
@@ -301,7 +194,7 @@ regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTION, ({ draftDb }, itemId: string, r
 });
 
 /** Replaces the whole planner recipe-alternative selection (used when loading a saved set). */
-regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTIONS, ({ draftDb }, selections: Record<string, string>) => {
+registrar.regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTIONS, ({ draftState: draftDb }, selections: Record<string, string>) => {
     draftDb.plannerRecipeSelections = { ...(selections || {}) };
 });
 
@@ -310,12 +203,12 @@ regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTIONS, ({ draftDb }, selections: Reco
  * Defaults seed `recipeSelections` for every new plan and the planner; presets
  * are a named library the user can save and reload. Both are persisted.
  */
-regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SET_DEFAULTS, ({ draftDb }, selections: Record<string, string>) => {
+registrar.regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SET_DEFAULTS, ({ draftState: draftDb }, selections: Record<string, string>) => {
     draftDb.pinnedRecipeSelections = { ...(selections || {}) };
-    return [[EFFECT_IDS.SET_PINNED_RECIPES, { ...draftDb.pinnedRecipeSelections }]];
+    return;
 });
 
-regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SAVE_PRESET, ({ draftDb }, name: string, selections: Record<string, string>) => {
+registrar.regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SAVE_PRESET, ({ draftState: draftDb }, name: string, selections: Record<string, string>) => {
     const trimmedName = (name || '').trim().replace(/\s+/g, ' ');
     if (!trimmedName) return;
 
@@ -335,53 +228,18 @@ regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SAVE_PRESET, ({ draftDb }, name: string, 
         });
     }
 
-    return [[EFFECT_IDS.SET_RECIPE_PRESETS, draftDb.recipeAlternativePresets.map((preset: RecipeAlternativePreset) => ({ ...preset }))]];
+    return;
 });
 
-regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_DELETE_PRESET, ({ draftDb }, presetId: string) => {
+registrar.regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_DELETE_PRESET, ({ draftState: draftDb }, presetId: string) => {
     if (!presetId) return;
     draftDb.recipeAlternativePresets = draftDb.recipeAlternativePresets.filter(
         (preset: RecipeAlternativePreset) => preset.id !== presetId
     );
-    return [[EFFECT_IDS.SET_RECIPE_PRESETS, draftDb.recipeAlternativePresets.map((preset: RecipeAlternativePreset) => ({ ...preset }))]];
+    return;
 });
 
-regEvent(EVENT_IDS.APP_REQUEST_LOAD_GAME_DATA, ({ draftDb }, version: DataVersion) => {
-    if (version === draftDb.appDataVersion) return;
-    if (draftDb.uiGameDataLoadPending) return;
-
-    draftDb.uiGameDataLoadPending = true;
-    return [[EFFECT_IDS.LOAD_GAME_DATA, version]];
-});
-
-regEvent(EVENT_IDS.APP_GAME_DATA_LOAD_FAILED, ({ draftDb }) => {
-    draftDb.uiGameDataLoadPending = false;
-});
-
-regEvent(EVENT_IDS.APP_SET_DATA_VERSION, ({ draftDb }, version: DataVersion, bundle?: AppVersionedGameData) => {
-    if (bundle) {
-        draftDb.appVersionedData[version] = bundle;
-    }
-
-    if (!draftDb.appVersionedData[version]) {
-        return;
-    }
-
-    const versionChanged = draftDb.appDataVersion !== version;
-    updateDraftDbWithVersionData(draftDb as AppState, version);
-
-    if (bundle !== undefined) {
-        draftDb.uiGameDataLoadPending = false;
-    }
-
-    // Persist when switching version, or when hydrating (bundle present) so first visit writes localStorage.
-    if (versionChanged || bundle !== undefined) {
-        return [[EFFECT_IDS.SET_DATA_VERSION, version]];
-    }
-    return undefined;
-});
-
-regEvent(EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, ({ draftDb }, targetAmount: number) => {
+registrar.regEvent(EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, ({ draftState: draftDb }, targetAmount: number) => {
     draftDb.plannerTargetAmount = targetAmount;
 });
 
@@ -389,7 +247,7 @@ regEvent(EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, ({ draftDb }, targetAmount: number
 // Base management
 //===============================================
 
-regEvent(EVENT_IDS.BASES_CREATE_BASE, ({ draftDb }, name: string) => {
+registrar.regEvent(EVENT_IDS.BASES_CREATE_BASE, ({ draftState: draftDb }, name: string) => {
     const baseId = createEntityId('base');
     
     const newBase: Base = {
@@ -403,29 +261,29 @@ regEvent(EVENT_IDS.BASES_CREATE_BASE, ({ draftDb }, name: string) => {
     draftDb.basesSelectedBaseId = baseId;
     draftDb.basesSelectedDetailTab = 'base';
     
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
-regEvent(EVENT_IDS.BASES_UPDATE_BASE_NAME, ({ draftDb }, baseId: string, newName: string) => {
+registrar.regEvent(EVENT_IDS.BASES_UPDATE_BASE_NAME, ({ draftState: draftDb }, baseId: string, newName: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.name = newName;
-        return [persistBasesEffect(draftDb as AppState)];
+        return;
     }
 });
 
-regEvent(EVENT_IDS.BASES_SET_CORE_LEVEL, ({ draftDb }, level: number) => {
+registrar.regEvent(EVENT_IDS.BASES_SET_CORE_LEVEL, ({ draftState: draftDb }, level: number) => {
     const baseId = draftDb.basesSelectedBaseId;
     if (!baseId) return;
     
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.coreLevel = level;
-        return [persistBasesEffect(draftDb as AppState)];
+        return;
     }
 });
 
-regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftDb }, baseId: string) => {
+registrar.regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftState: draftDb }, baseId: string) => {
     draftDb.basesList = draftDb.basesList.filter((b: Base) => b.id !== baseId);
     if (!draftDb.basesCardCollapsedSections) {
         draftDb.basesCardCollapsedSections = {};
@@ -435,24 +293,24 @@ regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftDb }, baseId: string) => {
         draftDb.basesSelectedBaseId = null;
         draftDb.basesSelectedDetailTab = 'base';
     }
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
-regEvent(EVENT_IDS.BASES_OPEN_BASE, ({ draftDb }, baseId: string, tab: BaseDetailTab = 'base') => {
+registrar.regEvent(EVENT_IDS.BASES_OPEN_BASE, ({ draftState: draftDb }, baseId: string, tab: BaseDetailTab = 'base') => {
     draftDb.basesSelectedBaseId = baseId;
     draftDb.basesSelectedDetailTab = tab;
 });
 
-regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftDb }, baseId: string | null) => {
+registrar.regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftState: draftDb }, baseId: string | null) => {
     draftDb.basesSelectedBaseId = baseId;
     draftDb.basesSelectedDetailTab = 'base';
 });
 
-regEvent(EVENT_IDS.BASES_SET_DETAIL_TAB, ({ draftDb }, tab: BaseDetailTab) => {
+registrar.regEvent(EVENT_IDS.BASES_SET_DETAIL_TAB, ({ draftState: draftDb }, tab: BaseDetailTab) => {
     draftDb.basesSelectedDetailTab = tab;
 });
 
-regEvent(EVENT_IDS.BASES_TOGGLE_CARD_SECTION_COLLAPSED, ({ draftDb }, baseId: string, sectionKey: BaseCardSectionKey) => {
+registrar.regEvent(EVENT_IDS.BASES_TOGGLE_CARD_SECTION_COLLAPSED, ({ draftState: draftDb }, baseId: string, sectionKey: BaseCardSectionKey) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
@@ -591,18 +449,18 @@ function linkInputToOutput(
     inputBuilding.linkedOutput = nextLinkedOutput;
 }
 
-regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string) => {
+registrar.regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftState: draftDb }, baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.buildings.push(createBaseBuilding({ buildingTypeId, sectionType, name, description }));
-        return [persistBasesEffect(draftDb as AppState)];
+        return;
     }
 });
 
-regEvent(
+registrar.regEvent(
     EVENT_IDS.BASES_ADD_BUILDINGS,
     (
-        { draftDb },
+        { draftState: draftDb },
         baseId: string,
         buildingTypeId: string,
         sectionType: string,
@@ -702,11 +560,11 @@ regEvent(
             }
         }
 
-        return [persistBasesEffect(draftDb as AppState)];
+        return;
     }
 );
 
-regEvent(EVENT_IDS.BASES_SET_BUILDING_SECTION_TYPE_COUNT, ({ draftDb }, baseId: string, buildingTypeId: string, sectionType: BuildingSectionType, rawTargetCount: number) => {
+registrar.regEvent(EVENT_IDS.BASES_SET_BUILDING_SECTION_TYPE_COUNT, ({ draftState: draftDb }, baseId: string, buildingTypeId: string, sectionType: BuildingSectionType, rawTargetCount: number) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
@@ -727,21 +585,21 @@ regEvent(EVENT_IDS.BASES_SET_BUILDING_SECTION_TYPE_COUNT, ({ draftDb }, baseId: 
     if (nextBuildings === base.buildings) return;
     base.buildings = nextBuildings;
 
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
-regEvent(EVENT_IDS.BASES_REMOVE_BUILDING, ({ draftDb }, buildingId: string) => {
+registrar.regEvent(EVENT_IDS.BASES_REMOVE_BUILDING, ({ draftState: draftDb }, buildingId: string) => {
     const baseId = draftDb.basesSelectedBaseId;
     if (!baseId) return;
     
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.buildings = base.buildings.filter((b: BaseBuilding) => b.id !== buildingId);
-        return [persistBasesEffect(draftDb as AppState)];
+        return;
     }
 });
 
-regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: string, buildingId: string, itemId: string | null, ratePerMinute: number | null) => {
+registrar.regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, ({ draftState: draftDb }, baseId: string, buildingId: string, itemId: string | null, ratePerMinute: number | null) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         const building = base.buildings.find((b: BaseBuilding) => b.id === buildingId);
@@ -765,12 +623,12 @@ regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: s
                 delete building.capacityPerMinute;
                 delete building.priority;
             }
-            return [persistBasesEffect(draftDb as AppState)];
+            return;
         }
     }
 });
 
-regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT, ({ draftDb }, baseId: string, buildingId: string, sourceBaseId: string, sourceOutputBuildingId: string) => {
+registrar.regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT, ({ draftState: draftDb }, baseId: string, buildingId: string, sourceBaseId: string, sourceOutputBuildingId: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     const sourceBase = getBaseById(draftDb.basesList, sourceBaseId);
     if (!base || !sourceBase) return;
@@ -789,7 +647,7 @@ regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT, ({ draftDb }, baseId: st
     unlinkInputsLinkedToOutput(draftDb as AppState, sourceBaseId, sourceOutputBuildingId, inputRef);
     linkInputToOutput(draftDb as AppState, inputRef, sourceBaseId, sourceOutput, resolvedSourceOutput);
 
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
 interface UpdateOutputPlanLinkPayload {
@@ -800,7 +658,7 @@ interface UpdateOutputPlanLinkPayload {
     priority?: number | null;
 }
 
-regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftDb }, baseId: string, buildingId: string, payload: UpdateOutputPlanLinkPayload) => {
+registrar.regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftState: draftDb }, baseId: string, buildingId: string, payload: UpdateOutputPlanLinkPayload) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
@@ -814,7 +672,7 @@ regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftDb }, baseId: string, 
         delete output.requestedRatePerMinute;
         delete output.capacityPerMinute;
         delete output.priority;
-        return [persistBasesEffect(draftDb as AppState)];
+        return;
     }
 
     const sourcePlan = base.productions.find((plan: Production) => plan.id === sourceProductionId);
@@ -851,14 +709,14 @@ regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftDb }, baseId: string, 
 
     output.selectedItemId = sourcePlan.selectedItemId;
 
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
 //===============================================
 // Energy Groups
 //===============================================
 
-regEvent(EVENT_IDS.ENERGY_GROUP_CREATE, ({ draftDb }, rawName: string, assignBaseId?: string) => {
+registrar.regEvent(EVENT_IDS.ENERGY_GROUP_CREATE, ({ draftState: draftDb }, rawName: string, assignBaseId?: string) => {
     const normalizedName = normalizeEnergyGroupName(rawName);
     if (!normalizedName) return;
 
@@ -868,32 +726,25 @@ regEvent(EVENT_IDS.ENERGY_GROUP_CREATE, ({ draftDb }, rawName: string, assignBas
         name: normalizedName,
     };
 
-    let changed = false;
     if (!existingGroup) {
         draftDb.energyGroups.push(targetGroup);
-        changed = true;
     }
 
     if (!assignBaseId) {
-        return changed ? [persistEnergyGroupsEffect(draftDb as AppState)] : undefined;
+        return;
     }
 
     const base = getBaseById(draftDb.basesList, assignBaseId);
     if (!base) {
-        return changed ? [persistEnergyGroupsEffect(draftDb as AppState)] : undefined;
+        return;
     }
 
     if (base.energyGroupId !== targetGroup.id) {
         base.energyGroupId = targetGroup.id;
-        changed = true;
     }
-
-    return changed
-        ? (existingGroup ? [persistBasesEffect(draftDb as AppState)] : [persistBasesEffect(draftDb as AppState), persistEnergyGroupsEffect(draftDb as AppState)])
-        : undefined;
 });
 
-regEvent(EVENT_IDS.ENERGY_GROUP_DELETE, ({ draftDb }, groupId: string) => {
+registrar.regEvent(EVENT_IDS.ENERGY_GROUP_DELETE, ({ draftState: draftDb }, groupId: string) => {
     const hasGroup = draftDb.energyGroups.some((group: EnergyGroup) => group.id === groupId);
     if (!hasGroup) return;
 
@@ -905,10 +756,10 @@ regEvent(EVENT_IDS.ENERGY_GROUP_DELETE, ({ draftDb }, groupId: string) => {
         }
     });
 
-    return [persistBasesEffect(draftDb as AppState), persistEnergyGroupsEffect(draftDb as AppState)];
+    return;
 });
 
-regEvent(EVENT_IDS.ENERGY_GROUP_RENAME, ({ draftDb }, groupId: string, rawName: string) => {
+registrar.regEvent(EVENT_IDS.ENERGY_GROUP_RENAME, ({ draftState: draftDb }, groupId: string, rawName: string) => {
     const group = draftDb.energyGroups.find((g: EnergyGroup) => g.id === groupId);
     if (!group) return;
 
@@ -922,24 +773,24 @@ regEvent(EVENT_IDS.ENERGY_GROUP_RENAME, ({ draftDb }, groupId: string, rawName: 
 
     if (group.name === normalizedName) return;
     group.name = normalizedName;
-    return [persistEnergyGroupsEffect(draftDb as AppState)];
+    return;
 });
 
-regEvent(EVENT_IDS.BASES_SET_ENERGY_GROUP, ({ draftDb }, baseId: string, groupId: string | null) => {
+registrar.regEvent(EVENT_IDS.BASES_SET_ENERGY_GROUP, ({ draftState: draftDb }, baseId: string, groupId: string | null) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
     if (!groupId) {
         if (!base.energyGroupId) return;
         delete base.energyGroupId;
-        return [persistBasesEffect(draftDb as AppState)];
+        return;
     }
 
     const groupExists = draftDb.energyGroups.some((group: EnergyGroup) => group.id === groupId);
     if (!groupExists || base.energyGroupId === groupId) return;
 
     base.energyGroupId = groupId;
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
 //===============================================
@@ -948,7 +799,7 @@ regEvent(EVENT_IDS.BASES_SET_ENERGY_GROUP, ({ draftDb }, baseId: string, groupId
 
 /** Production Plan Section events */
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_ACTIVATE_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_ACTIVATE_SECTION, ({ draftState: draftDb }, baseId: string, sectionId: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
@@ -958,31 +809,31 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ACTIVATE_SECTION, ({ draftDb }, baseId: strin
     section.active = true;
     section.status = 'active';
 
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_DEACTIVATE_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_DEACTIVATE_SECTION, ({ draftState: draftDb }, baseId: string, sectionId: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         const section = base.productions.find((s: Production) => s.id === sectionId);
         if (section) {
             section.active = false;
             section.status = 'inactive';
-            return [persistBasesEffect(draftDb as AppState)];
+            return;
         }
     }
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, ({ draftDb }, baseId: string, sectionId: string) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, ({ draftState: draftDb }, baseId: string, sectionId: string) => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (base) {
         base.productions = base.productions.filter((s: Production) => s.id !== sectionId);
         clearOutputPlanLinksForProduction(base, sectionId);
-        return [persistBasesEffect(draftDb as AppState)];
+        return;
     }
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftDb }, baseId: string, planId: string, flag: 'all' | 'missing') => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftState: draftDb }, baseId: string, planId: string, flag: 'all' | 'missing') => {
     const base = getBaseById(draftDb.basesList, baseId);
     if (!base) return;
 
@@ -1053,12 +904,12 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftDb }, baseId: 
 
     base.buildings.push(...newBuildings);
 
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
 /** Create Production Plan Modal events */
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftDb }, editSectionId?: string | null) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftState: draftDb }, editSectionId?: string | null) => {
     const baseId = draftDb.basesSelectedBaseId;
     if (!baseId) return; // No selected base, cannot open modal
     
@@ -1097,7 +948,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftDb }, editSectionId?: str
     }
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE, ({ draftDb }) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE, ({ draftState: draftDb }) => {
     draftDb.productionPlanModalState = {
         isOpen: false,
         baseId: null,
@@ -1112,7 +963,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE, ({ draftDb }) => {
     };
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftState: draftDb }) => {
     const modal = draftDb.productionPlanModalState;
     const { baseId, editSectionId, name, selectedItemId, targetAmount, selectedCorporationLevel } = modal;
     
@@ -1175,16 +1026,16 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftDb }) => {
         base.productions.push(newSection);
     }
 
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 
 /** Production Plan Modal Form events */
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_NAME, ({ draftDb }, name: string) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_NAME, ({ draftState: draftDb }, name: string) => {
     draftDb.productionPlanModalState.name = name;
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftDb }, itemId: string) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftState: draftDb }, itemId: string) => {
     draftDb.productionPlanModalState.selectedItemId = itemId;
     draftDb.productionPlanModalState.selectedCorporationLevel = null;
     draftDb.productionPlanModalState.recipeSelections = { ...draftDb.pinnedRecipeSelections };
@@ -1198,7 +1049,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftDb }, itemId
     }
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, ({ draftDb }, itemId: string, recipeKey: string | null) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, ({ draftState: draftDb }, itemId: string, recipeKey: string | null) => {
     if (!itemId) return;
 
     const modalState = draftDb.productionPlanModalState;
@@ -1220,7 +1071,7 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, ({ draftDb }, ite
 });
 
 /** Replaces the whole modal recipe-alternative selection (used when loading a saved set). */
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, ({ draftDb }, selections: Record<string, string>) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, ({ draftState: draftDb }, selections: Record<string, string>) => {
     const modalState = draftDb.productionPlanModalState;
     const base = modalState.baseId ? getBaseById(draftDb.basesList, modalState.baseId) : undefined;
     const selectedInputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || [], draftDb.basesList);
@@ -1229,23 +1080,23 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, ({ draftDb }, se
     applyMatchInputs(draftDb as AppState);
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, ({ draftDb }, amount: number) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, ({ draftState: draftDb }, amount: number) => {
     if (draftDb.productionPlanModalState.matchInputs) return;
     draftDb.productionPlanModalState.targetAmount = amount;
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, ({ draftDb }, enabled: boolean) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, ({ draftState: draftDb }, enabled: boolean) => {
     draftDb.productionPlanModalState.matchInputs = enabled;
     if (enabled) {
         applyMatchInputs(draftDb as AppState);
     }
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draftDb }, level: CorporationLevelSelection | null) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draftState: draftDb }, level: CorporationLevelSelection | null) => {
     draftDb.productionPlanModalState.selectedCorporationLevel = level;
 });
 
-regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftDb }, baseBuildingId: string) => {
+registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftState: draftDb }, baseBuildingId: string) => {
     const modalState = draftDb.productionPlanModalState;
     const selectedInputIds = modalState.selectedInputIds;
     const index = selectedInputIds.indexOf(baseBuildingId);
@@ -1261,10 +1112,10 @@ regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftDb }, baseBuildin
     applyMatchInputs(draftDb as AppState);
 });
 
-regEvent(
+registrar.regEvent(
     EVENT_IDS.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT,
     (
-        { draftDb },
+        { draftState: draftDb },
         sourceBaseId: string,
         sourceOutputBuildingId: string,
         targetBuildingTypeId?: string,
@@ -1333,6 +1184,6 @@ regEvent(
     modalState.recipeSelections = sanitizeRecipeSelectionsForInputItems(modalState.recipeSelections, selectedInputBuildings);
     applyMatchInputs(draftDb as AppState);
 
-    return [persistBasesEffect(draftDb as AppState)];
+    return;
 });
 };

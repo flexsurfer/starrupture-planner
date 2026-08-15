@@ -1,26 +1,17 @@
-import { createUkladRuntime } from '@ukladjs/core/vanilla';
 import { createUkladInspector } from '@ukladjs/core/devtools';
-import { UkladProvider, useSubscription, useUkladRuntime } from '@ukladjs/core/react';
+import { useSubscription, useUkladRuntime } from '@ukladjs/core/react';
 import { enableDevtools } from '@ukladjs/devtools';
 import { localStorageAdapter, persist } from '@ukladjs/persist';
-import { initialAppState } from './db';
-import { registerEvents } from './events';
-import { registerEffects } from './effects';
-import { registerSubscriptions } from './subs';
+import { UkladProvider, useRuntime as useAppRuntime, useSubscription as useAppSubscription } from '@/app/uklad/bindings';
+import { registerWebApplication } from '@/app/uklad/register';
+import { createAppRuntime } from '@/app/uklad/runtime';
 import { migrateLegacyStorage } from './legacy/legacy-storage-migration';
 import { PERSIST_KEYS } from './persistence-config';
 
 const PERSIST_PREFIX = 'starrupture-planner';
 
-export const runtime = createUkladRuntime({
-    initialState: initialAppState,
-    runtimeId: 'starrupture-planner',
-    name: 'StarRupture Planner',
-});
-
-runtime.registerModule(registerEvents);
-runtime.registerModule(registerEffects);
-runtime.registerModule(registerSubscriptions);
+export const runtime = createAppRuntime();
+registerWebApplication(runtime);
 
 migrateLegacyStorage(PERSIST_PREFIX);
 
@@ -39,4 +30,4 @@ if (import.meta.env.DEV) {
 }
 
 export const dispatch = runtime.dispatch.bind(runtime);
-export { UkladProvider, useSubscription, useUkladRuntime };
+export { UkladProvider, useAppRuntime, useAppSubscription, useSubscription, useUkladRuntime };

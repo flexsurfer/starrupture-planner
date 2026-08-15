@@ -2,6 +2,7 @@ import { createUkladRuntime } from '@ukladjs/core/vanilla';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { memoryStorageAdapter, persist } from '@ukladjs/persist';
 import { describe, expect, it } from 'vitest';
+import type { AppContracts } from '@/app/uklad/contracts';
 import { initialAppState, type AppState } from './db';
 import { EVENT_IDS } from './event-ids';
 import { registerEvents } from './events';
@@ -24,7 +25,7 @@ function createState(): AppState {
 }
 
 function createRuntime(state = createState()) {
-    const runtime = createUkladRuntime({ initialState: state });
+    const runtime = createUkladRuntime<AppContracts>({ initialState: state });
     runtime.registerModule(registerEvents);
     return runtime;
 }

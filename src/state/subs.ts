@@ -1,5 +1,6 @@
 import { SUB_IDS } from './sub-ids';
 import type { UkladContracts, UkladRegistrar } from '@ukladjs/core/vanilla';
+import { stateKeys } from '@/app/uklad/catalog';
 import type {
     Item,
     Recipe,
@@ -10,7 +11,6 @@ import type {
     BasesById,
     BaseBuilding,
     BaseCardCollapsedSections,
-    BaseCardSectionKey,
     EnergyGroup,
     Production,
     CreateProductionPlanModalState,
@@ -19,16 +19,13 @@ import type {
 import type {
     CorporationLevelInfo,
     PlannerBuildingStats,
-    PlannerDetailedStats,
     PlannerDetailedStatsItem,
     PlannerRecipeOptionsItem,
     ProductionFlowResult,
-    RawMaterialDeficitWithName,
 } from '../components/planner/core/types';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
-import { generateReactFlowData } from '../components/planner/visualization/plannerFlowUtils';
+import { buildPlannerFlowGraph } from '@/features/planner/flow-graph';
 import { getItemName } from '../utils/itemUtils';
-import type { Node, Edge } from '@xyflow/react';
 import { calculateBaseCoreHeatCapacity, isAmplifierBuilding, getCoreLevels } from '../components/mybases/utils/baseCoreUtils';
 import {
     getAvailableBuildingsForSection,
@@ -54,93 +51,63 @@ import {
 } from '../utils/productionPlanInputs';
 import type { LinkedOutputStatus } from '../utils/productionPlanInputs';
 import type { CorporationWithStats } from '../components/corporations/types';
-import type { CorporationUsage, ItemTableData, ItemsHelperLookups } from '../components/items/types';
+import type { CorporationUsage, ItemsHelperLookups } from '../components/items/types';
 import type {
     BaseDetailStats,
     BuildingSectionBuilding,
-    BuildingSectionStats,
-    BaseInputItem,
-    BaseOutputItem,
     LinkableOutputItem,
     BaseDefenseBuilding,
     BuildingSectionType,
-    MyBasesStats,
     ProductionPlanSectionStats,
     BuildingRequirement,
     InputRequirement,
     SharedInputShortage,
     ProductionPlanSectionViewModel,
-    ProductionPlanRequirementsStatus,
     PlanSummaryRow,
     MaterialBalanceRow,
     BuildingCoverageRow,
-    BaseLogisticsViewModel,
 } from '../components/mybases/types';
 import { buildAllBaseLogisticsViewModels, buildBaseLogisticsViewModel } from '../components/mybases/utils/logistics';
 import { resolveOutputBuilding } from '../utils/planOutputAllocations';
 import { resolveBaseCardCollapsedSections } from './base-card-sections';
 
-type LegacyDynamicValue = ReturnType<typeof JSON.parse>;
-
 export const registerSubscriptions = (registrar: UkladRegistrar<UkladContracts>) => {
-    const regSub = (id: string, computeOrRoot: string | ((...values: LegacyDynamicValue[]) => LegacyDynamicValue), legacyDeps?: (...params: LegacyDynamicValue[]) => Array<[string, ...unknown[]]>, config?: { equalityCheck?: (a: unknown, b: unknown) => boolean }) => {
-        if (typeof computeOrRoot === 'string') {
-            registrar.regRootSub(id, computeOrRoot);
-            return;
-        }
-
-        registrar.regSub(
-            id,
-            legacyDeps || (() => []),
-            (values: LegacyDynamicValue[], ...params: LegacyDynamicValue[]) => computeOrRoot(...values.concat(params)),
-            config,
-        );
-    };
 //============================================================
 // Root subscriptions
 //============================================================
-regSub(SUB_IDS.APP_DATA_VERSION, "appDataVersion");
-regSub(SUB_IDS.APP_DATA_VERSIONS, "appDataVersions");
-regSub(SUB_IDS.ITEMS_LIST, "itemsList");
-regSub(SUB_IDS.ITEMS_BY_ID_MAP, "itemsById");
-regSub(SUB_IDS.ITEMS_SELECTED_CATEGORY, "itemsSelectedCategory");
-regSub(SUB_IDS.ITEMS_SELECTED_BUILDING, "itemsSelectedBuilding");
-regSub(SUB_IDS.ITEMS_SEARCH_TERM, "itemsSearchTerm");
-regSub(SUB_IDS.ITEMS_CATEGORIES, "itemsCategories");
-regSub(SUB_IDS.BUILDINGS_LIST, "buildingsList");
-regSub(SUB_IDS.CORPORATIONS_LIST, "corporationsList");
-regSub(SUB_IDS.UI_THEME, "uiTheme");
-regSub(SUB_IDS.UI_GAME_DATA_LOAD_PENDING, "uiGameDataLoadPending");
-regSub(SUB_IDS.UI_ACTIVE_TAB, "uiActiveTab");
-regSub(SUB_IDS.PLANNER_SELECTED_ITEM_ID, "plannerSelectedItemId");
-regSub(SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL, "plannerSelectedCorporationLevel");
-regSub(SUB_IDS.PLANNER_RECIPE_SELECTIONS, "plannerRecipeSelections");
-regSub(SUB_IDS.PINNED_RECIPE_SELECTIONS, "pinnedRecipeSelections");
-regSub(SUB_IDS.RECIPE_ALTERNATIVE_PRESETS, "recipeAlternativePresets");
-regSub(SUB_IDS.PLANNER_TARGET_AMOUNT, "plannerTargetAmount");
-regSub(SUB_IDS.BASES_LIST, "basesList");
-regSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS, "basesCardCollapsedSections");
-regSub(SUB_IDS.BASES_SELECTED_BASE_ID, "basesSelectedBaseId");
-regSub(SUB_IDS.BASES_SELECTED_DETAIL_TAB, "basesSelectedDetailTab");
-regSub(SUB_IDS.UI_CONFIRMATION_DIALOG, "uiConfirmationDialog");
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, "productionPlanModalState");
-regSub(SUB_IDS.ENERGY_GROUPS_LIST, "energyGroups");
+registrar.regRootSub(SUB_IDS.ITEMS_LIST, stateKeys.itemsList);
+registrar.regRootSub(SUB_IDS.ITEMS_BY_ID_MAP, stateKeys.itemsById);
+registrar.regRootSub(SUB_IDS.ITEMS_SELECTED_CATEGORY, stateKeys.itemsSelectedCategory);
+registrar.regRootSub(SUB_IDS.ITEMS_SELECTED_BUILDING, stateKeys.itemsSelectedBuilding);
+registrar.regRootSub(SUB_IDS.ITEMS_SEARCH_TERM, stateKeys.itemsSearchTerm);
+registrar.regRootSub(SUB_IDS.ITEMS_CATEGORIES, stateKeys.itemsCategories);
+registrar.regRootSub(SUB_IDS.BUILDINGS_LIST, stateKeys.buildingsList);
+registrar.regRootSub(SUB_IDS.CORPORATIONS_LIST, stateKeys.corporationsList);
+registrar.regRootSub(SUB_IDS.PLANNER_SELECTED_ITEM_ID, stateKeys.plannerSelectedItemId);
+registrar.regRootSub(SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL, stateKeys.plannerSelectedCorporationLevel);
+registrar.regRootSub(SUB_IDS.PLANNER_RECIPE_SELECTIONS, stateKeys.plannerRecipeSelections);
+registrar.regRootSub(SUB_IDS.PINNED_RECIPE_SELECTIONS, stateKeys.pinnedRecipeSelections);
+registrar.regRootSub(SUB_IDS.RECIPE_ALTERNATIVE_PRESETS, stateKeys.recipeAlternativePresets);
+registrar.regRootSub(SUB_IDS.PLANNER_TARGET_AMOUNT, stateKeys.plannerTargetAmount);
+registrar.regRootSub(SUB_IDS.BASES_LIST, stateKeys.basesList);
+registrar.regRootSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS, stateKeys.basesCardCollapsedSections);
+registrar.regRootSub(SUB_IDS.BASES_SELECTED_BASE_ID, stateKeys.basesSelectedBaseId);
+registrar.regRootSub(SUB_IDS.BASES_SELECTED_DETAIL_TAB, stateKeys.basesSelectedDetailTab);
+registrar.regRootSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, stateKeys.productionPlanModalState);
+registrar.regRootSub(SUB_IDS.ENERGY_GROUPS_LIST, stateKeys.energyGroups);
 
 //============================================================
 // Items, buildings, corporations subscriptions
 //============================================================
-regSub(SUB_IDS.BUILDINGS_BY_ID_MAP,
-    (buildings: DbBuilding[]): BuildingsByIdMap => {
+registrar.regSub(SUB_IDS.BUILDINGS_BY_ID_MAP, () => [[SUB_IDS.BUILDINGS_LIST]], ([buildings]: [DbBuilding[]]) => {
         const byId: BuildingsByIdMap = {};
         for (const building of buildings) {
             byId[building.id] = building;
         }
         return byId;
-    },
-    () => [[SUB_IDS.BUILDINGS_LIST]]);
+    });
 
-regSub(SUB_IDS.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS,
-    (buildings: DbBuilding[]) => {
+registrar.regSub(SUB_IDS.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS, () => [[SUB_IDS.BUILDINGS_LIST]], ([buildings]: [DbBuilding[]]) => {
         const buildingNames = new Set<string>();
         buildingNames.add('all'); // Add 'all' option
         buildings.forEach(building => {
@@ -150,11 +117,9 @@ regSub(SUB_IDS.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS,
             }
         });
         return Array.from(buildingNames).sort();
-    },
-    () => [[SUB_IDS.BUILDINGS_LIST]]);
+    });
 
-regSub(SUB_IDS.ITEMS_FILTERED_LIST,
-    (category, selectedBuilding, searchTerm, items, buildings) => {
+registrar.regSub(SUB_IDS.ITEMS_FILTERED_LIST, () => [[SUB_IDS.ITEMS_SELECTED_CATEGORY], [SUB_IDS.ITEMS_SELECTED_BUILDING], [SUB_IDS.ITEMS_SEARCH_TERM], [SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]], ([category, selectedBuilding, searchTerm, items, buildings]: [string, string, string, Item[], DbBuilding[]]) => {
         let filtered = category === 'all'
             ? items
             : items.filter((item: Item) => item.type === category);
@@ -184,11 +149,9 @@ regSub(SUB_IDS.ITEMS_FILTERED_LIST,
 
         // Sort items alphabetically by name
         return [...filtered].sort((a: Item, b: Item) => a.name.localeCompare(b.name));
-    },
-    () => [[SUB_IDS.ITEMS_SELECTED_CATEGORY], [SUB_IDS.ITEMS_SELECTED_BUILDING], [SUB_IDS.ITEMS_SEARCH_TERM], [SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]]);
+    });
 
-regSub(SUB_IDS.ITEMS_TABLE_ROWS,
-    (filteredItems: Item[], buildings: DbBuilding[], corporations: Corporation[]): ItemTableData[] => {
+registrar.regSub(SUB_IDS.ITEMS_TABLE_ROWS, () => [[SUB_IDS.ITEMS_FILTERED_LIST], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.CORPORATIONS_LIST]], ([filteredItems, buildings, corporations]: [Item[], DbBuilding[], Corporation[]]) => {
         // Build producing buildings map
         const producingBuildingsMap = new Map<string, Map<string, number>>();
         for (const building of buildings) {
@@ -232,11 +195,9 @@ regSub(SUB_IDS.ITEMS_TABLE_ROWS,
                 .map(([buildingName]) => buildingName),
             corporationUsage: corporationUsageMap.get(item.id) || []
         }));
-    },
-    () => [[SUB_IDS.ITEMS_FILTERED_LIST], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.CORPORATIONS_LIST]]);
+    });
 
-regSub(SUB_IDS.ITEMS_HELPER_LOOKUPS,
-    (corporations: Corporation[]): ItemsHelperLookups => {
+registrar.regSub(SUB_IDS.ITEMS_HELPER_LOOKUPS, () => [[SUB_IDS.CORPORATIONS_LIST]], ([corporations]: [Corporation[]]) => {
         const corporationNameToId = new Map<string, string>();
         const buildingCorporationUsage = new Map<string, CorporationUsage[]>();
 
@@ -260,11 +221,9 @@ regSub(SUB_IDS.ITEMS_HELPER_LOOKUPS,
             corporationNameToId,
             buildingCorporationUsage
         };
-    },
-    () => [[SUB_IDS.CORPORATIONS_LIST]]);
+    });
 
-regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID,
-    (items: Item[], buildings: DbBuilding[], buildingId: string): Item[] => {
+registrar.regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, () => [[SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]], ([items, buildings]: [Item[], DbBuilding[]], buildingId: string) => {
         const building = buildings.find(b => b.id === buildingId);
         if (!building) return [];
 
@@ -289,11 +248,9 @@ regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID,
                 .filter(item => itemIds.has(item.id))
                 .sort((a, b) => a.name.localeCompare(b.name));
         }
-    },
-    () => [[SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]]);
+    });
 
-regSub(SUB_IDS.ITEMS_RECIPES_BY_INPUT_ITEM_ID,
-    (buildings: DbBuilding[], itemId: string): { recipe: Recipe; building: DbBuilding }[] => {
+registrar.regSub(SUB_IDS.ITEMS_RECIPES_BY_INPUT_ITEM_ID, () => [[SUB_IDS.BUILDINGS_LIST]], ([buildings]: [DbBuilding[]], itemId: string) => {
         if (!itemId) return [];
 
         const results: { recipe: Recipe; building: DbBuilding }[] = [];
@@ -305,11 +262,9 @@ regSub(SUB_IDS.ITEMS_RECIPES_BY_INPUT_ITEM_ID,
             }
         }
         return results;
-    },
-    () => [[SUB_IDS.BUILDINGS_LIST]]);
+    });
 
-regSub(SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST,
-    (buildings: DbBuilding[], helperMaps: ItemsHelperLookups): DbBuilding[] => {
+registrar.regSub(SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST, () => [[SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_HELPER_LOOKUPS]], ([buildings, helperMaps]: [DbBuilding[], ItemsHelperLookups]) => {
         const productionBuildings = buildings.filter(building => building.type === 'production');
 
         const sorted = [...productionBuildings].sort((a, b) => {
@@ -372,11 +327,9 @@ regSub(SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST,
         }
 
         return result;
-    },
-    () => [[SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_HELPER_LOOKUPS]]);
+    });
 
-regSub(SUB_IDS.CORPORATIONS_LIST_WITH_STATS,
-    (corporations: Corporation[]) => {
+registrar.regSub(SUB_IDS.CORPORATIONS_LIST_WITH_STATS, () => [[SUB_IDS.CORPORATIONS_LIST]], ([corporations]: [Corporation[]]) => {
         return corporations.map(corporation => ({
             ...corporation,
             stats: {
@@ -385,18 +338,15 @@ regSub(SUB_IDS.CORPORATIONS_LIST_WITH_STATS,
                 totalCost: corporation.levels.reduce((sum, level) => sum + (level.xp ?? 0), 0)
             }
         }));
-    },
-    () => [[SUB_IDS.CORPORATIONS_LIST]]);
+    });
 
-regSub(SUB_IDS.CORPORATIONS_STATS_SUMMARY,
-    (corporationsWithStats: CorporationWithStats[]) => {
+registrar.regSub(SUB_IDS.CORPORATIONS_STATS_SUMMARY, () => [[SUB_IDS.CORPORATIONS_LIST_WITH_STATS]], ([corporationsWithStats]: [CorporationWithStats[]]) => {
         return {
             totalCorporations: corporationsWithStats.length,
             totalLevels: corporationsWithStats.reduce((total: number, corp) => total + corp.stats.totalLevels, 0),
             totalCost: corporationsWithStats.reduce((total: number, corp) => total + corp.stats.totalCost, 0)
         };
-    },
-    () => [[SUB_IDS.CORPORATIONS_LIST_WITH_STATS]]);
+    });
 
 //============================================================
 // Planner subscriptions
@@ -456,8 +406,7 @@ function buildRecipeOptionsForOutputItems(
     return result.sort((a, b) => a.itemName.localeCompare(b.itemName));
 }
 
-regSub(SUB_IDS.PLANNER_AVAILABLE_CORPORATION_LEVELS,
-    (selectedItem: string | null, corporations: Corporation[]): CorporationLevelInfo[] => {
+registrar.regSub(SUB_IDS.PLANNER_AVAILABLE_CORPORATION_LEVELS, () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.CORPORATIONS_LIST]], ([selectedItem, corporations]: [string | null, Corporation[]]) => {
         if (!selectedItem) return [];
 
         const levels: CorporationLevelInfo[] = [];
@@ -477,17 +426,9 @@ regSub(SUB_IDS.PLANNER_AVAILABLE_CORPORATION_LEVELS,
             }
         }
         return levels;
-    },
-    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.CORPORATIONS_LIST]]);
+    });
 
-regSub(SUB_IDS.PLANNER_PRODUCTION_FLOW,
-    (
-        selectedItem: string | null,
-        targetAmount: number,
-        buildings: DbBuilding[],
-        selectedCorporationLevel: CorporationLevelSelection | null,
-        recipeSelections: Record<string, string>
-    ): ProductionFlowResult => {
+registrar.regSub(SUB_IDS.PLANNER_PRODUCTION_FLOW, () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_TARGET_AMOUNT], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL], [SUB_IDS.PLANNER_RECIPE_SELECTIONS]], ([selectedItem, targetAmount, buildings, selectedCorporationLevel, recipeSelections]: [string | null, number, DbBuilding[], CorporationLevelSelection | null, Record<string, string>]) => {
         if (!selectedItem) {
             return { nodes: [], edges: [] };
         }
@@ -499,17 +440,9 @@ regSub(SUB_IDS.PLANNER_PRODUCTION_FLOW,
             { targetItemId: selectedItem, targetAmount: validAmount, includeLauncher, recipeSelections },
             buildings
         );
-    },
-    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_TARGET_AMOUNT], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL], [SUB_IDS.PLANNER_RECIPE_SELECTIONS]]);
+    });
 
-regSub(SUB_IDS.PLANNER_RECIPE_OPTIONS,
-    (
-        selectedItem: string | null,
-        productionFlow: ProductionFlowResult,
-        buildings: DbBuilding[],
-        itemsById: Record<string, Item>,
-        recipeSelections: Record<string, string>
-    ): PlannerRecipeOptionsItem[] => {
+registrar.regSub(SUB_IDS.PLANNER_RECIPE_OPTIONS, () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PLANNER_RECIPE_SELECTIONS]], ([selectedItem, productionFlow, buildings, itemsById, recipeSelections]: [string | null, ProductionFlowResult, DbBuilding[], Record<string, Item>, Record<string, string>]) => {
         if (!selectedItem || !productionFlow?.nodes?.length) return [];
 
         const outputItems = new Set<string>();
@@ -520,25 +453,17 @@ regSub(SUB_IDS.PLANNER_RECIPE_OPTIONS,
         }
 
         return buildRecipeOptionsForOutputItems(outputItems, buildings, itemsById, recipeSelections);
-    },
-    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PLANNER_RECIPE_SELECTIONS]]);
+    });
 
-regSub(SUB_IDS.PLANNER_FLOW_GRAPH,
-    (productionFlow: ProductionFlowResult, items: Item[]): { nodes: Node[]; edges: Edge[] } => {
+registrar.regSub(SUB_IDS.PLANNER_FLOW_GRAPH, () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS_LIST]], ([productionFlow, items]: [ProductionFlowResult, Item[]]) => {
         if (!productionFlow || productionFlow.nodes.length === 0) {
             return { nodes: [], edges: [] };
         }
 
-        return generateReactFlowData({
-            flowNodes: productionFlow.nodes,
-            flowEdges: productionFlow.edges,
-            items
-        });
-    },
-    () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS_LIST]]);
+        return buildPlannerFlowGraph(productionFlow.nodes, productionFlow.edges, items);
+    });
 
-regSub(SUB_IDS.PLANNER_STATS_SUMMARY,
-    (selectedItem: string | null, productionFlow: ProductionFlowResult): { totalBuildings: number; totalEnergy: number; totalHotness: number } => {
+registrar.regSub(SUB_IDS.PLANNER_STATS_SUMMARY, () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_PRODUCTION_FLOW]], ([selectedItem, productionFlow]: [string | null, ProductionFlowResult]) => {
         if (!selectedItem || !productionFlow || productionFlow.nodes.length === 0) {
             return { totalBuildings: 0, totalEnergy: 0, totalHotness: 0 };
         }
@@ -546,11 +471,9 @@ regSub(SUB_IDS.PLANNER_STATS_SUMMARY,
         const totalEnergy = productionFlow.nodes.reduce((sum, node) => sum + node.totalPower, 0);
         const totalHotness = productionFlow.nodes.reduce((sum, node) => sum + node.totalHeat, 0);
         return { totalBuildings, totalEnergy, totalHotness };
-    },
-    () => [[SUB_IDS.PLANNER_SELECTED_ITEM_ID], [SUB_IDS.PLANNER_PRODUCTION_FLOW]]);
+    });
 
-regSub(SUB_IDS.PLANNER_STATS_DETAILED,
-    (productionFlow: ProductionFlowResult, items: Item[]): PlannerDetailedStats => {
+registrar.regSub(SUB_IDS.PLANNER_STATS_DETAILED, () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS_LIST]], ([productionFlow, items]: [ProductionFlowResult, Item[]]) => {
         if (!productionFlow || productionFlow.nodes.length === 0) {
             return {
                 buildingStats: [],
@@ -655,27 +578,22 @@ regSub(SUB_IDS.PLANNER_STATS_DETAILED,
             itemsByType,
             sortedTypes
         };
-    },
-    () => [[SUB_IDS.PLANNER_PRODUCTION_FLOW], [SUB_IDS.ITEMS_LIST]]);
+    });
 
-regSub(SUB_IDS.PLANNER_SELECTABLE_ITEMS,
-    (items: Item[]): Item[] => {
+registrar.regSub(SUB_IDS.PLANNER_SELECTABLE_ITEMS, () => [[SUB_IDS.ITEMS_LIST]], ([items]: [Item[]]) => {
         return items.filter(item => item.type !== 'raw').sort((a, b) => a.name.localeCompare(b.name));
-    },
-    () => [[SUB_IDS.ITEMS_LIST]]);
+    });
 
 //============================================================
 // Energy Groups subscriptions
 //============================================================
-regSub(SUB_IDS.ENERGY_GROUPS_BY_ID_MAP,
-    (groups: EnergyGroup[]): Record<string, EnergyGroup> => {
+registrar.regSub(SUB_IDS.ENERGY_GROUPS_BY_ID_MAP, () => [[SUB_IDS.ENERGY_GROUPS_LIST]], ([groups]: [EnergyGroup[]]) => {
         const byId: Record<string, EnergyGroup> = {};
         for (const group of groups) {
             byId[group.id] = group;
         }
         return byId;
-    },
-    () => [[SUB_IDS.ENERGY_GROUPS_LIST]]);
+    });
 
 //============================================================
 // Bases subscriptions
@@ -754,38 +672,27 @@ function collectConfiguredSectionItems(
     return items;
 }
 
-regSub(SUB_IDS.BASES_BY_ID_MAP,
-    (bases: Base[]): BasesById => {
+registrar.regSub(SUB_IDS.BASES_BY_ID_MAP, () => [[SUB_IDS.BASES_LIST]], ([bases]: [Base[]]) => {
         const basesById: BasesById = {};
         bases.forEach((base) => {
             basesById[base.id] = base;
         });
         return basesById;
-    },
-    () => [[SUB_IDS.BASES_LIST]]);
+    });
 
-regSub(SUB_IDS.BASES_SELECTED_BASE,
-    (selectedBaseId: string | null, basesById: BasesById): Base | null => {
+registrar.regSub(SUB_IDS.BASES_SELECTED_BASE, () => [[SUB_IDS.BASES_SELECTED_BASE_ID], [SUB_IDS.BASES_BY_ID_MAP]], ([selectedBaseId, basesById]: [string | null, BasesById]) => {
         if (!selectedBaseId) return null;
         return basesById[selectedBaseId] || null;
-    },
-    () => [[SUB_IDS.BASES_SELECTED_BASE_ID], [SUB_IDS.BASES_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_BASE_BY_ID,
-    (basesById: BasesById, baseId: string): Base | null => {
+registrar.regSub(SUB_IDS.BASES_BASE_BY_ID, () => [[SUB_IDS.BASES_BY_ID_MAP]], ([basesById]: [BasesById], baseId: string) => {
         if (!baseId) return null;
         return basesById[baseId] || null;
-    },
-    () => [[SUB_IDS.BASES_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID,
-    (
-        collapsedSectionsByBaseId: Record<string, BaseCardCollapsedSections> | undefined,
-        baseId: string
-    ): Record<BaseCardSectionKey, boolean> => {
+registrar.regSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID, () => [[SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS]], ([collapsedSectionsByBaseId]: [Record<string, BaseCardCollapsedSections> | undefined], baseId: string) => {
         return resolveBaseCardCollapsedSections(collapsedSectionsByBaseId?.[baseId]);
-    },
-    () => [[SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS]]);
+    });
 
 /** Pooled energy context — aggregated generation/consumption across an energy group. */
 interface PooledEnergyContext {
@@ -898,69 +805,47 @@ function calculateBaseDetailStats(
     };
 }
 
-regSub(SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS,
-    (selectedBase: Base | null, buildingsById: BuildingsByIdMap, energyGroupsById: Record<string, EnergyGroup>, allBases: Base[]): BaseDetailStats | null => {
+registrar.regSub(SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS, () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP], [SUB_IDS.BASES_LIST]], ([selectedBase, buildingsById, energyGroupsById, allBases]: [Base | null, BuildingsByIdMap, Record<string, EnergyGroup>, Base[]]) => {
         if (!selectedBase) return null;
         return calculateBaseDetailStats(selectedBase, buildingsById, energyGroupsById, allBases);
-    },
-    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP], [SUB_IDS.BASES_LIST]]);
+    });
 
-regSub(SUB_IDS.BASES_CORE_LEVELS,
-    (buildingsById: BuildingsByIdMap): { level: number; heatCapacity: number }[] => {
+registrar.regSub(SUB_IDS.BASES_CORE_LEVELS, () => [[SUB_IDS.BUILDINGS_BY_ID_MAP]], ([buildingsById]: [BuildingsByIdMap]) => {
         return getCoreLevels(buildingsById);
-    },
-    () => [[SUB_IDS.BUILDINGS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID,
-    (basesById: BasesById, buildingsById: BuildingsByIdMap, energyGroupsById: Record<string, EnergyGroup>, allBases: Base[], baseId: string): BaseDetailStats | null => {
+registrar.regSub(SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID, () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP], [SUB_IDS.BASES_LIST]], ([basesById, buildingsById, energyGroupsById, allBases]: [BasesById, BuildingsByIdMap, Record<string, EnergyGroup>, Base[]], baseId: string) => {
         const base = basesById[baseId];
         if (!base) return null;
         return calculateBaseDetailStats(base, buildingsById, energyGroupsById, allBases);
-    },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP], [SUB_IDS.BASES_LIST]]);
+    });
 
-regSub(SUB_IDS.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID,
-    (
-        bases: Base[],
-        buildingsById: BuildingsByIdMap,
-        itemsById: Record<string, Item>,
-        baseId: string
-    ): BaseLogisticsViewModel | null => {
+registrar.regSub(SUB_IDS.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID, () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]], ([bases, buildingsById, itemsById]: [Base[], BuildingsByIdMap, Record<string, Item>], baseId: string) => {
         return buildBaseLogisticsViewModel({
             selectedBaseId: baseId,
             bases,
             buildingsById,
             itemsById,
         });
-    },
-    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_LOGISTICS_VIEW_MODELS,
-    (
-        bases: Base[],
-        buildingsById: BuildingsByIdMap,
-        itemsById: Record<string, Item>
-    ): BaseLogisticsViewModel[] => {
+registrar.regSub(SUB_IDS.BASES_LOGISTICS_VIEW_MODELS, () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]], ([bases, buildingsById, itemsById]: [Base[], BuildingsByIdMap, Record<string, Item>]) => {
         return buildAllBaseLogisticsViewModels({
             bases,
             buildingsById,
             itemsById,
         });
-    },
-    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_ALL_DETAIL_STATS,
-    (bases: Base[], buildingsById: BuildingsByIdMap, energyGroupsById: Record<string, EnergyGroup>): Record<string, BaseDetailStats> => {
+registrar.regSub(SUB_IDS.BASES_ALL_DETAIL_STATS, () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP]], ([bases, buildingsById, energyGroupsById]: [Base[], BuildingsByIdMap, Record<string, EnergyGroup>]) => {
         const result: Record<string, BaseDetailStats> = {};
         for (const base of bases) {
             result[base.id] = calculateBaseDetailStats(base, buildingsById, energyGroupsById, bases);
         }
         return result;
-    },
-    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ENERGY_GROUPS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID,
-    (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, allBases: Base[], baseId: string): BaseInputItem[] => {
+registrar.regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID, () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.BASES_LIST]], ([basesById, buildingsById, itemsMap, allBases]: [BasesById, BuildingsByIdMap, Record<string, Item>, Base[]], baseId: string) => {
         const base = basesById[baseId];
         if (!base) return [];
 
@@ -973,11 +858,9 @@ regSub(SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID,
             description: entry.description,
             linkedOutput: entry.linkedOutput,
         }));
-    },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.BASES_LIST]]);
+    });
 
-regSub(SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID,
-    (basesById: BasesById, buildingsById: BuildingsByIdMap, itemsMap: Record<string, Item>, baseId: string): BaseOutputItem[] => {
+registrar.regSub(SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID, () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]], ([basesById, buildingsById, itemsMap]: [BasesById, BuildingsByIdMap, Record<string, Item>], baseId: string) => {
         const base = basesById[baseId];
         if (!base) return [];
 
@@ -989,11 +872,9 @@ regSub(SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID,
             name: entry.name,
             description: entry.description,
         }));
-    },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID,
-    (basesById: BasesById, buildingsById: BuildingsByIdMap, baseId: string): BaseDefenseBuilding[] => {
+registrar.regSub(SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID, () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]], ([basesById, buildingsById]: [BasesById, BuildingsByIdMap], baseId: string) => {
         const base = basesById[baseId];
         if (!base) return [];
 
@@ -1012,11 +893,9 @@ regSub(SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID,
         });
 
         return Array.from(defenseMap.values());
-    },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS,
-    (base: Base | null, buildingsById: BuildingsByIdMap, _baseId: string, sectionType: BuildingSectionType): BuildingSectionBuilding[] => {
+registrar.regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS, (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId], [SUB_IDS.BUILDINGS_BY_ID_MAP]], ([base, buildingsById]: [Base | null, BuildingsByIdMap], _baseId: string, sectionType: BuildingSectionType) => {
         if (!base) return [];
 
         const sectionBuildings = base.buildings.filter(b => b.sectionType === sectionType);
@@ -1119,11 +998,9 @@ regSub(SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS,
             isGrouped: true,
             activePlanNames: Array.from(entry.activePlanNames),
         }));
-    },
-    (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_BUILDING_SECTION_STATS,
-    (basesById: BasesById, buildingsById: BuildingsByIdMap, baseId: string, sectionType: string): BuildingSectionStats => {
+registrar.regSub(SUB_IDS.BASES_BUILDING_SECTION_STATS, () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]], ([basesById, buildingsById]: [BasesById, BuildingsByIdMap], baseId: string, sectionType: string) => {
         const base = basesById[baseId];
         if (!base) {
             return {
@@ -1169,17 +1046,13 @@ regSub(SUB_IDS.BASES_BUILDING_SECTION_STATS,
             totalPowerConsumption,
             hasGenerators,
         };
-    },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_AVAILABLE_BUILDINGS_FOR_SECTION,
-    (buildings: DbBuilding[], sectionType: BuildingSectionType): DbBuilding[] => {
+registrar.regSub(SUB_IDS.BASES_AVAILABLE_BUILDINGS_FOR_SECTION, () => [[SUB_IDS.BUILDINGS_LIST]], ([buildings]: [DbBuilding[]], sectionType: BuildingSectionType) => {
         return getAvailableBuildingsForSection(buildings, sectionType);
-    },
-    () => [[SUB_IDS.BUILDINGS_LIST]]);
+    });
 
-regSub(SUB_IDS.BASES_STATS_SUMMARY,
-    (bases: Base[], buildingsById: BuildingsByIdMap): MyBasesStats => {
+registrar.regSub(SUB_IDS.BASES_STATS_SUMMARY, () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP]], ([bases, buildingsById]: [Base[], BuildingsByIdMap]) => {
         let totalBuildings = 0;
         let totalHeat = 0;
         let totalHeatCapacity = 0;
@@ -1236,25 +1109,20 @@ regSub(SUB_IDS.BASES_STATS_SUMMARY,
             isHeatOverCapacity,
             isEnergyInsufficient,
         };
-    },
-    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP]]);
+    });
 
 //============================================================
 // Production Plan subscriptions
 //============================================================
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_IDS,
-    (selectedBase: Base | null): string[] => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_IDS, () => [[SUB_IDS.BASES_SELECTED_BASE]], ([selectedBase]: [Base | null]) => {
         if (!selectedBase) return [];
         return (selectedBase.productions || []).map(section => section.id);
-    },
-    () => [[SUB_IDS.BASES_SELECTED_BASE]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID,
-    (base: Base | null, _baseId: string, sectionId: string): Production | null => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId]], ([base]: [Base | null], _baseId: string, sectionId: string) => {
         if (!base || !sectionId) return null;
         return base.productions?.find(section => section.id === sectionId) || null;
-    },
-    (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId]]);
+    });
 
 const EMPTY_PRODUCTION_FLOW: ProductionFlowResult = { nodes: [], edges: [], rawMaterialDeficits: [] };
 const EMPTY_PRODUCTION_PLAN_SECTION_STATS: ProductionPlanSectionStats = {
@@ -1266,8 +1134,7 @@ const EMPTY_PRODUCTION_PLAN_SECTION_STATS: ProductionPlanSectionStats = {
 const isLauncherEnabled = (corporationLevel?: CorporationLevelSelection | null): boolean =>
     corporationLevel !== null && corporationLevel !== undefined;
 
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID,
-    (section: Production | null, buildings: DbBuilding[], allBases: Base[]): ProductionFlowResult => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, (baseId: string, sectionId: string) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.BASES_LIST]], ([section, buildings, allBases]: [Production | null, DbBuilding[], Base[]]) => {
         if (!section || !section.selectedItemId) {
             return EMPTY_PRODUCTION_FLOW;
         }
@@ -1287,15 +1154,9 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID,
             },
             buildings
         );
-    },
-    (baseId: string, sectionId: string) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.BASES_LIST]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW,
-    (
-        modalState: CreateProductionPlanModalState,
-        buildings: DbBuilding[],
-        basesById: BasesById
-    ): ProductionFlowResult => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.BASES_BY_ID_MAP]], ([modalState, buildings, basesById]: [CreateProductionPlanModalState, DbBuilding[], BasesById]) => {
         const {
             selectedItemId,
             targetAmount,
@@ -1325,17 +1186,15 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW,
             },
             buildings
         );
-    },
-    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.BASES_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS,
-    (
-        modalState: CreateProductionPlanModalState,
-        productionFlow: ProductionFlowResult,
-        buildings: DbBuilding[],
-        itemsById: Record<string, Item>,
-        basesById: BasesById
-    ): PlannerRecipeOptionsItem[] => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS, () => [
+        [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE],
+        [SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW],
+        [SUB_IDS.BUILDINGS_LIST],
+        [SUB_IDS.ITEMS_BY_ID_MAP],
+        [SUB_IDS.BASES_BY_ID_MAP]
+    ], ([modalState, productionFlow, buildings, itemsById, basesById]: [CreateProductionPlanModalState, ProductionFlowResult, DbBuilding[], Record<string, Item>, BasesById]) => {
         if (!modalState.selectedItemId || !productionFlow?.nodes?.length) return [];
 
         const base = modalState.baseId ? basesById[modalState.baseId] || null : null;
@@ -1360,17 +1219,9 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS,
             itemsById,
             modalState.recipeSelections || {}
         );
-    },
-    () => [
-        [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE],
-        [SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW],
-        [SUB_IDS.BUILDINGS_LIST],
-        [SUB_IDS.ITEMS_BY_ID_MAP],
-        [SUB_IDS.BASES_BY_ID_MAP]
-    ]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS,
-    (corporations: Corporation[], modalState: CreateProductionPlanModalState): CorporationLevelInfo[] => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS, () => [[SUB_IDS.CORPORATIONS_LIST], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([corporations, modalState]: [Corporation[], CreateProductionPlanModalState]) => {
         const { selectedItemId } = modalState;
         if (!selectedItemId) return [];
 
@@ -1391,14 +1242,9 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS,
             }
         }
         return levels;
-    },
-    () => [[SUB_IDS.CORPORATIONS_LIST], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_STATS_BY_ID,
-    (
-        productionFlow: ProductionFlowResult,
-        section: Production | null,
-    ): ProductionPlanSectionStats => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_STATS_BY_ID, (baseId: string, sectionId: string) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId], [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId]], ([productionFlow, section]: [ProductionFlowResult, Production | null]) => {
         if (!productionFlow || productionFlow.nodes.length === 0) {
             return EMPTY_PRODUCTION_PLAN_SECTION_STATS;
         }
@@ -1420,20 +1266,18 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_STATS_BY_ID,
             totalHeat,
             totalPowerConsumption: totalPower,
         };
-    },
-    (baseId: string, sectionId: string) => [[SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId], [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
-    (
-        section: Production | null,
-        productionFlow: ProductionFlowResult,
-        base: Base | null,
-        allBases: Base[],
-        itemsMap: Record<string, Item>,
-        buildings: DbBuilding[],
-        buildingsById: BuildingsByIdMap,
-        corporations: Corporation[]
-    ): ProductionPlanSectionViewModel | null => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, (baseId: string, sectionId: string) => [
+        [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId],
+        [SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId],
+        [SUB_IDS.BASES_BASE_BY_ID, baseId],
+        [SUB_IDS.BASES_LIST],
+        [SUB_IDS.ITEMS_BY_ID_MAP],
+        [SUB_IDS.BUILDINGS_LIST],
+        [SUB_IDS.BUILDINGS_BY_ID_MAP],
+        [SUB_IDS.CORPORATIONS_LIST],
+    ], ([section, productionFlow, base, allBases, itemsMap, buildings, buildingsById, corporations]: [Production | null, ProductionFlowResult, Base | null, Base[], Record<string, Item>, DbBuilding[], BuildingsByIdMap, Corporation[]]) => {
 
         if (!base || !section) {
             return null;
@@ -1632,20 +1476,11 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
             hasError,
             showManageButton,
         };
-    },
-    (baseId: string, sectionId: string) => [
-        [SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, baseId, sectionId],
-        [SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId],
-        [SUB_IDS.BASES_BASE_BY_ID, baseId],
-        [SUB_IDS.BASES_LIST],
-        [SUB_IDS.ITEMS_BY_ID_MAP],
-        [SUB_IDS.BUILDINGS_LIST],
-        [SUB_IDS.BUILDINGS_BY_ID_MAP],
-        [SUB_IDS.CORPORATIONS_LIST],
-    ]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
-    (sectionData: ProductionPlanSectionViewModel | null): ProductionPlanRequirementsStatus => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID, (baseId: string, sectionId: string) => [
+        [SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId],
+    ], ([sectionData]: [ProductionPlanSectionViewModel | null]) => {
         if (!sectionData) {
             return {
                 allRequirementsSatisfied: false,
@@ -1664,44 +1499,27 @@ regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
             itemName: sectionData.itemName,
             corporationName: sectionData.corporationName
         };
-    },
-    (baseId: string, sectionId: string) => [
-        [SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId],
-    ]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID,
-    (itemsMap: Record<string, Item>, selectedItemId: string): string => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID, () => [[SUB_IDS.ITEMS_BY_ID_MAP]], ([itemsMap]: [Record<string, Item>], selectedItemId: string) => {
         if (!selectedItemId) return '';
         const item = itemsMap[selectedItemId];
         return item?.name || selectedItemId;
-    },
-    () => [[SUB_IDS.ITEMS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_OPEN_STATE,
-    (modalState: CreateProductionPlanModalState): { isOpen: boolean } => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_OPEN_STATE, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([modalState]: [CreateProductionPlanModalState]) => {
         return {
             isOpen: modalState.isOpen,
         };
-    },
-    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_HEADER_DATA,
-    (modalState: CreateProductionPlanModalState): { isEditMode: boolean } => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_HEADER_DATA, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([modalState]: [CreateProductionPlanModalState]) => {
         return {
             isEditMode: !!modalState.editSectionId,
         };
-    },
-    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES,
-    (modalState: CreateProductionPlanModalState, items: Item[]): {
-        defaultName: string;
-        currentSelectedItemId: string;
-        currentTargetAmount: number;
-        defaultSelectedCorporationLevel: CorporationLevelSelection | null;
-        selectedItemName: string;
-        matchInputs: boolean;
-    } => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.ITEMS_LIST]], ([modalState, items]: [CreateProductionPlanModalState, Item[]]) => {
         const selectedItemName = modalState.selectedItemId
             ? items.find(i => i.id === modalState.selectedItemId)?.name || ''
             : '';
@@ -1714,17 +1532,9 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES,
             selectedItemName,
             matchInputs: modalState.matchInputs,
         };
-    },
-    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.ITEMS_LIST]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
-    (
-        basesById: BasesById,
-        buildingsById: BuildingsByIdMap,
-        itemsMap: Record<string, Item>,
-        allBases: Base[],
-        modalState: CreateProductionPlanModalState
-    ): { inputItems: BaseInputItem[]; selectedInputIds: string[] } => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA, () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.BASES_LIST], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([basesById, buildingsById, itemsMap, allBases, modalState]: [BasesById, BuildingsByIdMap, Record<string, Item>, Base[], CreateProductionPlanModalState]) => {
         const { baseId, selectedInputIds } = modalState;
         if (!baseId) return { inputItems: [], selectedInputIds: [] };
 
@@ -1743,16 +1553,9 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA,
             }));
 
         return { inputItems, selectedInputIds: selectedInputIds || [] };
-    },
-    () => [[SUB_IDS.BASES_BY_ID_MAP], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.BASES_LIST], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS,
-    (
-        bases: Base[],
-        buildingsById: BuildingsByIdMap,
-        itemsMap: Record<string, Item>,
-        modalState: CreateProductionPlanModalState
-    ): LinkableOutputItem[] => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS, () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([bases, buildingsById, itemsMap, modalState]: [Base[], BuildingsByIdMap, Record<string, Item>, CreateProductionPlanModalState]) => {
         const currentBaseId = modalState.baseId;
         const linkableOutputs: LinkableOutputItem[] = [];
 
@@ -1781,34 +1584,24 @@ regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS,
             if (baseDelta !== 0) return baseDelta;
             return left.item.name.localeCompare(right.item.name);
         });
-    },
-    () => [[SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_BY_ID_MAP], [SUB_IDS.ITEMS_BY_ID_MAP], [SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID,
-    (modalState: CreateProductionPlanModalState): string => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([modalState]: [CreateProductionPlanModalState]) => {
         return modalState.selectedItemId;
-    },
-    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS,
-    (productionFlow: ProductionFlowResult, items: Item[]): RawMaterialDeficitWithName[] => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW], [SUB_IDS.ITEMS_LIST]], ([productionFlow, items]: [ProductionFlowResult, Item[]]) => {
         const deficits = productionFlow.rawMaterialDeficits || [];
         return deficits.map(deficit => ({
             ...deficit,
             itemName: getItemName(deficit.itemId, items),
         }));
-    },
-    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW], [SUB_IDS.ITEMS_LIST]]);
+    });
 
-regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALIDITY,
-    (
-        modalState: CreateProductionPlanModalState,
-        selectedItemId: string
-    ): boolean => {
+registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALIDITY, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID]], ([modalState, selectedItemId]: [CreateProductionPlanModalState, string]) => {
         const { name, targetAmount } = modalState;
         return !!(name.trim() && selectedItemId && targetAmount > 0);
-    },
-    () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID]]);
+    });
 
 //============================================================
 // Base Overview subscriptions
@@ -1837,8 +1630,7 @@ function comparePlanSummaryRows(left: PlanSummaryRow, right: PlanSummaryRow): nu
     return left.name.localeCompare(right.name);
 }
 
-regSub(SUB_IDS.BASES_OVERVIEW_PLAN_ROWS,
-    (selectedBase: Base | null, corporations: Corporation[], itemsById: Record<string, Item>): PlanSummaryRow[] => {
+registrar.regSub(SUB_IDS.BASES_OVERVIEW_PLAN_ROWS, () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.CORPORATIONS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]], ([selectedBase, corporations, itemsById]: [Base | null, Corporation[], Record<string, Item>]) => {
         if (!selectedBase) return [];
 
         const corporationNameById = new Map(
@@ -1861,11 +1653,9 @@ regSub(SUB_IDS.BASES_OVERVIEW_PLAN_ROWS,
                     : 'None',
             }))
             .sort(comparePlanSummaryRows);
-    },
-    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.CORPORATIONS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
-    (selectedBase: Base | null, allBases: Base[], buildings: DbBuilding[], itemsById: Record<string, Item>): MaterialBalanceRow[] => {
+registrar.regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS, () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]], ([selectedBase, allBases, buildings, itemsById]: [Base | null, Base[], DbBuilding[], Record<string, Item>]) => {
         if (!selectedBase) return [];
 
         const plans = selectedBase.productions || [];
@@ -2002,11 +1792,9 @@ regSub(SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
                 if (left.totalRequired !== right.totalRequired) return right.totalRequired - left.totalRequired;
                 return left.item.name.localeCompare(right.item.name);
             });
-    },
-    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BASES_LIST], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_BY_ID_MAP]]);
+    });
 
-regSub(SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS,
-    (selectedBase: Base | null, buildings: DbBuilding[]): BuildingCoverageRow[] => {
+registrar.regSub(SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS, () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_LIST]], ([selectedBase, buildings]: [Base | null, DbBuilding[]]) => {
         if (!selectedBase) return [];
 
         const plans = selectedBase.productions || [];
@@ -2053,6 +1841,5 @@ regSub(SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS,
                 return { ...row, covered, owned, missing };
             })
             .sort((left, right) => right.totalRequired - left.totalRequired);
-    },
-    () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_LIST]]);
+    });
 };

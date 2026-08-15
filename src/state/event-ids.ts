@@ -1,64 +1,7 @@
-export const EVENT_IDS = {
-    APP_INIT: 'appInit',
-    APP_REQUEST_LOAD_GAME_DATA: 'appRequestLoadGameData',
-    APP_GAME_DATA_LOAD_FAILED: 'appGameDataLoadFailed',
-    APP_SET_DATA_VERSION: 'appSetDataVersion',
+import { appIds } from '../app/uklad/catalog';
 
-    UI_SET_THEME: 'uiSetTheme',
-    UI_SET_ACTIVE_TAB: 'uiSetActiveTab',
-    UI_SHOW_CONFIRMATION_DIALOG: 'uiShowConfirmationDialog',
-    UI_CLOSE_CONFIRMATION_DIALOG: 'uiCloseConfirmationDialog',
-
-    ITEMS_SET_SELECTED_CATEGORY: 'itemsSetSelectedCategory',
-    ITEMS_SET_SELECTED_BUILDING: 'itemsSetSelectedBuilding',
-    ITEMS_SET_SEARCH_TERM: 'itemsSetSearchTerm',
-
-    PLANNER_OPEN_ITEM: 'plannerOpenItem',
-    PLANNER_SET_SELECTED_ITEM: 'plannerSetSelectedItem',
-    PLANNER_SET_SELECTED_CORPORATION_LEVEL: 'plannerSetSelectedCorporationLevel',
-    PLANNER_SET_RECIPE_SELECTION: 'plannerSetRecipeSelection',
-    PLANNER_SET_RECIPE_SELECTIONS: 'plannerSetRecipeSelections',
-    PLANNER_SET_TARGET_AMOUNT: 'plannerSetTargetAmount',
-    // Recipe-alternative sets (save/load/default), shared by planner and the plan modal
-    RECIPE_ALTERNATIVES_SET_DEFAULTS: 'recipeAlternativesSetDefaults',
-    RECIPE_ALTERNATIVES_SAVE_PRESET: 'recipeAlternativesSavePreset',
-    RECIPE_ALTERNATIVES_DELETE_PRESET: 'recipeAlternativesDeletePreset',
-
-    BASES_CREATE_BASE: 'basesCreateBase',
-    BASES_UPDATE_BASE_NAME: 'basesUpdateBaseName',
-    BASES_DELETE_BASE: 'basesDeleteBase',
-    BASES_OPEN_BASE: 'basesOpenBase',
-    BASES_SET_SELECTED_BASE: 'basesSetSelectedBase',
-    BASES_SET_DETAIL_TAB: 'basesSetDetailTab',
-    BASES_SET_CORE_LEVEL: 'basesSetCoreLevel',
-    BASES_ADD_BUILDING: 'basesAddBuilding',
-    BASES_ADD_BUILDINGS: 'basesAddBuildings',
-    BASES_SET_BUILDING_SECTION_TYPE_COUNT: 'basesSetBuildingSectionTypeCount',
-    BASES_REMOVE_BUILDING: 'basesRemoveBuilding',
-    BASES_UPDATE_BUILDING_ITEM_SELECTION: 'basesUpdateBuildingItemSelection',
-    BASES_UPDATE_BUILDING_LINKED_OUTPUT: 'basesUpdateBuildingLinkedOutput',
-    BASES_UPDATE_OUTPUT_PLAN_LINK: 'basesUpdateOutputPlanLink',
-    BASES_TOGGLE_CARD_SECTION_COLLAPSED: 'basesToggleCardSectionCollapsed',
-    BASES_SET_ENERGY_GROUP: 'basesSetEnergyGroup',
-
-    ENERGY_GROUP_CREATE: 'energyGroupCreate',
-    ENERGY_GROUP_DELETE: 'energyGroupDelete',
-    ENERGY_GROUP_RENAME: 'energyGroupRename',
-
-    PRODUCTION_PLAN_DELETE_SECTION: 'productionPlanDeleteSection',
-    PRODUCTION_PLAN_ACTIVATE_SECTION: 'productionPlanActivateSection',
-    PRODUCTION_PLAN_DEACTIVATE_SECTION: 'productionPlanDeactivateSection',
-    PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE: 'productionPlanAddBuildingsToBase',
-    PRODUCTION_PLAN_MODAL_OPEN: 'productionPlanModalOpen',
-    PRODUCTION_PLAN_MODAL_CLOSE: 'productionPlanModalClose',
-    PRODUCTION_PLAN_MODAL_SET_NAME: 'productionPlanModalSetName',
-    PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM: 'productionPlanModalSetSelectedItem',
-    PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'productionPlanModalSetTargetAmount',
-    PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'productionPlanModalSetSelectedCorporationLevel',
-    PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'productionPlanModalSetRecipeSelection',
-    PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS: 'productionPlanModalSetRecipeSelections',
-    PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'productionPlanModalToggleInput',
-    PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'productionPlanModalLinkOutputInput',
-    PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'productionPlanModalSetMatchInputs',
-    PRODUCTION_PLAN_MODAL_SUBMIT: 'productionPlanModalSubmit',
-}
+/**
+ * Transitional name-only export for untouched UI call sites.
+ * New code imports `appIds.events` directly from the application catalog.
+ */
+export const EVENT_IDS = appIds.events;
