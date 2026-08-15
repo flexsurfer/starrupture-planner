@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerBasesModule } from '@/features/bases/module';
+import { registerBuildingsModule } from '@/features/buildings/module';
 import { registerCorporationsModule } from '@/features/corporations/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerProductionPlanModalModule } from './module';
@@ -12,6 +13,7 @@ describe('production-plan-modal Uklad module', () => {
         const runtime = createAppRuntime();
         runtime.registerModule(registerBasesModule);
         runtime.registerModule(registerCorporationsModule);
+        runtime.registerModule(registerBuildingsModule);
         runtime.registerModule(registerItemsModule);
         runtime.registerModule(registerProductionPlanModalModule);
         const harness = createUkladTestHarness(runtime);
@@ -69,6 +71,7 @@ describe('production-plan-modal Uklad module', () => {
 
     it('owns the modal workflow from opening through input linking and submit', () => {
         const runtime = createAppRuntime();
+        runtime.registerModule(registerBuildingsModule);
         runtime.registerModule(registerItemsModule);
         runtime.registerModule(registerProductionPlanModalModule);
         const harness = createUkladTestHarness(runtime);

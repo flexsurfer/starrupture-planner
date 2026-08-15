@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerBasesModule } from '@/features/bases/module';
+import { registerBuildingsModule } from '@/features/buildings/module';
 import { registerCorporationsModule } from '@/features/corporations/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerProductionPlansModule } from './module';
@@ -12,6 +13,7 @@ describe('production-plans Uklad module', () => {
         const runtime = createAppRuntime();
         runtime.registerModule(registerBasesModule);
         runtime.registerModule(registerCorporationsModule);
+        runtime.registerModule(registerBuildingsModule);
         runtime.registerModule(registerItemsModule);
         runtime.registerModule(registerProductionPlansModule);
         const harness = createUkladTestHarness(runtime);

@@ -3,8 +3,9 @@ import { useState } from "react";
 import { useSubscription } from "@/app/uklad/bindings";
 import type { Building } from "@/app/uklad/model";
 import { BuildingImage } from '@/shared/ui';
-import { RecipeCard } from "./ui";
-import { useItemsData, CorporationUsageBadge } from "./items";
+import { RecipeCard } from './RecipeCard';
+import { useItemsData } from '@/features/items/ui/hooks/useItemsData';
+import { CorporationUsageBadge } from '@/features/corporations/ui/CorporationUsageBadge';
 
 const RecipesPage = () => {
   const sortedBuildings = useSubscription([appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST]);

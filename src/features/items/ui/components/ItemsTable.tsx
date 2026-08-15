@@ -2,7 +2,7 @@ import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import { ItemRow } from "./ItemRow";
 import { ItemIcon } from "./ItemIcon";
-import { CorporationUsageBadge } from "./CorporationUsageBadge";
+import { CorporationUsageBadge } from '@/features/corporations/ui/CorporationUsageBadge';
 import { getCategoryDisplayName, getCategoryBadgeClass } from "../hooks/useItemsData";
 import type { ItemTableData } from '@/features/items/types';
 

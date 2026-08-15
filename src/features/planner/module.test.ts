@@ -2,12 +2,14 @@ import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
+import { registerBuildingsModule } from '@/features/buildings/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerPlannerModule } from './module';
 
 describe('planner Uklad module', () => {
     it('sets planner state and its default target rate through typed events', () => {
         const runtime = createAppRuntime();
+        runtime.registerModule(registerBuildingsModule);
         runtime.registerModule(registerItemsModule);
         runtime.registerModule(registerPlannerModule);
         const harness = createUkladTestHarness(runtime);

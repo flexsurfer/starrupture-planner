@@ -1,4 +1,6 @@
-import { useCorporations, useCorporationCollapse, CorporationCard, CorporationsStats } from "./corporations";
+import { CorporationCard } from './CorporationCard';
+import { CorporationsStats } from './CorporationsStats';
+import { useCorporations, useCorporationCollapse } from './useCorporations';
 
 const CorporationsPage = () => {
   const { corporationsWithStats, itemsMap } = useCorporations();

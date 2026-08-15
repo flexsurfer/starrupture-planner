@@ -3,7 +3,7 @@ import type { Item } from '@/app/uklad/model';
 import { RecipeCard } from './RecipeCard';
 import { BuildingImage } from '@/shared/ui';
 import { UsedInRecipes } from './UsedInRecipes';
-import type { ItemRecipe } from '../items';
+import type { ItemRecipe } from '../recipe-utils';
 
 interface RecipeModalProps {
   isOpen: boolean;

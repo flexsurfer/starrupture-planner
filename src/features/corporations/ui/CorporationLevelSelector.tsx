@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { CorporationLevelInfo } from '@/features/planner/types';
 import type { CorporationLevelSelection } from '@/app/uklad/model';
-import { CorporationUsageBadge } from '../items';
+import { CorporationUsageBadge } from './CorporationUsageBadge';
 
 export type SelectedCorporationLevel = CorporationLevelSelection;
 

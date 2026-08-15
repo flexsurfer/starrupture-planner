@@ -2,7 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import { BuildingImage, ItemImage } from '@/shared/ui';
-import { getCategoryBadgeClass, getCategoryDisplayName } from '../../items';
+import { getCategoryBadgeClass, getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
 
 interface PlannerStatsModalProps {
     isOpen: boolean;

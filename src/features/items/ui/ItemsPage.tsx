@@ -1,17 +1,15 @@
 import { appIds } from '@/app/uklad/catalog';
 import { useState } from "react";
-import { 
-  useItemsData, 
-  ItemsFilter, 
-  BuildingSelector, 
-  ItemsSearch, 
-  ItemsStats, 
-  ItemsTable,
-  findItemRecipes 
-} from "./items";
-import { RecipeModal } from "./ui";
+import { BuildingSelector } from './components/BuildingSelector';
+import { ItemsFilter } from './components/ItemsFilter';
+import { ItemsSearch } from './components/ItemsSearch';
+import { ItemsStats } from './components/ItemsStats';
+import { ItemsTable } from './components/ItemsTable';
+import { useItemsData } from './hooks/useItemsData';
+import { RecipeModal } from '@/features/buildings/ui';
+import { findItemRecipes } from '@/features/buildings/recipe-utils';
 import type { Item } from "@/app/uklad/model";
-import type { ItemRecipe } from "./items";
+import type { ItemRecipe } from '@/features/buildings/recipe-utils';
 import { useSubscription } from "@/app/uklad/bindings";
 
 const ItemsPage = () => {

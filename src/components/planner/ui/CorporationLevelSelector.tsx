@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { CorporationLevelSelection } from '@/app/uklad/model';
-import { CorporationLevelSelector } from '../../ui/CorporationLevelSelector';
+import { CorporationLevelSelector } from '@/features/corporations/ui';
 
 /**
  * Wrapper that connects CorporationLevelSelector to planner global state.

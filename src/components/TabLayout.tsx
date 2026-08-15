@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import ItemsPage from './ItemsPage';
-import RecipesPage from './RecipesPage';
-import CorporationsPage from './CorporationsPage';
+import { ItemsPage } from '@/features/items/ui';
+import { BuildingsPage } from '@/features/buildings/ui';
+import { CorporationsPage } from '@/features/corporations/ui';
 import MyBasesPage from './MyBasesPage';
 import PlannerPage from './PlannerPage';
 import {
@@ -81,7 +81,7 @@ const TabLayout = () => {
       case 'items':
         return <ItemsPage />; 
       case 'recipes':
-        return <RecipesPage />;
+        return <BuildingsPage />;
       case 'corporations':
         return <CorporationsPage />;
       case 'planner':

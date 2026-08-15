@@ -2,11 +2,13 @@ import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
+import { registerBuildingsModule } from '@/features/buildings/module';
 import { registerItemsModule } from './module';
 
 describe('items Uklad module', () => {
     it('owns item filters and parameterized item queries', () => {
         const runtime = createAppRuntime();
+        runtime.registerModule(registerBuildingsModule);
         runtime.registerModule(registerItemsModule);
         const harness = createUkladTestHarness(runtime);
         harness.restoreState({
