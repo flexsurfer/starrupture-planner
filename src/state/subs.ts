@@ -562,16 +562,6 @@ registrar.regSub(SUB_IDS.BASES_STATS_SUMMARY, () => [[SUB_IDS.BASES_LIST], [SUB_
 //============================================================
 // Production Plan subscriptions
 //============================================================
-registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_IDS, () => [[SUB_IDS.BASES_SELECTED_BASE]], ([selectedBase]: [Base | null]) => {
-        if (!selectedBase) return [];
-        return (selectedBase.productions || []).map(section => section.id);
-    });
-
-registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID, (baseId: string) => [[SUB_IDS.BASES_BASE_BY_ID, baseId]], ([base]: [Base | null], _baseId: string, sectionId: string) => {
-        if (!base || !sectionId) return null;
-        return base.productions?.find(section => section.id === sectionId) || null;
-    });
-
 const EMPTY_PRODUCTION_FLOW: ProductionFlowResult = { nodes: [], edges: [], rawMaterialDeficits: [] };
 const EMPTY_PRODUCTION_PLAN_SECTION_STATS: ProductionPlanSectionStats = {
     buildingCount: 0,
@@ -947,12 +937,6 @@ registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID, (bas
             itemName: sectionData.itemName,
             corporationName: sectionData.corporationName
         };
-    });
-
-registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID, () => [[SUB_IDS.ITEMS_BY_ID_MAP]], ([itemsMap]: [Record<string, Item>], selectedItemId: string) => {
-        if (!selectedItemId) return '';
-        const item = itemsMap[selectedItemId];
-        return item?.name || selectedItemId;
     });
 
 registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_OPEN_STATE, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([modalState]: [CreateProductionPlanModalState]) => {

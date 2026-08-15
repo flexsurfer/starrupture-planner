@@ -12,6 +12,7 @@ import type {
     CorporationLevelSelection,
     DataVersion,
     Recipe,
+    Production,
     TabType,
 } from '@/state/db';
 import type { ItemTableData, ItemsHelperLookups } from '@/components/items/types';
@@ -210,5 +211,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID]: { params: [baseId: string]; result: Record<BaseCardSectionKey, boolean> };
         [appIds.subscriptions.ENERGY_GROUPS_LIST]: { params: []; result: AppState['energyGroups'] };
         [appIds.subscriptions.ENERGY_GROUPS_BY_ID_MAP]: { params: []; result: Record<string, AppState['energyGroups'][number]> };
+        [appIds.subscriptions.PRODUCTION_PLAN_SECTION_IDS]: { params: []; result: string[] };
+        [appIds.subscriptions.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID]: { params: [baseId: string, sectionId: string]; result: Production | null };
+        [appIds.subscriptions.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID]: { params: [itemId: string]; result: string };
     };
 }
