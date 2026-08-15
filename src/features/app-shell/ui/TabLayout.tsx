@@ -12,7 +12,7 @@ import {
   ThemeToggle,
   VersionSelector,
 } from '@/features/app-shell/ui';
-import { useNavigationSync } from '../hooks/useNavigationSync';
+import { useNavigationSync } from './navigation/useNavigationSync';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Tab, TabType } from '@/app/uklad/model';

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import RouteWrapper from './components/RouteWrapper'
+import { RouteWrapper } from '@/features/app-shell/ui';
 
 function App() {
   return (

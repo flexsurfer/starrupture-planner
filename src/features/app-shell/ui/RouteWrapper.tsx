@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import NavigationProvider from '../contexts/NavigationContext';
+import NavigationProvider from './navigation/NavigationProvider';
 import TabLayout from './TabLayout';
 
 const RouteWrapper = () => {

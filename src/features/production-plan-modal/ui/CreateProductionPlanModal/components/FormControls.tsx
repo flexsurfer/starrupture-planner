@@ -3,7 +3,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { CorporationLevelSelection } from '@/app/uklad/model';
 import { CorporationLevelSelector } from '@/features/corporations/ui';
-import { useDebouncedCallback } from '../../../../../hooks/useDebouncedCallback';
+import { useDebouncedCallback } from '../../hooks/useDebouncedCallback';
 import { RecipeAlternativesSelector } from './RecipeAlternativesSelector';
 
 const DEBOUNCE_DELAY = 300;
