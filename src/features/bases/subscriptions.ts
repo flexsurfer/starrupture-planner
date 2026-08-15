@@ -1,8 +1,8 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { BaseCardCollapsedSections, BasesById } from '@/state/db';
-import { resolveBaseCardCollapsedSections } from '@/state/base-card-sections';
+import type { BaseCardCollapsedSections, BasesById } from '@/app/uklad/model';
+import { resolveBaseCardCollapsedSections } from '@/features/bases/card-sections';
 import { registerBasesDerivedSubscriptions } from './derived-subscriptions';
 
 export const registerBasesSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {

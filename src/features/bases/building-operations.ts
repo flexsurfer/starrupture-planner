@@ -1,4 +1,4 @@
-import type { Building, AppState, Base, BaseBuilding } from '@/state/db';
+import type { Building, AppState, Base, BaseBuilding } from '@/app/uklad/model';
 import type { LinkedInputReference } from '@/components/mybases/types';
 import { isBuildingAvailableForSection, isRawExtractor } from '@/components/mybases/utils';
 import { PACKAGE_RECEIVER_BUILDING_ID } from '@/constants/buildingIds';

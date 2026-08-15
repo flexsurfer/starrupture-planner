@@ -1,8 +1,8 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { AppState, Base, BaseCardSectionKey } from '@/state/db';
-import { getDefaultBaseCardSectionCollapsed } from '@/state/base-card-sections';
+import type { AppState, Base, BaseCardSectionKey } from '@/app/uklad/model';
+import { getDefaultBaseCardSectionCollapsed } from '@/features/bases/card-sections';
 import {
     isBuildingAvailableForSection,
     isBuildingCountAvailable,

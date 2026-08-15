@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { AppState, Base, BaseBuilding, Building, Production } from '@/state/db';
+import type { AppState, Base, BaseBuilding, Building, Production } from '@/app/uklad/model';
 import { buildProductionFlow } from '@/components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '@/components/planner/core/types';
 import { isBuildingAvailableForSection, isRawExtractor } from '@/components/mybases/utils';

@@ -1,8 +1,7 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState, useCallback, useRef } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
-import type { CorporationLevelSelection } from '@/state/db';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import type { CorporationLevelSelection } from '@/app/uklad/model';
 import { CorporationLevelSelector } from '../../../../ui/CorporationLevelSelector';
 import { useDebouncedCallback } from '../../../../../hooks/useDebouncedCallback';
 import { RecipeAlternativesSelector } from './RecipeAlternativesSelector';
@@ -15,6 +14,7 @@ interface TargetAmountInputProps {
 }
 
 const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ currentTargetAmount, disabled }) => {
+    const runtime = useRuntime();
     const [localTargetAmountInput, setLocalTargetAmountInput] = useState(() => currentTargetAmount.toString());
     const inputValue = disabled ? currentTargetAmount.toString() : localTargetAmountInput;
 
@@ -52,6 +52,7 @@ const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ currentTargetAmou
 };
 
 export const FormControls: React.FC = () => {
+    const runtime = useRuntime();
     const initialValues = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALUES]);
     const selectableItems = useSubscription([appIds.subscriptions.PLANNER_SELECTABLE_ITEMS]);
     const corporationLevels = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS]);
@@ -100,16 +101,16 @@ export const FormControls: React.FC = () => {
                 debouncedSetName(newName);
             }
         }
-    }, [userChangedName, selectableItems, debouncedSetName]);
+    }, [runtime, userChangedName, selectableItems, debouncedSetName]);
 
     const handleCorporationLevelChange = useCallback((level: CorporationLevelSelection | null) => {
         setLocalCorporationLevel(level);
         runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, level]);
-    }, []);
+    }, [runtime]);
 
     const handleMatchInputsToggle = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, e.target.checked]);
-    }, []);
+    }, [runtime]);
 
     return (
         <div className="px-4 py-2 border-b border-base-300 flex-shrink-0">

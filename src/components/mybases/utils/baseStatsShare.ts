@@ -1,4 +1,4 @@
-import type { Base, Corporation, Item } from '@/state/db';
+import type { Base, Corporation, Item } from '@/app/uklad/model';
 import type { MyBasesStats, TopProducedItem } from '../types';
 
 const CARD_WIDTH = 1200;

@@ -1,8 +1,8 @@
-import { appIds } from './app/uklad/catalog';
+import { appIds } from '@/app/uklad/catalog';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { UkladProvider } from '@/app/uklad/bindings'
-import { runtime } from '@/app/uklad/bootstrap'
+import { runtime } from '@/platform/web/bootstrap'
 
 import './index.css'
 import App from './App.tsx'

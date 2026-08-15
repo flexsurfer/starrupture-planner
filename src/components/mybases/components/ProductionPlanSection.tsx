@@ -1,7 +1,6 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState, useCallback } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { ProductionFlowResult } from '../../planner/core/types';
 import { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
 import { BuildingRequirementsModal } from '../modals';
@@ -41,7 +40,7 @@ const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, s
 };
 
 export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ baseId, sectionId }) => {
-
+    const runtime = useRuntime();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [showRequirementsModal, setShowRequirementsModal] = useState(false);
 
@@ -59,7 +58,7 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
         if (section) {
             runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN, section.id]);
         }
-    }, [section]);
+    }, [runtime, section]);
 
     const handleDelete = useCallback(() => {
         if (section && selectedBaseId) {
@@ -76,19 +75,19 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
             }
             ]);
         }
-    }, [selectedBaseId, section]);
+    }, [runtime, selectedBaseId, section]);
 
     const handleActivate = useCallback(() => {
         if (selectedBaseId && section) {
             runtime.dispatch([appIds.events.PRODUCTION_PLAN_ACTIVATE_SECTION, selectedBaseId, section.id]);
         }
-    }, [selectedBaseId, section]);
+    }, [runtime, selectedBaseId, section]);
 
     const handleDeactivate = useCallback(() => {
         if (selectedBaseId && section) {
             runtime.dispatch([appIds.events.PRODUCTION_PLAN_DEACTIVATE_SECTION, selectedBaseId, section.id]);
         }
-    }, [selectedBaseId, section]);
+    }, [runtime, selectedBaseId, section]);
 
     if (!data || !section) {
         return null;

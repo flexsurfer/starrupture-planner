@@ -1,7 +1,6 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 interface EnergyGroupSelectorProps {
   baseId: string;
@@ -18,6 +17,7 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
   currentGroupId,
   variant = 'icon',
 }) => {
+  const runtime = useRuntime();
   const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
   const [isOpen, setIsOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -47,7 +47,7 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
   const handleSelect = useCallback((groupId: string | null) => {
     runtime.dispatch([appIds.events.BASES_SET_ENERGY_GROUP, baseId, groupId]);
     closeDropdown();
-  }, [baseId, closeDropdown]);
+  }, [runtime, baseId, closeDropdown]);
 
   const handleCreateAndAssign = useCallback(() => {
     if (!normalizedNewName) return;
@@ -63,7 +63,7 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
     }
 
     closeDropdown();
-  }, [baseId, closeDropdown, energyGroups, normalizedNewName]);
+  }, [runtime, baseId, closeDropdown, energyGroups, normalizedNewName]);
 
   const summaryClassName = variant === 'text'
     ? 'btn btn-xs btn-ghost gap-1 p-0 min-h-0 h-auto'

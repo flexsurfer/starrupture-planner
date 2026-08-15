@@ -2,8 +2,8 @@ import { createUkladRuntime } from '@ukladjs/core/vanilla';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { memoryStorageAdapter, persist } from '@ukladjs/persist';
 import { describe, expect, it } from 'vitest';
-import { initialAppState } from './db';
-import { PERSIST_KEYS } from './persistence-config';
+import { createAppState } from '@/app/uklad/initial-state';
+import { PERSIST_KEYS } from './persistence';
 
 const PERSIST_PREFIX = 'persistence-config-test';
 
@@ -53,7 +53,7 @@ describe('persistence configuration', () => {
                 ],
             }),
         });
-        const runtime = createUkladRuntime({ initialState: { ...initialAppState } });
+        const runtime = createUkladRuntime({ initialState: createAppState() });
         const persistence = persist(runtime, {
             storage,
             prefix: PERSIST_PREFIX,

@@ -1,4 +1,4 @@
-import type { Base, BaseBuilding } from '@/state/db';
+import type { Base, BaseBuilding } from '@/app/uklad/model';
 
 export interface ActivePlanOccupancyOptions {
     excludePlanId?: string | null;

@@ -1,7 +1,6 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { RecipeAlternativesDropdown } from './RecipeAlternativesDropdown';
 
 interface PlannerRecipeSelectorProps {
@@ -13,6 +12,7 @@ interface PlannerRecipeSelectorProps {
  * Defaults to slow-rate recipes and allows selecting alternative variants.
  */
 export const PlannerRecipeSelector: React.FC<PlannerRecipeSelectorProps> = ({ className = '' }) => {
+    const runtime = useRuntime();
     const options = useSubscription([appIds.subscriptions.PLANNER_RECIPE_OPTIONS]);
 
     return <RecipeAlternativesDropdown

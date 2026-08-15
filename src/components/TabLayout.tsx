@@ -9,7 +9,7 @@ import { ThemeToggle, GitHubButton, DiscordButton, VersionSelector, Confirmation
 import { useNavigationSync } from '../hooks/useNavigationSync';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import type { Tab, TabType } from '@/state/db';
+import type { Tab, TabType } from '@/app/uklad/model';
 
 const tabs: Tab[] = [
   { id: 'mybases', label: 'My Bases', icon: '🏗️' },

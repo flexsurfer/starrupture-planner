@@ -4,7 +4,7 @@ import type {
   Building,
   BuildingsByIdMap,
   Item,
-} from '@/state/db';
+} from '@/app/uklad/model';
 import {
   resolveInputBuilding,
   resolveLinkedOutput,

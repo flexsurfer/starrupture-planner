@@ -1,8 +1,8 @@
 import type { PersistKey } from '@ukladjs/persist';
-import type { AppState } from './db';
-import { normalizeBases } from './legacy/bases-storage';
-import { normalizePinnedRecipeSelections } from './legacy/pinned-recipes-storage';
-import { normalizeRecipePresets } from './legacy/recipe-presets-storage';
+import type { AppState } from '@/app/uklad/model';
+import { normalizeBases } from './legacy-storage/bases-storage';
+import { normalizePinnedRecipeSelections } from './legacy-storage/pinned-recipes-storage';
+import { normalizeRecipePresets } from './legacy-storage/recipe-presets-storage';
 
 /** Durable roots and their boundary validation for Uklad persistence. */
 export const PERSIST_KEYS = [

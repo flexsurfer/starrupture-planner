@@ -1,4 +1,4 @@
-import type { CreateProductionPlanModalState } from '@/state/db';
+import type { CreateProductionPlanModalState } from '@/app/uklad/model';
 
 export interface ProductionPlanModalFeatureState {
     productionPlanModalState: CreateProductionPlanModalState;

@@ -1,6 +1,6 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
-import { buildItemsMap, extractCategories, parseCorporations } from '@/state/data-utils';
-import { DEFAULT_DATA_VERSION, isValidDataVersion } from '@/state/gameDataVersion';
+import { buildItemsMap, extractCategories, parseCorporations } from '@/features/app-shell/game-data';
+import { DEFAULT_DATA_VERSION, isValidDataVersion } from '@/features/app-shell/data-version';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 

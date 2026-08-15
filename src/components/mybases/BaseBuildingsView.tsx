@@ -1,7 +1,6 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useState } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { AddBuildingRequest, BuildingSectionType } from './types';
 import {
   BuildingSection,
@@ -9,6 +8,7 @@ import {
 } from './index';
 
 export const BaseBuildingsView: React.FC = () => {
+  const runtime = useRuntime();
   const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
   const [addBuildingSection, setAddBuildingSection] = useState<BuildingSectionType | null>(null);
 
@@ -36,7 +36,7 @@ export const BaseBuildingsView: React.FC = () => {
       ]);
       setAddBuildingSection(null);
     }
-  }, [selectedBase, addBuildingSection]);
+  }, [runtime, selectedBase, addBuildingSection]);
 
   const handleOpenAddModal = useCallback((sectionType: BuildingSectionType) => {
     setAddBuildingSection(sectionType);

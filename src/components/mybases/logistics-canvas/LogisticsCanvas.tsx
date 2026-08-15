@@ -1,4 +1,3 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -17,8 +16,8 @@ import {
   type NodeMouseHandler,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useSubscription } from '@/app/uklad/bindings';
-import type { EnergyGroup } from '@/state/db';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import type { EnergyGroup } from '@/app/uklad/model';
 import type { BaseLogisticsViewModel } from '../types';
 import { BaseNetworkNode } from './BaseNetworkNode';
 import { EnergyGridNode } from './EnergyGridNode';
@@ -88,6 +87,7 @@ const EdgeDetailPanel: React.FC<EdgeDetailPanelProps> = ({ edgeData, onClose }) 
 );
 
 const LogisticsCanvasInner: React.FC = () => {
+  const runtime = useRuntime();
   const { fitView } = useReactFlow();
 
   const theme = useSubscription([appIds.subscriptions.UI_THEME]);
@@ -138,7 +138,7 @@ const LogisticsCanvasInner: React.FC = () => {
       runtime.dispatch([appIds.events.BASES_OPEN_BASE, data.baseId, 'base']);
     }
     setSelectedEdgeData(null);
-  }, []);
+  }, [runtime]);
 
   const handleEdgeClick: EdgeMouseHandler = useCallback((_event, edge) => {
     setSelectedEdgeData((edge.data as unknown as EdgeDetailData) || null);

@@ -4,7 +4,7 @@
  * Central location for all shared types used across mybases components and subscriptions.
  */
 
-import type { BaseBuilding, BaseDetailTab as DbBaseDetailTab, Building, Item, Production } from '@/state/db';
+import type { BaseBuilding, BaseDetailTab as DbBaseDetailTab, Building, Item, Production } from '@/app/uklad/model';
 import type { LinkedOutputStatus } from '../../utils/productionPlanInputs';
 
 /**

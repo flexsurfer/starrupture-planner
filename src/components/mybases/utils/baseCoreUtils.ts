@@ -1,4 +1,4 @@
-import type { BaseBuilding, BuildingsByIdMap } from '@/state/db';
+import type { BaseBuilding, BuildingsByIdMap } from '@/app/uklad/model';
 
 /** Default base core heat capacity when no building data is available */
 const DEFAULT_BASE_CORE_HEAT_CAPACITY = 1000;

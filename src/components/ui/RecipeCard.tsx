@@ -1,8 +1,7 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
-import type { Recipe, Item } from "@/state/db";
+import type { Recipe, Item } from "@/app/uklad/model";
 import { ItemImage } from "./ItemImage";
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 interface RecipeItemIconProps {
   itemId: string;
@@ -40,6 +39,7 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
+  const runtime = useRuntime();
   const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const outputItem = itemsMap[recipe.output.id];
 

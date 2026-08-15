@@ -1,4 +1,4 @@
-import { runtime } from '@/app/uklad/bootstrap';
+import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import { ItemIcon } from "./ItemIcon";
 import { CorporationUsageBadge } from "./CorporationUsageBadge";
@@ -20,6 +20,7 @@ export const ItemRow = ({
   getCorporationId,
   openRecipeModal 
 }: ItemRowProps) => {
+  const runtime = useRuntime();
   const hasProductions = producingBuildings.length > 0;
 
   return (

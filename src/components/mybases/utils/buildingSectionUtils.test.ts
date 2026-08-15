@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Building } from '@/state/db';
+import type { Building } from '@/app/uklad/model';
 import { isBuildingCountAvailable } from './buildingSectionUtils';
 
 function createBuilding(partial: Partial<Building> & Pick<Building, 'id' | 'name'>): Building {

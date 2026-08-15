@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import { useState } from "react";
 import { useSubscription } from "@/app/uklad/bindings";
-import type { Building } from "@/state/db";
+import type { Building } from "@/app/uklad/model";
 import { BuildingImage, RecipeCard } from "./ui";
 import { useItemsData, CorporationUsageBadge } from "./items";
 

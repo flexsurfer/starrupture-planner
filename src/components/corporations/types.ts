@@ -1,4 +1,4 @@
-import type { Corporation } from '@/state/db';
+import type { Corporation } from '@/app/uklad/model';
 
 export interface CorporationStats {
   totalLevels: number;

@@ -1,6 +1,5 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import React, { useCallback } from 'react';
 import { EnergyGroupSelector } from './EnergyGroupSelector';
 
@@ -9,18 +8,18 @@ interface BaseCoreInfoProps {
 }
 
 export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
-
+  const runtime = useRuntime();
   const detailStats = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_DETAIL_STATS]);
   const coreLevels = useSubscription([appIds.subscriptions.BASES_CORE_LEVELS]);
   const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
 
   const onBack = useCallback(() => {
     runtime.dispatch([appIds.events.BASES_SET_SELECTED_BASE, null]);
-  }, []);
+  }, [runtime]);
 
   const onCoreLeveChange = useCallback((level: number) => {
     runtime.dispatch([appIds.events.BASES_SET_CORE_LEVEL, level]);
-  }, []);
+  }, [runtime]);
   
   // Early return if data not available
   if (!detailStats) {

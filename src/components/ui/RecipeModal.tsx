@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Item } from '@/state/db';
+import type { Item } from '@/app/uklad/model';
 import { RecipeCard } from './RecipeCard';
 import { BuildingImage } from './BuildingImage';
 import { UsedInRecipes } from './UsedInRecipes';

@@ -1,4 +1,4 @@
-import type { Building, Item } from '@/state/db';
+import type { Building, Item } from '@/app/uklad/model';
 import type { PlannerRecipeOptionsItem } from '@/components/planner/core/types';
 
 /** Builds selectable recipe alternatives for the given produced item IDs. */

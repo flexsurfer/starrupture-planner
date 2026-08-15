@@ -11,7 +11,7 @@ import type {
     Building as DbBuilding,
     BaseBuilding,
     CorporationLevelSelection,
-} from '@/state/db';
+} from '@/app/uklad/model';
 
 /** Canonical item model from the app state layer. */
 export type Item = DbItem;

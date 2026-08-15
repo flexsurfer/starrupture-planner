@@ -1,5 +1,5 @@
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
-import type { BaseBuilding, Building } from '@/state/db';
+import type { BaseBuilding, Building } from '@/app/uklad/model';
 
 export interface MatchInputsParams {
     selectedItemId: string;

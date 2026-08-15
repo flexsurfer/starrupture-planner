@@ -3,7 +3,7 @@ import type { Node, Edge } from '@xyflow/react';
 import { Position as ReactFlowPosition } from '@xyflow/react';
 import type { BaseLogisticsViewModel } from '../types';
 import type { BaseDetailStats } from '../types';
-import type { EnergyGroup } from '@/state/db';
+import type { EnergyGroup } from '@/app/uklad/model';
 import type { BaseNetworkNodeData } from './BaseNetworkNode';
 import type { EnergyGridNodeData } from './EnergyGridNode';
 

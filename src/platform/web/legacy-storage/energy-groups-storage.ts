@@ -1,4 +1,4 @@
-import type { EnergyGroup } from '../db';
+import type { EnergyGroup } from '@/app/uklad/model';
 
 const ENERGY_GROUPS_STORAGE_KEY = 'energyGroups';
 const ENERGY_GROUPS_SCHEMA_VERSION = 1 as const;
@@ -46,7 +46,7 @@ function normalizeEnergyGroups(raw: unknown): EnergyGroup[] {
     return groups;
 }
 
-export function writeEnergyGroupsToStorage(energyGroups: EnergyGroup[]) {
+function writeEnergyGroupsToStorage(energyGroups: EnergyGroup[]) {
     const envelope: EnergyGroupsStorageEnvelope = {
         schemaVersion: ENERGY_GROUPS_SCHEMA_VERSION,
         energyGroups,

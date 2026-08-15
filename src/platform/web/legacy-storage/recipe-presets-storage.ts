@@ -1,4 +1,4 @@
-import type { RecipeAlternativePreset } from '../db';
+import type { RecipeAlternativePreset } from '@/app/uklad/model';
 
 const RECIPE_PRESETS_STORAGE_KEY = 'recipeAlternativePresets';
 const RECIPE_PRESETS_SCHEMA_VERSION = 1 as const;
@@ -52,7 +52,7 @@ export function normalizeRecipePresets(raw: unknown): RecipeAlternativePreset[] 
     return presets;
 }
 
-export function writeRecipePresetsToStorage(presets: RecipeAlternativePreset[]) {
+function writeRecipePresetsToStorage(presets: RecipeAlternativePreset[]) {
     const envelope: RecipePresetsStorageEnvelope = {
         schemaVersion: RECIPE_PRESETS_SCHEMA_VERSION,
         presets,

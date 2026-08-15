@@ -1,4 +1,4 @@
-import { runtime } from '@/app/uklad/bootstrap';
+import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import { ItemRow } from "./ItemRow";
 import { ItemIcon } from "./ItemIcon";
@@ -17,6 +17,8 @@ export const ItemsTable = ({
   getCorporationId,
   openRecipeModal 
 }: ItemsTableProps) => {
+  const runtime = useRuntime();
+
   if (itemsTableData.length === 0) {
     return (
       <div className="text-center py-8">

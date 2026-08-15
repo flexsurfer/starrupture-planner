@@ -1,9 +1,19 @@
-import type { RawCorporationsData } from './data-utils';
-import type { DataVersion } from './gameDataVersion';
-import { DATA_VERSIONS, DEFAULT_DATA_VERSION } from './gameDataVersion';
+import type { DataVersion } from '@/features/app-shell/data-version';
 
-export type { DataVersion } from './gameDataVersion';
-export { DATA_VERSIONS, DEFAULT_DATA_VERSION, isValidDataVersion } from './gameDataVersion';
+export interface RawCorporationData {
+    id: string;
+    description?: string;
+    levels: {
+        level: number;
+        xp?: number;
+        components: CorporationComponent[];
+        rewards: Reward[];
+    }[];
+}
+
+export interface RawCorporationsData {
+    [name: string]: RawCorporationData;
+}
 
 export type AppVersionedGameData = {
     items: Item[];
@@ -225,56 +235,3 @@ export interface AppState {
     uiConfirmationDialog: ConfirmationDialog;
     productionPlanModalState: CreateProductionPlanModalState;
 }
-
-/** Before `/game-data/{version}/` JSON loads; persistence may hydrate this root before APP_INIT. */
-export const initialAppState: AppState = {
-    appDataVersion: DEFAULT_DATA_VERSION,
-    appDataVersions: DATA_VERSIONS,
-    appVersionedData: {},
-    itemsList: [],
-    itemsById: {},
-    itemsCategories: [],
-    buildingsList: [],
-    corporationsList: [],
-    basesList: [],
-    energyGroups: [],
-    basesCardCollapsedSections: {},
-
-    //UI
-    uiTheme: 'dark',
-    uiGameDataLoadPending: false,
-    uiActiveTab: 'items',
-    itemsSelectedCategory: 'all',
-    itemsSelectedBuilding: 'all',
-    itemsSearchTerm: '',
-    plannerSelectedItemId: null,
-    plannerSelectedCorporationLevel: null,
-    plannerRecipeSelections: {},
-    pinnedRecipeSelections: {},
-    recipeAlternativePresets: [],
-    plannerTargetAmount: 60,
-    basesSelectedBaseId: null,
-    basesSelectedDetailTab: 'base',
-    uiConfirmationDialog: {
-        isOpen: false,
-        title: '',
-        message: '',
-        confirmLabel: 'Confirm',
-        cancelLabel: 'Cancel',
-        confirmButtonClass: 'btn-primary',
-        onConfirm: () => {},
-        onCancel: undefined,
-    },
-    productionPlanModalState: {
-        isOpen: false,
-        baseId: null,
-        editSectionId: null,
-        name: '',
-        selectedItemId: '',
-        targetAmount: 60,
-        selectedCorporationLevel: null,
-        selectedInputIds: [],
-        recipeSelections: {},
-        matchInputs: false,
-    },
-};

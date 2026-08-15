@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
-import type { Base } from '@/state/db';
+import type { Base } from '@/app/uklad/model';
 import type { MyBasesStats as MyBasesStatsType } from '../types';
 import { calculateTopProducedItems, shareBasesStats } from '../utils/baseStatsShare';
 

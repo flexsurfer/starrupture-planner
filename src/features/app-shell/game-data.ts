@@ -1,19 +1,4 @@
-import type { Item, Corporation, CorporationComponent, Reward } from './db';
-
-export interface RawCorporationData {
-    id: string;
-    description?: string;
-    levels: {
-        level: number;
-        xp?: number;
-        components: CorporationComponent[];
-        rewards: Reward[];
-    }[];
-}
-
-export interface RawCorporationsData {
-    [name: string]: RawCorporationData;
-}
+import type { Corporation, Item, RawCorporationsData } from '@/app/uklad/model';
 
 // Helper to build items map
 export function buildItemsMap(items: Item[]): Record<string, Item> {

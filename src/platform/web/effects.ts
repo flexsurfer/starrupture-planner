@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import { gameDataBundleToAppVersioned, loadGameDataVersion } from '@/state/gameDataLoader';
+import { gameDataBundleToAppVersioned, loadGameDataVersion } from '@/platform/web/game-data-loader';
 
 export const registerWebEffects: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regEffect(appIds.effects.setTheme, (theme) => {

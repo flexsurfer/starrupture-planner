@@ -1,20 +1,20 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useState } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { AddBuildingRequest } from '../../../types';
 import { ItemImage } from '../../../../ui/ItemImage';
 import { BuildingImage } from '../../../../ui/BuildingImage';
 import { AddBuildingCardModal } from '../../AddBuildingCardModal';
 
 export const InputsSelector: React.FC = () => {
+    const runtime = useRuntime();
     const { inputItems, selectedInputIds } = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA]);
     const selectedBaseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
     const [showAddInputModal, setShowAddInputModal] = useState(false);
 
     const handleInputToggle = useCallback((baseBuildingId: string) => {
         runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, baseBuildingId]);
-    }, []);
+    }, [runtime]);
 
     const handleAddInputBuildings = useCallback((request: AddBuildingRequest) => {
         if (!selectedBaseId) return;
@@ -45,7 +45,7 @@ export const InputsSelector: React.FC = () => {
             request.linkedOutput ?? null,
         ]);
         setShowAddInputModal(false);
-    }, [selectedBaseId]);
+    }, [runtime, selectedBaseId]);
 
     return (
         <>

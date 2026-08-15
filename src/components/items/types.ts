@@ -7,7 +7,7 @@ import type {
   CorporationComponent as DbCorporationComponent,
   CorporationLevel as DbCorporationLevel,
   Item as DbItem,
-} from '@/state/db';
+} from '@/app/uklad/model';
 
 export type Item = DbItem;
 export type CorporationComponent = DbCorporationComponent;

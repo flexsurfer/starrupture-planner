@@ -1,18 +1,18 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import {
   ProductionPlanSection as ProductionPlanSectionComponent,
 } from './index';
 
 export const BasePlansView: React.FC = () => {
+  const runtime = useRuntime();
   const selectedBaseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
   const sectionIds = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_SECTION_IDS]) || [];
 
   const handleOpenProductionPlanModal = useCallback(() => {
     runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN]);
-  }, []);
+  }, [runtime]);
 
   return (
     <div className="space-y-4 lg:space-y-6">

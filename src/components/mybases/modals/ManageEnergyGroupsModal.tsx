@@ -1,8 +1,7 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
-import type { EnergyGroup } from '@/state/db';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import type { EnergyGroup } from '@/app/uklad/model';
 
 interface ManageEnergyGroupsModalProps {
   isOpen: boolean;
@@ -19,6 +18,7 @@ const EnergyGroupRow: React.FC<{
   isNameTaken: (name: string, excludeId?: string) => boolean;
   onDelete: (group: EnergyGroup) => void;
 }> = ({ group, memberCount, isNameTaken, onDelete }) => {
+  const runtime = useRuntime();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(group.name);
 
@@ -42,7 +42,7 @@ const EnergyGroupRow: React.FC<{
     }
 
     setIsEditing(false);
-  }, [editName, group.id, group.name, isNameTaken]);
+  }, [runtime, editName, group.id, group.name, isNameTaken]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -159,6 +159,7 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
   isOpen,
   onClose,
 }) => {
+  const runtime = useRuntime();
   const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
   const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
   const [newName, setNewName] = useState('');
@@ -211,7 +212,7 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
       setNewName('');
       setCreateError('');
     },
-    [normalizedNewName, isNameTaken],
+    [runtime, normalizedNewName, isNameTaken],
   );
 
   const handleDelete = useCallback((group: EnergyGroup) => {
@@ -231,7 +232,7 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
         confirmButtonClass: 'btn-error',
       },
     ]);
-  }, [memberCountByGroup]);
+  }, [runtime, memberCountByGroup]);
 
   const handleClose = useCallback(() => {
     setNewName('');

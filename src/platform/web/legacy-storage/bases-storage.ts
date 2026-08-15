@@ -4,12 +4,12 @@ import type {
     CorporationLevelSelection,
     PlanRequiredBuilding,
     Production,
-} from '../db';
+} from '@/app/uklad/model';
 
 const BASES_STORAGE_KEY = 'bases';
 const BASES_SCHEMA_VERSION = 4 as const;
 
-export interface BasesStorageEnvelope {
+interface BasesStorageEnvelope {
     schemaVersion: number;
     bases: unknown;
 }
@@ -21,7 +21,7 @@ function isBasesStorageEnvelope(value: unknown): value is BasesStorageEnvelope {
     return typeof envelope.schemaVersion === 'number' && 'bases' in envelope;
 }
 
-export function writeBasesToStorage(bases: Base[]) {
+function writeBasesToStorage(bases: Base[]) {
     const envelope: BasesStorageEnvelope = {
         schemaVersion: BASES_SCHEMA_VERSION,
         bases,

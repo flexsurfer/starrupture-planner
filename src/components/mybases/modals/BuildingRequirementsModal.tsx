@@ -1,10 +1,9 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import type { BuildingRequirement, InputRequirement } from '../types';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 interface BuildingRequirementsModalProps {
     isOpen: boolean;
@@ -25,6 +24,7 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
     sectionId,
     onClose,
 }) => {
+    const runtime = useRuntime();
     const buildings = useSubscription([appIds.subscriptions.BUILDINGS_LIST]);
 
     if (!isOpen) {

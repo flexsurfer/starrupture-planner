@@ -33,7 +33,7 @@ export function normalizePinnedRecipeSelections(raw: unknown): Record<string, st
     return normalized;
 }
 
-export function writePinnedRecipesToStorage(pinnedRecipeSelections: Record<string, string>) {
+function writePinnedRecipesToStorage(pinnedRecipeSelections: Record<string, string>) {
     const envelope: PinnedRecipesStorageEnvelope = {
         schemaVersion: PINNED_RECIPES_SCHEMA_VERSION,
         pinnedRecipeSelections,

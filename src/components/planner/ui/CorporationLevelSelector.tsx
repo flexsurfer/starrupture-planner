@@ -1,7 +1,6 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
-import { useSubscription } from '@/app/uklad/bindings';
-import type { CorporationLevelSelection } from '@/state/db';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import type { CorporationLevelSelection } from '@/app/uklad/model';
 import { CorporationLevelSelector } from '../../ui/CorporationLevelSelector';
 
 /**
@@ -9,6 +8,7 @@ import { CorporationLevelSelector } from '../../ui/CorporationLevelSelector';
  * Uses subscriptions for data and dispatches events for changes.
  */
 export const PlannerCorporationLevelSelector: React.FC<{ className?: string }> = ({ className }) => {
+    const runtime = useRuntime();
     const corporationLevels = useSubscription([appIds.subscriptions.PLANNER_AVAILABLE_CORPORATION_LEVELS]);
     const selectedLevel = useSubscription([appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL]);
     const targetAmount = useSubscription([appIds.subscriptions.PLANNER_TARGET_AMOUNT]);

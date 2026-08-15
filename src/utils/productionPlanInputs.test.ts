@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Base, BaseBuilding } from '@/state/db';
+import type { Base, BaseBuilding } from '@/app/uklad/model';
 import {
     buildBasesById,
     getFlowInputBuildings,

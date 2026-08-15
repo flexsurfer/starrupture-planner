@@ -1,4 +1,4 @@
-import type { EnergyGroup } from '@/state/db';
+import type { EnergyGroup } from '@/app/uklad/model';
 
 export interface EnergyGroupsFeatureState {
     energyGroups: EnergyGroup[];

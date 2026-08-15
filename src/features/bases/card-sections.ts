@@ -1,4 +1,4 @@
-import type { BaseCardCollapsedSections, BaseCardSectionKey } from './db';
+import type { BaseCardCollapsedSections, BaseCardSectionKey } from '@/app/uklad/model';
 
 export const DEFAULT_BASE_CARD_COLLAPSED_SECTIONS: Record<BaseCardSectionKey, boolean> = {
     productionPlans: false,

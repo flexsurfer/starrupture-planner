@@ -1,10 +1,10 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { RecipeAlternativesDropdown } from '../../../../planner/ui/RecipeAlternativesDropdown';
 
 export const RecipeAlternativesSelector: React.FC = () => {
+    const runtime = useRuntime();
     const options = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS]);
 
     return <RecipeAlternativesDropdown

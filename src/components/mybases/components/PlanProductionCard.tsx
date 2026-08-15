@@ -1,7 +1,6 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { PlanSummaryRow, ProductionPlanRequirementsStatus } from '../types';
 import { BuildingImage, ItemImage } from '../../ui';
 import { getPlanOutputAllocationSummary } from '../../../utils/planOutputAllocations';
@@ -22,6 +21,7 @@ interface PlanProductionCardProps {
 }
 
 export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan, baseId }) => {
+  const runtime = useRuntime();
   const requirementsStatus = useSubscription([
     appIds.subscriptions.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
     baseId,

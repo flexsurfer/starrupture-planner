@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { Base, Building, BuildingsByIdMap, EnergyGroup, Item, Production } from '@/state/db';
+import type { Base, Building, BuildingsByIdMap, EnergyGroup, Item, Production } from '@/app/uklad/model';
 import type {
     BaseDefenseBuilding,
     BaseDetailStats,

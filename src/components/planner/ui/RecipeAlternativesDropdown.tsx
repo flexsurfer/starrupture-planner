@@ -1,8 +1,7 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useEffect, useRef, useState } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
-import type { Item, RecipeAlternativePreset } from '@/state/db';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import type { Item, RecipeAlternativePreset } from '@/app/uklad/model';
 import type { PlannerRecipeOptionsItem } from '../core/types';
 import { ItemImage, BuildingImage } from '../../ui';
 
@@ -43,6 +42,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     showChevron = false,
     panelMaxHeightClass = 'max-h-[60vh]'
 }) => {
+    const runtime = useRuntime();
     const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]) ?? EMPTY_ITEMS_BY_ID;
     const defaultSelections = useSubscription([appIds.subscriptions.PINNED_RECIPE_SELECTIONS]) ?? EMPTY_PINNED_SELECTIONS;
     const presets = useSubscription([appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]) ?? EMPTY_PRESETS;

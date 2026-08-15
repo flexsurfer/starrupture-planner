@@ -1,6 +1,5 @@
-import type { RawCorporationsData } from './data-utils';
-import type { AppVersionedGameData, Building, Item } from './db';
-import type { DataVersion } from './gameDataVersion';
+import type { AppVersionedGameData, Building, Item, RawCorporationsData } from '@/app/uklad/model';
+import type { DataVersion } from '@/features/app-shell/data-version';
 
 const FILES = {
     items: 'items_catalog.json',

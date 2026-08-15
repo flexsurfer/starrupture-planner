@@ -1,7 +1,6 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import { useCallback, useRef, useEffect } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 
 /**
@@ -34,6 +33,7 @@ export const usePlannerDefaultOutput = () => {
  * Custom hook for debounced target amount setting
  */
 export const useTargetAmount = () => {
+    const runtime = useRuntime();
     const targetAmount = useSubscription([appIds.subscriptions.PLANNER_TARGET_AMOUNT]);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -47,7 +47,7 @@ export const useTargetAmount = () => {
         timeoutRef.current = setTimeout(() => {
             runtime.dispatch([appIds.events.PLANNER_SET_TARGET_AMOUNT, amount]);
         }, 300); // 300ms debounce
-    }, []);
+    }, [runtime]);
 
     // Cleanup timeout on unmount
     useEffect(() => { return () => { if (timeoutRef.current) { clearTimeout(timeoutRef.current); } }; }, []);

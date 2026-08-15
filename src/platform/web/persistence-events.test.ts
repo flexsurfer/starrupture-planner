@@ -4,14 +4,15 @@ import { memoryStorageAdapter, persist } from '@ukladjs/persist';
 import { describe, expect, it } from 'vitest';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { appIds } from '@/app/uklad/catalog';
+import { createAppState } from '@/app/uklad/initial-state';
+import type { AppState } from '@/app/uklad/model';
 import { registerBasesModule } from '@/features/bases/module';
-import { initialAppState, type AppState } from './db';
 
 const PERSIST_PREFIX = 'events-persistence-test';
 
 function createState(): AppState {
     return {
-        ...initialAppState,
+        ...createAppState(),
         basesList: [{
             id: 'base-1',
             name: 'Base 1',

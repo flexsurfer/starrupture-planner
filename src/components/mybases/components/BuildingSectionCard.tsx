@@ -1,8 +1,7 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
-import type { Base, BaseBuilding, Building, Item } from '@/state/db';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import type { Base, BaseBuilding, Building, Item } from '@/app/uklad/model';
 import type { BuildingSectionBuilding, LinkableOutputItem } from '../types';
 import { isLogisticsExcludedOutputBuildingId, isRawExtractor, sanitizeBuildingCount } from '../utils';
 import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';
@@ -162,6 +161,7 @@ interface InputOutputLinkControlsProps {
 }
 
 const InputOutputLinkControls: React.FC<InputOutputLinkControlsProps> = ({ baseId, baseBuilding }) => {
+  const runtime = useRuntime();
   const outputs = useLinkableOutputs(baseId);
   const { resolved, hasError, label } = useLinkedInputData(baseBuilding);
   const linkedOutput = baseBuilding.linkedOutput;
@@ -323,6 +323,7 @@ const OutputInputLinkControls: React.FC<OutputInputLinkControlsProps> = ({
   baseId,
   baseBuilding,
 }) => {
+  const runtime = useRuntime();
   const inputs = useLinkableInputs(baseId);
   const linkedInputs = inputs.filter((input) =>
     input.linkedOutput?.baseId === baseId &&
@@ -412,6 +413,7 @@ const OutputPlanLinkControls: React.FC<OutputPlanLinkControlsProps> = ({
   baseBuilding,
   resolvedOutput,
 }) => {
+  const runtime = useRuntime();
   const plans = base?.productions || [];
   const isPlanLinked = !!baseBuilding.sourceProductionId;
   const selectedPlanId = baseBuilding.sourceProductionId || '';
@@ -510,6 +512,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
   sectionBuilding,
   baseId,
 }) => {
+  const runtime = useRuntime();
   const [showSelectItemModal, setShowSelectItemModal] = useState(false);
 
   const { baseBuilding, building, count, isGrouped, sectionType, activePlanNames } = sectionBuilding;
@@ -547,7 +550,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
       sectionType,
       sanitizeBuildingCount(nextCount),
     ]);
-  }, [baseId, building.id, sectionType]);
+  }, [runtime, baseId, building.id, sectionType]);
 
   const handleRemoveClick = () => {
     if (isGrouped) {

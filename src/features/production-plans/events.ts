@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { Base, BaseBuilding, PlanRequiredBuilding } from '@/state/db';
+import type { Base, BaseBuilding, PlanRequiredBuilding } from '@/app/uklad/model';
 import { buildProductionFlow } from '@/components/planner/core/productionFlowBuilder';
 import { getSectionTypeForBuilding, buildActivePlanOccupancy } from '@/components/mybases/utils';
 import { computeRequiredBuildings, getFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';

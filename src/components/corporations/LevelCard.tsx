@@ -1,7 +1,7 @@
-import { runtime } from '@/app/uklad/bootstrap';
+import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import { ComponentIcon } from "./ComponentIcon";
-import type { CorporationComponent, Item, Reward } from "@/state/db";
+import type { CorporationComponent, Item, Reward } from "@/app/uklad/model";
 
 type LevelCardProps = {
   level: number;
@@ -13,6 +13,8 @@ type LevelCardProps = {
 };
 
 export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporationId }: LevelCardProps) => {
+  const runtime = useRuntime();
+
   return (
     <div className="card bg-base-200 shadow-sm border border-base-300">
       <div className="card-body p-4">

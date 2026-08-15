@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { Base, EnergyGroup } from '@/state/db';
+import type { Base, EnergyGroup } from '@/app/uklad/model';
 
 function normalizeEnergyGroupName(name: string): string {
     return name.trim().replace(/\s+/g, ' ');

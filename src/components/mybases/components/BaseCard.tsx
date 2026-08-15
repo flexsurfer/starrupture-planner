@@ -1,8 +1,7 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
-import type { Base, BaseCardSectionKey, Item, Production } from '@/state/db';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import type { Base, BaseCardSectionKey, Item, Production } from '@/app/uklad/model';
 import { ItemImage, BuildingImage } from '../../ui';
 import { EnergyGroupSelector } from './EnergyGroupSelector';
 import type {
@@ -262,6 +261,7 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
 };
 
 export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) => {
+  const runtime = useRuntime();
   const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
   const [addBuildingSection, setAddBuildingSection] = useState<BuildingSectionType | null>(null);
 

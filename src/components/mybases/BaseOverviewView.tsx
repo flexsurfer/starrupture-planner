@@ -1,12 +1,12 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { PlanProductionCard } from './components/PlanProductionCard';
 import { MaterialBalanceCard } from './components/MaterialBalanceCard';
 import { BuildingCoverageCard } from './components/BuildingCoverageCard';
 
 export const BaseOverviewView: React.FC = () => {
+  const runtime = useRuntime();
   const selectedBaseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
   const planRows = useSubscription([appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS]);
   const materialBalanceRows = useSubscription([appIds.subscriptions.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS]);

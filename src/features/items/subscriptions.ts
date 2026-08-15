@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { Building, BuildingsByIdMap, Recipe } from '@/state/db';
+import type { Building, BuildingsByIdMap, Recipe } from '@/app/uklad/model';
 import {
     DRONE_MERGER_3_TO_1_BUILDING_ID,
     ORBITAL_CARGO_LAUNCHER_BUILDING_ID,

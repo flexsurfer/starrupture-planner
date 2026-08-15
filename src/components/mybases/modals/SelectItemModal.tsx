@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
-import type { Building as DbBuilding } from '@/state/db';
+import type { Building as DbBuilding } from '@/app/uklad/model';
 import { ItemImage } from '../../ui';
 import { isRawExtractor } from '../utils';
 

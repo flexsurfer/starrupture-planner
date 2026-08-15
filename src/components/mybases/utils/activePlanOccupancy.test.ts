@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Base, BaseBuilding, Production } from '@/state/db';
+import type { Base, BaseBuilding, Production } from '@/app/uklad/model';
 import { buildActivePlanOccupancy } from './activePlanOccupancy';
 
 function createBaseBuilding(

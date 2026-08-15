@@ -1,4 +1,4 @@
-import type { Base, BaseCardCollapsedSections, BaseDetailTab } from '@/state/db';
+import type { Base, BaseCardCollapsedSections, BaseDetailTab } from '@/app/uklad/model';
 
 export interface BasesFeatureState {
     basesList: Base[];

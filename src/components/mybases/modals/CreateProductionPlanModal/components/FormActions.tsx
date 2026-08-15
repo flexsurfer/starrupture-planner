@@ -1,21 +1,21 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 export const FormActions: React.FC = () => {
+    const runtime = useRuntime();
     const { isEditMode } = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_HEADER_DATA]);
     const isFormValid = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALIDITY]);
 
     const handleClose = useCallback(() => {
         runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_CLOSE]);
-    }, []);
+    }, [runtime]);
 
     const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SUBMIT]);
         handleClose();
-    }, [handleClose]);
+    }, [runtime, handleClose]);
 
     return (
         <div className="flex-shrink-0 p-4 border-t border-base-300 flex justify-end gap-2">

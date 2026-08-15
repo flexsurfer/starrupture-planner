@@ -1,11 +1,11 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { BaseCoreInfo, BaseOverviewView, BaseBuildingsView, BasePlansView, CreateProductionPlanModal, RenameBaseModal } from './index';
 import type { BaseDetailTab } from './types';
 
 export const BaseDetailView: React.FC = () => {
+  const runtime = useRuntime();
   const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
   const activeTab = useSubscription([appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]) || 'base';
   const [showRenameModal, setShowRenameModal] = useState(false);

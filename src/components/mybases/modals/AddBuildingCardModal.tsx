@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React, { useMemo, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
-import type { Building, Item } from '@/state/db';
+import type { Building, Item } from '@/app/uklad/model';
 import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem, LinkedInputReference } from '../types';
 import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';
 import {

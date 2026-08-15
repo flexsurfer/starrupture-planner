@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Base } from '@/state/db';
+import type { Base } from '@/app/uklad/model';
 import type { BaseDetailTab } from '../types';
 import { BaseCard } from './BaseCard';
 

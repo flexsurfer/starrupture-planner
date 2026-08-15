@@ -1,7 +1,6 @@
-import { runtime } from '@/app/uklad/bootstrap';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 interface PlannerItemSelectorProps {
     className?: string;
@@ -11,13 +10,14 @@ interface PlannerItemSelectorProps {
  * Item selector dropdown for the production planner
  */
 export const PlannerItemSelector: React.FC<PlannerItemSelectorProps> = ({ className = '' }) => {
+    const runtime = useRuntime();
     const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]);
     const selectableItems = useSubscription([appIds.subscriptions.PLANNER_SELECTABLE_ITEMS]);
 
     const onItemSelect = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
         const itemId = event.target.value;
         runtime.dispatch([appIds.events.PLANNER_SET_SELECTED_ITEM, itemId || null]);
-    }, []);
+    }, [runtime]);
 
     return (
         <select

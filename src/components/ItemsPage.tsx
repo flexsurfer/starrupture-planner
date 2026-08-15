@@ -10,7 +10,7 @@ import {
   findItemRecipes 
 } from "./items";
 import { RecipeModal } from "./ui";
-import type { Item } from "@/state/db";
+import type { Item } from "@/app/uklad/model";
 import type { ItemRecipe } from "./items";
 import { useSubscription } from "@/app/uklad/bindings";
 

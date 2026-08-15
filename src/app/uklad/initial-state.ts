@@ -1,4 +1,5 @@
-import { DATA_VERSIONS, DEFAULT_DATA_VERSION, type AppState } from '@/state/db';
+import type { AppState } from '@/app/uklad/model';
+import { DATA_VERSIONS, DEFAULT_DATA_VERSION } from '@/features/app-shell/data-version';
 import { createItemsFeatureState } from '@/features/items/state';
 import { createPlannerFeatureState } from '@/features/planner/state';
 import { createBasesFeatureState } from '@/features/bases/state';

@@ -1,15 +1,14 @@
 import { createUkladInspector } from '@ukladjs/core/devtools';
-import { useSubscription, useUkladRuntime } from '@ukladjs/core/react';
 import { enableDevtools } from '@ukladjs/devtools';
 import { localStorageAdapter, persist } from '@ukladjs/persist';
-import { UkladProvider, useRuntime as useAppRuntime, useSubscription as useAppSubscription } from '@/app/uklad/bindings';
 import { registerWebApplication } from '@/app/uklad/register';
 import { createAppRuntime } from '@/app/uklad/runtime';
-import { migrateLegacyStorage } from './legacy/legacy-storage-migration';
-import { PERSIST_KEYS } from './persistence-config';
+import { migrateLegacyStorage } from '@/platform/web/legacy-storage/legacy-storage-migration';
+import { PERSIST_KEYS } from './persistence';
 
 const PERSIST_PREFIX = 'starrupture-planner';
 
+/** The one browser-owned runtime and its platform lifecycle wiring. */
 export const runtime = createAppRuntime();
 registerWebApplication(runtime);
 
@@ -28,6 +27,3 @@ if (import.meta.env.DEV) {
         operations: { evidence: { stateChanges: 'patches' } },
     });
 }
-
-export const dispatch = runtime.dispatch.bind(runtime);
-export { UkladProvider, useAppRuntime, useAppSubscription, useSubscription, useUkladRuntime };

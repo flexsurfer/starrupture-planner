@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { AppState, Building, RecipeAlternativePreset } from '@/state/db';
+import type { AppState, Building, RecipeAlternativePreset } from '@/app/uklad/model';
 
 /** Slowest output rate for an item, matching the production-flow default. */
 function getSlowestOutputRateForItem(buildings: Building[], itemId: string): number {

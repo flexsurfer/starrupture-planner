@@ -9,11 +9,11 @@ import type {
     Building,
     BuildingsByIdMap,
     CorporationLevelSelection,
-    DataVersion,
     Recipe,
     Production,
     TabType,
-} from '@/state/db';
+} from '@/app/uklad/model';
+import type { DataVersion } from '@/features/app-shell/data-version';
 import type { ItemTableData, ItemsHelperLookups } from '@/components/items/types';
 import type { CorporationWithStats } from '@/components/corporations/types';
 import type {

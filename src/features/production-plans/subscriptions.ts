@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { Base, BaseBuilding, Building as DbBuilding, BuildingsByIdMap, Corporation, CorporationLevelSelection, Item, Production } from '@/state/db';
+import type { Base, BaseBuilding, Building as DbBuilding, BuildingsByIdMap, Corporation, CorporationLevelSelection, Item, Production } from '@/app/uklad/model';
 import type { BuildingRequirement, InputRequirement, ProductionPlanRequirementsStatus, ProductionPlanSectionStats, ProductionPlanSectionViewModel, SharedInputShortage } from '@/components/mybases/types';
 import type { ProductionFlowResult } from '@/components/planner/core/types';
 import { buildProductionFlow } from '@/components/planner/core/productionFlowBuilder';

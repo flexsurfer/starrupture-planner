@@ -6,7 +6,7 @@
 
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import type { DataVersion } from "@/state/db";
+import type { DataVersion } from '@/features/app-shell/data-version';
 
 interface VersionSelectorProps {
   className?: string;

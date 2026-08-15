@@ -1,4 +1,4 @@
-import type { CorporationLevelSelection, RecipeAlternativePreset } from '@/state/db';
+import type { CorporationLevelSelection, RecipeAlternativePreset } from '@/app/uklad/model';
 
 export interface PlannerFeatureState {
     plannerSelectedItemId: string | null;

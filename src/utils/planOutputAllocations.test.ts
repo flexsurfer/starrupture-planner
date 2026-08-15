@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Base } from '@/state/db';
+import type { Base } from '@/app/uklad/model';
 import {
     clearOutputPlanLinksForProduction,
     getPlanOutputAllocationSummary,
