@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerBasesModule } from '@/features/bases/module';
+import { registerCorporationsModule } from '@/features/corporations/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerProductionPlansModule } from './module';
 
@@ -10,6 +11,7 @@ describe('production-plans Uklad module', () => {
     it('activates, deactivates, and deletes a plan section', () => {
         const runtime = createAppRuntime();
         runtime.registerModule(registerBasesModule);
+        runtime.registerModule(registerCorporationsModule);
         runtime.registerModule(registerItemsModule);
         runtime.registerModule(registerProductionPlansModule);
         const harness = createUkladTestHarness(runtime);
@@ -42,6 +44,26 @@ describe('production-plans Uklad module', () => {
             appIds.subscriptions.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID,
             'iron-plate',
         ])).toBe('Iron Plate');
+        expect(harness.getSubscriptionValue([
+            appIds.subscriptions.PRODUCTION_PLAN_SECTION_FLOW_BY_ID,
+            'base-1',
+            'plan-1',
+        ])).toMatchObject({ nodes: [], edges: [], rawMaterialDeficits: [] });
+        expect(harness.getSubscriptionValue([
+            appIds.subscriptions.PRODUCTION_PLAN_SECTION_STATS_BY_ID,
+            'base-1',
+            'plan-1',
+        ])).toEqual({ buildingCount: 0, totalHeat: 0, totalPowerConsumption: 0 });
+        expect(harness.getSubscriptionValue([
+            appIds.subscriptions.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID,
+            'base-1',
+            'plan-1',
+        ])).toMatchObject({ itemName: 'Iron Plate', planStatus: 'inactive' });
+        expect(harness.getSubscriptionValue([
+            appIds.subscriptions.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
+            'base-1',
+            'plan-1',
+        ])).toMatchObject({ itemName: 'Iron Plate', planStatus: 'inactive' });
 
         harness.dispatchSync([appIds.events.PRODUCTION_PLAN_ACTIVATE_SECTION, 'base-1', 'plan-1']);
         expect(harness.getState().basesList[0]?.productions[0]).toMatchObject({ active: true, status: 'active' });

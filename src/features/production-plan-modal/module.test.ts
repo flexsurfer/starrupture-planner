@@ -2,12 +2,16 @@ import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
+import { registerBasesModule } from '@/features/bases/module';
+import { registerCorporationsModule } from '@/features/corporations/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerProductionPlanModalModule } from './module';
 
 describe('production-plan-modal Uklad module', () => {
     it('derives small modal view models from the canonical form root', () => {
         const runtime = createAppRuntime();
+        runtime.registerModule(registerBasesModule);
+        runtime.registerModule(registerCorporationsModule);
         runtime.registerModule(registerItemsModule);
         runtime.registerModule(registerProductionPlanModalModule);
         const harness = createUkladTestHarness(runtime);
@@ -33,6 +37,18 @@ describe('production-plan-modal Uklad module', () => {
             currentTargetAmount: 90,
             matchInputs: true,
         });
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FLOW])).toEqual({
+            nodes: [], edges: [], rawMaterialDeficits: [],
+        });
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS])).toEqual([]);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS])).toEqual([]);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA])).toEqual({
+            inputItems: [], selectedInputIds: [],
+        });
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS])).toEqual([]);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID])).toBe('iron-plate');
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS])).toEqual([]);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALIDITY])).toBe(true);
 
         harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_NAME, 'Renamed line']);
         harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, 120]);

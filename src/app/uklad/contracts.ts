@@ -1,4 +1,4 @@
-import type { SubscriptionParam, UkladContracts } from '@ukladjs/core/vanilla';
+import type { UkladContracts } from '@ukladjs/core/vanilla';
 import type { LinkedInputReference } from '@/components/mybases/types';
 import type {
     AppState,
@@ -29,12 +29,17 @@ import type {
     MaterialBalanceRow,
     MyBasesStats,
     PlanSummaryRow,
+    LinkableOutputItem,
+    ProductionPlanRequirementsStatus,
+    ProductionPlanSectionStats,
+    ProductionPlanSectionViewModel,
 } from '@/components/mybases/types';
 import type {
     CorporationLevelInfo,
     PlannerDetailedStats,
     PlannerRecipeOptionsItem,
     ProductionFlowResult,
+    RawMaterialDeficitWithName,
 } from '@/components/planner/core/types';
 import type { PlannerFlowGraph } from '@/features/planner/flow-graph';
 import { appIds, stateKeys } from './catalog';
@@ -53,12 +58,6 @@ export interface UpdateOutputPlanLinkPayload {
     capacityPerMinute?: number | null;
     priority?: number | null;
 }
-
-type CatalogValue<TCatalog extends Record<string, string>> = TCatalog[keyof TCatalog];
-type UnmigratedSubscription = {
-    params: readonly SubscriptionParam[];
-    result: unknown;
-};
 
 type CorporationsStatsSummary = {
     totalCorporations: number;
@@ -84,13 +83,17 @@ type ProductionPlanModalFormValues = {
     matchInputs: boolean;
 };
 
+type ProductionPlanModalInputSelectorData = {
+    inputItems: BaseInputItem[];
+    selectedInputIds: string[];
+};
+
 /**
  * The runtime's complete vocabulary. Feature contracts stay here so handlers,
  * effects, and hooks always agree on one application graph.
  *
- * Subscription result types become specific as each feature is moved from the
- * legacy registration boundary. The catalog keeps those remaining IDs closed
- * while that work continues.
+ * Every application identifier is closed over by the catalog and described
+ * here, so feature modules share one typed reactive graph.
  */
 export interface AppContracts extends UkladContracts {
     state: {
@@ -184,8 +187,6 @@ export interface AppContracts extends UkladContracts {
         [appIds.effects.loadGameData]: DataVersion;
     };
     subscriptions: {
-        [id in CatalogValue<typeof appIds.subscriptions>]: UnmigratedSubscription;
-    } & {
         [appIds.subscriptions.APP_DATA_VERSION]: { params: []; result: DataVersion };
         [appIds.subscriptions.APP_DATA_VERSIONS]: { params: []; result: AppState['appDataVersions'] };
         [appIds.subscriptions.UI_THEME]: { params: []; result: AppState['uiTheme'] };
@@ -252,9 +253,21 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.PRODUCTION_PLAN_SECTION_IDS]: { params: []; result: string[] };
         [appIds.subscriptions.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID]: { params: [baseId: string, sectionId: string]; result: Production | null };
         [appIds.subscriptions.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID]: { params: [itemId: string]; result: string };
+        [appIds.subscriptions.PRODUCTION_PLAN_SECTION_FLOW_BY_ID]: { params: [baseId: string, sectionId: string]; result: ProductionFlowResult };
+        [appIds.subscriptions.PRODUCTION_PLAN_SECTION_STATS_BY_ID]: { params: [baseId: string, sectionId: string]; result: ProductionPlanSectionStats };
+        [appIds.subscriptions.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID]: { params: [baseId: string, sectionId: string]; result: ProductionPlanSectionViewModel | null };
+        [appIds.subscriptions.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID]: { params: [baseId: string, sectionId: string]; result: ProductionPlanRequirementsStatus };
         [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE]: { params: []; result: AppState['productionPlanModalState'] };
         [appIds.subscriptions.PRODUCTION_PLAN_MODAL_OPEN_STATE]: { params: []; result: { isOpen: boolean } };
         [appIds.subscriptions.PRODUCTION_PLAN_MODAL_HEADER_DATA]: { params: []; result: { isEditMode: boolean } };
         [appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALUES]: { params: []; result: ProductionPlanModalFormValues };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_FLOW]: { params: []; result: ProductionFlowResult };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS]: { params: []; result: PlannerRecipeOptionsItem[] };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS]: { params: []; result: CorporationLevelInfo[] };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA]: { params: []; result: ProductionPlanModalInputSelectorData };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS]: { params: []; result: LinkableOutputItem[] };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID]: { params: []; result: string };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS]: { params: []; result: RawMaterialDeficitWithName[] };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALIDITY]: { params: []; result: boolean };
     };
 }
