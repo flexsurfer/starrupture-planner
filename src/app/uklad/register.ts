@@ -1,4 +1,4 @@
-import type { UkladRuntime } from '@ukladjs/core/vanilla';
+import type { UkladModule, UkladRegistrar, UkladRuntime } from '@ukladjs/core/vanilla';
 import { registerAppShellModule } from '@/features/app-shell/module';
 import { registerBasesModule } from '@/features/bases/module';
 import { registerBuildingsModule } from '@/features/buildings/module';
@@ -11,16 +11,21 @@ import { registerProductionPlanModalModule } from '@/features/production-plan-mo
 import { registerWebEffects } from '@/platform/web/effects';
 import type { AppContracts } from './contracts';
 
+/** Installs the feature modules shared by every application execution target. */
+export const registerApplicationModules: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registerAppShellModule(registrar);
+    registerCorporationsModule(registrar);
+    registerBuildingsModule(registrar);
+    registerItemsModule(registrar);
+    registerPlannerModule(registrar);
+    registerProductionPlansModule(registrar);
+    registerProductionPlanModalModule(registrar);
+    registerBasesModule(registrar);
+    registerEnergyGroupsModule(registrar);
+};
+
 /** Installs shared features and exactly the browser platform adapters. */
 export function registerWebApplication(runtime: UkladRuntime<AppContracts>): void {
-    runtime.registerModule(registerAppShellModule);
-    runtime.registerModule(registerCorporationsModule);
-    runtime.registerModule(registerBuildingsModule);
-    runtime.registerModule(registerItemsModule);
-    runtime.registerModule(registerPlannerModule);
-    runtime.registerModule(registerProductionPlansModule);
-    runtime.registerModule(registerProductionPlanModalModule);
-    runtime.registerModule(registerBasesModule);
-    runtime.registerModule(registerEnergyGroupsModule);
+    runtime.registerModule(registerApplicationModules);
     runtime.registerModule(registerWebEffects);
 }

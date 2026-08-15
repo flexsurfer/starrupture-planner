@@ -18,6 +18,8 @@
   "scripts": {
     "dev": "vite",
     "devtools:mcp": "uklad-devtools --mcp --host 127.0.0.1 --port 4000 --allow-origin http://localhost:5173 --allow-origin http://127.0.0.1:5173",
+    "headless": "vite-node --watch src/headless.ts",
+    "headless:once": "vite-node src/headless.ts",
     "build": "tsc -b && vite build",
     "deploy": "gh-pages -d dist",
     "images:webp": "./scripts/generate-webp.sh",
@@ -59,6 +61,7 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4",
+    "vite-node": "^3.2.4",
     "vitest": "^3.2.4"
   },
   "overrides": {

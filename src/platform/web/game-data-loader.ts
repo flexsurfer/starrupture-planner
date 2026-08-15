@@ -1,4 +1,5 @@
-import type { AppVersionedGameData, Building, Item, RawCorporationsData } from '@/app/uklad/model';
+import { gameDataBundleToAppVersioned, type GameDataBundle } from '@/app/uklad/game-data';
+import type { RawCorporationsData } from '@/app/uklad/model';
 import type { DataVersion } from '@/features/app-shell/data-version';
 
 const FILES = {
@@ -7,11 +8,7 @@ const FILES = {
     corporations: 'corporations_components.json',
 } as const;
 
-export type GameDataBundle = {
-    items: unknown;
-    buildings: unknown;
-    corporations: RawCorporationsData;
-};
+export { gameDataBundleToAppVersioned, type GameDataBundle };
 
 function gameDataFileUrl(version: DataVersion, file: string): string {
     const base = import.meta.env.BASE_URL;
@@ -42,12 +39,4 @@ export async function loadGameDataVersion(version: DataVersion): Promise<GameDat
     const bundle: GameDataBundle = { items, buildings, corporations };
     cache.set(version, bundle);
     return bundle;
-}
-
-export function gameDataBundleToAppVersioned(raw: GameDataBundle): AppVersionedGameData {
-    return {
-        items: raw.items as Item[],
-        buildings: raw.buildings as Building[],
-        corporations: raw.corporations,
-    };
 }
