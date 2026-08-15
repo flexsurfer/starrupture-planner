@@ -3,7 +3,7 @@ import { appIds } from '@/app/uklad/catalog';
 import { ItemIcon } from "./ItemIcon";
 import { CorporationUsageBadge } from "./CorporationUsageBadge";
 import { getCategoryDisplayName, getCategoryBadgeClass } from "../hooks/useItemsData";
-import type { Item, CorporationUsage } from "../types";
+import type { Item, CorporationUsage } from '@/features/items/types';
 
 interface ItemRowProps {
   item: Item;

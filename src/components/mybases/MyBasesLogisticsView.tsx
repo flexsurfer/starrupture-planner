@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
-import type { BaseLogisticsViewModel } from './types';
+import type { BaseLogisticsViewModel } from '@/features/bases/types';
 import { LogisticsCanvas } from './logistics-canvas';
 
 const EMPTY_LOGISTICS_MODELS: BaseLogisticsViewModel[] = [];

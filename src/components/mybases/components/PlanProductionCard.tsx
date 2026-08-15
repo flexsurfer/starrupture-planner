@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import type { PlanSummaryRow, ProductionPlanRequirementsStatus } from '../types';
+import type { PlanSummaryRow, ProductionPlanRequirementsStatus } from '@/features/bases/types';
 import { BuildingImage, ItemImage } from '../../ui';
 import { getPlanOutputAllocationSummary } from '../../../utils/planOutputAllocations';
 

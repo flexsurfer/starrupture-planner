@@ -11,15 +11,15 @@ import type {
     MaterialBalanceRow,
     MyBasesStats,
     PlanSummaryRow,
-} from '@/components/mybases/types';
-import { calculateBaseCoreHeatCapacity, getCoreLevels, isAmplifierBuilding } from '@/components/mybases/utils/baseCoreUtils';
-import { getAvailableBuildingsForSection, isBuildingAvailableForSection } from '@/components/mybases/utils/buildingSectionUtils';
-import { buildActivePlanOccupancy } from '@/components/mybases/utils/activePlanOccupancy';
-import { buildAllBaseLogisticsViewModels, buildBaseLogisticsViewModel } from '@/components/mybases/utils/logistics';
+} from '@/features/bases/types';
+import { calculateBaseCoreHeatCapacity, getCoreLevels, isAmplifierBuilding } from './core-stats';
+import { getAvailableBuildingsForSection, isBuildingAvailableForSection } from './building-section';
+import { buildActivePlanOccupancy } from './active-plan-occupancy';
+import { buildAllBaseLogisticsViewModels, buildBaseLogisticsViewModel } from './logistics';
 import { getFlowInputBuildings, resolveInputBuilding, resolveLinkedOutput } from '@/utils/productionPlanInputs';
 import { resolveOutputBuilding } from '@/utils/planOutputAllocations';
 import type { LinkedOutputStatus } from '@/utils/productionPlanInputs';
-import { buildProductionFlow } from '@/components/planner/core/productionFlowBuilder';
+import { buildProductionFlow } from '@/features/planner/production-flow';
 
 interface ConfiguredSectionItem {
     baseBuildingId: string;

@@ -9,7 +9,7 @@ import {
     PACKAGE_DISPATCHER_BUILDING_ID,
     PACKAGE_RECEIVER_BUILDING_ID,
 } from '@/constants/buildingIds';
-import type { CorporationUsage } from '@/components/items/types';
+import type { CorporationUsage } from '@/features/items/types';
 
 export const registerItemsSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regRootSub(appIds.subscriptions.ITEMS_LIST, stateKeys.itemsList);

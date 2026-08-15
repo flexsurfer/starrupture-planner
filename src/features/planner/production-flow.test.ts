@@ -85,7 +85,7 @@ const buildings = [
 ];
 
 // Import after mocking
-import { buildProductionFlow } from './productionFlowBuilder';
+import { buildProductionFlow } from './production-flow';
 
 describe('buildProductionFlow', () => {
     beforeEach(() => {

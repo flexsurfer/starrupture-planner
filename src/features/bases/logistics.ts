@@ -8,26 +8,26 @@ import type {
 import {
   resolveInputBuilding,
   resolveLinkedOutput,
-} from '../../../utils/productionPlanInputs';
+} from '@/utils/productionPlanInputs';
 import {
   PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE,
   resolveOutputBuilding,
   resolveOutputCapacityPerMinute,
-} from '../../../utils/planOutputAllocations';
+} from '@/utils/planOutputAllocations';
 import type {
   BaseLogisticsViewModel,
   LogisticsIncomingInput,
   LogisticsInputLink,
   LogisticsOutput,
-} from '../types';
+} from './types';
 import {
   PACKAGE_DISPATCHER_BUILDING_ID,
   PACKAGE_RECEIVER_BUILDING_ID,
-} from '../../../constants/buildingIds';
+} from '@/constants/buildingIds';
 import {
   isLogisticsExcludedOutputBuildingId,
   isRawExtractor,
-} from './buildingSectionUtils';
+} from './building-section';
 
 export const LOGISTICS_DEFAULT_OUTPUT_BUILDING_ID = PACKAGE_DISPATCHER_BUILDING_ID;
 export const LOGISTICS_DEFAULT_INPUT_BUILDING_ID = PACKAGE_RECEIVER_BUILDING_ID;

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { PlanSummaryRow } from '../types';
+import type { PlanSummaryRow } from '@/features/bases/types';
 import { ItemImage } from '../../ui';
 
 interface CoverageTableHeaderProps {

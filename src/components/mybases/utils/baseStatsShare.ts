@@ -1,5 +1,5 @@
 import type { Base, Corporation, Item } from '@/app/uklad/model';
-import type { MyBasesStats, TopProducedItem } from '../types';
+import type { MyBasesStats, TopProducedItem } from '@/features/bases/types';
 
 const CARD_WIDTH = 1200;
 const CARD_HEIGHT = 630;

@@ -2,7 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { BaseCoreInfo, BaseOverviewView, BaseBuildingsView, BasePlansView, CreateProductionPlanModal, RenameBaseModal } from './index';
-import type { BaseDetailTab } from './types';
+import type { BaseDetailTab } from '@/features/bases/types';
 
 export const BaseDetailView: React.FC = () => {
   const runtime = useRuntime();

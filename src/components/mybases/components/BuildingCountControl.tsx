@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { MAX_BULK_BUILDING_COUNT, sanitizeBuildingCount } from '../utils';
+import { MAX_BULK_BUILDING_COUNT, sanitizeBuildingCount } from '@/features/bases/building-counts';
 
 interface BuildingCountControlProps {
   value: number;

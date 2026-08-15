@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import type { AddBuildingRequest, BuildingSectionType } from './types';
+import type { AddBuildingRequest, BuildingSectionType } from '@/features/bases/types';
 import {
   BuildingSection,
   AddBuildingCardModal,

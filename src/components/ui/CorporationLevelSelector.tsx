@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CorporationLevelInfo } from '../planner/core/types';
+import type { CorporationLevelInfo } from '@/features/planner/types';
 import type { CorporationLevelSelection } from '@/app/uklad/model';
 import { CorporationUsageBadge } from '../items';
 

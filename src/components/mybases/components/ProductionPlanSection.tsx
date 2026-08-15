@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState, useCallback } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import type { ProductionFlowResult } from '../../planner/core/types';
+import type { ProductionFlowResult } from '@/features/planner/types';
 import { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
 import { BuildingRequirementsModal } from '../modals';
 import { getPlanOutputAllocationSummary } from '../../../utils/planOutputAllocations';

@@ -7,10 +7,12 @@ import {
     isBuildingAvailableForSection,
     isBuildingCountAvailable,
     isRawExtractor,
+} from './building-section';
+import {
     reconcileBaseBuildingSectionTypeCount,
     sanitizeBulkBuildingCount,
     sanitizeBuildingCount,
-} from '@/components/mybases/utils';
+} from './building-counts';
 import { getDefaultOutputCapacityPerMinute, resolveOutputBuilding } from '@/utils/planOutputAllocations';
 import {
     createBaseBuilding,

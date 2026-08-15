@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import type { AddBuildingRequest } from '../../../types';
+import type { AddBuildingRequest } from '@/features/bases/types';
 import { ItemImage } from '../../../../ui/ItemImage';
 import { BuildingImage } from '../../../../ui/BuildingImage';
 import { AddBuildingCardModal } from '../../AddBuildingCardModal';

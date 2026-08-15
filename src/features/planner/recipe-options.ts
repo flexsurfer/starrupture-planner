@@ -1,5 +1,5 @@
 import type { Building, Item } from '@/app/uklad/model';
-import type { PlannerRecipeOptionsItem } from '@/components/planner/core/types';
+import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
 
 /** Builds selectable recipe alternatives for the given produced item IDs. */
 export function buildRecipeOptionsForOutputItems(

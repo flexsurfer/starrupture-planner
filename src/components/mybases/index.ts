@@ -34,7 +34,7 @@ export type {
   LogisticsOutput,
   LogisticsIncomingInput,
   BaseLogisticsViewModel,
-} from './types';
+} from '@/features/bases/types';
 
 // Main view components
 export { BaseDetailView } from './BaseDetailView';
@@ -66,6 +66,3 @@ export {
   BuildingRequirementsModal,
   ManageEnergyGroupsModal,
 } from './modals';
-
-// Utils
-export * from './utils';

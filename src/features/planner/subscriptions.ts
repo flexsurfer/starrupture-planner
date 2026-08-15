@@ -1,12 +1,12 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import { buildProductionFlow } from '@/components/planner/core/productionFlowBuilder';
+import { buildProductionFlow } from '@/features/planner/production-flow';
 import type {
     CorporationLevelInfo,
     PlannerBuildingStats,
     PlannerDetailedStatsItem,
-} from '@/components/planner/core/types';
+} from '@/features/planner/types';
 import { buildPlannerFlowGraph } from './flow-graph';
 import { buildRecipeOptionsForOutputItems } from './recipe-options';
 import { getItemName } from '@/utils/itemUtils';

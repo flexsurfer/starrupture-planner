@@ -1,6 +1,6 @@
 import type { Building, AppState, Base, BaseBuilding } from '@/app/uklad/model';
-import type { LinkedInputReference } from '@/components/mybases/types';
-import { isBuildingAvailableForSection, isRawExtractor } from '@/components/mybases/utils';
+import type { LinkedInputReference } from '@/features/bases/types';
+import { isBuildingAvailableForSection, isRawExtractor } from './building-section';
 import { PACKAGE_RECEIVER_BUILDING_ID } from '@/constants/buildingIds';
 
 function createBaseBuildingId(): string {

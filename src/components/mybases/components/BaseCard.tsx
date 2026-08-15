@@ -10,11 +10,8 @@ import type {
   BaseDetailTab,
   BaseLogisticsViewModel,
   BuildingSectionType,
-} from '../types';
-import {
-  isLogisticsExcludedOutputBuildingId,
-  isRawExtractor,
-} from '../utils';
+} from '@/features/bases/types';
+import { isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
 import { AddBuildingCardModal } from '../modals';
 import { getPlanOutputAllocationSummary, resolveOutputBuilding } from '../../../utils/planOutputAllocations';
 

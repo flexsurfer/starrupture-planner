@@ -2,7 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Item, RecipeAlternativePreset } from '@/app/uklad/model';
-import type { PlannerRecipeOptionsItem } from '../core/types';
+import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
 import { ItemImage, BuildingImage } from '../../ui';
 
 const EMPTY_ITEMS_BY_ID: Record<string, Item> = {};

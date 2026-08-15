@@ -1,4 +1,4 @@
-import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
+import { buildProductionFlow } from '@/features/planner/production-flow';
 import type { BaseBuilding, Building } from '@/app/uklad/model';
 
 export interface MatchInputsParams {

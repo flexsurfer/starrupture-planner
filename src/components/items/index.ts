@@ -29,4 +29,4 @@ export type {
   ItemTableData,
   ItemsHelperLookups,
   Item,
-} from "./types";
+} from '@/features/items/types';

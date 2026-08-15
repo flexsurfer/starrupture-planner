@@ -1,6 +1,6 @@
 import { CorporationIcon } from "./CorporationIcon";
 import { LevelCard } from "./LevelCard";
-import type { CorporationWithStats } from "./types";
+import type { CorporationWithStats } from '@/features/corporations/types';
 import type { Item } from "@/app/uklad/model";
 
 type CorporationCardProps = {

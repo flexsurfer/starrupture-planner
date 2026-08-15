@@ -4,7 +4,7 @@ import {
   reconcileBaseBuildingSectionTypeCount,
   sanitizeBuildingCount,
   sanitizeBulkBuildingCount,
-} from './baseBuildingCounts';
+} from './building-counts';
 
 function createBaseBuilding(partial: Partial<BaseBuilding> & Pick<BaseBuilding, 'id' | 'buildingTypeId' | 'sectionType'>): BaseBuilding {
   return {

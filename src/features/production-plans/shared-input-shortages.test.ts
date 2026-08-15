@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Base, BaseBuilding, Building, Production } from '@/app/uklad/model';
-import { calculateSharedInputShortages } from './sharedInputShortages';
+import { calculateSharedInputShortages } from './shared-input-shortages';
 
 const TEST_BUILDINGS: Building[] = [
     {

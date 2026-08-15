@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FlowNode, Item } from '../core/types';
+import type { FlowNode, Item } from '@/features/planner/types';
 import { getItemName } from '../../../utils/itemUtils';
 import { ItemImage, BuildingImage } from '../../ui';
 

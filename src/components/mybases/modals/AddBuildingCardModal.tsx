@@ -2,14 +2,10 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useMemo, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { Building, Item } from '@/app/uklad/model';
-import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem, LinkedInputReference } from '../types';
+import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem, LinkedInputReference } from '@/features/bases/types';
 import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';
-import {
-  isLogisticsExcludedOutputBuildingId,
-  isRawExtractor,
-  MAX_BULK_BUILDING_COUNT,
-  sanitizeBulkBuildingCount,
-} from '../utils';
+import { isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
+import { MAX_BULK_BUILDING_COUNT, sanitizeBulkBuildingCount } from '@/features/bases/building-counts';
 import {
   DRONE_MERGER_3_TO_1_BUILDING_ID,
   ORBITAL_CARGO_LAUNCHER_BUILDING_ID,

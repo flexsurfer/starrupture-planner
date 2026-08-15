@@ -1,6 +1,6 @@
 import { useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
-import type { CorporationUsage } from "../types";
+import type { CorporationUsage } from '@/features/items/types';
 
 /**
  * Custom hook for items data and utilities

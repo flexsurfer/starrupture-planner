@@ -1,7 +1,7 @@
 import dagre from 'dagre';
 import { Position } from '@xyflow/react';
 import type { Edge, Node } from '@xyflow/react';
-import type { FlowEdge, FlowNode, Item } from '@/components/planner/core/types';
+import type { FlowEdge, FlowNode, Item } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
 
 export type PlannerFlowGraphNode = Omit<Node, 'data'> & {

@@ -18,7 +18,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { EnergyGroup } from '@/app/uklad/model';
-import type { BaseLogisticsViewModel } from '../types';
+import type { BaseLogisticsViewModel } from '@/features/bases/types';
 import { BaseNetworkNode } from './BaseNetworkNode';
 import { EnergyGridNode } from './EnergyGridNode';
 import { buildLogisticsCanvasData, type LayerFilter } from './logisticsCanvasUtils';

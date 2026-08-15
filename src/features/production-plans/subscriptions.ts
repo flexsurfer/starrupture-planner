@@ -2,11 +2,11 @@ import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { Base, BaseBuilding, Building as DbBuilding, BuildingsByIdMap, Corporation, CorporationLevelSelection, Item, Production } from '@/app/uklad/model';
-import type { BuildingRequirement, InputRequirement, ProductionPlanRequirementsStatus, ProductionPlanSectionStats, ProductionPlanSectionViewModel, SharedInputShortage } from '@/components/mybases/types';
-import type { ProductionFlowResult } from '@/components/planner/core/types';
-import { buildProductionFlow } from '@/components/planner/core/productionFlowBuilder';
-import { buildActivePlanOccupancy } from '@/components/mybases/utils/activePlanOccupancy';
-import { calculateSharedInputShortages } from '@/components/mybases/utils/sharedInputShortages';
+import type { BuildingRequirement, InputRequirement, ProductionPlanRequirementsStatus, ProductionPlanSectionStats, ProductionPlanSectionViewModel, SharedInputShortage } from '@/features/bases/types';
+import type { ProductionFlowResult } from '@/features/planner/types';
+import { buildProductionFlow } from '@/features/planner/production-flow';
+import { buildActivePlanOccupancy } from '@/features/bases/active-plan-occupancy';
+import { calculateSharedInputShortages } from './shared-input-shortages';
 import { computeRequiredBuildings, getFlowInputBuildings, resolveInputBuilding, resolveLinkedOutput, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
 
 const EMPTY_PRODUCTION_FLOW: ProductionFlowResult = { nodes: [], edges: [], rawMaterialDeficits: [] };

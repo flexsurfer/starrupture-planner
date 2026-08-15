@@ -2,7 +2,7 @@ import dagre from 'dagre';
 import type { Node, Edge } from '@xyflow/react';
 import { Position as ReactFlowPosition } from '@xyflow/react';
 
-import type { Item, FlowNode, FlowEdge } from '../core/types';
+import type { Item, FlowNode, FlowEdge } from '@/features/planner/types';
 import { getItemName } from '../../../utils/itemUtils';
 import { NodeCard } from './NodeCard';
 

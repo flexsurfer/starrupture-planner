@@ -1,6 +1,6 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import type { BuildingRequirement, InputRequirement } from '../types';
+import type { BuildingRequirement, InputRequirement } from '@/features/bases/types';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';

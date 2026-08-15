@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Base } from '@/app/uklad/model';
-import type { BaseDetailTab } from '../types';
+import type { BaseDetailTab } from '@/features/bases/types';
 import { BaseCard } from './BaseCard';
 
 interface BasesListProps {

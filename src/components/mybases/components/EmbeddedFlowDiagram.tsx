@@ -14,7 +14,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useSubscription } from '@/app/uklad/bindings';
-import type { ProductionFlowResult } from '../../planner/core/types';
+import type { ProductionFlowResult } from '@/features/planner/types';
 import { generateReactFlowData } from '../../planner/visualization/plannerFlowUtils';
 
 // Define node and edge types outside component to prevent React Flow warnings

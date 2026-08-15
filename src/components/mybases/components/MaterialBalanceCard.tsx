@@ -1,5 +1,5 @@
 import React from 'react';
-import type { PlanSummaryRow, MaterialBalanceRow } from '../types';
+import type { PlanSummaryRow, MaterialBalanceRow } from '@/features/bases/types';
 import { ItemImage } from '../../ui';
 import { CoverageTableHeader } from './CoverageTableHeader';
 

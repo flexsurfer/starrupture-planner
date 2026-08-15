@@ -1,4 +1,4 @@
-import type { CorporationUsage } from "../types";
+import type { CorporationUsage } from '@/features/items/types';
 
 interface CorporationUsageBadgeProps {
   usage: CorporationUsage;

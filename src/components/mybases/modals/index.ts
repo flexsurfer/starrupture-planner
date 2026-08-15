@@ -12,4 +12,4 @@ export { SelectItemModal } from './SelectItemModal';
 export { CreateProductionPlanModal } from './CreateProductionPlanModal/index';
 export { BuildingRequirementsModal } from './BuildingRequirementsModal';
 export { ManageEnergyGroupsModal } from './ManageEnergyGroupsModal';
-export type { BuildingRequirement } from '../types';
+export type { BuildingRequirement } from '@/features/bases/types';

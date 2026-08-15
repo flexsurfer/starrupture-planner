@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Building } from '@/app/uklad/model';
-import { isBuildingCountAvailable } from './buildingSectionUtils';
+import { isBuildingCountAvailable } from './building-section';
 
 function createBuilding(partial: Partial<Building> & Pick<Building, 'id' | 'name'>): Building {
   return {

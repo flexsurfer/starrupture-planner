@@ -19,7 +19,7 @@ import type {
     ProductionFlowResult,
     RawMaterialDeficit,
 } from './types';
-import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '../../../constants/buildingIds';
+import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '@/constants/buildingIds';
 
 // ============================================================================
 // Constants & helpers

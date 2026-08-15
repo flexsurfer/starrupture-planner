@@ -2,7 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import { BuildingSectionCard } from './BuildingSectionCard';
-import type { BuildingSectionType } from '../types';
+import type { BuildingSectionType } from '@/features/bases/types';
 
 interface BuildingSectionProps {
   title: string;

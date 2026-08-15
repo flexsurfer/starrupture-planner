@@ -1,5 +1,5 @@
 import type { Base, BaseBuilding, PlanRequiredBuilding } from '@/app/uklad/model';
-import type { ProductionFlowResult } from '../components/planner/core/types';
+import type { ProductionFlowResult } from '@/features/planner/types';
 import { resolveOutputBuilding } from './planOutputAllocations';
 
 export type LinkedOutputStatus = 'ok' | 'missing-base' | 'missing-output' | 'missing-plan' | 'unconfigured-output';

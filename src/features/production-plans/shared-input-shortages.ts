@@ -1,11 +1,11 @@
-import { buildProductionFlow } from '../../planner/core/productionFlowBuilder';
+import { buildProductionFlow } from '@/features/planner/production-flow';
 import type { Base, BaseBuilding, Building, Production } from '@/app/uklad/model';
 import {
     buildBasesById,
     getFlowInputBuildings,
     getInputAvailabilityKey,
     resolveInputBuilding,
-} from '../../../utils/productionPlanInputs';
+} from '@/utils/productionPlanInputs';
 
 const EPSILON = 0.0001;
 

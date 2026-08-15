@@ -1,5 +1,5 @@
 import type { UkladContracts } from '@ukladjs/core/vanilla';
-import type { LinkedInputReference } from '@/components/mybases/types';
+import type { LinkedInputReference } from '@/features/bases/types';
 import type {
     AppState,
     AppVersionedGameData,
@@ -14,8 +14,8 @@ import type {
     TabType,
 } from '@/app/uklad/model';
 import type { DataVersion } from '@/features/app-shell/data-version';
-import type { ItemTableData, ItemsHelperLookups } from '@/components/items/types';
-import type { CorporationWithStats } from '@/components/corporations/types';
+import type { ItemTableData, ItemsHelperLookups } from '@/features/items/types';
+import type { CorporationWithStats } from '@/features/corporations/types';
 import type {
     BaseDefenseBuilding,
     BaseDetailStats,
@@ -33,14 +33,14 @@ import type {
     ProductionPlanRequirementsStatus,
     ProductionPlanSectionStats,
     ProductionPlanSectionViewModel,
-} from '@/components/mybases/types';
+} from '@/features/bases/types';
 import type {
     CorporationLevelInfo,
     PlannerDetailedStats,
     PlannerRecipeOptionsItem,
     ProductionFlowResult,
     RawMaterialDeficitWithName,
-} from '@/components/planner/core/types';
+} from '@/features/planner/types';
 import type { PlannerFlowGraph } from '@/features/planner/flow-graph';
 import { appIds, stateKeys } from './catalog';
 

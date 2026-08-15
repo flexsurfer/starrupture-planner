@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
-import type { CorporationWithStats } from "./types";
+import type { CorporationWithStats } from '@/features/corporations/types';
 
 export const useCorporations = () => {
   const corporationsWithStats = useSubscription([appIds.subscriptions.CORPORATIONS_LIST_WITH_STATS]);

@@ -6,8 +6,8 @@ import {
   PACKAGE_DISPATCHER_BUILDING_ID,
   PACKAGE_RECEIVER_BUILDING_ID,
   TELEPORTER_BUILDING_ID,
-} from '../../../constants/buildingIds';
-import type { BuildingSectionType } from '../types';
+} from '@/constants/buildingIds';
+import type { BuildingSectionType } from './types';
 
 // ============================================================================
 // Building Predicates
