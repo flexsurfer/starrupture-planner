@@ -16,6 +16,13 @@ import type {
 } from '@/state/db';
 import type { ItemTableData, ItemsHelperLookups } from '@/components/items/types';
 import type { CorporationWithStats } from '@/components/corporations/types';
+import type {
+    CorporationLevelInfo,
+    PlannerDetailedStats,
+    PlannerRecipeOptionsItem,
+    ProductionFlowResult,
+} from '@/components/planner/core/types';
+import type { PlannerFlowGraph } from '@/features/planner/flow-graph';
 import { appIds, stateKeys } from './catalog';
 
 export interface ConfirmationDialogOptions {
@@ -44,6 +51,15 @@ type CorporationsStatsSummary = {
     totalLevels: number;
     totalCost: number;
 };
+
+type PlannerStatsSummary = {
+    totalBuildings: number;
+    totalEnergy: number;
+    totalHotness: number;
+};
+
+type PlannerFlowGraphResult = Pick<PlannerFlowGraph, 'nodes' | 'edges'>
+    & Partial<Pick<PlannerFlowGraph, 'items'>>;
 
 /**
  * The runtime's complete vocabulary. Feature contracts stay here so handlers,
@@ -177,6 +193,13 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.PINNED_RECIPE_SELECTIONS]: { params: []; result: AppState['pinnedRecipeSelections'] };
         [appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]: { params: []; result: AppState['recipeAlternativePresets'] };
         [appIds.subscriptions.PLANNER_TARGET_AMOUNT]: { params: []; result: number };
+        [appIds.subscriptions.PLANNER_AVAILABLE_CORPORATION_LEVELS]: { params: []; result: CorporationLevelInfo[] };
+        [appIds.subscriptions.PLANNER_PRODUCTION_FLOW]: { params: []; result: ProductionFlowResult };
+        [appIds.subscriptions.PLANNER_RECIPE_OPTIONS]: { params: []; result: PlannerRecipeOptionsItem[] };
+        [appIds.subscriptions.PLANNER_FLOW_GRAPH]: { params: []; result: PlannerFlowGraphResult };
+        [appIds.subscriptions.PLANNER_STATS_SUMMARY]: { params: []; result: PlannerStatsSummary };
+        [appIds.subscriptions.PLANNER_STATS_DETAILED]: { params: []; result: PlannerDetailedStats };
+        [appIds.subscriptions.PLANNER_SELECTABLE_ITEMS]: { params: []; result: AppState['itemsList'] };
         [appIds.subscriptions.BASES_LIST]: { params: []; result: AppState['basesList'] };
         [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS]: { params: []; result: AppState['basesCardCollapsedSections'] };
         [appIds.subscriptions.BASES_SELECTED_BASE_ID]: { params: []; result: AppState['basesSelectedBaseId'] };

@@ -2,15 +2,21 @@ import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
+import { registerItemsModule } from '@/features/items/module';
 import { registerPlannerModule } from './module';
 
 describe('planner Uklad module', () => {
     it('sets planner state and its default target rate through typed events', () => {
         const runtime = createAppRuntime();
+        runtime.registerModule(registerItemsModule);
         runtime.registerModule(registerPlannerModule);
         const harness = createUkladTestHarness(runtime);
         harness.restoreState({
             ...harness.getState(),
+            itemsList: [
+                { id: 'iron-ore', name: 'Iron Ore', type: 'raw' },
+                { id: 'iron-plate', name: 'Iron Plate', type: 'processed' },
+            ],
             buildingsList: [{
                 id: 'assembler',
                 name: 'Assembler',
@@ -25,6 +31,9 @@ describe('planner Uklad module', () => {
 
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_SELECTED_ITEM_ID])).toBe('iron-plate');
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_TARGET_AMOUNT])).toBe(45);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_SELECTABLE_ITEMS])).toEqual([
+            { id: 'iron-plate', name: 'Iron Plate', type: 'processed' },
+        ]);
         expect(harness.getState().uiActiveTab).toBe('planner');
 
         runtime.dispose();
