@@ -9,7 +9,6 @@ import type {
     Base,
     BasesById,
     BaseBuilding,
-    BaseCardCollapsedSections,
     EnergyGroup,
     Production,
     CreateProductionPlanModalState,
@@ -59,7 +58,6 @@ import type {
 } from '../components/mybases/types';
 import { buildAllBaseLogisticsViewModels, buildBaseLogisticsViewModel } from '../components/mybases/utils/logistics';
 import { resolveOutputBuilding } from '../utils/planOutputAllocations';
-import { resolveBaseCardCollapsedSections } from './base-card-sections';
 
 export const registerSubscriptions = (registrar: UkladRegistrar<UkladContracts>) => {
 //============================================================
@@ -306,14 +304,6 @@ registrar.regSub(SUB_IDS.PLANNER_SELECTABLE_ITEMS, () => [[SUB_IDS.ITEMS_LIST]],
 //============================================================
 // Energy Groups subscriptions
 //============================================================
-registrar.regSub(SUB_IDS.ENERGY_GROUPS_BY_ID_MAP, () => [[SUB_IDS.ENERGY_GROUPS_LIST]], ([groups]: [EnergyGroup[]]) => {
-        const byId: Record<string, EnergyGroup> = {};
-        for (const group of groups) {
-            byId[group.id] = group;
-        }
-        return byId;
-    });
-
 //============================================================
 // Bases subscriptions
 //============================================================
@@ -390,28 +380,6 @@ function collectConfiguredSectionItems(
 
     return items;
 }
-
-registrar.regSub(SUB_IDS.BASES_BY_ID_MAP, () => [[SUB_IDS.BASES_LIST]], ([bases]: [Base[]]) => {
-        const basesById: BasesById = {};
-        bases.forEach((base) => {
-            basesById[base.id] = base;
-        });
-        return basesById;
-    });
-
-registrar.regSub(SUB_IDS.BASES_SELECTED_BASE, () => [[SUB_IDS.BASES_SELECTED_BASE_ID], [SUB_IDS.BASES_BY_ID_MAP]], ([selectedBaseId, basesById]: [string | null, BasesById]) => {
-        if (!selectedBaseId) return null;
-        return basesById[selectedBaseId] || null;
-    });
-
-registrar.regSub(SUB_IDS.BASES_BASE_BY_ID, () => [[SUB_IDS.BASES_BY_ID_MAP]], ([basesById]: [BasesById], baseId: string) => {
-        if (!baseId) return null;
-        return basesById[baseId] || null;
-    });
-
-registrar.regSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID, () => [[SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS]], ([collapsedSectionsByBaseId]: [Record<string, BaseCardCollapsedSections> | undefined], baseId: string) => {
-        return resolveBaseCardCollapsedSections(collapsedSectionsByBaseId?.[baseId]);
-    });
 
 /** Pooled energy context — aggregated generation/consumption across an energy group. */
 interface PooledEnergyContext {

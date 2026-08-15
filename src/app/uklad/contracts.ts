@@ -181,6 +181,11 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS]: { params: []; result: AppState['basesCardCollapsedSections'] };
         [appIds.subscriptions.BASES_SELECTED_BASE_ID]: { params: []; result: AppState['basesSelectedBaseId'] };
         [appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]: { params: []; result: AppState['basesSelectedDetailTab'] };
+        [appIds.subscriptions.BASES_BY_ID_MAP]: { params: []; result: Record<string, AppState['basesList'][number]> };
+        [appIds.subscriptions.BASES_SELECTED_BASE]: { params: []; result: AppState['basesList'][number] | null };
+        [appIds.subscriptions.BASES_BASE_BY_ID]: { params: [baseId: string]; result: AppState['basesList'][number] | null };
+        [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID]: { params: [baseId: string]; result: Record<BaseCardSectionKey, boolean> };
         [appIds.subscriptions.ENERGY_GROUPS_LIST]: { params: []; result: AppState['energyGroups'] };
+        [appIds.subscriptions.ENERGY_GROUPS_BY_ID_MAP]: { params: []; result: Record<string, AppState['energyGroups'][number]> };
     };
 }

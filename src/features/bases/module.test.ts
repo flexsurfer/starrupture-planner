@@ -15,6 +15,8 @@ describe('bases Uklad module', () => {
 
         expect(base).toMatchObject({ name: 'Outpost One', buildings: [], productions: [] });
         expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_SELECTED_BASE_ID])).toBe(base.id);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_SELECTED_BASE])).toMatchObject({ id: base.id });
+        expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_BASE_BY_ID, base.id])).toMatchObject({ name: 'Outpost One' });
 
         harness.dispatchSync([appIds.events.BASES_SET_CORE_LEVEL, 3]);
         harness.dispatchSync([appIds.events.BASES_TOGGLE_CARD_SECTION_COLLAPSED, base.id, 'productionPlans']);

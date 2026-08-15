@@ -20,6 +20,9 @@ describe('energy-groups Uklad module', () => {
         const [group] = harness.getSubscriptionValue([appIds.subscriptions.ENERGY_GROUPS_LIST]);
 
         expect(group).toMatchObject({ name: 'Main Grid' });
+        expect(harness.getSubscriptionValue([appIds.subscriptions.ENERGY_GROUPS_BY_ID_MAP])).toMatchObject({
+            [group.id]: { name: 'Main Grid' },
+        });
         expect(harness.getState().basesList[0]?.energyGroupId).toBe(group.id);
 
         harness.dispatchSync([appIds.events.ENERGY_GROUP_DELETE, group.id]);
