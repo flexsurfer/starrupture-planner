@@ -6,7 +6,6 @@ import type { AppContracts } from '@/app/uklad/contracts';
 import { appIds } from '@/app/uklad/catalog';
 import { registerBasesModule } from '@/features/bases/module';
 import { initialAppState, type AppState } from './db';
-import { registerEvents } from './events';
 
 const PERSIST_PREFIX = 'events-persistence-test';
 
@@ -28,7 +27,6 @@ function createState(): AppState {
 function createRuntime(state = createState()) {
     const runtime = createUkladRuntime<AppContracts>({ initialState: state });
     runtime.registerModule(registerBasesModule);
-    runtime.registerModule(registerEvents);
     return runtime;
 }
 

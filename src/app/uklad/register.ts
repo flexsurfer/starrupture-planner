@@ -8,7 +8,6 @@ import { registerPlannerModule } from '@/features/planner/module';
 import { registerProductionPlansModule } from '@/features/production-plans/module';
 import { registerProductionPlanModalModule } from '@/features/production-plan-modal/module';
 import { registerWebEffects } from '@/platform/web/effects';
-import { registerEvents } from '@/state/events';
 import { registerSubscriptions } from '@/state/subs';
 import type { AppContracts } from './contracts';
 
@@ -23,8 +22,6 @@ export function registerWebApplication(runtime: UkladRuntime<AppContracts>): voi
     runtime.registerModule(registerBasesModule);
     runtime.registerModule(registerEnergyGroupsModule);
     runtime.registerModule(registerWebEffects);
-
-    runtime.registerModule(registerEvents);
 
     // Direct subscriptions are still receiving their per-query contract result
     // types. This temporary permissive registrar is only a TypeScript boundary;

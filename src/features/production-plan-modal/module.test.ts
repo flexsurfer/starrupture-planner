@@ -50,4 +50,107 @@ describe('production-plan-modal Uklad module', () => {
 
         runtime.dispose();
     });
+
+    it('owns the modal workflow from opening through input linking and submit', () => {
+        const runtime = createAppRuntime();
+        runtime.registerModule(registerItemsModule);
+        runtime.registerModule(registerProductionPlanModalModule);
+        const harness = createUkladTestHarness(runtime);
+        harness.restoreState({
+            ...harness.getState(),
+            basesSelectedBaseId: 'base-1',
+            pinnedRecipeSelections: { 'iron-plate': 'smelter:0' },
+            buildingsList: [
+                { id: 'storage', name: 'Storage', type: 'storage' },
+                {
+                    id: 'smelter',
+                    name: 'Smelter',
+                    type: 'production',
+                    recipes: [{
+                        output: { id: 'iron-plate', amount_per_minute: 60 },
+                        inputs: [{ id: 'iron-ore', amount_per_minute: 60 }],
+                    }],
+                },
+            ],
+            basesList: [{
+                id: 'base-1',
+                name: 'Outpost',
+                buildings: [
+                    {
+                        id: 'input-source',
+                        buildingTypeId: 'storage',
+                        sectionType: 'inputs',
+                        selectedItemId: 'iron-ore',
+                        ratePerMinute: 60,
+                    },
+                    {
+                        id: 'output-source',
+                        buildingTypeId: 'storage',
+                        sectionType: 'outputs',
+                        selectedItemId: 'iron-ore',
+                        ratePerMinute: 30,
+                    },
+                ],
+                productions: [],
+            }],
+        });
+
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_OPEN]);
+        expect(harness.getState().productionPlanModalState).toMatchObject({
+            isOpen: true,
+            baseId: 'base-1',
+            targetAmount: 60,
+            recipeSelections: { 'iron-plate': 'smelter:0' },
+        });
+
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, 'iron-plate']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, 'iron-plate', 'smelter:0']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, 'input-source']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, {
+            'iron-ore': 'extractor:0',
+            'iron-plate': 'smelter:0',
+        }]);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, true]);
+
+        expect(harness.getState().productionPlanModalState).toMatchObject({
+            selectedItemId: 'iron-plate',
+            targetAmount: 60,
+            matchInputs: true,
+            selectedInputIds: ['input-source'],
+            recipeSelections: { 'iron-plate': 'smelter:0' },
+        });
+
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_NAME, ' Iron plan ']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SUBMIT]);
+        expect(harness.getState().basesList[0]?.productions).toMatchObject([{
+            name: 'Iron plan',
+            selectedItemId: 'iron-plate',
+            inputs: [{ id: 'input-source' }],
+            requiredBuildings: [{ buildingId: 'smelter', count: 1 }],
+        }]);
+
+        harness.dispatchSync([
+            appIds.events.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT,
+            'base-1',
+            'output-source',
+            'storage',
+        ]);
+        const linkedInput = harness.getState().basesList[0]?.buildings.find((building) =>
+            building.linkedOutput?.buildingId === 'output-source'
+        );
+        expect(linkedInput).toMatchObject({
+            sectionType: 'inputs',
+            selectedItemId: 'iron-ore',
+            ratePerMinute: 30,
+            linkedOutput: {
+                baseId: 'base-1',
+                buildingId: 'output-source',
+                itemIdSnapshot: 'iron-ore',
+                ratePerMinuteSnapshot: 30,
+            },
+        });
+        expect(harness.getState().productionPlanModalState.selectedInputIds).toContain(linkedInput?.id);
+
+        runtime.dispose();
+    });
 });

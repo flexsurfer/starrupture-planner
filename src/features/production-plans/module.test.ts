@@ -54,4 +54,46 @@ describe('production-plans Uklad module', () => {
 
         runtime.dispose();
     });
+
+    it('adds all required buildings or only the missing ones for a plan', () => {
+        const runtime = createAppRuntime();
+        runtime.registerModule(registerBasesModule);
+        runtime.registerModule(registerProductionPlansModule);
+        const harness = createUkladTestHarness(runtime);
+        harness.restoreState({
+            ...harness.getState(),
+            buildingsList: [{
+                id: 'smelter',
+                name: 'Smelter',
+                type: 'production',
+                recipes: [{
+                    output: { id: 'iron-plate', amount_per_minute: 60 },
+                    inputs: [{ id: 'iron-ore', amount_per_minute: 60 }],
+                }],
+            }],
+            basesList: [{
+                id: 'base-1',
+                name: 'Outpost',
+                buildings: [],
+                productions: [{
+                    id: 'plan-1',
+                    name: 'Iron plates',
+                    selectedItemId: 'iron-plate',
+                    targetAmount: 60,
+                    active: false,
+                    status: 'inactive',
+                }],
+            }],
+        });
+
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, 'base-1', 'plan-1', 'all']);
+        expect(harness.getState().basesList[0]?.buildings).toMatchObject([
+            { buildingTypeId: 'smelter', sectionType: 'production' },
+        ]);
+
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, 'base-1', 'plan-1', 'missing']);
+        expect(harness.getState().basesList[0]?.buildings).toHaveLength(1);
+
+        runtime.dispose();
+    });
 });
