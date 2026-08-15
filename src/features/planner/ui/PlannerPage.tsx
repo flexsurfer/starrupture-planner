@@ -15,13 +15,13 @@ import React from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 
 import {
-    PlannerItemSelector,
-    PlannerTargetInput,
-    PlannerFlowDiagram,
     PlannerCorporationLevelSelector,
+    PlannerItemSelector,
     PlannerRecipeSelector,
-    PlannerStatsDisplay,
-} from './planner';
+    PlannerTargetInput,
+} from './controls';
+import { PlannerStatsDisplay } from './stats';
+import { PlannerFlowDiagram } from './visualization';
 
 /**
  * Inner component for the production planner

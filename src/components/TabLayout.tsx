@@ -4,7 +4,7 @@ import { ItemsPage } from '@/features/items/ui';
 import { BuildingsPage } from '@/features/buildings/ui';
 import { CorporationsPage } from '@/features/corporations/ui';
 import MyBasesPage from './MyBasesPage';
-import PlannerPage from './PlannerPage';
+import { PlannerPage } from '@/features/planner/ui';
 import {
   ConfirmationDialog,
   DiscordButton,

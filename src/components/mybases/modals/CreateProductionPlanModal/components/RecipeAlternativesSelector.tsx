@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import { RecipeAlternativesDropdown } from '../../../../planner/ui/RecipeAlternativesDropdown';
+import { RecipeAlternativesDropdown } from '@/features/planner/ui/controls';
 
 export const RecipeAlternativesSelector: React.FC = () => {
     const runtime = useRuntime();

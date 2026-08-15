@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FlowNode, Item } from '@/features/planner/types';
-import { getItemName } from '../../../utils/itemUtils';
+import { getItemName } from '@/utils/itemUtils';
 import { ItemImage, BuildingImage } from '@/shared/ui';
 
 interface NodeCardProps {
