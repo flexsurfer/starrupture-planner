@@ -7,10 +7,15 @@ import type {
     BaseBuilding,
     BaseCardSectionKey,
     BaseDetailTab,
+    Building,
+    BuildingsByIdMap,
     CorporationLevelSelection,
     DataVersion,
+    Recipe,
     TabType,
 } from '@/state/db';
+import type { ItemTableData, ItemsHelperLookups } from '@/components/items/types';
+import type { CorporationWithStats } from '@/components/corporations/types';
 import { appIds, stateKeys } from './catalog';
 
 export interface ConfirmationDialogOptions {
@@ -32,6 +37,12 @@ type CatalogValue<TCatalog extends Record<string, string>> = TCatalog[keyof TCat
 type UnmigratedSubscription = {
     params: readonly SubscriptionParam[];
     result: unknown;
+};
+
+type CorporationsStatsSummary = {
+    totalCorporations: number;
+    totalLevels: number;
+    totalCost: number;
 };
 
 /**
@@ -142,5 +153,29 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]: { params: []; result: boolean };
         [appIds.subscriptions.UI_ACTIVE_TAB]: { params: []; result: TabType };
         [appIds.subscriptions.UI_CONFIRMATION_DIALOG]: { params: []; result: AppState['uiConfirmationDialog'] };
+        [appIds.subscriptions.ITEMS_LIST]: { params: []; result: AppState['itemsList'] };
+        [appIds.subscriptions.ITEMS_BY_ID_MAP]: { params: []; result: AppState['itemsById'] };
+        [appIds.subscriptions.ITEMS_SELECTED_CATEGORY]: { params: []; result: string };
+        [appIds.subscriptions.ITEMS_SELECTED_BUILDING]: { params: []; result: string };
+        [appIds.subscriptions.ITEMS_SEARCH_TERM]: { params: []; result: string };
+        [appIds.subscriptions.ITEMS_CATEGORIES]: { params: []; result: string[] };
+        [appIds.subscriptions.BUILDINGS_LIST]: { params: []; result: AppState['buildingsList'] };
+        [appIds.subscriptions.CORPORATIONS_LIST]: { params: []; result: AppState['corporationsList'] };
+        [appIds.subscriptions.CORPORATIONS_LIST_WITH_STATS]: { params: []; result: CorporationWithStats[] };
+        [appIds.subscriptions.CORPORATIONS_STATS_SUMMARY]: { params: []; result: CorporationsStatsSummary };
+        [appIds.subscriptions.BUILDINGS_BY_ID_MAP]: { params: []; result: BuildingsByIdMap };
+        [appIds.subscriptions.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS]: { params: []; result: string[] };
+        [appIds.subscriptions.ITEMS_FILTERED_LIST]: { params: []; result: AppState['itemsList'] };
+        [appIds.subscriptions.ITEMS_TABLE_ROWS]: { params: []; result: ItemTableData[] };
+        [appIds.subscriptions.ITEMS_HELPER_LOOKUPS]: { params: []; result: ItemsHelperLookups };
+        [appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID]: { params: [buildingId: string]; result: AppState['itemsList'] };
+        [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID]: { params: [itemId: string]; result: { recipe: Recipe; building: Building }[] };
+        [appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST]: { params: []; result: Building[] };
+        [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]: { params: []; result: AppState['plannerSelectedItemId'] };
+        [appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL]: { params: []; result: AppState['plannerSelectedCorporationLevel'] };
+        [appIds.subscriptions.PLANNER_RECIPE_SELECTIONS]: { params: []; result: AppState['plannerRecipeSelections'] };
+        [appIds.subscriptions.PINNED_RECIPE_SELECTIONS]: { params: []; result: AppState['pinnedRecipeSelections'] };
+        [appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]: { params: []; result: AppState['recipeAlternativePresets'] };
+        [appIds.subscriptions.PLANNER_TARGET_AMOUNT]: { params: []; result: number };
     };
 }

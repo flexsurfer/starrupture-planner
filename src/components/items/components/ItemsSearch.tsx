@@ -1,16 +1,16 @@
-import { dispatch, useSubscription } from "@/state/runtime";
-import { EVENT_IDS } from "@/state/event-ids";
-import { SUB_IDS } from "@/state/sub-ids";
+import { useAppRuntime, useAppSubscription } from "@/state/runtime";
+import { appIds } from "@/app/uklad/catalog";
 
 interface ItemsSearchProps {
   className?: string;
 }
 
 export const ItemsSearch = ({ className = "" }: ItemsSearchProps) => {
-  const searchTerm = useSubscription<string>([SUB_IDS.ITEMS_SEARCH_TERM]);
+  const runtime = useAppRuntime();
+  const searchTerm = useAppSubscription([appIds.subscriptions.ITEMS_SEARCH_TERM]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch([EVENT_IDS.ITEMS_SET_SEARCH_TERM, event.target.value]);
+    runtime.dispatch([appIds.events.ITEMS_SET_SEARCH_TERM, event.target.value]);
   };
 
   return (

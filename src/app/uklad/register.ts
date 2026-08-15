@@ -1,5 +1,8 @@
 import type { UkladContracts, UkladRegistrar, UkladRuntime } from '@ukladjs/core/vanilla';
 import { registerAppShellModule } from '@/features/app-shell/module';
+import { registerCorporationsModule } from '@/features/corporations/module';
+import { registerItemsModule } from '@/features/items/module';
+import { registerPlannerModule } from '@/features/planner/module';
 import { registerWebEffects } from '@/platform/web/effects';
 import { registerEvents } from '@/state/events';
 import { registerSubscriptions } from '@/state/subs';
@@ -8,6 +11,9 @@ import type { AppContracts } from './contracts';
 /** Installs shared features and exactly the browser platform adapters. */
 export function registerWebApplication(runtime: UkladRuntime<AppContracts>): void {
     runtime.registerModule(registerAppShellModule);
+    runtime.registerModule(registerCorporationsModule);
+    runtime.registerModule(registerItemsModule);
+    runtime.registerModule(registerPlannerModule);
     runtime.registerModule(registerWebEffects);
 
     runtime.registerModule(registerEvents);

@@ -1,17 +1,17 @@
-import { dispatch, useSubscription } from "@/state/runtime";
-import { EVENT_IDS } from "@/state/event-ids";
-import { SUB_IDS } from "@/state/sub-ids";
+import { useAppRuntime, useAppSubscription } from "@/state/runtime";
+import { appIds } from "@/app/uklad/catalog";
 
 interface BuildingSelectorProps {
   className?: string;
 }
 
 export const BuildingSelector = ({ className = "" }: BuildingSelectorProps) => {
-  const availableBuildings = useSubscription<string[]>([SUB_IDS.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS]);
-  const selectedBuilding = useSubscription<string>([SUB_IDS.ITEMS_SELECTED_BUILDING]);
+  const runtime = useAppRuntime();
+  const availableBuildings = useAppSubscription([appIds.subscriptions.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS]);
+  const selectedBuilding = useAppSubscription([appIds.subscriptions.ITEMS_SELECTED_BUILDING]);
 
   const handleBuildingChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    dispatch([EVENT_IDS.ITEMS_SET_SELECTED_BUILDING, event.target.value]);
+    runtime.dispatch([appIds.events.ITEMS_SET_SELECTED_BUILDING, event.target.value]);
   };
 
   return (

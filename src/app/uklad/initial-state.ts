@@ -1,4 +1,6 @@
 import { DATA_VERSIONS, DEFAULT_DATA_VERSION, type AppState } from '@/state/db';
+import { createItemsFeatureState } from '@/features/items/state';
+import { createPlannerFeatureState } from '@/features/planner/state';
 
 /** Creates state owned by exactly one Uklad runtime. */
 export function createAppState(): AppState {
@@ -8,9 +10,7 @@ export function createAppState(): AppState {
         appVersionedData: {},
         itemsList: [],
         itemsById: {},
-        itemsSelectedCategory: 'all',
-        itemsSelectedBuilding: 'all',
-        itemsSearchTerm: '',
+        ...createItemsFeatureState(),
         itemsCategories: [],
         buildingsList: [],
         corporationsList: [],
@@ -27,12 +27,7 @@ export function createAppState(): AppState {
             onConfirm: () => {},
             onCancel: undefined,
         },
-        plannerSelectedItemId: null,
-        plannerSelectedCorporationLevel: null,
-        plannerRecipeSelections: {},
-        pinnedRecipeSelections: {},
-        recipeAlternativePresets: [],
-        plannerTargetAmount: 60,
+        ...createPlannerFeatureState(),
         basesList: [],
         energyGroups: [],
         basesCardCollapsedSections: {},

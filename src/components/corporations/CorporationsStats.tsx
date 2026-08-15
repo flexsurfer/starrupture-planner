@@ -1,8 +1,8 @@
-import { useSubscription } from "@/state/runtime";
-import { SUB_IDS } from "@/state/sub-ids";
+import { useAppSubscription } from "@/state/runtime";
+import { appIds } from "@/app/uklad/catalog";
   
 export const CorporationsStats = () => {
-  const stats = useSubscription<{ totalCorporations: number; totalLevels: number; totalCost: number }>([SUB_IDS.CORPORATIONS_STATS_SUMMARY]);
+  const stats = useAppSubscription([appIds.subscriptions.CORPORATIONS_STATS_SUMMARY]);
 
   return (
     <div className="stats shadow">

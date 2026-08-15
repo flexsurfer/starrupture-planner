@@ -9,7 +9,6 @@ import type {
     BaseBuilding,
     BaseCardSectionKey,
     EnergyGroup,
-    RecipeAlternativePreset,
     Production,
     PlanRequiredBuilding,
     CorporationLevelSelection,
@@ -112,11 +111,6 @@ function getSlowestOutputRateForItem(buildings: Building[], itemId: string): num
     return 60;
 }
 
-function setTargetAmountToDefault(draftDb: AppState, itemId: string) {
-    draftDb.plannerTargetAmount = getSlowestOutputRateForItem(draftDb.buildingsList, itemId);
-}
-
-
 /** Keeps only input snapshots that are actually consumed by the provided flow. */
 function computeUsedInputSnapshots(flow: ProductionFlowResult, inputBuildings: BaseBuilding[] = []): BaseBuilding[] {
     const usedInputIdSet = new Set<string>();
@@ -151,97 +145,6 @@ function buildAvailableBuildingCountByType(base: Base, excludePlanId?: string | 
 
     return available;
 }
-
-registrar.regEvent(EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, ({ draftState: draftDb }, category: string) => {
-    draftDb.itemsSelectedCategory = category;
-});
-
-registrar.regEvent(EVENT_IDS.ITEMS_SET_SELECTED_BUILDING, ({ draftState: draftDb }, building: string) => {
-    draftDb.itemsSelectedBuilding = building;
-});
-
-registrar.regEvent(EVENT_IDS.ITEMS_SET_SEARCH_TERM, ({ draftState: draftDb }, searchTerm: string) => {
-    draftDb.itemsSearchTerm = searchTerm;
-});
-
-registrar.regEvent(EVENT_IDS.PLANNER_OPEN_ITEM, ({ draftState: draftDb }, itemId: string, corporationLevel?: CorporationLevelSelection) => {
-    draftDb.plannerSelectedItemId = itemId;
-    draftDb.plannerSelectedCorporationLevel = corporationLevel || null;
-    draftDb.plannerRecipeSelections = { ...draftDb.pinnedRecipeSelections };
-    draftDb.uiActiveTab = 'planner';
-    setTargetAmountToDefault(draftDb as AppState, itemId);
-});
-
-registrar.regEvent(EVENT_IDS.PLANNER_SET_SELECTED_ITEM, ({ draftState: draftDb }, itemId: string | null) => {
-    draftDb.plannerSelectedItemId = itemId;
-    // Reset corporation level when item changes
-    draftDb.plannerSelectedCorporationLevel = null;
-    draftDb.plannerRecipeSelections = { ...draftDb.pinnedRecipeSelections };
-    setTargetAmountToDefault(draftDb as AppState, itemId || '');
-});
-
-registrar.regEvent(EVENT_IDS.PLANNER_SET_SELECTED_CORPORATION_LEVEL, ({ draftState: draftDb }, corporationLevel: CorporationLevelSelection | null) => {
-    draftDb.plannerSelectedCorporationLevel = corporationLevel;
-});
-
-registrar.regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTION, ({ draftState: draftDb }, itemId: string, recipeKey: string | null) => {
-    if (!itemId) return;
-    if (!recipeKey) {
-        delete draftDb.plannerRecipeSelections[itemId];
-        return;
-    }
-    draftDb.plannerRecipeSelections[itemId] = recipeKey;
-});
-
-/** Replaces the whole planner recipe-alternative selection (used when loading a saved set). */
-registrar.regEvent(EVENT_IDS.PLANNER_SET_RECIPE_SELECTIONS, ({ draftState: draftDb }, selections: Record<string, string>) => {
-    draftDb.plannerRecipeSelections = { ...(selections || {}) };
-});
-
-/**
- * Recipe-alternative sets, shared by the planner and the plan modal.
- * Defaults seed `recipeSelections` for every new plan and the planner; presets
- * are a named library the user can save and reload. Both are persisted.
- */
-registrar.regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SET_DEFAULTS, ({ draftState: draftDb }, selections: Record<string, string>) => {
-    draftDb.pinnedRecipeSelections = { ...(selections || {}) };
-    return;
-});
-
-registrar.regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_SAVE_PRESET, ({ draftState: draftDb }, name: string, selections: Record<string, string>) => {
-    const trimmedName = (name || '').trim().replace(/\s+/g, ' ');
-    if (!trimmedName) return;
-
-    const presetSelections = { ...(selections || {}) };
-    const existing = draftDb.recipeAlternativePresets.find(
-        (preset: RecipeAlternativePreset) => preset.name.toLowerCase() === trimmedName.toLowerCase()
-    );
-
-    if (existing) {
-        // Overwrite a same-named set so re-saving updates in place.
-        existing.selections = presetSelections;
-    } else {
-        draftDb.recipeAlternativePresets.push({
-            id: createEntityId('rap'),
-            name: trimmedName,
-            selections: presetSelections,
-        });
-    }
-
-    return;
-});
-
-registrar.regEvent(EVENT_IDS.RECIPE_ALTERNATIVES_DELETE_PRESET, ({ draftState: draftDb }, presetId: string) => {
-    if (!presetId) return;
-    draftDb.recipeAlternativePresets = draftDb.recipeAlternativePresets.filter(
-        (preset: RecipeAlternativePreset) => preset.id !== presetId
-    );
-    return;
-});
-
-registrar.regEvent(EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, ({ draftState: draftDb }, targetAmount: number) => {
-    draftDb.plannerTargetAmount = targetAmount;
-});
 
 //===============================================
 // Base management

@@ -1,16 +1,16 @@
-import { useSubscription } from "@/state/runtime";
-import { SUB_IDS } from "@/state/sub-ids";
-import type { CorporationUsage, ItemTableData, ItemsHelperLookups } from "../types";
+import { useAppSubscription } from "@/state/runtime";
+import { appIds } from "@/app/uklad/catalog";
+import type { CorporationUsage } from "../types";
 
 /**
  * Custom hook for items data and utilities
  * All computations are done in subscriptions, this hook just returns ready-to-use data
  */
 export const useItemsData = () => {
-  const itemsTableData = useSubscription<ItemTableData[]>([SUB_IDS.ITEMS_TABLE_ROWS]);
-  const selectedCategory = useSubscription<string>([SUB_IDS.ITEMS_SELECTED_CATEGORY]);
-  const categories = useSubscription<string[]>([SUB_IDS.ITEMS_CATEGORIES]);
-  const helperMaps = useSubscription<ItemsHelperLookups>([SUB_IDS.ITEMS_HELPER_LOOKUPS]);
+  const itemsTableData = useAppSubscription([appIds.subscriptions.ITEMS_TABLE_ROWS]);
+  const selectedCategory = useAppSubscription([appIds.subscriptions.ITEMS_SELECTED_CATEGORY]);
+  const categories = useAppSubscription([appIds.subscriptions.ITEMS_CATEGORIES]);
+  const helperMaps = useAppSubscription([appIds.subscriptions.ITEMS_HELPER_LOOKUPS]);
 
   // Helper function to get corporation ID from corporation name
   const getCorporationId = (corporationName: string): string => {

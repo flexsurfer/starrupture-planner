@@ -3,7 +3,6 @@ import type { UkladContracts, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { stateKeys } from '@/app/uklad/catalog';
 import type {
     Item,
-    Recipe,
     Corporation,
     Building as DbBuilding,
     BuildingsByIdMap,
@@ -32,13 +31,6 @@ import {
     isBuildingAvailableForSection,
     isLogisticsExcludedOutputBuildingId,
 } from '../components/mybases/utils/buildingSectionUtils';
-import {
-    DRONE_MERGER_3_TO_1_BUILDING_ID,
-    ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
-    ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
-    PACKAGE_DISPATCHER_BUILDING_ID,
-    PACKAGE_RECEIVER_BUILDING_ID,
-} from '../constants/buildingIds';
 import { buildActivePlanOccupancy } from '../components/mybases/utils/activePlanOccupancy';
 import { calculateSharedInputShortages } from '../components/mybases/utils/sharedInputShortages';
 import {
@@ -50,8 +42,6 @@ import {
     sanitizeRecipeSelectionsForInputItems,
 } from '../utils/productionPlanInputs';
 import type { LinkedOutputStatus } from '../utils/productionPlanInputs';
-import type { CorporationWithStats } from '../components/corporations/types';
-import type { CorporationUsage, ItemsHelperLookups } from '../components/items/types';
 import type {
     BaseDetailStats,
     BuildingSectionBuilding,
@@ -75,278 +65,12 @@ export const registerSubscriptions = (registrar: UkladRegistrar<UkladContracts>)
 //============================================================
 // Root subscriptions
 //============================================================
-registrar.regRootSub(SUB_IDS.ITEMS_LIST, stateKeys.itemsList);
-registrar.regRootSub(SUB_IDS.ITEMS_BY_ID_MAP, stateKeys.itemsById);
-registrar.regRootSub(SUB_IDS.ITEMS_SELECTED_CATEGORY, stateKeys.itemsSelectedCategory);
-registrar.regRootSub(SUB_IDS.ITEMS_SELECTED_BUILDING, stateKeys.itemsSelectedBuilding);
-registrar.regRootSub(SUB_IDS.ITEMS_SEARCH_TERM, stateKeys.itemsSearchTerm);
-registrar.regRootSub(SUB_IDS.ITEMS_CATEGORIES, stateKeys.itemsCategories);
-registrar.regRootSub(SUB_IDS.BUILDINGS_LIST, stateKeys.buildingsList);
-registrar.regRootSub(SUB_IDS.CORPORATIONS_LIST, stateKeys.corporationsList);
-registrar.regRootSub(SUB_IDS.PLANNER_SELECTED_ITEM_ID, stateKeys.plannerSelectedItemId);
-registrar.regRootSub(SUB_IDS.PLANNER_SELECTED_CORPORATION_LEVEL, stateKeys.plannerSelectedCorporationLevel);
-registrar.regRootSub(SUB_IDS.PLANNER_RECIPE_SELECTIONS, stateKeys.plannerRecipeSelections);
-registrar.regRootSub(SUB_IDS.PINNED_RECIPE_SELECTIONS, stateKeys.pinnedRecipeSelections);
-registrar.regRootSub(SUB_IDS.RECIPE_ALTERNATIVE_PRESETS, stateKeys.recipeAlternativePresets);
-registrar.regRootSub(SUB_IDS.PLANNER_TARGET_AMOUNT, stateKeys.plannerTargetAmount);
 registrar.regRootSub(SUB_IDS.BASES_LIST, stateKeys.basesList);
 registrar.regRootSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS, stateKeys.basesCardCollapsedSections);
 registrar.regRootSub(SUB_IDS.BASES_SELECTED_BASE_ID, stateKeys.basesSelectedBaseId);
 registrar.regRootSub(SUB_IDS.BASES_SELECTED_DETAIL_TAB, stateKeys.basesSelectedDetailTab);
 registrar.regRootSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, stateKeys.productionPlanModalState);
 registrar.regRootSub(SUB_IDS.ENERGY_GROUPS_LIST, stateKeys.energyGroups);
-
-//============================================================
-// Items, buildings, corporations subscriptions
-//============================================================
-registrar.regSub(SUB_IDS.BUILDINGS_BY_ID_MAP, () => [[SUB_IDS.BUILDINGS_LIST]], ([buildings]: [DbBuilding[]]) => {
-        const byId: BuildingsByIdMap = {};
-        for (const building of buildings) {
-            byId[building.id] = building;
-        }
-        return byId;
-    });
-
-registrar.regSub(SUB_IDS.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS, () => [[SUB_IDS.BUILDINGS_LIST]], ([buildings]: [DbBuilding[]]) => {
-        const buildingNames = new Set<string>();
-        buildingNames.add('all'); // Add 'all' option
-        buildings.forEach(building => {
-            // Only include production type buildings
-            if (building.type === 'production') {
-                buildingNames.add(building.name);
-            }
-        });
-        return Array.from(buildingNames).sort();
-    });
-
-registrar.regSub(SUB_IDS.ITEMS_FILTERED_LIST, () => [[SUB_IDS.ITEMS_SELECTED_CATEGORY], [SUB_IDS.ITEMS_SELECTED_BUILDING], [SUB_IDS.ITEMS_SEARCH_TERM], [SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]], ([category, selectedBuilding, searchTerm, items, buildings]: [string, string, string, Item[], DbBuilding[]]) => {
-        let filtered = category === 'all'
-            ? items
-            : items.filter((item: Item) => item.type === category);
-
-        // Filter by building
-        if (selectedBuilding !== 'all') {
-            const itemsProducedByBuilding = new Set<string>();
-            buildings.forEach((building: DbBuilding) => {
-                if (building.name === selectedBuilding) {
-                    building.recipes?.forEach(recipe => {
-                        itemsProducedByBuilding.add(recipe.output.id);
-                    });
-                }
-            });
-            filtered = filtered.filter((item: Item) =>
-                itemsProducedByBuilding.has(item.id)
-            );
-        }
-
-        if (searchTerm) {
-            const searchLower = searchTerm.toLowerCase();
-            filtered = filtered.filter((item: Item) =>
-                item.name.toLowerCase().includes(searchLower) ||
-                item.id.toLowerCase().includes(searchLower)
-            );
-        }
-
-        // Sort items alphabetically by name
-        return [...filtered].sort((a: Item, b: Item) => a.name.localeCompare(b.name));
-    });
-
-registrar.regSub(SUB_IDS.ITEMS_TABLE_ROWS, () => [[SUB_IDS.ITEMS_FILTERED_LIST], [SUB_IDS.BUILDINGS_LIST], [SUB_IDS.CORPORATIONS_LIST]], ([filteredItems, buildings, corporations]: [Item[], DbBuilding[], Corporation[]]) => {
-        // Build producing buildings map
-        const producingBuildingsMap = new Map<string, Map<string, number>>();
-        for (const building of buildings) {
-            for (const recipe of building.recipes || []) {
-                if (!producingBuildingsMap.has(recipe.output.id)) {
-                    producingBuildingsMap.set(recipe.output.id, new Map<string, number>());
-                }
-                const buildingRates = producingBuildingsMap.get(recipe.output.id)!;
-                const existingRate = buildingRates.get(building.name);
-                // Keep the slowest known rate per building for this output item.
-                if (existingRate === undefined || recipe.output.amount_per_minute < existingRate) {
-                    buildingRates.set(building.name, recipe.output.amount_per_minute);
-                }
-            }
-        }
-
-        // Build corporation usage map
-        const corporationUsageMap = new Map<string, CorporationUsage[]>();
-        for (const corporation of corporations) {
-            for (const level of corporation.levels) {
-                for (const component of level.components) {
-                    if (!corporationUsageMap.has(component.id)) {
-                        corporationUsageMap.set(component.id, []);
-                    }
-                    corporationUsageMap.get(component.id)!.push({
-                        corporation: corporation.name,
-                        level: level.level
-                    });
-                }
-            }
-        }
-
-        // Map filtered items to table data
-        return filteredItems.map(item => ({
-            item,
-            producingBuildings: Array.from((producingBuildingsMap.get(item.id) || new Map<string, number>()).entries())
-                .sort((a, b) => {
-                    if (a[1] !== b[1]) return a[1] - b[1];
-                    return a[0].localeCompare(b[0]);
-                })
-                .map(([buildingName]) => buildingName),
-            corporationUsage: corporationUsageMap.get(item.id) || []
-        }));
-    });
-
-registrar.regSub(SUB_IDS.ITEMS_HELPER_LOOKUPS, () => [[SUB_IDS.CORPORATIONS_LIST]], ([corporations]: [Corporation[]]) => {
-        const corporationNameToId = new Map<string, string>();
-        const buildingCorporationUsage = new Map<string, CorporationUsage[]>();
-
-        for (const corporation of corporations) {
-            corporationNameToId.set(corporation.name, corporation.id);
-
-            for (const level of corporation.levels) {
-                for (const reward of level.rewards) {
-                    if (!buildingCorporationUsage.has(reward.name)) {
-                        buildingCorporationUsage.set(reward.name, []);
-                    }
-                    buildingCorporationUsage.get(reward.name)!.push({
-                        corporation: corporation.name,
-                        level: level.level
-                    });
-                }
-            }
-        }
-
-        return {
-            corporationNameToId,
-            buildingCorporationUsage
-        };
-    });
-
-registrar.regSub(SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, () => [[SUB_IDS.ITEMS_LIST], [SUB_IDS.BUILDINGS_LIST]], ([items, buildings]: [Item[], DbBuilding[]], buildingId: string) => {
-        const building = buildings.find(b => b.id === buildingId);
-        if (!building) return [];
-
-        if (
-            building.id === PACKAGE_RECEIVER_BUILDING_ID
-            || building.id === PACKAGE_DISPATCHER_BUILDING_ID
-            || building.id === ORBITAL_CARGO_LAUNCHER_BUILDING_ID
-            || building.id === ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID
-            || building.type === 'storage'
-            || building.id === DRONE_MERGER_3_TO_1_BUILDING_ID
-        ) {
-            // For package_receiver, output buildings, and drone_merger_3_to_1, all items are available
-            return [...items].sort((a, b) => a.name.localeCompare(b.name));
-        } else {
-            // For other input buildings, get items from recipe outputs
-            const itemIds = new Set<string>();
-            building.recipes?.forEach(recipe => {
-                itemIds.add(recipe.output.id);
-            });
-
-            return [...items]
-                .filter(item => itemIds.has(item.id))
-                .sort((a, b) => a.name.localeCompare(b.name));
-        }
-    });
-
-registrar.regSub(SUB_IDS.ITEMS_RECIPES_BY_INPUT_ITEM_ID, () => [[SUB_IDS.BUILDINGS_LIST]], ([buildings]: [DbBuilding[]], itemId: string) => {
-        if (!itemId) return [];
-
-        const results: { recipe: Recipe; building: DbBuilding }[] = [];
-        for (const building of buildings) {
-            for (const recipe of building.recipes || []) {
-                if (recipe.inputs.some(input => input.id === itemId)) {
-                    results.push({ recipe, building });
-                }
-            }
-        }
-        return results;
-    });
-
-registrar.regSub(SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST, () => [[SUB_IDS.BUILDINGS_LIST], [SUB_IDS.ITEMS_HELPER_LOOKUPS]], ([buildings, helperMaps]: [DbBuilding[], ItemsHelperLookups]) => {
-        const productionBuildings = buildings.filter(building => building.type === 'production');
-
-        const sorted = [...productionBuildings].sort((a, b) => {
-            const usageA = helperMaps.buildingCorporationUsage.get(a.name) || [];
-            const usageB = helperMaps.buildingCorporationUsage.get(b.name) || [];
-
-            const minLevelA = usageA.length > 0 ? Math.min(...usageA.map(u => u.level)) : Infinity;
-            const minLevelB = usageB.length > 0 ? Math.min(...usageB.map(u => u.level)) : Infinity;
-
-            // Buildings with corporation rewards come first
-            if (minLevelA === Infinity && minLevelB !== Infinity) return 1;
-            if (minLevelA !== Infinity && minLevelB === Infinity) return -1;
-
-            // If both have rewards, sort by level, then by name
-            if (minLevelA !== Infinity && minLevelB !== Infinity) {
-                if (minLevelA !== minLevelB) return minLevelA - minLevelB;
-                return a.name.localeCompare(b.name);
-            }
-
-            // If neither has rewards, sort by name
-            return a.name.localeCompare(b.name);
-        });
-
-        // Keep upgraded variants directly after their base building using explicit JSON mapping.
-        const buildingsById = new Map<string, DbBuilding>(sorted.map(building => [building.id, building]));
-        const upgradeTargetIds = new Set<string>();
-        for (const building of sorted) {
-            if (building.upgrade) {
-                upgradeTargetIds.add(building.upgrade);
-            }
-        }
-
-        const result: DbBuilding[] = [];
-        const emittedIds = new Set<string>();
-
-        for (const building of sorted) {
-            if (emittedIds.has(building.id)) continue;
-
-            if (upgradeTargetIds.has(building.id)) {
-                // Delay upgraded entries until their base building is emitted.
-                continue;
-            }
-
-            result.push(building);
-            emittedIds.add(building.id);
-
-            const upgradedBuilding = building.upgrade ? buildingsById.get(building.upgrade) : undefined;
-            if (upgradedBuilding && !emittedIds.has(upgradedBuilding.id)) {
-                result.push(upgradedBuilding);
-                emittedIds.add(upgradedBuilding.id);
-            }
-        }
-
-        // Append any remaining entries (for example targets without a visible base counterpart).
-        for (const building of sorted) {
-            if (!emittedIds.has(building.id)) {
-                result.push(building);
-                emittedIds.add(building.id);
-            }
-        }
-
-        return result;
-    });
-
-registrar.regSub(SUB_IDS.CORPORATIONS_LIST_WITH_STATS, () => [[SUB_IDS.CORPORATIONS_LIST]], ([corporations]: [Corporation[]]) => {
-        return corporations.map(corporation => ({
-            ...corporation,
-            stats: {
-                totalLevels: corporation.levels.length,
-                totalComponents: corporation.levels.reduce((sum, level) => sum + level.components.length, 0),
-                totalCost: corporation.levels.reduce((sum, level) => sum + (level.xp ?? 0), 0)
-            }
-        }));
-    });
-
-registrar.regSub(SUB_IDS.CORPORATIONS_STATS_SUMMARY, () => [[SUB_IDS.CORPORATIONS_LIST_WITH_STATS]], ([corporationsWithStats]: [CorporationWithStats[]]) => {
-        return {
-            totalCorporations: corporationsWithStats.length,
-            totalLevels: corporationsWithStats.reduce((total: number, corp) => total + corp.stats.totalLevels, 0),
-            totalCost: corporationsWithStats.reduce((total: number, corp) => total + corp.stats.totalCost, 0)
-        };
-    });
 
 //============================================================
 // Planner subscriptions
