@@ -5,6 +5,7 @@ import { registerCorporationsModule } from '@/features/corporations/module';
 import { registerEnergyGroupsModule } from '@/features/energy-groups/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerPlannerModule } from '@/features/planner/module';
+import { registerProductionPlansModule } from '@/features/production-plans/module';
 import { registerWebEffects } from '@/platform/web/effects';
 import { registerEvents } from '@/state/events';
 import { registerSubscriptions } from '@/state/subs';
@@ -16,6 +17,7 @@ export function registerWebApplication(runtime: UkladRuntime<AppContracts>): voi
     runtime.registerModule(registerCorporationsModule);
     runtime.registerModule(registerItemsModule);
     runtime.registerModule(registerPlannerModule);
+    runtime.registerModule(registerProductionPlansModule);
     runtime.registerModule(registerBasesModule);
     runtime.registerModule(registerEnergyGroupsModule);
     runtime.registerModule(registerWebEffects);

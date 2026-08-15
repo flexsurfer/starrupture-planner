@@ -31,11 +31,7 @@ import {
     sanitizeRecipeSelectionsForInputItems,
 } from '../utils/productionPlanInputs';
 import { calculateMaxTargetFromInputs } from '../utils/matchInputsCalculation';
-import {
-    clearOutputPlanLinksForProduction,
-    getDefaultOutputCapacityPerMinute,
-    resolveOutputBuilding,
-} from '../utils/planOutputAllocations';
+import { getDefaultOutputCapacityPerMinute, resolveOutputBuilding } from '../utils/planOutputAllocations';
 import {
     ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
     PACKAGE_RECEIVER_BUILDING_ID,
@@ -524,42 +520,6 @@ registrar.regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftState: draft
 //===============================================
 //  PRODUCTION PLAN SECTIONS
 //===============================================
-
-/** Production Plan Section events */
-
-registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_ACTIVATE_SECTION, ({ draftState: draftDb }, baseId: string, sectionId: string) => {
-    const base = getBaseById(draftDb.basesList, baseId);
-    if (!base) return;
-
-    const section = base.productions.find((s: Production) => s.id === sectionId);
-    if (!section) return;
-
-    section.active = true;
-    section.status = 'active';
-
-    return;
-});
-
-registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_DEACTIVATE_SECTION, ({ draftState: draftDb }, baseId: string, sectionId: string) => {
-    const base = getBaseById(draftDb.basesList, baseId);
-    if (base) {
-        const section = base.productions.find((s: Production) => s.id === sectionId);
-        if (section) {
-            section.active = false;
-            section.status = 'inactive';
-            return;
-        }
-    }
-});
-
-registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, ({ draftState: draftDb }, baseId: string, sectionId: string) => {
-    const base = getBaseById(draftDb.basesList, baseId);
-    if (base) {
-        base.productions = base.productions.filter((s: Production) => s.id !== sectionId);
-        clearOutputPlanLinksForProduction(base, sectionId);
-        return;
-    }
-});
 
 registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, ({ draftState: draftDb }, baseId: string, planId: string, flag: 'all' | 'missing') => {
     const base = getBaseById(draftDb.basesList, baseId);
