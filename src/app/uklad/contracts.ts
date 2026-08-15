@@ -1,6 +1,5 @@
 import type { SubscriptionParam, UkladContracts } from '@ukladjs/core/vanilla';
 import type { LinkedInputReference } from '@/components/mybases/types';
-import type { BuildingSectionType } from '@/components/mybases/types';
 import type {
     AppState,
     AppVersionedGameData,
@@ -17,6 +16,20 @@ import type {
 } from '@/state/db';
 import type { ItemTableData, ItemsHelperLookups } from '@/components/items/types';
 import type { CorporationWithStats } from '@/components/corporations/types';
+import type {
+    BaseDefenseBuilding,
+    BaseDetailStats,
+    BaseInputItem,
+    BaseLogisticsViewModel,
+    BaseOutputItem,
+    BuildingCoverageRow,
+    BuildingSectionBuilding,
+    BuildingSectionStats,
+    BuildingSectionType,
+    MaterialBalanceRow,
+    MyBasesStats,
+    PlanSummaryRow,
+} from '@/components/mybases/types';
 import type {
     CorporationLevelInfo,
     PlannerDetailedStats,
@@ -218,6 +231,22 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.BASES_SELECTED_BASE]: { params: []; result: AppState['basesList'][number] | null };
         [appIds.subscriptions.BASES_BASE_BY_ID]: { params: [baseId: string]; result: AppState['basesList'][number] | null };
         [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID]: { params: [baseId: string]; result: Record<BaseCardSectionKey, boolean> };
+        [appIds.subscriptions.BASES_SELECTED_BASE_DETAIL_STATS]: { params: []; result: BaseDetailStats | null };
+        [appIds.subscriptions.BASES_CORE_LEVELS]: { params: []; result: { level: number; heatCapacity: number }[] };
+        [appIds.subscriptions.BASES_DETAIL_STATS_BY_BASE_ID]: { params: [baseId: string]; result: BaseDetailStats | null };
+        [appIds.subscriptions.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID]: { params: [baseId: string]; result: BaseLogisticsViewModel | null };
+        [appIds.subscriptions.BASES_LOGISTICS_VIEW_MODELS]: { params: []; result: BaseLogisticsViewModel[] };
+        [appIds.subscriptions.BASES_ALL_DETAIL_STATS]: { params: []; result: Record<string, BaseDetailStats> };
+        [appIds.subscriptions.BASES_INPUT_ITEMS_BY_BASE_ID]: { params: [baseId: string]; result: BaseInputItem[] };
+        [appIds.subscriptions.BASES_OUTPUT_ITEMS_BY_BASE_ID]: { params: [baseId: string]; result: BaseOutputItem[] };
+        [appIds.subscriptions.BASES_DEFENSE_BUILDINGS_BY_BASE_ID]: { params: [baseId: string]; result: BaseDefenseBuilding[] };
+        [appIds.subscriptions.BASES_BUILDING_SECTION_BUILDINGS]: { params: [baseId: string, sectionType: BuildingSectionType]; result: BuildingSectionBuilding[] };
+        [appIds.subscriptions.BASES_BUILDING_SECTION_STATS]: { params: [baseId: string, sectionType: string]; result: BuildingSectionStats };
+        [appIds.subscriptions.BASES_AVAILABLE_BUILDINGS_FOR_SECTION]: { params: [sectionType: BuildingSectionType]; result: Building[] };
+        [appIds.subscriptions.BASES_STATS_SUMMARY]: { params: []; result: MyBasesStats };
+        [appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS]: { params: []; result: PlanSummaryRow[] };
+        [appIds.subscriptions.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS]: { params: []; result: MaterialBalanceRow[] };
+        [appIds.subscriptions.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS]: { params: []; result: BuildingCoverageRow[] };
         [appIds.subscriptions.ENERGY_GROUPS_LIST]: { params: []; result: AppState['energyGroups'] };
         [appIds.subscriptions.ENERGY_GROUPS_BY_ID_MAP]: { params: []; result: Record<string, AppState['energyGroups'][number]> };
         [appIds.subscriptions.PRODUCTION_PLAN_SECTION_IDS]: { params: []; result: string[] };

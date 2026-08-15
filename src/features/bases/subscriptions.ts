@@ -3,6 +3,7 @@ import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { BaseCardCollapsedSections, BasesById } from '@/state/db';
 import { resolveBaseCardCollapsedSections } from '@/state/base-card-sections';
+import { registerBasesDerivedSubscriptions } from './derived-subscriptions';
 
 export const registerBasesSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regRootSub(appIds.subscriptions.BASES_LIST, stateKeys.basesList);
@@ -45,4 +46,6 @@ export const registerBasesSubscriptions: UkladModule<UkladRegistrar<AppContracts
             )
         ),
     );
+
+    registerBasesDerivedSubscriptions(registrar);
 };
