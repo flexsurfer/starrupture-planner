@@ -2,7 +2,7 @@ import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
 import type { PlanSummaryRow, BuildingCoverageRow } from '@/features/bases/types';
-import { BuildingImage } from '../../ui';
+import { BuildingImage } from '@/shared/ui';
 import { CoverageTableHeader } from './CoverageTableHeader';
 import { BuildingCountControl } from './BuildingCountControl';
 

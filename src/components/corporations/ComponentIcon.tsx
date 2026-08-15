@@ -1,5 +1,5 @@
 import type { CorporationComponent, Item } from "@/app/uklad/model";
-import { ItemImage } from "../ui";
+import { ItemImage } from '@/shared/ui';
 
 type ComponentIconProps = {
   component: CorporationComponent;

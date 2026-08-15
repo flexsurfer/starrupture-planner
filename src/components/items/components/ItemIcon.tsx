@@ -1,4 +1,4 @@
-import { ItemImage } from "../../ui";
+import { ItemImage } from '@/shared/ui';
 import type { Item } from '@/features/items/types';
 
 interface ItemIconProps {

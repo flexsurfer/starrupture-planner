@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import { useSubscription } from '@/app/uklad/bindings';
 import { RecipeCard } from './RecipeCard';
-import { BuildingImage } from './BuildingImage';
+import { BuildingImage } from '@/shared/ui';
 
 interface UsedInRecipesProps {
   itemId: string;

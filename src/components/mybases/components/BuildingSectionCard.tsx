@@ -5,7 +5,7 @@ import type { Base, BaseBuilding, Building, Item } from '@/app/uklad/model';
 import type { BuildingSectionBuilding, LinkableOutputItem } from '@/features/bases/types';
 import { isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
 import { sanitizeBuildingCount } from '@/features/bases/building-counts';
-import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';
+import { BuildingImage, ClippedSelect, ItemImage } from '@/shared/ui';
 import { SelectItemModal } from '../modals';
 import { BuildingCountControl } from './BuildingCountControl';
 import { resolveInputBuilding, resolveLinkedOutput } from '../../../utils/productionPlanInputs';

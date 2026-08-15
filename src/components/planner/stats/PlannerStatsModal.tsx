@@ -1,8 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
-import { BuildingImage } from '../../ui/BuildingImage';
-import { ItemImage } from '../../ui/ItemImage';
+import { BuildingImage, ItemImage } from '@/shared/ui';
 import { getCategoryBadgeClass, getCategoryDisplayName } from '../../items';
 
 interface PlannerStatsModalProps {

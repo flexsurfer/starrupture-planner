@@ -2,7 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { Building as DbBuilding } from '@/app/uklad/model';
-import { ItemImage } from '../../ui';
+import { ItemImage } from '@/shared/ui';
 import { isRawExtractor } from '@/features/bases/building-section';
 
 interface SelectItemModalProps {

@@ -2,8 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useMemo, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { LinkableOutputItem } from '@/features/bases/types';
-import { BuildingImage } from '../../ui/BuildingImage';
-import { ItemImage } from '../../ui/ItemImage';
+import { BuildingImage, ItemImage } from '@/shared/ui';
 
 interface LinkOutputModalProps {
     isOpen: boolean;

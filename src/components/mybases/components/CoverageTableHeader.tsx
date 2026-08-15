@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PlanSummaryRow } from '@/features/bases/types';
-import { ItemImage } from '../../ui';
+import { ItemImage } from '@/shared/ui';
 
 interface CoverageTableHeaderProps {
   plans: PlanSummaryRow[];

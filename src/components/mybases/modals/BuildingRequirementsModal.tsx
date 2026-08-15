@@ -1,8 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import type { BuildingRequirement, InputRequirement } from '@/features/bases/types';
-import { BuildingImage } from '../../ui/BuildingImage';
-import { ItemImage } from '../../ui/ItemImage';
+import { BuildingImage, ItemImage } from '@/shared/ui';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 interface BuildingRequirementsModalProps {

@@ -2,8 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { AddBuildingRequest } from '@/features/bases/types';
-import { ItemImage } from '../../../../ui/ItemImage';
-import { BuildingImage } from '../../../../ui/BuildingImage';
+import { ItemImage, BuildingImage } from '@/shared/ui';
 import { AddBuildingCardModal } from '../../AddBuildingCardModal';
 
 export const InputsSelector: React.FC = () => {

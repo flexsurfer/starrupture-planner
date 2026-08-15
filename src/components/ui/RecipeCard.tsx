@@ -1,6 +1,6 @@
 import { appIds } from '@/app/uklad/catalog';
 import type { Recipe, Item } from "@/app/uklad/model";
-import { ItemImage } from "./ItemImage";
+import { ItemImage } from '@/shared/ui';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 interface RecipeItemIconProps {

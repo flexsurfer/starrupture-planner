@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { Building, Item } from '@/app/uklad/model';
 import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem, LinkedInputReference } from '@/features/bases/types';
-import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';
+import { BuildingImage, ClippedSelect, ItemImage } from '@/shared/ui';
 import { isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
 import { MAX_BULK_BUILDING_COUNT, sanitizeBulkBuildingCount } from '@/features/bases/building-counts';
 import {

@@ -2,7 +2,8 @@ import { appIds } from '@/app/uklad/catalog';
 import { useState } from "react";
 import { useSubscription } from "@/app/uklad/bindings";
 import type { Building } from "@/app/uklad/model";
-import { BuildingImage, RecipeCard } from "./ui";
+import { BuildingImage } from '@/shared/ui';
+import { RecipeCard } from "./ui";
 import { useItemsData, CorporationUsageBadge } from "./items";
 
 const RecipesPage = () => {

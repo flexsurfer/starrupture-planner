@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Item } from '@/app/uklad/model';
 import { RecipeCard } from './RecipeCard';
-import { BuildingImage } from './BuildingImage';
+import { BuildingImage } from '@/shared/ui';
 import { UsedInRecipes } from './UsedInRecipes';
 import type { ItemRecipe } from '../items';
 

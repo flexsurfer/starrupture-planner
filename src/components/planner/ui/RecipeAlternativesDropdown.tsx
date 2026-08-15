@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Item, RecipeAlternativePreset } from '@/app/uklad/model';
 import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
-import { ItemImage, BuildingImage } from '../../ui';
+import { ItemImage, BuildingImage } from '@/shared/ui';
 
 const EMPTY_ITEMS_BY_ID: Record<string, Item> = {};
 const EMPTY_PINNED_SELECTIONS: Record<string, string> = {};

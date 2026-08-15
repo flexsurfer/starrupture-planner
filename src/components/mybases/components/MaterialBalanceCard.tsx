@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PlanSummaryRow, MaterialBalanceRow } from '@/features/bases/types';
-import { ItemImage } from '../../ui';
+import { ItemImage } from '@/shared/ui';
 import { CoverageTableHeader } from './CoverageTableHeader';
 
 function formatRate(value: number): string {

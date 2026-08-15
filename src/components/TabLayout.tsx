@@ -5,7 +5,13 @@ import RecipesPage from './RecipesPage';
 import CorporationsPage from './CorporationsPage';
 import MyBasesPage from './MyBasesPage';
 import PlannerPage from './PlannerPage';
-import { ThemeToggle, GitHubButton, DiscordButton, VersionSelector, ConfirmationDialog } from './ui';
+import {
+  ConfirmationDialog,
+  DiscordButton,
+  GitHubButton,
+  ThemeToggle,
+  VersionSelector,
+} from '@/features/app-shell/ui';
 import { useNavigationSync } from '../hooks/useNavigationSync';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';

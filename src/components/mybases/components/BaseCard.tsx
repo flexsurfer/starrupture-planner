@@ -2,7 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Base, BaseCardSectionKey, Item, Production } from '@/app/uklad/model';
-import { ItemImage, BuildingImage } from '../../ui';
+import { ItemImage, BuildingImage } from '@/shared/ui';
 import { EnergyGroupSelector } from './EnergyGroupSelector';
 import type {
   AddBuildingRequest,
