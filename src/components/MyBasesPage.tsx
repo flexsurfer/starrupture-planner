@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
+import { useAppRuntime, useAppSubscription, useSubscription } from '@/state/runtime';
+import { appIds } from '@/app/uklad/catalog';
 import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { Base, EnergyGroup } from '@/state/db';
+import type { Base } from '@/state/db';
 import type { BaseDetailTab } from './mybases';
 import {
   EmptyState,
@@ -17,8 +17,9 @@ import {
 type MyBasesView = 'bases' | 'logistics';
 
 const MyBasesPage = () => {
-  const bases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]);
-  const energyGroups = useSubscription<EnergyGroup[]>([SUB_IDS.ENERGY_GROUPS_LIST]);
+  const runtime = useAppRuntime();
+  const bases = useAppSubscription([appIds.subscriptions.BASES_LIST]);
+  const energyGroups = useAppSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
   const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
   const [activeView, setActiveView] = useState<MyBasesView>('bases');
 
@@ -28,21 +29,21 @@ const MyBasesPage = () => {
 
   // Handlers
   const handleCreateBase = useCallback((name: string) => {
-    dispatch([EVENT_IDS.BASES_CREATE_BASE, name]);
-  }, []);
+    runtime.dispatch([appIds.events.BASES_CREATE_BASE, name]);
+  }, [runtime]);
 
   const handleOpenBase = useCallback((baseId: string, tab: BaseDetailTab = 'base') => {
-    dispatch([EVENT_IDS.BASES_OPEN_BASE, baseId, tab]);
-  }, []);
+    runtime.dispatch([appIds.events.BASES_OPEN_BASE, baseId, tab]);
+  }, [runtime]);
 
   const handleDeleteBase = useCallback((baseId: string) => {
     const base = bases.find(b => b.id === baseId);
     if (base) {
-      dispatch([EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG,
+      runtime.dispatch([appIds.events.UI_SHOW_CONFIRMATION_DIALOG,
         'Delete Base',
       `Are you sure you want to delete ${base.name}? This action cannot be undone.`,
       () => {
-        dispatch([EVENT_IDS.BASES_DELETE_BASE, baseId]);
+        runtime.dispatch([appIds.events.BASES_DELETE_BASE, baseId]);
       },
       {
         confirmLabel: 'Delete',
@@ -50,7 +51,7 @@ const MyBasesPage = () => {
       }
       ]);
     }
-  }, [bases]);
+  }, [bases, runtime]);
 
   // Render base detail view
   if (selectedBase) {

@@ -3,8 +3,9 @@ import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { memoryStorageAdapter, persist } from '@ukladjs/persist';
 import { describe, expect, it } from 'vitest';
 import type { AppContracts } from '@/app/uklad/contracts';
+import { appIds } from '@/app/uklad/catalog';
+import { registerBasesModule } from '@/features/bases/module';
 import { initialAppState, type AppState } from './db';
-import { EVENT_IDS } from './event-ids';
 import { registerEvents } from './events';
 
 const PERSIST_PREFIX = 'events-persistence-test';
@@ -26,6 +27,7 @@ function createState(): AppState {
 
 function createRuntime(state = createState()) {
     const runtime = createUkladRuntime<AppContracts>({ initialState: state });
+    runtime.registerModule(registerBasesModule);
     runtime.registerModule(registerEvents);
     return runtime;
 }
@@ -42,7 +44,7 @@ describe('base persistence', () => {
         persistence.hydrate();
 
         const harness = createUkladTestHarness(runtime);
-        harness.dispatchSync([EVENT_IDS.BASES_SET_ENERGY_GROUP, 'base-1', null]);
+        harness.dispatchSync([appIds.events.BASES_SET_ENERGY_GROUP, 'base-1', null]);
         await harness.flush();
 
         expect(harness.getState().basesList[0]).not.toHaveProperty('energyGroupId');

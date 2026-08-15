@@ -2,13 +2,10 @@ import type { UkladRegistrar } from '@ukladjs/core/vanilla';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { EVENT_IDS } from './event-ids';
 import type {
-    BaseDetailTab,
     Building,
     AppState,
     Base,
     BaseBuilding,
-    BaseCardSectionKey,
-    EnergyGroup,
     Production,
     PlanRequiredBuilding,
     CorporationLevelSelection,
@@ -43,7 +40,6 @@ import {
     ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
     PACKAGE_RECEIVER_BUILDING_ID,
 } from '../constants/buildingIds';
-import { getDefaultBaseCardSectionCollapsed } from './base-card-sections';
 
 export const registerEvents = (registrar: UkladRegistrar<AppContracts>) => {
 
@@ -58,17 +54,6 @@ function getBaseById(bases: Base[], baseId: string): Base | undefined {
 
 function createEntityId(prefix: string): string {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-}
-
-function normalizeEnergyGroupName(name: string): string {
-    return name.trim().replace(/\s+/g, ' ');
-}
-
-function findEnergyGroupByName(groups: EnergyGroup[], name: string): EnergyGroup | undefined {
-    const normalizedName = normalizeEnergyGroupName(name).toLowerCase();
-    if (!normalizedName) return undefined;
-
-    return groups.find((group) => normalizeEnergyGroupName(group.name).toLowerCase() === normalizedName);
 }
 
 /** Recalculates and sets targetAmount when matchInputs is enabled. */
@@ -149,85 +134,6 @@ function buildAvailableBuildingCountByType(base: Base, excludePlanId?: string | 
 //===============================================
 // Base management
 //===============================================
-
-registrar.regEvent(EVENT_IDS.BASES_CREATE_BASE, ({ draftState: draftDb }, name: string) => {
-    const baseId = createEntityId('base');
-    
-    const newBase: Base = {
-        id: baseId,
-        name,
-        buildings: [],
-        productions: [],
-    };
-    
-    draftDb.basesList.push(newBase);
-    draftDb.basesSelectedBaseId = baseId;
-    draftDb.basesSelectedDetailTab = 'base';
-    
-    return;
-});
-
-registrar.regEvent(EVENT_IDS.BASES_UPDATE_BASE_NAME, ({ draftState: draftDb }, baseId: string, newName: string) => {
-    const base = getBaseById(draftDb.basesList, baseId);
-    if (base) {
-        base.name = newName;
-        return;
-    }
-});
-
-registrar.regEvent(EVENT_IDS.BASES_SET_CORE_LEVEL, ({ draftState: draftDb }, level: number) => {
-    const baseId = draftDb.basesSelectedBaseId;
-    if (!baseId) return;
-    
-    const base = getBaseById(draftDb.basesList, baseId);
-    if (base) {
-        base.coreLevel = level;
-        return;
-    }
-});
-
-registrar.regEvent(EVENT_IDS.BASES_DELETE_BASE, ({ draftState: draftDb }, baseId: string) => {
-    draftDb.basesList = draftDb.basesList.filter((b: Base) => b.id !== baseId);
-    if (!draftDb.basesCardCollapsedSections) {
-        draftDb.basesCardCollapsedSections = {};
-    }
-    delete draftDb.basesCardCollapsedSections[baseId];
-    if (draftDb.basesSelectedBaseId === baseId) {
-        draftDb.basesSelectedBaseId = null;
-        draftDb.basesSelectedDetailTab = 'base';
-    }
-    return;
-});
-
-registrar.regEvent(EVENT_IDS.BASES_OPEN_BASE, ({ draftState: draftDb }, baseId: string, tab: BaseDetailTab = 'base') => {
-    draftDb.basesSelectedBaseId = baseId;
-    draftDb.basesSelectedDetailTab = tab;
-});
-
-registrar.regEvent(EVENT_IDS.BASES_SET_SELECTED_BASE, ({ draftState: draftDb }, baseId: string | null) => {
-    draftDb.basesSelectedBaseId = baseId;
-    draftDb.basesSelectedDetailTab = 'base';
-});
-
-registrar.regEvent(EVENT_IDS.BASES_SET_DETAIL_TAB, ({ draftState: draftDb }, tab: BaseDetailTab) => {
-    draftDb.basesSelectedDetailTab = tab;
-});
-
-registrar.regEvent(EVENT_IDS.BASES_TOGGLE_CARD_SECTION_COLLAPSED, ({ draftState: draftDb }, baseId: string, sectionKey: BaseCardSectionKey) => {
-    const base = getBaseById(draftDb.basesList, baseId);
-    if (!base) return;
-
-    if (!draftDb.basesCardCollapsedSections) {
-        draftDb.basesCardCollapsedSections = {};
-    }
-
-    const baseSections = draftDb.basesCardCollapsedSections[baseId] || {};
-    const currentValue = baseSections[sectionKey] ?? getDefaultBaseCardSectionCollapsed(sectionKey);
-    draftDb.basesCardCollapsedSections[baseId] = {
-        ...baseSections,
-        [sectionKey]: !currentValue,
-    };
-});
 
 interface CreateBaseBuildingOptions {
     buildingTypeId: string;
@@ -612,87 +518,6 @@ registrar.regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftState: draft
 
     output.selectedItemId = sourcePlan.selectedItemId;
 
-    return;
-});
-
-//===============================================
-// Energy Groups
-//===============================================
-
-registrar.regEvent(EVENT_IDS.ENERGY_GROUP_CREATE, ({ draftState: draftDb }, rawName: string, assignBaseId?: string) => {
-    const normalizedName = normalizeEnergyGroupName(rawName);
-    if (!normalizedName) return;
-
-    const existingGroup = findEnergyGroupByName(draftDb.energyGroups, normalizedName);
-    const targetGroup = existingGroup ?? {
-        id: createEntityId('eg'),
-        name: normalizedName,
-    };
-
-    if (!existingGroup) {
-        draftDb.energyGroups.push(targetGroup);
-    }
-
-    if (!assignBaseId) {
-        return;
-    }
-
-    const base = getBaseById(draftDb.basesList, assignBaseId);
-    if (!base) {
-        return;
-    }
-
-    if (base.energyGroupId !== targetGroup.id) {
-        base.energyGroupId = targetGroup.id;
-    }
-});
-
-registrar.regEvent(EVENT_IDS.ENERGY_GROUP_DELETE, ({ draftState: draftDb }, groupId: string) => {
-    const hasGroup = draftDb.energyGroups.some((group: EnergyGroup) => group.id === groupId);
-    if (!hasGroup) return;
-
-    draftDb.energyGroups = draftDb.energyGroups.filter((g: EnergyGroup) => g.id !== groupId);
-
-    draftDb.basesList.forEach((base: Base) => {
-        if (base.energyGroupId === groupId) {
-            delete base.energyGroupId;
-        }
-    });
-
-    return;
-});
-
-registrar.regEvent(EVENT_IDS.ENERGY_GROUP_RENAME, ({ draftState: draftDb }, groupId: string, rawName: string) => {
-    const group = draftDb.energyGroups.find((g: EnergyGroup) => g.id === groupId);
-    if (!group) return;
-
-    const normalizedName = normalizeEnergyGroupName(rawName);
-    if (!normalizedName) return;
-
-    const duplicateByName = draftDb.energyGroups.find((candidate: EnergyGroup) => {
-        return candidate.id !== groupId && normalizeEnergyGroupName(candidate.name).toLowerCase() === normalizedName.toLowerCase();
-    });
-    if (duplicateByName) return;
-
-    if (group.name === normalizedName) return;
-    group.name = normalizedName;
-    return;
-});
-
-registrar.regEvent(EVENT_IDS.BASES_SET_ENERGY_GROUP, ({ draftState: draftDb }, baseId: string, groupId: string | null) => {
-    const base = getBaseById(draftDb.basesList, baseId);
-    if (!base) return;
-
-    if (!groupId) {
-        if (!base.energyGroupId) return;
-        delete base.energyGroupId;
-        return;
-    }
-
-    const groupExists = draftDb.energyGroups.some((group: EnergyGroup) => group.id === groupId);
-    if (!groupExists || base.energyGroupId === groupId) return;
-
-    base.energyGroupId = groupId;
     return;
 });
 

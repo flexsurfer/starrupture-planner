@@ -1,6 +1,8 @@
 import type { UkladContracts, UkladRegistrar, UkladRuntime } from '@ukladjs/core/vanilla';
 import { registerAppShellModule } from '@/features/app-shell/module';
+import { registerBasesModule } from '@/features/bases/module';
 import { registerCorporationsModule } from '@/features/corporations/module';
+import { registerEnergyGroupsModule } from '@/features/energy-groups/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerPlannerModule } from '@/features/planner/module';
 import { registerWebEffects } from '@/platform/web/effects';
@@ -14,6 +16,8 @@ export function registerWebApplication(runtime: UkladRuntime<AppContracts>): voi
     runtime.registerModule(registerCorporationsModule);
     runtime.registerModule(registerItemsModule);
     runtime.registerModule(registerPlannerModule);
+    runtime.registerModule(registerBasesModule);
+    runtime.registerModule(registerEnergyGroupsModule);
     runtime.registerModule(registerWebEffects);
 
     runtime.registerModule(registerEvents);

@@ -1,6 +1,8 @@
 import { DATA_VERSIONS, DEFAULT_DATA_VERSION, type AppState } from '@/state/db';
 import { createItemsFeatureState } from '@/features/items/state';
 import { createPlannerFeatureState } from '@/features/planner/state';
+import { createBasesFeatureState } from '@/features/bases/state';
+import { createEnergyGroupsFeatureState } from '@/features/energy-groups/state';
 
 /** Creates state owned by exactly one Uklad runtime. */
 export function createAppState(): AppState {
@@ -28,11 +30,8 @@ export function createAppState(): AppState {
             onCancel: undefined,
         },
         ...createPlannerFeatureState(),
-        basesList: [],
-        energyGroups: [],
-        basesCardCollapsedSections: {},
-        basesSelectedBaseId: null,
-        basesSelectedDetailTab: 'base',
+        ...createBasesFeatureState(),
+        ...createEnergyGroupsFeatureState(),
         productionPlanModalState: {
             isOpen: false,
             baseId: null,

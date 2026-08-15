@@ -65,12 +65,7 @@ export const registerSubscriptions = (registrar: UkladRegistrar<UkladContracts>)
 //============================================================
 // Root subscriptions
 //============================================================
-registrar.regRootSub(SUB_IDS.BASES_LIST, stateKeys.basesList);
-registrar.regRootSub(SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS, stateKeys.basesCardCollapsedSections);
-registrar.regRootSub(SUB_IDS.BASES_SELECTED_BASE_ID, stateKeys.basesSelectedBaseId);
-registrar.regRootSub(SUB_IDS.BASES_SELECTED_DETAIL_TAB, stateKeys.basesSelectedDetailTab);
 registrar.regRootSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, stateKeys.productionPlanModalState);
-registrar.regRootSub(SUB_IDS.ENERGY_GROUPS_LIST, stateKeys.energyGroups);
 
 //============================================================
 // Planner subscriptions

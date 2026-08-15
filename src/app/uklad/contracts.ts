@@ -177,5 +177,10 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.PINNED_RECIPE_SELECTIONS]: { params: []; result: AppState['pinnedRecipeSelections'] };
         [appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]: { params: []; result: AppState['recipeAlternativePresets'] };
         [appIds.subscriptions.PLANNER_TARGET_AMOUNT]: { params: []; result: number };
+        [appIds.subscriptions.BASES_LIST]: { params: []; result: AppState['basesList'] };
+        [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS]: { params: []; result: AppState['basesCardCollapsedSections'] };
+        [appIds.subscriptions.BASES_SELECTED_BASE_ID]: { params: []; result: AppState['basesSelectedBaseId'] };
+        [appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]: { params: []; result: AppState['basesSelectedDetailTab'] };
+        [appIds.subscriptions.ENERGY_GROUPS_LIST]: { params: []; result: AppState['energyGroups'] };
     };
 }
