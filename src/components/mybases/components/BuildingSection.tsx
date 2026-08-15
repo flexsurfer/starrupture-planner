@@ -1,8 +1,8 @@
+import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import { BuildingSectionCard } from './BuildingSectionCard';
-import type { BuildingSectionBuilding, BuildingSectionType, BuildingSectionStats } from '../types';
+import type { BuildingSectionType } from '../types';
 
 interface BuildingSectionProps {
   title: string;
@@ -16,8 +16,8 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({title, descript
   
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const sectionBuildings = useSubscription<BuildingSectionBuilding[]>([SUB_IDS.BASES_BUILDING_SECTION_BUILDINGS, baseId, sectionType]);
-  const stats = useSubscription<BuildingSectionStats>([SUB_IDS.BASES_BUILDING_SECTION_STATS, baseId, sectionType]);
+  const sectionBuildings = useSubscription([appIds.subscriptions.BASES_BUILDING_SECTION_BUILDINGS, baseId, sectionType]);
+  const stats = useSubscription([appIds.subscriptions.BASES_BUILDING_SECTION_STATS, baseId, sectionType]);
 
   const isEmpty = sectionBuildings.length === 0;
 

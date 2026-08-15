@@ -1,23 +1,13 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useState, useCallback, useRef } from 'react';
-import { useSubscription, dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { Item, CorporationLevelSelection } from '@/state/db';
+import { useSubscription } from '@/app/uklad/bindings';
+import type { CorporationLevelSelection } from '@/state/db';
 import { CorporationLevelSelector } from '../../../../ui/CorporationLevelSelector';
-import type { CorporationLevelInfo } from '../../../../planner';
 import { useDebouncedCallback } from '../../../../../hooks/useDebouncedCallback';
 import { RecipeAlternativesSelector } from './RecipeAlternativesSelector';
 
 const DEBOUNCE_DELAY = 300;
-
-interface FormControlsInitialValues {
-    defaultName: string;
-    defaultSelectedCorporationLevel: CorporationLevelSelection | null;
-    currentSelectedItemId: string;
-    currentTargetAmount: number;
-    selectedItemName: string;
-    matchInputs: boolean;
-}
 
 interface TargetAmountInputProps {
     currentTargetAmount: number;
@@ -29,7 +19,7 @@ const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ currentTargetAmou
     const inputValue = disabled ? currentTargetAmount.toString() : localTargetAmountInput;
 
     const debouncedSetTargetAmount = useDebouncedCallback(
-        (amount: number) => dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, amount]),
+        (amount: number) => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, amount]),
         DEBOUNCE_DELAY
     );
 
@@ -62,9 +52,9 @@ const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ currentTargetAmou
 };
 
 export const FormControls: React.FC = () => {
-    const initialValues = useSubscription<FormControlsInitialValues>([SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES]);
-    const selectableItems = useSubscription<Item[]>([SUB_IDS.PLANNER_SELECTABLE_ITEMS]);
-    const corporationLevels = useSubscription<CorporationLevelInfo[]>([SUB_IDS.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS]);
+    const initialValues = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALUES]);
+    const selectableItems = useSubscription([appIds.subscriptions.PLANNER_SELECTABLE_ITEMS]);
+    const corporationLevels = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS]);
 
     const {
         defaultName,
@@ -86,7 +76,7 @@ export const FormControls: React.FC = () => {
 
     // Debounced event dispatchers
     const debouncedSetName = useDebouncedCallback(
-        (value: string) => dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_NAME, value]),
+        (value: string) => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_NAME, value]),
         DEBOUNCE_DELAY
     );
 
@@ -98,7 +88,7 @@ export const FormControls: React.FC = () => {
     }, [debouncedSetName]);
 
     const handleItemSelect = useCallback((itemId: string) => {
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, itemId]);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, itemId]);
 
         // If defaultName was empty and user didn't manually change the name, set name to "${itemName} Production"
         const initialDefaultName = initialDefaultNameRef.current;
@@ -114,11 +104,11 @@ export const FormControls: React.FC = () => {
 
     const handleCorporationLevelChange = useCallback((level: CorporationLevelSelection | null) => {
         setLocalCorporationLevel(level);
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, level]);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, level]);
     }, []);
 
     const handleMatchInputsToggle = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, e.target.checked]);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, e.target.checked]);
     }, []);
 
     return (

@@ -1,8 +1,8 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useMemo, useState } from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { EnergyGroup, Base } from '@/state/db';
+import { useSubscription } from '@/app/uklad/bindings';
+import type { EnergyGroup } from '@/state/db';
 
 interface ManageEnergyGroupsModalProps {
   isOpen: boolean;
@@ -38,7 +38,7 @@ const EnergyGroupRow: React.FC<{
     }
 
     if (normalizedName !== group.name) {
-      dispatch([EVENT_IDS.ENERGY_GROUP_RENAME, group.id, normalizedName]);
+      runtime.dispatch([appIds.events.ENERGY_GROUP_RENAME, group.id, normalizedName]);
     }
 
     setIsEditing(false);
@@ -159,8 +159,8 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
   isOpen,
   onClose,
 }) => {
-  const energyGroups = useSubscription<EnergyGroup[]>([SUB_IDS.ENERGY_GROUPS_LIST]);
-  const bases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]);
+  const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
+  const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
   const [newName, setNewName] = useState('');
   const [createError, setCreateError] = useState('');
 
@@ -207,7 +207,7 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
         return;
       }
 
-      dispatch([EVENT_IDS.ENERGY_GROUP_CREATE, normalizedNewName]);
+      runtime.dispatch([appIds.events.ENERGY_GROUP_CREATE, normalizedNewName]);
       setNewName('');
       setCreateError('');
     },
@@ -221,11 +221,11 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
       ? ` ${memberCount} ${baseLabel} will be unlinked from this grid.`
       : '';
 
-    dispatch([
-      EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG,
+    runtime.dispatch([
+      appIds.events.UI_SHOW_CONFIRMATION_DIALOG,
       'Delete Energy Group',
       `Delete "${group.name}"?${linkedMessage}`,
-      () => dispatch([EVENT_IDS.ENERGY_GROUP_DELETE, group.id]),
+      () => runtime.dispatch([appIds.events.ENERGY_GROUP_DELETE, group.id]),
       {
         confirmLabel: 'Delete',
         confirmButtonClass: 'btn-error',

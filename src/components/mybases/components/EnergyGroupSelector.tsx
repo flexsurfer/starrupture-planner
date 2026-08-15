@@ -1,8 +1,7 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { EnergyGroup } from '@/state/db';
+import { useSubscription } from '@/app/uklad/bindings';
 
 interface EnergyGroupSelectorProps {
   baseId: string;
@@ -19,7 +18,7 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
   currentGroupId,
   variant = 'icon',
 }) => {
-  const energyGroups = useSubscription<EnergyGroup[]>([SUB_IDS.ENERGY_GROUPS_LIST]);
+  const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
   const [isOpen, setIsOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const dropdownRef = useRef<HTMLDetailsElement>(null);
@@ -46,7 +45,7 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
   }, [isOpen, closeDropdown]);
 
   const handleSelect = useCallback((groupId: string | null) => {
-    dispatch([EVENT_IDS.BASES_SET_ENERGY_GROUP, baseId, groupId]);
+    runtime.dispatch([appIds.events.BASES_SET_ENERGY_GROUP, baseId, groupId]);
     closeDropdown();
   }, [baseId, closeDropdown]);
 
@@ -58,9 +57,9 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
     );
 
     if (existingGroup) {
-      dispatch([EVENT_IDS.BASES_SET_ENERGY_GROUP, baseId, existingGroup.id]);
+      runtime.dispatch([appIds.events.BASES_SET_ENERGY_GROUP, baseId, existingGroup.id]);
     } else {
-      dispatch([EVENT_IDS.ENERGY_GROUP_CREATE, normalizedNewName, baseId]);
+      runtime.dispatch([appIds.events.ENERGY_GROUP_CREATE, normalizedNewName, baseId]);
     }
 
     closeDropdown();

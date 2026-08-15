@@ -1,4 +1,4 @@
-import { useAppRuntime, useAppSubscription } from "@/state/runtime";
+import { useRuntime, useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 
 interface BuildingSelectorProps {
@@ -6,9 +6,9 @@ interface BuildingSelectorProps {
 }
 
 export const BuildingSelector = ({ className = "" }: BuildingSelectorProps) => {
-  const runtime = useAppRuntime();
-  const availableBuildings = useAppSubscription([appIds.subscriptions.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS]);
-  const selectedBuilding = useAppSubscription([appIds.subscriptions.ITEMS_SELECTED_BUILDING]);
+  const runtime = useRuntime();
+  const availableBuildings = useSubscription([appIds.subscriptions.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS]);
+  const selectedBuilding = useSubscription([appIds.subscriptions.ITEMS_SELECTED_BUILDING]);
 
   const handleBuildingChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     runtime.dispatch([appIds.events.ITEMS_SET_SELECTED_BUILDING, event.target.value]);

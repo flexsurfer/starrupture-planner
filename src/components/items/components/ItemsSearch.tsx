@@ -1,4 +1,4 @@
-import { useAppRuntime, useAppSubscription } from "@/state/runtime";
+import { useRuntime, useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 
 interface ItemsSearchProps {
@@ -6,8 +6,8 @@ interface ItemsSearchProps {
 }
 
 export const ItemsSearch = ({ className = "" }: ItemsSearchProps) => {
-  const runtime = useAppRuntime();
-  const searchTerm = useAppSubscription([appIds.subscriptions.ITEMS_SEARCH_TERM]);
+  const runtime = useRuntime();
+  const searchTerm = useSubscription([appIds.subscriptions.ITEMS_SEARCH_TERM]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     runtime.dispatch([appIds.events.ITEMS_SET_SEARCH_TERM, event.target.value]);

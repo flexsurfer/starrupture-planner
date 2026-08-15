@@ -1,17 +1,19 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import { RecipeAlternativesDropdown } from '../../../../planner/ui/RecipeAlternativesDropdown';
 
-export const RecipeAlternativesSelector: React.FC = () => (
-    <RecipeAlternativesDropdown
-        optionsSubId={SUB_IDS.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS}
+export const RecipeAlternativesSelector: React.FC = () => {
+    const options = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS]);
+
+    return <RecipeAlternativesDropdown
+        options={options}
         onSelectRecipe={(itemId, optionKey) => {
-            dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, itemId, optionKey]);
+            runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, itemId, optionKey]);
         }}
         onApplySelections={(selections) => {
-            dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, selections]);
+            runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, selections]);
         }}
-    />
-);
+    />;
+};

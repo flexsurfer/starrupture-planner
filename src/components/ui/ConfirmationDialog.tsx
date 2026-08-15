@@ -1,10 +1,10 @@
 import React from 'react';
 import { appIds } from '@/app/uklad/catalog';
-import { useAppRuntime, useAppSubscription } from '@/state/runtime';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 export const ConfirmationDialog: React.FC = () => {
-  const runtime = useAppRuntime();
-  const dialog = useAppSubscription([appIds.subscriptions.UI_CONFIRMATION_DIALOG]);
+  const runtime = useRuntime();
+  const dialog = useSubscription([appIds.subscriptions.UI_CONFIRMATION_DIALOG]);
 
   if (!dialog.isOpen) {
     return null;

@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { useAppSubscription } from "@/state/runtime";
+import { useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 import type { CorporationWithStats } from "./types";
 
 export const useCorporations = () => {
-  const corporationsWithStats = useAppSubscription([appIds.subscriptions.CORPORATIONS_LIST_WITH_STATS]);
-  const itemsMap = useAppSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
+  const corporationsWithStats = useSubscription([appIds.subscriptions.CORPORATIONS_LIST_WITH_STATS]);
+  const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
 
   return {
     corporationsWithStats,

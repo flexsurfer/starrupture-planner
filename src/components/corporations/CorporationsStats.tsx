@@ -1,8 +1,8 @@
-import { useAppSubscription } from "@/state/runtime";
+import { useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
   
 export const CorporationsStats = () => {
-  const stats = useAppSubscription([appIds.subscriptions.CORPORATIONS_STATS_SUMMARY]);
+  const stats = useSubscription([appIds.subscriptions.CORPORATIONS_STATS_SUMMARY]);
 
   return (
     <div className="stats shadow">

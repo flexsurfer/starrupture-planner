@@ -1,6 +1,6 @@
+import { appIds } from '@/app/uklad/catalog';
 import React, { useMemo, useState } from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { LinkableOutputItem } from '../types';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';
@@ -19,7 +19,7 @@ function formatRate(value: number): string {
 }
 
 export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClose, onSelect }) => {
-    const outputs = useSubscription<LinkableOutputItem[]>([SUB_IDS.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS]) || EMPTY_LINKABLE_OUTPUTS;
+    const outputs = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS]) || EMPTY_LINKABLE_OUTPUTS;
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredOutputs = useMemo(() => {

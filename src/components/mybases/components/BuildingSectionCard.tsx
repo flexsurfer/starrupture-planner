@@ -1,8 +1,8 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useMemo, useState } from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { Base, BaseBuilding, Building, Item } from '@/state/db';
-import { EVENT_IDS } from '@/state/event-ids';
-import { SUB_IDS } from '@/state/sub-ids';
 import type { BuildingSectionBuilding, LinkableOutputItem } from '../types';
 import { isLogisticsExcludedOutputBuildingId, isRawExtractor, sanitizeBuildingCount } from '../utils';
 import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';
@@ -24,8 +24,8 @@ interface LinkedInputData {
  * Keeps the parent BuildingSectionCard free from that subscription.
  */
 const useLinkedInputData = (baseBuilding: BaseBuilding): LinkedInputData => {
-  const allBases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]) || [];
-  const buildingsById = useSubscription<Record<string, Building>>([SUB_IDS.BUILDINGS_BY_ID_MAP]);
+  const allBases = useSubscription([appIds.subscriptions.BASES_LIST]) || [];
+  const buildingsById = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
 
   const resolved = resolveInputBuilding(baseBuilding, allBases);
   const resolution = resolveLinkedOutput(baseBuilding, allBases);
@@ -50,7 +50,7 @@ interface LinkedInputItemButtonProps {
 }
 
 const LinkedInputItemButton: React.FC<LinkedInputItemButtonProps> = ({ baseBuilding }) => {
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+  const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const { resolved, hasError, label } = useLinkedInputData(baseBuilding);
   const selectedItem = resolved.selectedItemId ? itemsMap[resolved.selectedItemId] : null;
 
@@ -108,9 +108,9 @@ function isConfiguredPositiveRate(value: unknown): value is number {
 }
 
 function useLinkableOutputs(currentBaseId: string): LinkableOutputItem[] {
-  const subscribedBases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]);
-  const buildingsById = useSubscription<Record<string, Building>>([SUB_IDS.BUILDINGS_BY_ID_MAP]);
-  const itemsById = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+  const subscribedBases = useSubscription([appIds.subscriptions.BASES_LIST]);
+  const buildingsById = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
+  const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
 
   return useMemo(() => {
     const allBases = subscribedBases || [];
@@ -183,8 +183,8 @@ const InputOutputLinkControls: React.FC<InputOutputLinkControlsProps> = ({ baseI
   const handleSourceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const nextKey = event.target.value;
     if (!nextKey) {
-      dispatch([
-        EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION,
+      runtime.dispatch([
+        appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION,
         baseId,
         baseBuilding.id,
         resolved.selectedItemId || null,
@@ -198,8 +198,8 @@ const InputOutputLinkControls: React.FC<InputOutputLinkControlsProps> = ({ baseI
     );
     if (!output) return;
 
-    dispatch([
-      EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT,
+    runtime.dispatch([
+      appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT,
       baseId,
       baseBuilding.id,
       output.baseId,
@@ -257,9 +257,9 @@ interface LinkableInputItem {
 }
 
 function useLinkableInputs(currentBaseId: string): LinkableInputItem[] {
-  const subscribedBases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]);
-  const buildingsById = useSubscription<Record<string, Building>>([SUB_IDS.BUILDINGS_BY_ID_MAP]);
-  const itemsById = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+  const subscribedBases = useSubscription([appIds.subscriptions.BASES_LIST]);
+  const buildingsById = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
+  const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
 
   return useMemo(() => {
     const allBases = subscribedBases || [];
@@ -348,8 +348,8 @@ const OutputInputLinkControls: React.FC<OutputInputLinkControlsProps> = ({
     );
     if (!input) return;
 
-    dispatch([
-      EVENT_IDS.BASES_UPDATE_BUILDING_LINKED_OUTPUT,
+    runtime.dispatch([
+      appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT,
       input.baseId,
       input.baseBuildingId,
       baseId,
@@ -358,8 +358,8 @@ const OutputInputLinkControls: React.FC<OutputInputLinkControlsProps> = ({
   };
 
   const handleRemoveInput = (input: LinkableInputItem) => {
-    dispatch([
-      EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION,
+    runtime.dispatch([
+      appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION,
       input.baseId,
       input.baseBuildingId,
       input.item?.id || null,
@@ -424,8 +424,8 @@ const OutputPlanLinkControls: React.FC<OutputPlanLinkControlsProps> = ({
     priority?: number | null;
   }) => {
     const hasSourceProductionId = Object.prototype.hasOwnProperty.call(payload, 'sourceProductionId');
-    dispatch([
-      EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK,
+    runtime.dispatch([
+      appIds.events.BASES_UPDATE_OUTPUT_PLAN_LINK,
       baseId,
       baseBuilding.id,
       {
@@ -513,8 +513,8 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
   const [showSelectItemModal, setShowSelectItemModal] = useState(false);
 
   const { baseBuilding, building, count, isGrouped, sectionType, activePlanNames } = sectionBuilding;
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
-  const base = useSubscription<Base | null>([SUB_IDS.BASES_BASE_BY_ID, baseId]);
+  const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
+  const base = useSubscription([appIds.subscriptions.BASES_BASE_BY_ID, baseId]);
 
   const isInputBuilding = !isGrouped && baseBuilding?.sectionType === 'inputs';
   const isOutputBuilding = !isGrouped && baseBuilding?.sectionType === 'outputs';
@@ -540,8 +540,8 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
   const sectionLabel = sectionType[0].toUpperCase() + sectionType.slice(1);
 
   const setGroupedCount = useCallback((nextCount: number) => {
-    dispatch([
-      EVENT_IDS.BASES_SET_BUILDING_SECTION_TYPE_COUNT,
+    runtime.dispatch([
+      appIds.events.BASES_SET_BUILDING_SECTION_TYPE_COUNT,
       baseId,
       building.id,
       sectionType,
@@ -551,8 +551,8 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
 
   const handleRemoveClick = () => {
     if (isGrouped) {
-      dispatch([
-        EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG,
+      runtime.dispatch([
+        appIds.events.UI_SHOW_CONFIRMATION_DIALOG,
         `Remove ${building.name}?`,
         `Remove all ${count} ${building.name} building${count !== 1 ? 's' : ''} from ${sectionLabel}?`,
         () => setGroupedCount(0),
@@ -565,12 +565,12 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
     }
 
     if (!baseBuilding) return;
-    dispatch([EVENT_IDS.BASES_REMOVE_BUILDING, baseBuilding.id]);
+    runtime.dispatch([appIds.events.BASES_REMOVE_BUILDING, baseBuilding.id]);
   };
 
   const handleConfirmItemSelection = (itemId: string, ratePerMinute: number) => {
     if (!baseBuilding) return;
-    dispatch([EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, baseId, baseBuilding.id, itemId, ratePerMinute]);
+    runtime.dispatch([appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION, baseId, baseBuilding.id, itemId, ratePerMinute]);
     setShowSelectItemModal(false);
   };
 

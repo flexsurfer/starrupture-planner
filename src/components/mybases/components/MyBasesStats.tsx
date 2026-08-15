@@ -1,12 +1,10 @@
-import { useSubscription } from "@/state/runtime";
-import { SUB_IDS } from "@/state/sub-ids";
-import type { Base } from "@/state/db";
-import type { MyBasesStats as MyBasesStatsType } from "../types";
+import { appIds } from '@/app/uklad/catalog';
+import { useSubscription } from "@/app/uklad/bindings";
 import { ShareBasesStatsButton } from "./ShareBasesStatsButton";
 
 export const MyBasesStats = () => {
-  const stats = useSubscription<MyBasesStatsType>([SUB_IDS.BASES_STATS_SUMMARY]);
-  const bases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]);
+  const stats = useSubscription([appIds.subscriptions.BASES_STATS_SUMMARY]);
+  const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
 
   return (
     <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-base bg-base-200 rounded-lg px-2 sm:px-4 py-2 sm:py-2.5 min-w-0 w-full sm:w-auto">

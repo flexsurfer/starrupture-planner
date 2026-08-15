@@ -1,3 +1,4 @@
+import { appIds } from '@/app/uklad/catalog';
 import React, { useEffect, useMemo } from 'react';
 import {
     ReactFlow,
@@ -11,9 +12,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { PlannerFlowGraph } from '@/features/planner/flow-graph';
+import { useSubscription } from '@/app/uklad/bindings';
 import { NodeCard } from './NodeCard';
 
 // Define node and edge types outside component to prevent React Flow warnings
@@ -28,13 +27,13 @@ export const PlannerFlowDiagram: React.FC = () => {
     const { fitView } = useReactFlow();
 
     // State subscriptions
-    const selectedItemId = useSubscription<string | null>([SUB_IDS.PLANNER_SELECTED_ITEM_ID]);
-    const theme = useSubscription<'light' | 'dark'>([SUB_IDS.UI_THEME]);
-    const flowGraph = useSubscription<PlannerFlowGraph>([SUB_IDS.PLANNER_FLOW_GRAPH]);
+    const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]);
+    const theme = useSubscription([appIds.subscriptions.UI_THEME]);
+    const flowGraph = useSubscription([appIds.subscriptions.PLANNER_FLOW_GRAPH]);
     const renderedNodes = useMemo<Node[]>(() => flowGraph.nodes.map(({ flowNode, outputColor, ...node }) => ({
         ...node,
         data: {
-            label: <NodeCard node={flowNode} items={flowGraph.items} outputColor={outputColor} />,
+            label: <NodeCard node={flowNode} items={flowGraph.items!} outputColor={outputColor} />,
         },
     })), [flowGraph]);
 

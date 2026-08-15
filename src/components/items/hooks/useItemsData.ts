@@ -1,4 +1,4 @@
-import { useAppSubscription } from "@/state/runtime";
+import { useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 import type { CorporationUsage } from "../types";
 
@@ -7,10 +7,10 @@ import type { CorporationUsage } from "../types";
  * All computations are done in subscriptions, this hook just returns ready-to-use data
  */
 export const useItemsData = () => {
-  const itemsTableData = useAppSubscription([appIds.subscriptions.ITEMS_TABLE_ROWS]);
-  const selectedCategory = useAppSubscription([appIds.subscriptions.ITEMS_SELECTED_CATEGORY]);
-  const categories = useAppSubscription([appIds.subscriptions.ITEMS_CATEGORIES]);
-  const helperMaps = useAppSubscription([appIds.subscriptions.ITEMS_HELPER_LOOKUPS]);
+  const itemsTableData = useSubscription([appIds.subscriptions.ITEMS_TABLE_ROWS]);
+  const selectedCategory = useSubscription([appIds.subscriptions.ITEMS_SELECTED_CATEGORY]);
+  const categories = useSubscription([appIds.subscriptions.ITEMS_CATEGORIES]);
+  const helperMaps = useSubscription([appIds.subscriptions.ITEMS_HELPER_LOOKUPS]);
 
   // Helper function to get corporation ID from corporation name
   const getCorporationId = (corporationName: string): string => {

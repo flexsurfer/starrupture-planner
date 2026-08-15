@@ -1,12 +1,10 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { dispatch } from '@/state/runtime';
-import { EVENT_IDS } from '@/state/event-ids';
 import type { BuildingRequirement, InputRequirement } from '../types';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';
-import type { Building } from '@/state/db';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 
 interface BuildingRequirementsModalProps {
     isOpen: boolean;
@@ -27,14 +25,14 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
     sectionId,
     onClose,
 }) => {
-    const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_LIST]);
+    const buildings = useSubscription([appIds.subscriptions.BUILDINGS_LIST]);
 
     if (!isOpen) {
         return null;
     }
 
     const handleAddMissing = () => {
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, baseId, sectionId, 'missing']);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE, baseId, sectionId, 'missing']);
         onClose();
     };
 

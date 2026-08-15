@@ -1,8 +1,8 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import type { Recipe, Item } from "@/state/db";
 import { ItemImage } from "./ItemImage";
-import { dispatch, useSubscription } from '@/state/runtime';
-import { EVENT_IDS } from '@/state/event-ids';
-import { SUB_IDS } from "@/state/sub-ids";
+import { useSubscription } from '@/app/uklad/bindings';
 
 interface RecipeItemIconProps {
   itemId: string;
@@ -40,7 +40,7 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+  const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const outputItem = itemsMap[recipe.output.id];
 
   return (
@@ -100,7 +100,7 @@ export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
             <button
               className="btn btn-xs btn-primary btn-outline"
               onClick={() => {
-                dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, recipe.output.id]);
+                runtime.dispatch([appIds.events.PLANNER_OPEN_ITEM, recipe.output.id]);
               }}
               title={`Open ${outputItem?.name || recipe.output.id} in planner`}
             >

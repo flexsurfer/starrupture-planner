@@ -1,9 +1,7 @@
-import { dispatch, useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { BaseDetailStats } from '../types';
-import { EVENT_IDS } from '@/state/event-ids';
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
+import { useSubscription } from '@/app/uklad/bindings';
 import React, { useCallback } from 'react';
-import type { Base } from '@/state/db';
 import { EnergyGroupSelector } from './EnergyGroupSelector';
 
 interface BaseCoreInfoProps {
@@ -12,16 +10,16 @@ interface BaseCoreInfoProps {
 
 export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
 
-  const detailStats = useSubscription<BaseDetailStats | null>([SUB_IDS.BASES_SELECTED_BASE_DETAIL_STATS]);
-  const coreLevels = useSubscription<{ level: number; heatCapacity: number }[]>([SUB_IDS.BASES_CORE_LEVELS]);
-  const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
+  const detailStats = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_DETAIL_STATS]);
+  const coreLevels = useSubscription([appIds.subscriptions.BASES_CORE_LEVELS]);
+  const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
 
   const onBack = useCallback(() => {
-    dispatch([EVENT_IDS.BASES_SET_SELECTED_BASE, null]);
+    runtime.dispatch([appIds.events.BASES_SET_SELECTED_BASE, null]);
   }, []);
 
   const onCoreLeveChange = useCallback((level: number) => {
-    dispatch([EVENT_IDS.BASES_SET_CORE_LEVEL, level]);
+    runtime.dispatch([appIds.events.BASES_SET_CORE_LEVEL, level]);
   }, []);
   
   // Early return if data not available

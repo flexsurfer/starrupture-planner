@@ -1,8 +1,7 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useState } from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
-import { EVENT_IDS } from '@/state/event-ids';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { Base } from '@/state/db';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { AddBuildingRequest, BuildingSectionType } from './types';
 import {
   BuildingSection,
@@ -13,12 +12,12 @@ export const BaseBuildingsView: React.FC = () => {
   const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
   const [addBuildingSection, setAddBuildingSection] = useState<BuildingSectionType | null>(null);
 
-  const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
+  const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
 
   const handleAddBuilding = useCallback((request: AddBuildingRequest) => {
     if (selectedBase && addBuildingSection) {
-      dispatch([
-        EVENT_IDS.BASES_ADD_BUILDINGS,
+      runtime.dispatch([
+        appIds.events.BASES_ADD_BUILDINGS,
         selectedBase.id,
         request.buildingTypeId,
         addBuildingSection,

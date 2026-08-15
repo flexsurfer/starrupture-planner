@@ -6,15 +6,15 @@
  */
 
 import { appIds } from '@/app/uklad/catalog';
-import { useAppRuntime, useAppSubscription } from '@/state/runtime';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 interface ThemeToggleProps {
   className?: string;
 }
 
 const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = "" }) => {
-  const runtime = useAppRuntime();
-  const theme = useAppSubscription([appIds.subscriptions.UI_THEME]);
+  const runtime = useRuntime();
+  const theme = useSubscription([appIds.subscriptions.UI_THEME]);
 
   return (
     <label className={`swap swap-rotate ${className}`}>

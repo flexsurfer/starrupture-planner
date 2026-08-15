@@ -1,12 +1,11 @@
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { ProductionFlowResult } from '../../../../planner/core/types';
+import { useSubscription } from '@/app/uklad/bindings';
 import { EmbeddedFlowDiagram } from '../../../components/EmbeddedFlowDiagram';
 
 export const DiagramSection: React.FC = () => {
 
-    const productionFlow = useSubscription<ProductionFlowResult>([SUB_IDS.PRODUCTION_PLAN_MODAL_FLOW])
+    const productionFlow = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FLOW])
         || { nodes: [], edges: [], rawMaterialDeficits: [] };
 
     if (productionFlow.nodes.length === 0) {

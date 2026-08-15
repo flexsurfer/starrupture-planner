@@ -1,12 +1,13 @@
+import { appIds } from './app/uklad/catalog';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { dispatch, UkladProvider, runtime } from '@/state/runtime'
-import { EVENT_IDS } from './state/event-ids.ts'
+import { UkladProvider } from '@/app/uklad/bindings'
+import { runtime } from '@/app/uklad/bootstrap'
 
 import './index.css'
 import App from './App.tsx'
 
-dispatch([EVENT_IDS.APP_INIT]);
+runtime.dispatch([appIds.events.APP_INIT]);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

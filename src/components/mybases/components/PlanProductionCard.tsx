@@ -1,9 +1,8 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
-import type { BaseLogisticsViewModel, BaseOutputItem, PlanSummaryRow, ProductionPlanRequirementsStatus } from '../types';
-import type { Base } from '@/state/db';
-import { EVENT_IDS } from '@/state/event-ids';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
+import type { PlanSummaryRow, ProductionPlanRequirementsStatus } from '../types';
 import { BuildingImage, ItemImage } from '../../ui';
 import { getPlanOutputAllocationSummary } from '../../../utils/planOutputAllocations';
 
@@ -23,14 +22,14 @@ interface PlanProductionCardProps {
 }
 
 export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan, baseId }) => {
-  const requirementsStatus = useSubscription<ProductionPlanRequirementsStatus>([
-    SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
+  const requirementsStatus = useSubscription([
+    appIds.subscriptions.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
     baseId,
     plan.id,
   ]);
-  const base = useSubscription<Base | null>([SUB_IDS.BASES_BASE_BY_ID, baseId]);
-  const outputItems = useSubscription<BaseOutputItem[]>([SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID, baseId]) || [];
-  const logistics = useSubscription<BaseLogisticsViewModel | null>([SUB_IDS.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID, baseId]);
+  const base = useSubscription([appIds.subscriptions.BASES_BASE_BY_ID, baseId]);
+  const outputItems = useSubscription([appIds.subscriptions.BASES_OUTPUT_ITEMS_BY_BASE_ID, baseId]) || [];
+  const logistics = useSubscription([appIds.subscriptions.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID, baseId]);
 
   const effectiveStatus = requirementsStatus?.planStatus || plan.status;
   const hasError = requirementsStatus?.hasError ?? effectiveStatus === 'error';
@@ -78,7 +77,7 @@ export const PlanProductionCard: React.FC<PlanProductionCardProps> = ({ plan, ba
         <button
           type="button"
           className="btn btn-xs btn-outline"
-          onClick={() => dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, plan.id])}
+          onClick={() => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN, plan.id])}
         >
           Edit
         </button>

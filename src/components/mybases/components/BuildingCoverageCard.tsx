@@ -1,7 +1,7 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
-import { dispatch } from '@/state/runtime';
 import type { PlanSummaryRow, BuildingCoverageRow } from '../types';
-import { EVENT_IDS } from '@/state/event-ids';
 import { BuildingImage } from '../../ui';
 import { CoverageTableHeader } from './CoverageTableHeader';
 import { BuildingCountControl } from './BuildingCountControl';
@@ -13,8 +13,8 @@ interface BuildingCoverageControlProps {
 
 const BuildingCoverageControl: React.FC<BuildingCoverageControlProps> = ({ baseId, row }) => {
   const setOwnedCount = useCallback((nextCount: number) => {
-    dispatch([
-      EVENT_IDS.BASES_SET_BUILDING_SECTION_TYPE_COUNT,
+    runtime.dispatch([
+      appIds.events.BASES_SET_BUILDING_SECTION_TYPE_COUNT,
       baseId,
       row.buildingId,
       'production',

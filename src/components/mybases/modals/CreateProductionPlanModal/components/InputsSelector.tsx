@@ -1,32 +1,27 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useState } from 'react';
-import { useSubscription, dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { AddBuildingRequest, BaseInputItem } from '../../../types';
+import { useSubscription } from '@/app/uklad/bindings';
+import type { AddBuildingRequest } from '../../../types';
 import { ItemImage } from '../../../../ui/ItemImage';
 import { BuildingImage } from '../../../../ui/BuildingImage';
 import { AddBuildingCardModal } from '../../AddBuildingCardModal';
 
-interface InputsSelectorData {
-    inputItems: BaseInputItem[];
-    selectedInputIds: string[];
-}
-
 export const InputsSelector: React.FC = () => {
-    const { inputItems, selectedInputIds } = useSubscription<InputsSelectorData>([SUB_IDS.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA]);
-    const selectedBaseId = useSubscription<string | null>([SUB_IDS.BASES_SELECTED_BASE_ID]);
+    const { inputItems, selectedInputIds } = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA]);
+    const selectedBaseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
     const [showAddInputModal, setShowAddInputModal] = useState(false);
 
     const handleInputToggle = useCallback((baseBuildingId: string) => {
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, baseBuildingId]);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, baseBuildingId]);
     }, []);
 
     const handleAddInputBuildings = useCallback((request: AddBuildingRequest) => {
         if (!selectedBaseId) return;
 
         if (request.linkedOutput) {
-            dispatch([
-                EVENT_IDS.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT,
+            runtime.dispatch([
+                appIds.events.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT,
                 request.linkedOutput.baseId,
                 request.linkedOutput.buildingId,
                 request.buildingTypeId,
@@ -37,8 +32,8 @@ export const InputsSelector: React.FC = () => {
             return;
         }
 
-        dispatch([
-            EVENT_IDS.BASES_ADD_BUILDINGS,
+        runtime.dispatch([
+            appIds.events.BASES_ADD_BUILDINGS,
             selectedBaseId,
             request.buildingTypeId,
             'inputs',

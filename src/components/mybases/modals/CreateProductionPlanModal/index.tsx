@@ -1,6 +1,6 @@
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import {
     ModalHeader,
     InputsSelector,
@@ -10,13 +10,9 @@ import {
     FormActions,
 } from './components';
 
-interface ModalOpenState {
-    isOpen: boolean;
-}
-
 export const CreateProductionPlanModal: React.FC = () => {
     // Subscribe to modal open state
-    const { isOpen } = useSubscription<ModalOpenState>([SUB_IDS.PRODUCTION_PLAN_MODAL_OPEN_STATE]);
+    const { isOpen } = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_OPEN_STATE]);
 
     if (!isOpen) {
         return null;

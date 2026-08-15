@@ -1,7 +1,7 @@
+import { appIds } from '@/app/uklad/catalog';
 import React, { useMemo, useState } from 'react';
-import { useSubscription } from '@/state/runtime';
-import type { Base, Building, Item } from '@/state/db';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
+import type { Building, Item } from '@/state/db';
 import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem, LinkedInputReference } from '../types';
 import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';
 import {
@@ -164,12 +164,12 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   onAdd,
   requireItemConfiguration = false,
 }) => {
-  const buildings = useSubscription<Building[]>([SUB_IDS.BASES_AVAILABLE_BUILDINGS_FOR_SECTION, sectionType]);
-  const itemsById = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
-  const buildingsById = useSubscription<Record<string, Building>>([SUB_IDS.BUILDINGS_BY_ID_MAP]);
-  const subscribedBases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]);
-  const selectedBase = useSubscription<Base | null>(
-    baseId ? [SUB_IDS.BASES_BASE_BY_ID, baseId] : [SUB_IDS.BASES_SELECTED_BASE]
+  const buildings = useSubscription([appIds.subscriptions.BASES_AVAILABLE_BUILDINGS_FOR_SECTION, sectionType]);
+  const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
+  const buildingsById = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
+  const subscribedBases = useSubscription([appIds.subscriptions.BASES_LIST]);
+  const selectedBase = useSubscription(
+    baseId ? [appIds.subscriptions.BASES_BASE_BY_ID, baseId] : [appIds.subscriptions.BASES_SELECTED_BASE]
   );
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [customName, setCustomName] = useState('');

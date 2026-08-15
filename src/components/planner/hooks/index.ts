@@ -1,15 +1,14 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import { useCallback, useRef, useEffect } from 'react';
-import { useSubscription, dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { Building } from '../core/types';
+import { useSubscription } from '@/app/uklad/bindings';
 
 
 /**
  * Custom hook for getting default output rate for an item
  */
 export const usePlannerDefaultOutput = () => {
-    const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_LIST]);
+    const buildings = useSubscription([appIds.subscriptions.BUILDINGS_LIST]);
 
     // Helper function to find the default output rate for an item
     const getDefaultOutputRate = useCallback((itemId: string): number => {
@@ -35,7 +34,7 @@ export const usePlannerDefaultOutput = () => {
  * Custom hook for debounced target amount setting
  */
 export const useTargetAmount = () => {
-    const targetAmount = useSubscription<number>([SUB_IDS.PLANNER_TARGET_AMOUNT]);
+    const targetAmount = useSubscription([appIds.subscriptions.PLANNER_TARGET_AMOUNT]);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const setTargetAmount = useCallback((amount: number) => {
@@ -44,9 +43,9 @@ export const useTargetAmount = () => {
             clearTimeout(timeoutRef.current);
         }
 
-        // Set new timeout for debounced dispatch
+        // Set new timeout for the debounced planner update.
         timeoutRef.current = setTimeout(() => {
-            dispatch([EVENT_IDS.PLANNER_SET_TARGET_AMOUNT, amount]);
+            runtime.dispatch([appIds.events.PLANNER_SET_TARGET_AMOUNT, amount]);
         }, 300); // 300ms debounce
     }, []);
 

@@ -8,7 +8,7 @@ import PlannerPage from './PlannerPage';
 import { ThemeToggle, GitHubButton, DiscordButton, VersionSelector, ConfirmationDialog } from './ui';
 import { useNavigationSync } from '../hooks/useNavigationSync';
 import { appIds } from '@/app/uklad/catalog';
-import { useAppRuntime, useAppSubscription } from '@/state/runtime';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Tab, TabType } from '@/state/db';
 
 const tabs: Tab[] = [
@@ -20,8 +20,8 @@ const tabs: Tab[] = [
 ];
 
 const TabLayout = () => {
-  const runtime = useAppRuntime();
-  const activeTab = useAppSubscription([appIds.subscriptions.UI_ACTIVE_TAB]);
+  const runtime = useRuntime();
+  const activeTab = useSubscription([appIds.subscriptions.UI_ACTIVE_TAB]);
   const location = useLocation();
   const navigate = useNavigate();
   

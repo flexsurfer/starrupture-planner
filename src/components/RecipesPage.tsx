@@ -1,12 +1,12 @@
+import { appIds } from '@/app/uklad/catalog';
 import { useState } from "react";
-import { useSubscription } from "@/state/runtime";
-import { SUB_IDS } from "@/state/sub-ids";
+import { useSubscription } from "@/app/uklad/bindings";
 import type { Building } from "@/state/db";
 import { BuildingImage, RecipeCard } from "./ui";
 import { useItemsData, CorporationUsageBadge } from "./items";
 
 const RecipesPage = () => {
-  const sortedBuildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_SORTED_PRODUCTION_LIST]);
+  const sortedBuildings = useSubscription([appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST]);
   const { findBuildingCorporationUsage, getCorporationId } = useItemsData();
 
   // Track expanded state for each building (collapsed by default)

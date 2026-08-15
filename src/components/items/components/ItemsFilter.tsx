@@ -1,4 +1,4 @@
-import { useAppRuntime } from "@/state/runtime";
+import { useRuntime } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 import { getCategoryDisplayName } from "../hooks/useItemsData";
 
@@ -8,7 +8,7 @@ interface ItemsFilterProps {
 }
 
 export const ItemsFilter = ({ categories, selectedCategory }: ItemsFilterProps) => {
-  const runtime = useAppRuntime();
+  const runtime = useRuntime();
 
   return (
     <div className="flex flex-wrap gap-1.5">

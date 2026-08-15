@@ -1,6 +1,5 @@
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { Building, Recipe } from '@/state/db';
+import { appIds } from '@/app/uklad/catalog';
+import { useSubscription } from '@/app/uklad/bindings';
 import { RecipeCard } from './RecipeCard';
 import { BuildingImage } from './BuildingImage';
 
@@ -10,8 +9,8 @@ interface UsedInRecipesProps {
 }
 
 export const UsedInRecipes = ({ itemId, itemName }: UsedInRecipesProps) => {
-  const recipes = useSubscription<{ recipe: Recipe; building: Building }[]>(
-    [SUB_IDS.ITEMS_RECIPES_BY_INPUT_ITEM_ID, itemId]
+  const recipes = useSubscription(
+    [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID, itemId]
   );
 
   if (!recipes || recipes.length === 0) {

@@ -1,17 +1,13 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription, dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-
-interface ModalHeaderData {
-    isEditMode: boolean;
-}
+import { useSubscription } from '@/app/uklad/bindings';
 
 export const ModalHeader: React.FC = () => {
-    const { isEditMode } = useSubscription<ModalHeaderData>([SUB_IDS.PRODUCTION_PLAN_MODAL_HEADER_DATA]);
+    const { isEditMode } = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_HEADER_DATA]);
 
     const handleClose = () => {
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE]);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_CLOSE]);
     };
 
     return (

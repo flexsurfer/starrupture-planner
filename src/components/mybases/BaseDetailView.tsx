@@ -1,17 +1,16 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { Base } from '@/state/db';
+import { useSubscription } from '@/app/uklad/bindings';
 import { BaseCoreInfo, BaseOverviewView, BaseBuildingsView, BasePlansView, CreateProductionPlanModal, RenameBaseModal } from './index';
 import type { BaseDetailTab } from './types';
 
 export const BaseDetailView: React.FC = () => {
-  const selectedBase = useSubscription<Base | null>([SUB_IDS.BASES_SELECTED_BASE]);
-  const activeTab = useSubscription<BaseDetailTab>([SUB_IDS.BASES_SELECTED_DETAIL_TAB]) || 'base';
+  const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
+  const activeTab = useSubscription([appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]) || 'base';
   const [showRenameModal, setShowRenameModal] = useState(false);
   const setActiveTab = (tab: BaseDetailTab) => {
-    dispatch([EVENT_IDS.BASES_SET_DETAIL_TAB, tab]);
+    runtime.dispatch([appIds.events.BASES_SET_DETAIL_TAB, tab]);
   };
 
   // Early return if no base selected
@@ -22,7 +21,7 @@ export const BaseDetailView: React.FC = () => {
   const plansCount = selectedBase.productions?.length || 0;
   const buildingsCount = selectedBase.buildings?.length || 0;
   const handleRenameBase = (baseId: string, newName: string) => {
-    dispatch([EVENT_IDS.BASES_UPDATE_BASE_NAME, baseId, newName]);
+    runtime.dispatch([appIds.events.BASES_UPDATE_BASE_NAME, baseId, newName]);
     setShowRenameModal(false);
   };
 

@@ -1,13 +1,13 @@
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { BaseLogisticsViewModel } from './types';
 import { LogisticsCanvas } from './logistics-canvas';
 
 const EMPTY_LOGISTICS_MODELS: BaseLogisticsViewModel[] = [];
 
 export const MyBasesLogisticsView: React.FC = () => {
-  const models = useSubscription<BaseLogisticsViewModel[]>([SUB_IDS.BASES_LOGISTICS_VIEW_MODELS]) || EMPTY_LOGISTICS_MODELS;
+  const models = useSubscription([appIds.subscriptions.BASES_LOGISTICS_VIEW_MODELS]) || EMPTY_LOGISTICS_MODELS;
 
   if (models.length === 0) {
     return (

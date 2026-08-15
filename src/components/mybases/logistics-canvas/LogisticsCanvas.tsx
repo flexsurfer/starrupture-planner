@@ -1,3 +1,5 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ReactFlow,
@@ -15,11 +17,9 @@ import {
   type NodeMouseHandler,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { dispatch, useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { EnergyGroup } from '@/state/db';
-import type { BaseLogisticsViewModel, BaseDetailStats } from '../types';
+import type { BaseLogisticsViewModel } from '../types';
 import { BaseNetworkNode } from './BaseNetworkNode';
 import { EnergyGridNode } from './EnergyGridNode';
 import { buildLogisticsCanvasData, type LayerFilter } from './logisticsCanvasUtils';
@@ -90,12 +90,12 @@ const EdgeDetailPanel: React.FC<EdgeDetailPanelProps> = ({ edgeData, onClose }) 
 const LogisticsCanvasInner: React.FC = () => {
   const { fitView } = useReactFlow();
 
-  const theme = useSubscription<'light' | 'dark'>([SUB_IDS.UI_THEME]);
-  const models = useSubscription<BaseLogisticsViewModel[]>([SUB_IDS.BASES_LOGISTICS_VIEW_MODELS]) || EMPTY_MODELS;
-  const energyGroups = useSubscription<EnergyGroup[]>([SUB_IDS.ENERGY_GROUPS_LIST]) || EMPTY_ENERGY_GROUPS;
+  const theme = useSubscription([appIds.subscriptions.UI_THEME]);
+  const models = useSubscription([appIds.subscriptions.BASES_LOGISTICS_VIEW_MODELS]) || EMPTY_MODELS;
+  const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]) || EMPTY_ENERGY_GROUPS;
 
   // Compute base stats from bases (inline to avoid new subscription)
-  const baseStatsMap = useSubscription<Record<string, BaseDetailStats> | null>([SUB_IDS.BASES_ALL_DETAIL_STATS]);
+  const baseStatsMap = useSubscription([appIds.subscriptions.BASES_ALL_DETAIL_STATS]);
 
   const [selectedEdgeData, setSelectedEdgeData] = useState<EdgeDetailData | null>(null);
   // Energy grids are hidden by default — toggled via the on-canvas button.
@@ -135,7 +135,7 @@ const LogisticsCanvasInner: React.FC = () => {
   const handleNodeClick: NodeMouseHandler = useCallback((_event, node) => {
     if (node.type === 'baseNetwork') {
       const data = node.data as unknown as { baseId: string };
-      dispatch([EVENT_IDS.BASES_OPEN_BASE, data.baseId, 'base']);
+      runtime.dispatch([appIds.events.BASES_OPEN_BASE, data.baseId, 'base']);
     }
     setSelectedEdgeData(null);
   }, []);

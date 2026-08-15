@@ -1,7 +1,7 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import { ComponentIcon } from "./ComponentIcon";
 import type { CorporationComponent, Item, Reward } from "@/state/db";
-import { dispatch } from '@/state/runtime';
-import { EVENT_IDS } from '@/state/event-ids';
 
 type LevelCardProps = {
   level: number;
@@ -36,7 +36,7 @@ export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporatio
               <button
                 className="btn btn-xs btn-primary"
                 onClick={() => {
-                  dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, component.id, { corporationId, level }]);
+                  runtime.dispatch([appIds.events.PLANNER_OPEN_ITEM, component.id, { corporationId, level }]);
                 }}
                 title={`Open ${itemsMap[component.id]?.name || component.id} in planner`}
               >

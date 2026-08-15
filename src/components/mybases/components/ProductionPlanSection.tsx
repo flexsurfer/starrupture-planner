@@ -1,9 +1,7 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useState, useCallback } from 'react';
-import { useSubscription, dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-import type { Base } from '@/state/db';
-import type { ProductionPlanSectionViewModel } from '../types';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { ProductionFlowResult } from '../../planner/core/types';
 import { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
 import { BuildingRequirementsModal } from '../modals';
@@ -29,7 +27,7 @@ const formatRatePerMinute = (value: number | undefined): string => {
 
 const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, sectionId }) => {
 
-    const productionFlow = useSubscription<ProductionFlowResult>([SUB_IDS.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId]) || EMPTY_PRODUCTION_FLOW;
+    const productionFlow = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId]) || EMPTY_PRODUCTION_FLOW;
 
     return (
         <div className="h-[400px] border border-base-300 rounded-lg overflow-hidden">
@@ -48,8 +46,8 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
     const [showRequirementsModal, setShowRequirementsModal] = useState(false);
 
     // Single subscription for all component data
-    const data = useSubscription<ProductionPlanSectionViewModel>([SUB_IDS.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId]);
-    const allBases = useSubscription<Base[]>([SUB_IDS.BASES_LIST]) || [];
+    const data = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_SECTION_VIEW_MODEL_BY_ID, baseId, sectionId]);
+    const allBases = useSubscription([appIds.subscriptions.BASES_LIST]) || [];
 
     // Extract values for useCallback dependencies (use safe defaults)
     // These must be extracted before any early returns to satisfy React hooks rules
@@ -59,18 +57,18 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
     // All hooks must be called before any early returns
     const handleEditProductionPlan = useCallback(() => {
         if (section) {
-            dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, section.id]);
+            runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN, section.id]);
         }
     }, [section]);
 
     const handleDelete = useCallback(() => {
         if (section && selectedBaseId) {
-            dispatch([EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG,
+            runtime.dispatch([appIds.events.UI_SHOW_CONFIRMATION_DIALOG,
                 'Delete Production Plan',
             `Are you sure you want to delete "${section.name}"? This action cannot be undone.`,
             () => {
-                dispatch([EVENT_IDS.PRODUCTION_PLAN_DELETE_SECTION, selectedBaseId, section.id]);
-                dispatch([EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG]);
+                runtime.dispatch([appIds.events.PRODUCTION_PLAN_DELETE_SECTION, selectedBaseId, section.id]);
+                runtime.dispatch([appIds.events.UI_CLOSE_CONFIRMATION_DIALOG]);
             },
             {
                 confirmLabel: 'Delete',
@@ -82,17 +80,17 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
 
     const handleActivate = useCallback(() => {
         if (selectedBaseId && section) {
-            dispatch([EVENT_IDS.PRODUCTION_PLAN_ACTIVATE_SECTION, selectedBaseId, section.id]);
+            runtime.dispatch([appIds.events.PRODUCTION_PLAN_ACTIVATE_SECTION, selectedBaseId, section.id]);
         }
     }, [selectedBaseId, section]);
 
     const handleDeactivate = useCallback(() => {
         if (selectedBaseId && section) {
-            dispatch([EVENT_IDS.PRODUCTION_PLAN_DEACTIVATE_SECTION, selectedBaseId, section.id]);
+            runtime.dispatch([appIds.events.PRODUCTION_PLAN_DEACTIVATE_SECTION, selectedBaseId, section.id]);
         }
     }, [selectedBaseId, section]);
 
-    if (!data) {
+    if (!data || !section) {
         return null;
     }
 

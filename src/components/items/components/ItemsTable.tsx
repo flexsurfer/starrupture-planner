@@ -1,10 +1,10 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import { ItemRow } from "./ItemRow";
 import { ItemIcon } from "./ItemIcon";
 import { CorporationUsageBadge } from "./CorporationUsageBadge";
 import { getCategoryDisplayName, getCategoryBadgeClass } from "../hooks/useItemsData";
 import type { ItemTableData } from "../types";
-import { dispatch } from '@/state/runtime';
-import { EVENT_IDS } from '@/state/event-ids';
 
 interface ItemsTableProps {
   itemsTableData: ItemTableData[];
@@ -92,7 +92,7 @@ export const ItemsTable = ({
             <button
               className="btn btn-sm btn-primary flex-1"
               onClick={() => {
-                dispatch([EVENT_IDS.PLANNER_OPEN_ITEM, item.id]);
+                runtime.dispatch([appIds.events.PLANNER_OPEN_ITEM, item.id]);
               }}
             >
               Planner

@@ -1,23 +1,19 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
-import { useSubscription, dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
-
-interface FormActionsData {
-    isEditMode: boolean;
-}
+import { useSubscription } from '@/app/uklad/bindings';
 
 export const FormActions: React.FC = () => {
-    const { isEditMode } = useSubscription<FormActionsData>([SUB_IDS.PRODUCTION_PLAN_MODAL_HEADER_DATA]);
-    const isFormValid = useSubscription<boolean>([SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALIDITY]);
+    const { isEditMode } = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_HEADER_DATA]);
+    const isFormValid = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALIDITY]);
 
     const handleClose = useCallback(() => {
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE]);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_CLOSE]);
     }, []);
 
     const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
-        dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT]);
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SUBMIT]);
         handleClose();
     }, [handleClose]);
 

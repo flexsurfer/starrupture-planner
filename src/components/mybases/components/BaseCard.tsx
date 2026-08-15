@@ -1,20 +1,16 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { Base, BaseCardSectionKey, Item, Production } from '@/state/db';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
 import { ItemImage, BuildingImage } from '../../ui';
 import { EnergyGroupSelector } from './EnergyGroupSelector';
 import type {
   AddBuildingRequest,
-  BaseDetailStats,
-  BaseInputItem,
   BaseOutputItem,
-  BaseDefenseBuilding,
   BaseDetailTab,
   BaseLogisticsViewModel,
   BuildingSectionType,
-  ProductionPlanRequirementsStatus,
 } from '../types';
 import {
   isLogisticsExcludedOutputBuildingId,
@@ -131,8 +127,8 @@ const formatRate = (value: number | undefined): string => {
 };
 
 const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logistics, outputItems }) => {
-  const planData = useSubscription<ProductionPlanRequirementsStatus>([
-    SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
+  const planData = useSubscription([
+    appIds.subscriptions.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
     baseId,
     plan.id,
   ]);
@@ -270,18 +266,18 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
   const [addBuildingSection, setAddBuildingSection] = useState<BuildingSectionType | null>(null);
 
   // Use parameterized subscriptions
-  const stats = useSubscription<BaseDetailStats | null>([SUB_IDS.BASES_DETAIL_STATS_BY_BASE_ID, base.id]);
-  const inputItems = useSubscription<BaseInputItem[]>([SUB_IDS.BASES_INPUT_ITEMS_BY_BASE_ID, base.id]);
-  const outputItems = useSubscription<BaseOutputItem[]>([SUB_IDS.BASES_OUTPUT_ITEMS_BY_BASE_ID, base.id]);
-  const defenseBuildings = useSubscription<BaseDefenseBuilding[]>([SUB_IDS.BASES_DEFENSE_BUILDINGS_BY_BASE_ID, base.id]);
-  const logistics = useSubscription<BaseLogisticsViewModel | null>([SUB_IDS.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID, base.id]);
-  const collapsedSections = useSubscription<Record<BaseCardSectionKey, boolean>>([
-    SUB_IDS.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID,
+  const stats = useSubscription([appIds.subscriptions.BASES_DETAIL_STATS_BY_BASE_ID, base.id]);
+  const inputItems = useSubscription([appIds.subscriptions.BASES_INPUT_ITEMS_BY_BASE_ID, base.id]);
+  const outputItems = useSubscription([appIds.subscriptions.BASES_OUTPUT_ITEMS_BY_BASE_ID, base.id]);
+  const defenseBuildings = useSubscription([appIds.subscriptions.BASES_DEFENSE_BUILDINGS_BY_BASE_ID, base.id]);
+  const logistics = useSubscription([appIds.subscriptions.BASES_LOGISTICS_VIEW_MODEL_BY_BASE_ID, base.id]);
+  const collapsedSections = useSubscription([
+    appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID,
     base.id,
   ]);
 
   // Get data for plans
-  const itemsMap = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
+  const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
 
   // Early return if stats not available
   if (!stats) {
@@ -302,8 +298,8 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
   };
   const handleAddBuilding = (request: AddBuildingRequest) => {
     if (!addBuildingSection) return;
-    dispatch([
-      EVENT_IDS.BASES_ADD_BUILDINGS,
+    runtime.dispatch([
+      appIds.events.BASES_ADD_BUILDINGS,
       base.id,
       request.buildingTypeId,
       addBuildingSection,
@@ -329,14 +325,14 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
     handleOpenAddModal('outputs');
   };
   const handleAddPlan = () => {
-    dispatch([EVENT_IDS.BASES_OPEN_BASE, base.id, 'plans']);
-    dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN]);
+    runtime.dispatch([appIds.events.BASES_OPEN_BASE, base.id, 'plans']);
+    runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN]);
   };
   const isSectionCollapsed = (sectionKey: BaseCardSectionKey) => {
     return collapsedSections?.[sectionKey] ?? sectionKey !== 'productionPlans';
   };
   const toggleSection = (sectionKey: BaseCardSectionKey) => {
-    dispatch([EVENT_IDS.BASES_TOGGLE_CARD_SECTION_COLLAPSED, base.id, sectionKey]);
+    runtime.dispatch([appIds.events.BASES_TOGGLE_CARD_SECTION_COLLAPSED, base.id, sectionKey]);
   };
 
   const isProductionPlansCollapsed = isSectionCollapsed('productionPlans');

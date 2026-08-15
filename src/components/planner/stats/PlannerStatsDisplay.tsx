@@ -1,6 +1,6 @@
+import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import { PlannerStatsModal } from './PlannerStatsModal';
 
 /**
@@ -8,8 +8,8 @@ import { PlannerStatsModal } from './PlannerStatsModal';
  * Handles both mobile and desktop layouts responsively
  */
 export const PlannerStatsDisplay: React.FC = () => {
-    const selectedItemId = useSubscription<string | null>([SUB_IDS.PLANNER_SELECTED_ITEM_ID]);
-    const statsForButton = useSubscription<{ totalBuildings: number; totalEnergy: number; totalHotness: number }>([SUB_IDS.PLANNER_STATS_SUMMARY]);
+    const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]);
+    const statsForButton = useSubscription([appIds.subscriptions.PLANNER_STATS_SUMMARY]);
 
     // Stats modal state
     const [isStatsModalOpen, setIsStatsModalOpen] = useState<boolean>(false);

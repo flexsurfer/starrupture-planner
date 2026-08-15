@@ -1,7 +1,6 @@
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { PlannerDetailedStats } from '../core/types';
+import { useSubscription } from '@/app/uklad/bindings';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';
 import { getCategoryBadgeClass, getCategoryDisplayName } from '../../items';
@@ -17,7 +16,7 @@ interface PlannerStatsModalProps {
  */
 export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, onClose }) => {
     // Get detailed stats from subscription
-    const stats = useSubscription<PlannerDetailedStats>([SUB_IDS.PLANNER_STATS_DETAILED]);
+    const stats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
 
     if (!isOpen) {
         return null;

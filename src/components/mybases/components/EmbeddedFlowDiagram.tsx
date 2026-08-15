@@ -1,3 +1,4 @@
+import { appIds } from '@/app/uklad/catalog';
 import React, { useEffect, useMemo } from 'react';
 import {
     ReactFlow,
@@ -12,9 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { Item } from '@/state/db';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { ProductionFlowResult } from '../../planner/core/types';
 import { generateReactFlowData } from '../../planner/visualization/plannerFlowUtils';
 
@@ -38,8 +37,8 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     const { fitView } = useReactFlow();
 
     // State subscriptions for rendering
-    const theme = useSubscription<'light' | 'dark'>([SUB_IDS.UI_THEME]);
-    const items = useSubscription<Item[]>([SUB_IDS.ITEMS_LIST]);
+    const theme = useSubscription([appIds.subscriptions.UI_THEME]);
+    const items = useSubscription([appIds.subscriptions.ITEMS_LIST]);
 
     // Generate React Flow data from pre-computed production flow
     const reactFlowData = useMemo((): { nodes: Node[]; edges: Edge[] } => {

@@ -1,12 +1,11 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React, { useEffect, useRef, useState } from 'react';
-import { useSubscription, dispatch } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import { EVENT_IDS } from '@/state/event-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import type { Item, RecipeAlternativePreset } from '@/state/db';
 import type { PlannerRecipeOptionsItem } from '../core/types';
 import { ItemImage, BuildingImage } from '../../ui';
 
-const EMPTY_RECIPE_OPTIONS: PlannerRecipeOptionsItem[] = [];
 const EMPTY_ITEMS_BY_ID: Record<string, Item> = {};
 const EMPTY_PINNED_SELECTIONS: Record<string, string> = {};
 const EMPTY_PRESETS: RecipeAlternativePreset[] = [];
@@ -19,8 +18,7 @@ function sameSelections(a: Record<string, string>, b: Record<string, string>): b
 }
 
 export interface RecipeAlternativesDropdownProps {
-    /** Reflex subscription id for `PlannerRecipeOptionsItem[]` */
-    optionsSubId: (typeof SUB_IDS)[keyof typeof SUB_IDS];
+    options: PlannerRecipeOptionsItem[];
     onSelectRecipe: (itemId: string, optionKey: string) => void;
     /** Replaces the whole current selection at once (used when loading a saved set). */
     onApplySelections?: (selections: Record<string, string>) => void;
@@ -38,17 +36,16 @@ export interface RecipeAlternativesDropdownProps {
  * new plans. Saved sets and the default are global and persisted.
  */
 export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProps> = ({
-    optionsSubId,
+    options,
     onSelectRecipe,
     onApplySelections,
     className = '',
     showChevron = false,
     panelMaxHeightClass = 'max-h-[60vh]'
 }) => {
-    const options = useSubscription<PlannerRecipeOptionsItem[]>([optionsSubId]) ?? EMPTY_RECIPE_OPTIONS;
-    const itemsById = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]) ?? EMPTY_ITEMS_BY_ID;
-    const defaultSelections = useSubscription<Record<string, string>>([SUB_IDS.PINNED_RECIPE_SELECTIONS]) ?? EMPTY_PINNED_SELECTIONS;
-    const presets = useSubscription<RecipeAlternativePreset[]>([SUB_IDS.RECIPE_ALTERNATIVE_PRESETS]) ?? EMPTY_PRESETS;
+    const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]) ?? EMPTY_ITEMS_BY_ID;
+    const defaultSelections = useSubscription([appIds.subscriptions.PINNED_RECIPE_SELECTIONS]) ?? EMPTY_PINNED_SELECTIONS;
+    const presets = useSubscription([appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]) ?? EMPTY_PRESETS;
     const [isOpen, setIsOpen] = useState(false);
     const [isLoadOpen, setIsLoadOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement | null>(null);
@@ -92,12 +89,12 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     const handleSavePreset = () => {
         const name = window.prompt('Save current alternatives as:');
         if (name && name.trim()) {
-            dispatch([EVENT_IDS.RECIPE_ALTERNATIVES_SAVE_PRESET, name.trim(), currentSelections]);
+            runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, name.trim(), currentSelections]);
         }
     };
 
     const handleToggleDefault = () => {
-        dispatch([EVENT_IDS.RECIPE_ALTERNATIVES_SET_DEFAULTS, isCurrentDefault ? {} : currentSelections]);
+        runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULTS, isCurrentDefault ? {} : currentSelections]);
     };
 
     const handleLoadPreset = (preset: RecipeAlternativePreset) => {
@@ -107,7 +104,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
 
     const handleDeletePreset = (event: React.MouseEvent, presetId: string) => {
         event.stopPropagation();
-        dispatch([EVENT_IDS.RECIPE_ALTERNATIVES_DELETE_PRESET, presetId]);
+        runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, presetId]);
     };
 
     return (

@@ -5,7 +5,7 @@
  */
 
 import { appIds } from '@/app/uklad/catalog';
-import { useAppRuntime, useAppSubscription } from '@/state/runtime';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { DataVersion } from "@/state/db";
 
 interface VersionSelectorProps {
@@ -13,10 +13,10 @@ interface VersionSelectorProps {
 }
 
 const VersionSelector: React.FC<VersionSelectorProps> = ({ className = "" }) => {
-  const runtime = useAppRuntime();
-  const currentVersion = useAppSubscription([appIds.subscriptions.APP_DATA_VERSION]);
-  const dataVersions = useAppSubscription([appIds.subscriptions.APP_DATA_VERSIONS]);
-  const loadPending = useAppSubscription([appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]);
+  const runtime = useRuntime();
+  const currentVersion = useSubscription([appIds.subscriptions.APP_DATA_VERSION]);
+  const dataVersions = useSubscription([appIds.subscriptions.APP_DATA_VERSIONS]);
+  const loadPending = useSubscription([appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]);
 
   return (
     <select

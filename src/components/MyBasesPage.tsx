@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useAppRuntime, useAppSubscription } from '@/state/runtime';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import type { BaseDetailTab } from './mybases';
 import {
@@ -15,10 +15,10 @@ import {
 type MyBasesView = 'bases' | 'logistics';
 
 const MyBasesPage = () => {
-  const runtime = useAppRuntime();
-  const bases = useAppSubscription([appIds.subscriptions.BASES_LIST]);
-  const energyGroups = useAppSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
-  const selectedBase = useAppSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
+  const runtime = useRuntime();
+  const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
+  const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
+  const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
   const [activeView, setActiveView] = useState<MyBasesView>('bases');
 
   // Modal states

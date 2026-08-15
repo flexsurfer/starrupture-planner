@@ -1,3 +1,4 @@
+import { appIds } from '@/app/uklad/catalog';
 import { useState } from "react";
 import { 
   useItemsData, 
@@ -9,10 +10,9 @@ import {
   findItemRecipes 
 } from "./items";
 import { RecipeModal } from "./ui";
-import type { Item, Building } from "@/state/db";
+import type { Item } from "@/state/db";
 import type { ItemRecipe } from "./items";
-import { useSubscription } from "@/state/runtime";
-import { SUB_IDS } from "@/state/sub-ids";
+import { useSubscription } from "@/app/uklad/bindings";
 
 const ItemsPage = () => {
   const {
@@ -34,7 +34,7 @@ const ItemsPage = () => {
   });
 
   // Get data for modal
-  const buildings = useSubscription<Building[]>([SUB_IDS.BUILDINGS_LIST]);
+  const buildings = useSubscription([appIds.subscriptions.BUILDINGS_LIST]);
 
   const openRecipeModal = (item: Item) => {
     const recipes = findItemRecipes(item.id, buildings);

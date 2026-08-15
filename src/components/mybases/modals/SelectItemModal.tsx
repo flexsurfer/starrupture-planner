@@ -1,7 +1,7 @@
+import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
-import { useSubscription } from '@/state/runtime';
-import type { Building as DbBuilding, Item } from '@/state/db';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
+import type { Building as DbBuilding } from '@/state/db';
 import { ItemImage } from '../../ui';
 import { isRawExtractor } from '../utils';
 
@@ -31,7 +31,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   const ratePerMinute = ratePerMinuteDraft ?? String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE);
 
   // Get available items from subscription
-  const availableItems = useSubscription<Item[]>([SUB_IDS.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, building.id]);
+  const availableItems = useSubscription([appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, building.id]);
 
   const filteredItems = searchQuery
     ? availableItems.filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()))

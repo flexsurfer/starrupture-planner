@@ -1,7 +1,7 @@
+import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { Base, Corporation, Item } from '@/state/db';
+import { useSubscription } from '@/app/uklad/bindings';
+import type { Base } from '@/state/db';
 import type { MyBasesStats as MyBasesStatsType } from '../types';
 import { calculateTopProducedItems, shareBasesStats } from '../utils/baseStatsShare';
 
@@ -67,8 +67,8 @@ export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ st
   const resetTimerRef = useRef<number | null>(null);
   const isSharingRef = useRef(false);
   const lastShareStartRef = useRef(0);
-  const itemsById = useSubscription<Record<string, Item>>([SUB_IDS.ITEMS_BY_ID_MAP]);
-  const corporations = useSubscription<Corporation[]>([SUB_IDS.CORPORATIONS_LIST]);
+  const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
+  const corporations = useSubscription([appIds.subscriptions.CORPORATIONS_LIST]);
 
   const clearResetTimer = useCallback(() => {
     if (resetTimerRef.current !== null) {

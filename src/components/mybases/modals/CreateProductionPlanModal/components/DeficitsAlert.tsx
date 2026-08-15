@@ -1,10 +1,9 @@
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { useSubscription } from '@/state/runtime';
-import { SUB_IDS } from '@/state/sub-ids';
-import type { RawMaterialDeficitWithName } from '../../../../planner/core/types';
+import { useSubscription } from '@/app/uklad/bindings';
 
 export const DeficitsAlert: React.FC = () => {
-    const deficits = useSubscription<RawMaterialDeficitWithName[]>([SUB_IDS.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS]);
+    const deficits = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS]);
 
     if (deficits.length === 0) {
         return null;

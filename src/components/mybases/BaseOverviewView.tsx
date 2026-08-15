@@ -1,17 +1,16 @@
+import { runtime } from '@/app/uklad/bootstrap';
+import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
-import { dispatch, useSubscription } from '@/state/runtime';
-import type { PlanSummaryRow, MaterialBalanceRow, BuildingCoverageRow } from './types';
-import { EVENT_IDS } from '@/state/event-ids';
-import { SUB_IDS } from '@/state/sub-ids';
+import { useSubscription } from '@/app/uklad/bindings';
 import { PlanProductionCard } from './components/PlanProductionCard';
 import { MaterialBalanceCard } from './components/MaterialBalanceCard';
 import { BuildingCoverageCard } from './components/BuildingCoverageCard';
 
 export const BaseOverviewView: React.FC = () => {
-  const selectedBaseId = useSubscription<string | null>([SUB_IDS.BASES_SELECTED_BASE_ID]);
-  const planRows = useSubscription<PlanSummaryRow[]>([SUB_IDS.BASES_OVERVIEW_PLAN_ROWS]);
-  const materialBalanceRows = useSubscription<MaterialBalanceRow[]>([SUB_IDS.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS]);
-  const buildingCoverageRows = useSubscription<BuildingCoverageRow[]>([SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS]);
+  const selectedBaseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
+  const planRows = useSubscription([appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS]);
+  const materialBalanceRows = useSubscription([appIds.subscriptions.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS]);
+  const buildingCoverageRows = useSubscription([appIds.subscriptions.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS]);
 
   if (!selectedBaseId) {
     return null;
@@ -25,7 +24,7 @@ export const BaseOverviewView: React.FC = () => {
             <button
               type="button"
               className="btn btn-ghost btn-sm text-base-content/65"
-              onClick={() => dispatch([EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN])}
+              onClick={() => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN])}
             >
               Add Plan
             </button>
