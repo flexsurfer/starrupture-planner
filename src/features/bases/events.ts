@@ -12,6 +12,10 @@ function createBaseId(): string {
     return `base_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
 
+function createBaseBuildingId(): string {
+    return `building_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
 export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regEvent(appIds.events.BASES_CREATE_BASE, ({ draftState }, name) => {
         const baseId = createBaseId();
@@ -84,5 +88,18 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
         if (groupExists && base.energyGroupId !== groupId) {
             base.energyGroupId = groupId;
         }
+    });
+
+    registrar.regEvent(appIds.events.BASES_ADD_BUILDING, ({ draftState }, baseId, buildingTypeId, sectionType, name, description) => {
+        const base = getBaseById(draftState.basesList, baseId);
+        if (!base) return;
+
+        base.buildings.push({
+            id: createBaseBuildingId(),
+            buildingTypeId,
+            sectionType,
+            ...(name ? { name } : {}),
+            ...(description ? { description } : {}),
+        });
     });
 };

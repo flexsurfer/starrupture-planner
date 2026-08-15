@@ -253,14 +253,6 @@ function linkInputToOutput(
     inputBuilding.linkedOutput = nextLinkedOutput;
 }
 
-registrar.regEvent(EVENT_IDS.BASES_ADD_BUILDING, ({ draftState: draftDb }, baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string) => {
-    const base = getBaseById(draftDb.basesList, baseId);
-    if (base) {
-        base.buildings.push(createBaseBuilding({ buildingTypeId, sectionType, name, description }));
-        return;
-    }
-});
-
 registrar.regEvent(
     EVENT_IDS.BASES_ADD_BUILDINGS,
     (

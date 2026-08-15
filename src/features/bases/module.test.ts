@@ -19,9 +19,13 @@ describe('bases Uklad module', () => {
         expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_BASE_BY_ID, base.id])).toMatchObject({ name: 'Outpost One' });
 
         harness.dispatchSync([appIds.events.BASES_SET_CORE_LEVEL, 3]);
+        harness.dispatchSync([appIds.events.BASES_ADD_BUILDING, base.id, 'smelter', 'production', 'Iron', 'Makes iron']);
         harness.dispatchSync([appIds.events.BASES_TOGGLE_CARD_SECTION_COLLAPSED, base.id, 'productionPlans']);
 
         expect(harness.getState().basesList[0]?.coreLevel).toBe(3);
+        expect(harness.getState().basesList[0]?.buildings).toMatchObject([{
+            buildingTypeId: 'smelter', sectionType: 'production', name: 'Iron', description: 'Makes iron',
+        }]);
         expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS])).toEqual({
             [base.id]: { productionPlans: true },
         });
