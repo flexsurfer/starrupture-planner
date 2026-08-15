@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { useSubscription, dispatch } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../../../state/sub-ids';
-import { EVENT_IDS } from '../../../../../state/event-ids';
-import type { Item, CorporationLevelSelection } from '../../../../../state/db';
+import { useSubscription, dispatch } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
+import type { Item, CorporationLevelSelection } from '@/state/db';
 import { CorporationLevelSelector } from '../../../../ui/CorporationLevelSelector';
 import type { CorporationLevelInfo } from '../../../../planner';
 import { useDebouncedCallback } from '../../../../../hooks/useDebouncedCallback';

@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
-import { EVENT_IDS } from '../../../state/event-ids';
-import type { EnergyGroup, Base } from '../../../state/db';
+import { dispatch, useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
+import type { EnergyGroup, Base } from '@/state/db';
 
 interface ManageEnergyGroupsModalProps {
   isOpen: boolean;

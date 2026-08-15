@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { useSubscription, dispatch } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../../../state/sub-ids';
-import { EVENT_IDS } from '../../../../../state/event-ids';
+import { useSubscription, dispatch } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
 import type { AddBuildingRequest, BaseInputItem } from '../../../types';
 import { ItemImage } from '../../../../ui/ItemImage';
 import { BuildingImage } from '../../../../ui/BuildingImage';

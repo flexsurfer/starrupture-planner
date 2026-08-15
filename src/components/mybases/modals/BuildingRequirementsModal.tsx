@@ -1,12 +1,12 @@
 import React from 'react';
-import { dispatch } from '@flexsurfer/reflex';
-import { EVENT_IDS } from '../../../state/event-ids';
+import { dispatch } from '@/state/runtime';
+import { EVENT_IDS } from '@/state/event-ids';
 import type { BuildingRequirement, InputRequirement } from '../types';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';
-import type { Building } from '../../../state/db';
-import { useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
+import type { Building } from '@/state/db';
+import { useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
 
 interface BuildingRequirementsModalProps {
     isOpen: boolean;

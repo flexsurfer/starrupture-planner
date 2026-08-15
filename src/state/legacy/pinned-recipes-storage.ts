@@ -18,7 +18,7 @@ function isPinnedRecipesStorageEnvelope(value: unknown): value is PinnedRecipesS
  * Stale keys that no longer match current game data are harmless: they are
  * ignored when building recipe options (see `buildRecipeOptionsForOutputItems`).
  */
-function normalizePinnedRecipeSelections(raw: unknown): Record<string, string> {
+export function normalizePinnedRecipeSelections(raw: unknown): Record<string, string> {
     if (typeof raw !== 'object' || raw === null) return {};
 
     const normalized: Record<string, string> = {};

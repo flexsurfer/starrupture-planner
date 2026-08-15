@@ -1,4 +1,3 @@
-import { initAppDb } from '@flexsurfer/reflex';
 import type { RawCorporationsData } from './data-utils';
 import type { DataVersion } from './gameDataVersion';
 import { DATA_VERSIONS, DEFAULT_DATA_VERSION } from './gameDataVersion';
@@ -227,8 +226,8 @@ export interface AppState {
     productionPlanModalState: CreateProductionPlanModalState;
 }
 
-/** Before `/game-data/{version}/` JSON loads; `APP_INIT` sets `appDataVersion` from coeffects. */
-const appState: AppState = {
+/** Before `/game-data/{version}/` JSON loads; persistence may hydrate this root before APP_INIT. */
+export const initialAppState: AppState = {
     appDataVersion: DEFAULT_DATA_VERSION,
     appDataVersions: DATA_VERSIONS,
     appVersionedData: {},
@@ -279,5 +278,3 @@ const appState: AppState = {
         matchInputs: false,
     },
 };
-
-initAppDb(appState);

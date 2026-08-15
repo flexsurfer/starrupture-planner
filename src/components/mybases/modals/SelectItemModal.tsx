@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
-import type { Building as DbBuilding, Item } from '../../../state/db';
-import { SUB_IDS } from '../../../state/sub-ids';
+import { useSubscription } from '@/state/runtime';
+import type { Building as DbBuilding, Item } from '@/state/db';
+import { SUB_IDS } from '@/state/sub-ids';
 import { ItemImage } from '../../ui';
 import { isRawExtractor } from '../utils';
 

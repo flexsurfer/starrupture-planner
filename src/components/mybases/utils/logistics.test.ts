@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Base, BuildingsByIdMap, Item } from '../../../state/db';
+import type { Base, BuildingsByIdMap, Item } from '@/state/db';
 import {
   buildAllBaseLogisticsViewModels,
   buildBaseLogisticsViewModel,

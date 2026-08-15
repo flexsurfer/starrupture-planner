@@ -1,4 +1,4 @@
-import type { CorporationComponent, Item } from "../../state/db";
+import type { CorporationComponent, Item } from "@/state/db";
 import { ItemImage } from "../ui";
 
 type ComponentIconProps = {

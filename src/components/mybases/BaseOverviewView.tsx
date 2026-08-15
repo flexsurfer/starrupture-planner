@@ -1,8 +1,8 @@
 import React from 'react';
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
+import { dispatch, useSubscription } from '@/state/runtime';
 import type { PlanSummaryRow, MaterialBalanceRow, BuildingCoverageRow } from './types';
-import { EVENT_IDS } from '../../state/event-ids';
-import { SUB_IDS } from '../../state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
+import { SUB_IDS } from '@/state/sub-ids';
 import { PlanProductionCard } from './components/PlanProductionCard';
 import { MaterialBalanceCard } from './components/MaterialBalanceCard';
 import { BuildingCoverageCard } from './components/BuildingCoverageCard';

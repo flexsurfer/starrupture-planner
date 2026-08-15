@@ -9,10 +9,10 @@ import {
   findItemRecipes 
 } from "./items";
 import { RecipeModal } from "./ui";
-import type { Item, Building } from "../state/db";
+import type { Item, Building } from "@/state/db";
 import type { ItemRecipe } from "./items";
-import { useSubscription } from "@flexsurfer/reflex";
-import { SUB_IDS } from "../state/sub-ids";
+import { useSubscription } from "@/state/runtime";
+import { SUB_IDS } from "@/state/sub-ids";
 
 const ItemsPage = () => {
   const {

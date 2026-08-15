@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../state/sub-ids';
-import { EVENT_IDS } from '../../state/event-ids';
-import type { Base } from '../../state/db';
+import { dispatch, useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
+import type { Base } from '@/state/db';
 import { BaseCoreInfo, BaseOverviewView, BaseBuildingsView, BasePlansView, CreateProductionPlanModal, RenameBaseModal } from './index';
 import type { BaseDetailTab } from './types';
 

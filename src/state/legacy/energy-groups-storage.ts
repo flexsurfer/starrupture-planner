@@ -1,4 +1,4 @@
-import type { EnergyGroup } from './db';
+import type { EnergyGroup } from '../db';
 
 const ENERGY_GROUPS_STORAGE_KEY = 'energyGroups';
 const ENERGY_GROUPS_SCHEMA_VERSION = 1 as const;

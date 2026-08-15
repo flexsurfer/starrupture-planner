@@ -1,6 +1,6 @@
-import { dispatch, useSubscription } from "@flexsurfer/reflex";
-import { EVENT_IDS } from "../../../state/event-ids";
-import { SUB_IDS } from "../../../state/sub-ids";
+import { dispatch, useSubscription } from "@/state/runtime";
+import { EVENT_IDS } from "@/state/event-ids";
+import { SUB_IDS } from "@/state/sub-ids";
 
 interface BuildingSelectorProps {
   className?: string;

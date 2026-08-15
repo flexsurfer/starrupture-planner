@@ -1,4 +1,4 @@
-import type { Base, BaseBuilding, PlanRequiredBuilding } from '../state/db';
+import type { Base, BaseBuilding, PlanRequiredBuilding } from '@/state/db';
 import type { ProductionFlowResult } from '../components/planner/core/types';
 import { resolveOutputBuilding } from './planOutputAllocations';
 

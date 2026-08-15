@@ -1,5 +1,5 @@
-import { useSubscription } from "@flexsurfer/reflex";
-import { SUB_IDS } from "../../state/sub-ids";
+import { useSubscription } from "@/state/runtime";
+import { SUB_IDS } from "@/state/sub-ids";
   
 export const CorporationsStats = () => {
   const stats = useSubscription<{ totalCorporations: number; totalLevels: number; totalCost: number }>([SUB_IDS.CORPORATIONS_STATS_SUMMARY]);

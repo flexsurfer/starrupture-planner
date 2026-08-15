@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
-import type { Base, Building, Item } from '../../../state/db';
-import { SUB_IDS } from '../../../state/sub-ids';
+import { useSubscription } from '@/state/runtime';
+import type { Base, Building, Item } from '@/state/db';
+import { SUB_IDS } from '@/state/sub-ids';
 import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem, LinkedInputReference } from '../types';
 import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';
 import {

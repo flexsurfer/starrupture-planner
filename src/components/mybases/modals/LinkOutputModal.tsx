@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
+import { useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
 import type { LinkableOutputItem } from '../types';
 import { BuildingImage } from '../../ui/BuildingImage';
 import { ItemImage } from '../../ui/ItemImage';

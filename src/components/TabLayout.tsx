@@ -7,10 +7,10 @@ import MyBasesPage from './MyBasesPage';
 import PlannerPage from './PlannerPage';
 import { ThemeToggle, GitHubButton, DiscordButton, VersionSelector, ConfirmationDialog } from './ui';
 import { useNavigationSync } from '../hooks/useNavigationSync';
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../state/sub-ids';
-import { EVENT_IDS } from '../state/event-ids';
-import type { Tab, TabType } from '../state/db';
+import { dispatch, useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
+import type { Tab, TabType } from '@/state/db';
 
 const tabs: Tab[] = [
   { id: 'mybases', label: 'My Bases', icon: '🏗️' },

@@ -1,4 +1,4 @@
-import type { Building } from '../../../state/db';
+import type { Building } from '@/state/db';
 import {
   DRONE_MERGER_3_TO_1_BUILDING_ID,
   ORBITAL_CARGO_LAUNCHER_BUILDING_ID,

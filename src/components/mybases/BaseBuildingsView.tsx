@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import { EVENT_IDS } from '../../state/event-ids';
-import { SUB_IDS } from '../../state/sub-ids';
-import type { Base } from '../../state/db';
+import { dispatch, useSubscription } from '@/state/runtime';
+import { EVENT_IDS } from '@/state/event-ids';
+import { SUB_IDS } from '@/state/sub-ids';
+import type { Base } from '@/state/db';
 import type { AddBuildingRequest, BuildingSectionType } from './types';
 import {
   BuildingSection,

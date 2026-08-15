@@ -7,7 +7,7 @@ import type {
   CorporationComponent as DbCorporationComponent,
   CorporationLevel as DbCorporationLevel,
   Item as DbItem,
-} from '../../state/db';
+} from '@/state/db';
 
 export type Item = DbItem;
 export type CorporationComponent = DbCorporationComponent;

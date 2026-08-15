@@ -11,8 +11,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
+import { useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};

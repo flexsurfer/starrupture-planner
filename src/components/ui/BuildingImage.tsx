@@ -1,4 +1,4 @@
-import type { Building } from "../../state/db";
+import type { Building } from "@/state/db";
 
 export interface BuildingImageProps {
   buildingId: string;

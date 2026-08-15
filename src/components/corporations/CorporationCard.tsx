@@ -1,7 +1,7 @@
 import { CorporationIcon } from "./CorporationIcon";
 import { LevelCard } from "./LevelCard";
 import type { CorporationWithStats } from "./types";
-import type { Item } from "../../state/db";
+import type { Item } from "@/state/db";
 
 type CorporationCardProps = {
   corporation: CorporationWithStats;

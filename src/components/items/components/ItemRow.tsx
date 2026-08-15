@@ -2,8 +2,8 @@ import { ItemIcon } from "./ItemIcon";
 import { CorporationUsageBadge } from "./CorporationUsageBadge";
 import { getCategoryDisplayName, getCategoryBadgeClass } from "../hooks/useItemsData";
 import type { Item, CorporationUsage } from "../types";
-import { dispatch } from '@flexsurfer/reflex';
-import { EVENT_IDS } from '../../../state/event-ids';
+import { dispatch } from '@/state/runtime';
+import { EVENT_IDS } from '@/state/event-ids';
 
 interface ItemRowProps {
   item: Item;

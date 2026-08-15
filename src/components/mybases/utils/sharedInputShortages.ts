@@ -1,5 +1,5 @@
 import { buildProductionFlow } from '../../planner/core/productionFlowBuilder';
-import type { Base, BaseBuilding, Building, Production } from '../../../state/db';
+import type { Base, BaseBuilding, Building, Production } from '@/state/db';
 import {
     buildBasesById,
     getFlowInputBuildings,

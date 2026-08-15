@@ -4,7 +4,7 @@ import type {
     CorporationLevelSelection,
     PlanRequiredBuilding,
     Production,
-} from './db';
+} from '../db';
 
 const BASES_STORAGE_KEY = 'bases';
 const BASES_SCHEMA_VERSION = 4 as const;
@@ -30,7 +30,7 @@ export function writeBasesToStorage(bases: Base[]) {
     localStorage.setItem(BASES_STORAGE_KEY, JSON.stringify(envelope));
 }
 
-function normalizeBases(rawBases: unknown): Base[] {
+export function normalizeBases(rawBases: unknown): Base[] {
     if (!Array.isArray(rawBases)) {
         return [];
     }

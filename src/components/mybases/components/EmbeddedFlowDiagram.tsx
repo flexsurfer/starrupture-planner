@@ -12,9 +12,9 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
-import type { Item } from '../../../state/db';
+import { useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import type { Item } from '@/state/db';
 import type { ProductionFlowResult } from '../../planner/core/types';
 import { generateReactFlowData } from '../../planner/visualization/plannerFlowUtils';
 

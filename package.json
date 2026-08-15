@@ -17,6 +17,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
+    "devtools:mcp": "uklad-devtools --mcp --host 127.0.0.1 --port 4000 --allow-origin http://localhost:5173 --allow-origin http://127.0.0.1:5173",
     "build": "tsc -b && vite build",
     "deploy": "gh-pages -d dist",
     "images:webp": "./scripts/generate-webp.sh",
@@ -27,9 +28,10 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@flexsurfer/reflex": "^0.1.24",
     "@tailwindcss/vite": "^4.1.11",
     "@types/dagre": "^0.7.53",
+    "@ukladjs/core": "^0.2.1",
+    "@ukladjs/persist": "^0.1.0",
     "@xyflow/react": "^12.8.2",
     "dagre": "^0.8.5",
     "react": "^19.1.0",
@@ -39,11 +41,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
-    "@flexsurfer/reflex-devtools": "^0.1.15",
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@ukladjs/devtools": "^0.2.0",
     "@vitejs/plugin-react": "^4.6.0",
     "@vitest/ui": "^3.2.4",
     "daisyui": "^5.0.50",

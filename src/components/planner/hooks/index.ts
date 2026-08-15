@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { useSubscription, dispatch } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
-import { EVENT_IDS } from '../../../state/event-ids';
+import { useSubscription, dispatch } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
 import type { Building } from '../core/types';
 
 
@@ -36,7 +36,7 @@ export const usePlannerDefaultOutput = () => {
  */
 export const useTargetAmount = () => {
     const targetAmount = useSubscription<number>([SUB_IDS.PLANNER_TARGET_AMOUNT]);
-    const timeoutRef = useRef<number | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const setTargetAmount = useCallback((amount: number) => {
         // Clear existing timeout

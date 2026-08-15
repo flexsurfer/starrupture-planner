@@ -1,9 +1,9 @@
 import React from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
-import { dispatch } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../state/sub-ids';
-import { EVENT_IDS } from '../../state/event-ids';
-import type { ConfirmationDialog as ConfirmationDialogType } from '../../state/db';
+import { useSubscription } from '@/state/runtime';
+import { dispatch } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
+import type { ConfirmationDialog as ConfirmationDialogType } from '@/state/db';
 
 export const ConfirmationDialog: React.FC = () => {
   const dialog = useSubscription<ConfirmationDialogType>([SUB_IDS.UI_CONFIRMATION_DIALOG]);

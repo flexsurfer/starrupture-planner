@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useSubscription } from "@flexsurfer/reflex";
-import { SUB_IDS } from "../state/sub-ids";
-import type { Building } from "../state/db";
+import { useSubscription } from "@/state/runtime";
+import { SUB_IDS } from "@/state/sub-ids";
+import type { Building } from "@/state/db";
 import { BuildingImage, RecipeCard } from "./ui";
 import { useItemsData, CorporationUsageBadge } from "./items";
 

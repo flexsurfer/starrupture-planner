@@ -1,8 +1,8 @@
-import { useSubscription, dispatch } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
-import { EVENT_IDS } from '../../../state/event-ids';
+import { useSubscription, dispatch } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
 import type { CorporationLevelInfo } from '../core/types';
-import type { CorporationLevelSelection } from '../../../state/db';
+import type { CorporationLevelSelection } from '@/state/db';
 import { CorporationLevelSelector } from '../../ui/CorporationLevelSelector';
 
 /**

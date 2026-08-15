@@ -4,7 +4,7 @@ import type {
   Building,
   BuildingsByIdMap,
   Item,
-} from '../../../state/db';
+} from '@/state/db';
 import {
   resolveInputBuilding,
   resolveLinkedOutput,

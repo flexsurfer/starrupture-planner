@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import type { Base, BaseCardSectionKey, Item, Production } from '../../../state/db';
-import { SUB_IDS } from '../../../state/sub-ids';
-import { EVENT_IDS } from '../../../state/event-ids';
+import { dispatch, useSubscription } from '@/state/runtime';
+import type { Base, BaseCardSectionKey, Item, Production } from '@/state/db';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
 import { ItemImage, BuildingImage } from '../../ui';
 import { EnergyGroupSelector } from './EnergyGroupSelector';
 import type {

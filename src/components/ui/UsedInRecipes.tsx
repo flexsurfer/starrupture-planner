@@ -1,6 +1,6 @@
-import { useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../state/sub-ids';
-import type { Building, Recipe } from '../../state/db';
+import { useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import type { Building, Recipe } from '@/state/db';
 import { RecipeCard } from './RecipeCard';
 import { BuildingImage } from './BuildingImage';
 

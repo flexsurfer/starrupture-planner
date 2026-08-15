@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { useSubscription } from "@flexsurfer/reflex";
-import { SUB_IDS } from "../../state/sub-ids";
-import type { Item } from "../../state/db";
+import { useSubscription } from "@/state/runtime";
+import { SUB_IDS } from "@/state/sub-ids";
+import type { Item } from "@/state/db";
 import type { CorporationWithStats } from "./types";
 
 export const useCorporations = () => {

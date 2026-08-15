@@ -1,6 +1,6 @@
 import React from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../state/sub-ids';
+import { useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
 import type { BaseLogisticsViewModel } from './types';
 import { LogisticsCanvas } from './logistics-canvas';
 

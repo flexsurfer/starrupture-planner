@@ -1,4 +1,4 @@
-import type { RecipeAlternativePreset } from './db';
+import type { RecipeAlternativePreset } from '../db';
 
 const RECIPE_PRESETS_STORAGE_KEY = 'recipeAlternativePresets';
 const RECIPE_PRESETS_SCHEMA_VERSION = 1 as const;
@@ -30,7 +30,7 @@ function normalizeSelections(raw: unknown): Record<string, string> {
     return normalized;
 }
 
-function normalizeRecipePresets(raw: unknown): RecipeAlternativePreset[] {
+export function normalizeRecipePresets(raw: unknown): RecipeAlternativePreset[] {
     if (!Array.isArray(raw)) return [];
 
     const presets: RecipeAlternativePreset[] = [];

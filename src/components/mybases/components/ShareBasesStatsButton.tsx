@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
-import type { Base, Corporation, Item } from '../../../state/db';
+import { useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import type { Base, Corporation, Item } from '@/state/db';
 import type { MyBasesStats as MyBasesStatsType } from '../types';
 import { calculateTopProducedItems, shareBasesStats } from '../utils/baseStatsShare';
 

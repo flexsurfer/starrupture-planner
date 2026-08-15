@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigation } from './useNavigation';
-import type { TabType } from '../state/db';
+import type { TabType } from '@/state/db';
 
 export const useNavigationSync = (activeTab: TabType) => {
   const { navigate } = useNavigation();

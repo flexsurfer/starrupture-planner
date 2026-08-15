@@ -1,4 +1,5 @@
-import { regEvent, current } from '@flexsurfer/reflex';
+import { current } from '@ukladjs/core/vanilla';
+import type { UkladContracts, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { EVENT_IDS } from './event-ids';
 import { EFFECT_IDS } from './effect-ids';
 import type {
@@ -51,6 +52,35 @@ import {
     PACKAGE_RECEIVER_BUILDING_ID,
 } from '../constants/buildingIds';
 import { getDefaultBaseCardSectionCollapsed } from './base-card-sections';
+
+type LegacyEventContext = { draftDb: AppState; [key: string]: unknown };
+type LegacyDynamicValue = ReturnType<typeof JSON.parse>;
+
+export const registerEvents = (registrar: UkladRegistrar<UkladContracts>) => {
+    const persistentEffectIds = new Set([
+        EFFECT_IDS.SET_DATA_VERSION,
+        EFFECT_IDS.SET_BASES,
+        EFFECT_IDS.SET_ENERGY_GROUPS,
+        EFFECT_IDS.SET_PINNED_RECIPES,
+        EFFECT_IDS.SET_RECIPE_PRESETS,
+    ]);
+    const coeffectNames: Record<string, string> = {
+        [EFFECT_IDS.GET_THEME]: 'localStoreTheme',
+        [EFFECT_IDS.GET_DATA_VERSION]: 'localStoreDataVersion',
+        [EFFECT_IDS.GET_BASES]: 'localStoreBases',
+        [EFFECT_IDS.GET_ENERGY_GROUPS]: 'localStoreEnergyGroups',
+        [EFFECT_IDS.GET_PINNED_RECIPES]: 'localStorePinnedRecipes',
+        [EFFECT_IDS.GET_RECIPE_PRESETS]: 'localStoreRecipePresets',
+    };
+    const regEvent = (id: string, handler: (context: LegacyEventContext, ...params: LegacyDynamicValue[]) => Array<[string, unknown]> | void, legacyCoeffects?: Array<[string, ...unknown[]]>) => {
+        const options = legacyCoeffects
+            ? { coeffects: Object.fromEntries(legacyCoeffects.map(([coeffectId]) => [coeffectNames[coeffectId] || coeffectId, coeffectId])) }
+            : undefined;
+        registrar.regEvent(id, ({ draftState, coeffects }, ...params) => {
+            const effects = handler({ draftDb: draftState as AppState, ...coeffects }, ...params) as Array<[string, unknown]> | void;
+            return effects?.filter(([effectId]) => !persistentEffectIds.has(effectId));
+        }, options);
+    };
 
 // Common function to update draftDb with version data
 function updateDraftDbWithVersionData(draftDb: AppState, version: DataVersion) {
@@ -204,7 +234,7 @@ regEvent(EVENT_IDS.UI_SHOW_CONFIRMATION_DIALOG, ({ draftDb }, title: string, mes
 });
 
 regEvent(EVENT_IDS.UI_CLOSE_CONFIRMATION_DIALOG, ({ draftDb }) => {
-    draftDb.uiConfirmationDialog = {};
+    draftDb.uiConfirmationDialog.isOpen = false;
 });
 
 function resolveDataVersionFromCoeffect(raw: string | null | undefined): DataVersion {
@@ -215,24 +245,15 @@ function resolveDataVersionFromCoeffect(raw: string | null | undefined): DataVer
 }
 
 /** Initialization event */
-regEvent(EVENT_IDS.APP_INIT, ({ draftDb, localStoreTheme, localStoreDataVersion, localStoreBases, localStoreEnergyGroups, localStorePinnedRecipes, localStoreRecipePresets }) => {
-    if (localStoreTheme) {
-        draftDb.uiTheme = localStoreTheme;
-    }
-
-    const dataVersion = resolveDataVersionFromCoeffect(localStoreDataVersion);
+regEvent(EVENT_IDS.APP_INIT, ({ draftDb }) => {
+    const dataVersion = resolveDataVersionFromCoeffect(draftDb.appDataVersion);
     draftDb.appDataVersion = dataVersion;
-
-    draftDb.basesList = Array.isArray(localStoreBases) ? localStoreBases : [];
-    draftDb.energyGroups = Array.isArray(localStoreEnergyGroups) ? localStoreEnergyGroups : [];
-    draftDb.pinnedRecipeSelections = localStorePinnedRecipes && typeof localStorePinnedRecipes === 'object' ? localStorePinnedRecipes : {};
-    draftDb.recipeAlternativePresets = Array.isArray(localStoreRecipePresets) ? localStoreRecipePresets : [];
 
     return [
         [EFFECT_IDS.SET_THEME, draftDb.uiTheme],
         [EFFECT_IDS.LOAD_GAME_DATA, dataVersion],
     ];
-}, [[EFFECT_IDS.GET_THEME], [EFFECT_IDS.GET_DATA_VERSION], [EFFECT_IDS.GET_BASES], [EFFECT_IDS.GET_ENERGY_GROUPS], [EFFECT_IDS.GET_PINNED_RECIPES], [EFFECT_IDS.GET_RECIPE_PRESETS]]);
+});
 
 regEvent(EVENT_IDS.ITEMS_SET_SELECTED_CATEGORY, ({ draftDb }, category: string) => {
     draftDb.itemsSelectedCategory = category;
@@ -524,7 +545,7 @@ function unlinkInputsLinkedToOutput(
             if (building.linkedOutput?.buildingId !== sourceOutputBuildingId) return;
             if (exceptInputRef?.baseId === base.id && exceptInputRef.buildingId === building.id) return;
 
-            building.linkedOutput = undefined;
+            delete building.linkedOutput;
         });
     });
 }
@@ -728,21 +749,21 @@ regEvent(EVENT_IDS.BASES_UPDATE_BUILDING_ITEM_SELECTION, ({ draftDb }, baseId: s
             if (itemId && ratePerMinute) {
                 building.selectedItemId = itemId;
                 building.ratePerMinute = ratePerMinute;
-                building.linkedOutput = undefined;
-                building.sourceProductionId = undefined;
-                building.allocationMode = undefined;
-                building.requestedRatePerMinute = undefined;
-                building.capacityPerMinute = undefined;
-                building.priority = undefined;
+                delete building.linkedOutput;
+                delete building.sourceProductionId;
+                delete building.allocationMode;
+                delete building.requestedRatePerMinute;
+                delete building.capacityPerMinute;
+                delete building.priority;
             } else {
-                building.selectedItemId = undefined;
-                building.ratePerMinute = undefined;
-                building.linkedOutput = undefined;
-                building.sourceProductionId = undefined;
-                building.allocationMode = undefined;
-                building.requestedRatePerMinute = undefined;
-                building.capacityPerMinute = undefined;
-                building.priority = undefined;
+                delete building.selectedItemId;
+                delete building.ratePerMinute;
+                delete building.linkedOutput;
+                delete building.sourceProductionId;
+                delete building.allocationMode;
+                delete building.requestedRatePerMinute;
+                delete building.capacityPerMinute;
+                delete building.priority;
             }
             return [persistBasesEffect(draftDb as AppState)];
         }
@@ -788,11 +809,11 @@ regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftDb }, baseId: string, 
 
     const sourceProductionId = payload?.sourceProductionId || null;
     if (!sourceProductionId) {
-        output.sourceProductionId = undefined;
-        output.allocationMode = undefined;
-        output.requestedRatePerMinute = undefined;
-        output.capacityPerMinute = undefined;
-        output.priority = undefined;
+        delete output.sourceProductionId;
+        delete output.allocationMode;
+        delete output.requestedRatePerMinute;
+        delete output.capacityPerMinute;
+        delete output.priority;
         return [persistBasesEffect(draftDb as AppState)];
     }
 
@@ -806,7 +827,7 @@ regEvent(EVENT_IDS.BASES_UPDATE_OUTPUT_PLAN_LINK, ({ draftDb }, baseId: string, 
     if (typeof requestedRatePerMinute === 'number' && Number.isFinite(requestedRatePerMinute) && requestedRatePerMinute > 0) {
         output.requestedRatePerMinute = requestedRatePerMinute;
     } else if (output.allocationMode !== 'fixed') {
-        output.requestedRatePerMinute = undefined;
+        delete output.requestedRatePerMinute;
     }
 
     const capacityPerMinute = payload.capacityPerMinute;
@@ -880,7 +901,7 @@ regEvent(EVENT_IDS.ENERGY_GROUP_DELETE, ({ draftDb }, groupId: string) => {
 
     draftDb.basesList.forEach((base: Base) => {
         if (base.energyGroupId === groupId) {
-            base.energyGroupId = undefined;
+            delete base.energyGroupId;
         }
     });
 
@@ -910,7 +931,7 @@ regEvent(EVENT_IDS.BASES_SET_ENERGY_GROUP, ({ draftDb }, baseId: string, groupId
 
     if (!groupId) {
         if (!base.energyGroupId) return;
-        base.energyGroupId = undefined;
+        delete base.energyGroupId;
         return [persistBasesEffect(draftDb as AppState)];
     }
 
@@ -1314,3 +1335,4 @@ regEvent(
 
     return [persistBasesEffect(draftDb as AppState)];
 });
+};

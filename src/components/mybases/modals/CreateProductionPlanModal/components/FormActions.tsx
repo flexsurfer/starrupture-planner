@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
-import { useSubscription, dispatch } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../../../state/sub-ids';
-import { EVENT_IDS } from '../../../../../state/event-ids';
+import { useSubscription, dispatch } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
 
 interface FormActionsData {
     isEditMode: boolean;

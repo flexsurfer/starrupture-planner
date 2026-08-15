@@ -1,7 +1,7 @@
 import { ComponentIcon } from "./ComponentIcon";
-import type { CorporationComponent, Item, Reward } from "../../state/db";
-import { dispatch } from '@flexsurfer/reflex';
-import { EVENT_IDS } from '../../state/event-ids';
+import type { CorporationComponent, Item, Reward } from "@/state/db";
+import { dispatch } from '@/state/runtime';
+import { EVENT_IDS } from '@/state/event-ids';
 
 type LevelCardProps = {
   level: number;

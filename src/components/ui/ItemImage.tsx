@@ -1,4 +1,4 @@
-import type { Item } from "../../state/db";
+import type { Item } from "@/state/db";
 
 export interface ItemImageProps {
   itemId: string;

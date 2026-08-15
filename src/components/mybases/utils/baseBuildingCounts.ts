@@ -1,4 +1,4 @@
-import type { Base, BaseBuilding } from '../../../state/db';
+import type { Base, BaseBuilding } from '@/state/db';
 
 export const MAX_BULK_BUILDING_COUNT = 500;
 

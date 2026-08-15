@@ -1,5 +1,5 @@
-import { dispatch } from "@flexsurfer/reflex";
-import { EVENT_IDS } from "../../../state/event-ids";
+import { dispatch } from "@/state/runtime";
+import { EVENT_IDS } from "@/state/event-ids";
 import { getCategoryDisplayName } from "../hooks/useItemsData";
 
 interface ItemsFilterProps {

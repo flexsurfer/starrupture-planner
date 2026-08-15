@@ -1,9 +1,9 @@
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
+import { dispatch, useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
 import type { BaseDetailStats } from '../types';
-import { EVENT_IDS } from '../../../state/event-ids';
+import { EVENT_IDS } from '@/state/event-ids';
 import React, { useCallback } from 'react';
-import type { Base } from '../../../state/db';
+import type { Base } from '@/state/db';
 import { EnergyGroupSelector } from './EnergyGroupSelector';
 
 interface BaseCoreInfoProps {

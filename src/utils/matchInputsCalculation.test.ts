@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calculateMaxTargetFromInputs } from './matchInputsCalculation';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
-import type { BaseBuilding, Building } from '../state/db';
+import type { BaseBuilding, Building } from '@/state/db';
 
 /*
  * Recipe chain used by most tests (mirrors productionFlowBuilder.test.ts):

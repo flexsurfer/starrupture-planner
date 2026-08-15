@@ -1,5 +1,5 @@
-import { regSub } from '@flexsurfer/reflex';
 import { SUB_IDS } from './sub-ids';
+import type { UkladContracts, UkladRegistrar } from '@ukladjs/core/vanilla';
 import type {
     Item,
     Recipe,
@@ -79,6 +79,23 @@ import type {
 import { buildAllBaseLogisticsViewModels, buildBaseLogisticsViewModel } from '../components/mybases/utils/logistics';
 import { resolveOutputBuilding } from '../utils/planOutputAllocations';
 import { resolveBaseCardCollapsedSections } from './base-card-sections';
+
+type LegacyDynamicValue = ReturnType<typeof JSON.parse>;
+
+export const registerSubscriptions = (registrar: UkladRegistrar<UkladContracts>) => {
+    const regSub = (id: string, computeOrRoot: string | ((...values: LegacyDynamicValue[]) => LegacyDynamicValue), legacyDeps?: (...params: LegacyDynamicValue[]) => Array<[string, ...unknown[]]>, config?: { equalityCheck?: (a: unknown, b: unknown) => boolean }) => {
+        if (typeof computeOrRoot === 'string') {
+            registrar.regRootSub(id, computeOrRoot);
+            return;
+        }
+
+        registrar.regSub(
+            id,
+            legacyDeps || (() => []),
+            (values: LegacyDynamicValue[], ...params: LegacyDynamicValue[]) => computeOrRoot(...values.concat(params)),
+            config,
+        );
+    };
 //============================================================
 // Root subscriptions
 //============================================================
@@ -2038,3 +2055,4 @@ regSub(SUB_IDS.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS,
             .sort((left, right) => right.totalRequired - left.totalRequired);
     },
     () => [[SUB_IDS.BASES_SELECTED_BASE], [SUB_IDS.BUILDINGS_LIST]]);
+};

@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import type { Base, BaseBuilding, Building, Item } from '../../../state/db';
-import { EVENT_IDS } from '../../../state/event-ids';
-import { SUB_IDS } from '../../../state/sub-ids';
+import { dispatch, useSubscription } from '@/state/runtime';
+import type { Base, BaseBuilding, Building, Item } from '@/state/db';
+import { EVENT_IDS } from '@/state/event-ids';
+import { SUB_IDS } from '@/state/sub-ids';
 import type { BuildingSectionBuilding, LinkableOutputItem } from '../types';
 import { isLogisticsExcludedOutputBuildingId, isRawExtractor, sanitizeBuildingCount } from '../utils';
 import { BuildingImage, ClippedSelect, ItemImage } from '../../ui';

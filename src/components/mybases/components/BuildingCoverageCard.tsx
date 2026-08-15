@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
-import { dispatch } from '@flexsurfer/reflex';
+import { dispatch } from '@/state/runtime';
 import type { PlanSummaryRow, BuildingCoverageRow } from '../types';
-import { EVENT_IDS } from '../../../state/event-ids';
+import { EVENT_IDS } from '@/state/event-ids';
 import { BuildingImage } from '../../ui';
 import { CoverageTableHeader } from './CoverageTableHeader';
 import { BuildingCountControl } from './BuildingCountControl';

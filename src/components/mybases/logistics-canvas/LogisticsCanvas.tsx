@@ -15,10 +15,10 @@ import {
   type NodeMouseHandler,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { dispatch, useSubscription } from '@flexsurfer/reflex';
-import { SUB_IDS } from '../../../state/sub-ids';
-import { EVENT_IDS } from '../../../state/event-ids';
-import type { EnergyGroup } from '../../../state/db';
+import { dispatch, useSubscription } from '@/state/runtime';
+import { SUB_IDS } from '@/state/sub-ids';
+import { EVENT_IDS } from '@/state/event-ids';
+import type { EnergyGroup } from '@/state/db';
 import type { BaseLogisticsViewModel, BaseDetailStats } from '../types';
 import { BaseNetworkNode } from './BaseNetworkNode';
 import { EnergyGridNode } from './EnergyGridNode';

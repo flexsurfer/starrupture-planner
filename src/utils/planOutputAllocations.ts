@@ -1,4 +1,4 @@
-import type { Base, BaseBuilding, OutputAllocationMode, Production } from '../state/db';
+import type { Base, BaseBuilding, OutputAllocationMode, Production } from '@/state/db';
 import {
     ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
     PACKAGE_DISPATCHER_BUILDING_ID,
