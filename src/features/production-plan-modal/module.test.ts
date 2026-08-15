@@ -34,6 +34,20 @@ describe('production-plan-modal Uklad module', () => {
             matchInputs: true,
         });
 
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_NAME, 'Renamed line']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, 120]);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, {
+            corporationId: 'miners', level: 2,
+        }]);
+        expect(harness.getState().productionPlanModalState).toMatchObject({
+            name: 'Renamed line',
+            targetAmount: 90,
+            selectedCorporationLevel: { corporationId: 'miners', level: 2 },
+        });
+
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_CLOSE]);
+        expect(harness.getState().productionPlanModalState).toMatchObject({ isOpen: false, name: '' });
+
         runtime.dispose();
     });
 });

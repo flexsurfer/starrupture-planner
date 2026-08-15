@@ -8,7 +8,6 @@ import type {
     BaseBuilding,
     Production,
     PlanRequiredBuilding,
-    CorporationLevelSelection,
 } from './db';
 import { buildProductionFlow } from '../components/planner/core/productionFlowBuilder';
 import type { ProductionFlowResult } from '../components/planner/core/types';
@@ -636,21 +635,6 @@ registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_OPEN, ({ draftState: draftDb 
     }
 });
 
-registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_CLOSE, ({ draftState: draftDb }) => {
-    draftDb.productionPlanModalState = {
-        isOpen: false,
-        baseId: null,
-        editSectionId: null,
-        name: '',
-        selectedItemId: '',
-        targetAmount: 60,
-        selectedCorporationLevel: null,
-        selectedInputIds: [],
-        recipeSelections: {},
-        matchInputs: false,
-    };
-});
-
 registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftState: draftDb }) => {
     const modal = draftDb.productionPlanModalState;
     const { baseId, editSectionId, name, selectedItemId, targetAmount, selectedCorporationLevel } = modal;
@@ -719,10 +703,6 @@ registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftState: draftD
 
 /** Production Plan Modal Form events */
 
-registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_NAME, ({ draftState: draftDb }, name: string) => {
-    draftDb.productionPlanModalState.name = name;
-});
-
 registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftState: draftDb }, itemId: string) => {
     draftDb.productionPlanModalState.selectedItemId = itemId;
     draftDb.productionPlanModalState.selectedCorporationLevel = null;
@@ -768,20 +748,11 @@ registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, ({ dra
     applyMatchInputs(draftDb as AppState);
 });
 
-registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, ({ draftState: draftDb }, amount: number) => {
-    if (draftDb.productionPlanModalState.matchInputs) return;
-    draftDb.productionPlanModalState.targetAmount = amount;
-});
-
 registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, ({ draftState: draftDb }, enabled: boolean) => {
     draftDb.productionPlanModalState.matchInputs = enabled;
     if (enabled) {
         applyMatchInputs(draftDb as AppState);
     }
-});
-
-registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draftState: draftDb }, level: CorporationLevelSelection | null) => {
-    draftDb.productionPlanModalState.selectedCorporationLevel = level;
 });
 
 registrar.regEvent(EVENT_IDS.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftState: draftDb }, baseBuildingId: string) => {
