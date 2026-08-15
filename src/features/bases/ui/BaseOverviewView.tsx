@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import { PlanProductionCard } from './components/PlanProductionCard';
+import { PlanProductionCard } from '@/features/production-plans/ui';
 import { MaterialBalanceCard } from './components/MaterialBalanceCard';
 import { BuildingCoverageCard } from './components/BuildingCoverageCard';
 

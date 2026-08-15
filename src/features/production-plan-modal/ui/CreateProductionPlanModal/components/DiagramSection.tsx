@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
-import { EmbeddedFlowDiagram } from '../../../components/EmbeddedFlowDiagram';
+import { EmbeddedFlowDiagram } from '@/features/production-plans/ui';
 
 export const DiagramSection: React.FC = () => {
 

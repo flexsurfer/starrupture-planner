@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Base, BaseCardSectionKey, Item, Production } from '@/app/uklad/model';
 import { ItemImage, BuildingImage } from '@/shared/ui';
-import { EnergyGroupSelector } from './EnergyGroupSelector';
+import { EnergyGroupSelector } from '@/features/energy-groups/ui';
 import type {
   AddBuildingRequest,
   BaseOutputItem,
@@ -13,7 +13,7 @@ import type {
 } from '@/features/bases/types';
 import { isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
 import { AddBuildingCardModal } from '../modals';
-import { getPlanOutputAllocationSummary, resolveOutputBuilding } from '../../../utils/planOutputAllocations';
+import { getPlanOutputAllocationSummary, resolveOutputBuilding } from '@/utils/planOutputAllocations';
 
 interface BaseCardProps {
   base: Base;

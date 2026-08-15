@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { AddBuildingRequest } from '@/features/bases/types';
 import { ItemImage, BuildingImage } from '@/shared/ui';
-import { AddBuildingCardModal } from '../../AddBuildingCardModal';
+import { AddBuildingCardModal } from '@/features/bases/ui/modals';
 
 export const InputsSelector: React.FC = () => {
     const runtime = useRuntime();

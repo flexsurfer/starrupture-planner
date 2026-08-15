@@ -1,7 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import React, { useCallback } from 'react';
-import { EnergyGroupSelector } from './EnergyGroupSelector';
+import { EnergyGroupSelector } from '@/features/energy-groups/ui';
 
 interface BaseCoreInfoProps {
   onRename?: () => void;

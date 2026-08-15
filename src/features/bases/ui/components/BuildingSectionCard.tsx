@@ -8,10 +8,10 @@ import { sanitizeBuildingCount } from '@/features/bases/building-counts';
 import { BuildingImage, ClippedSelect, ItemImage } from '@/shared/ui';
 import { SelectItemModal } from '../modals';
 import { BuildingCountControl } from './BuildingCountControl';
-import { resolveInputBuilding, resolveLinkedOutput } from '../../../utils/productionPlanInputs';
-import type { ResolvedInputBuilding } from '../../../utils/productionPlanInputs';
-import { resolveOutputBuilding } from '../../../utils/planOutputAllocations';
-import type { ResolvedOutputBuilding } from '../../../utils/planOutputAllocations';
+import { resolveInputBuilding, resolveLinkedOutput } from '@/utils/productionPlanInputs';
+import type { ResolvedInputBuilding } from '@/utils/productionPlanInputs';
+import { resolveOutputBuilding } from '@/utils/planOutputAllocations';
+import type { ResolvedOutputBuilding } from '@/utils/planOutputAllocations';
 
 interface LinkedInputData {
   resolved: ResolvedInputBuilding;

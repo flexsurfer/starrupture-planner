@@ -12,10 +12,10 @@ import {
   ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
   PACKAGE_DISPATCHER_BUILDING_ID,
   PACKAGE_RECEIVER_BUILDING_ID,
-} from '../../../constants/buildingIds';
-import { getDefaultOutputCapacityPerMinute } from '../../../utils/planOutputAllocations';
+} from '@/constants/buildingIds';
+import { getDefaultOutputCapacityPerMinute } from '@/utils/planOutputAllocations';
 import { SelectItemModal } from './SelectItemModal';
-import { LinkOutputModal } from './LinkOutputModal';
+import { LinkOutputModal } from '@/features/production-plan-modal/ui';
 
 interface AddBuildingCardModalProps {
   isOpen: boolean;

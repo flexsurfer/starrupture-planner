@@ -4,8 +4,8 @@ import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { AddBuildingRequest, BuildingSectionType } from '@/features/bases/types';
 import {
   BuildingSection,
-  AddBuildingCardModal,
-} from './index';
+} from './components';
+import { AddBuildingCardModal } from './modals';
 
 export const BaseBuildingsView: React.FC = () => {
   const runtime = useRuntime();

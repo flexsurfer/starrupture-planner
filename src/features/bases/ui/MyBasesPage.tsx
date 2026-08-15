@@ -1,16 +1,12 @@
 import { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
-import type { BaseDetailTab } from './mybases';
-import {
-  EmptyState,
-  BasesList,
-  CreateBaseModal,
-  ManageEnergyGroupsModal,
-  BaseDetailView,
-  MyBasesStats,
-  MyBasesLogisticsView,
-} from './mybases';
+import type { BaseDetailTab } from '@/features/bases/types';
+import { EmptyState, BasesList, MyBasesStats } from './components';
+import { BaseDetailView } from './BaseDetailView';
+import { MyBasesLogisticsView } from './MyBasesLogisticsView';
+import { CreateBaseModal } from './modals';
+import { ManageEnergyGroupsModal } from '@/features/energy-groups/ui';
 
 type MyBasesView = 'bases' | 'logistics';
 

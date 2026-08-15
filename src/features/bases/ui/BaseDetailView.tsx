@@ -1,7 +1,12 @@
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import { BaseCoreInfo, BaseOverviewView, BaseBuildingsView, BasePlansView, CreateProductionPlanModal, RenameBaseModal } from './index';
+import { BaseCoreInfo } from './components';
+import { BaseOverviewView } from './BaseOverviewView';
+import { BaseBuildingsView } from './BaseBuildingsView';
+import { RenameBaseModal } from './modals';
+import { BasePlansView } from '@/features/production-plans/ui';
+import { CreateProductionPlanModal } from '@/features/production-plan-modal/ui';
 import type { BaseDetailTab } from '@/features/bases/types';
 
 export const BaseDetailView: React.FC = () => {

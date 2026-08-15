@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import {
   ProductionPlanSection as ProductionPlanSectionComponent,
-} from './index';
+} from './components';
 
 export const BasePlansView: React.FC = () => {
   const runtime = useRuntime();

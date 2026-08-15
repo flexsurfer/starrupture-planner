@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ItemsPage } from '@/features/items/ui';
 import { BuildingsPage } from '@/features/buildings/ui';
 import { CorporationsPage } from '@/features/corporations/ui';
-import MyBasesPage from './MyBasesPage';
+import { MyBasesPage } from '@/features/bases/ui';
 import { PlannerPage } from '@/features/planner/ui';
 import {
   ConfirmationDialog,
