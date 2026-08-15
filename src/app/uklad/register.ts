@@ -6,6 +6,7 @@ import { registerEnergyGroupsModule } from '@/features/energy-groups/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerPlannerModule } from '@/features/planner/module';
 import { registerProductionPlansModule } from '@/features/production-plans/module';
+import { registerProductionPlanModalModule } from '@/features/production-plan-modal/module';
 import { registerWebEffects } from '@/platform/web/effects';
 import { registerEvents } from '@/state/events';
 import { registerSubscriptions } from '@/state/subs';
@@ -18,6 +19,7 @@ export function registerWebApplication(runtime: UkladRuntime<AppContracts>): voi
     runtime.registerModule(registerItemsModule);
     runtime.registerModule(registerPlannerModule);
     runtime.registerModule(registerProductionPlansModule);
+    runtime.registerModule(registerProductionPlanModalModule);
     runtime.registerModule(registerBasesModule);
     runtime.registerModule(registerEnergyGroupsModule);
     runtime.registerModule(registerWebEffects);

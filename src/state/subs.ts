@@ -1,6 +1,5 @@
 import { SUB_IDS } from './sub-ids';
 import type { UkladContracts, UkladRegistrar } from '@ukladjs/core/vanilla';
-import { stateKeys } from '@/app/uklad/catalog';
 import type {
     Item,
     Corporation,
@@ -60,7 +59,6 @@ export const registerSubscriptions = (registrar: UkladRegistrar<UkladContracts>)
 //============================================================
 // Root subscriptions
 //============================================================
-registrar.regRootSub(SUB_IDS.PRODUCTION_PLAN_MODAL_STATE, stateKeys.productionPlanModalState);
 
 //============================================================
 // Energy Groups subscriptions
@@ -936,33 +934,6 @@ registrar.regSub(SUB_IDS.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID, (bas
             hasMaterialShortage: sectionData.hasMaterialShortage,
             itemName: sectionData.itemName,
             corporationName: sectionData.corporationName
-        };
-    });
-
-registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_OPEN_STATE, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([modalState]: [CreateProductionPlanModalState]) => {
-        return {
-            isOpen: modalState.isOpen,
-        };
-    });
-
-registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_HEADER_DATA, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE]], ([modalState]: [CreateProductionPlanModalState]) => {
-        return {
-            isEditMode: !!modalState.editSectionId,
-        };
-    });
-
-registrar.regSub(SUB_IDS.PRODUCTION_PLAN_MODAL_FORM_VALUES, () => [[SUB_IDS.PRODUCTION_PLAN_MODAL_STATE], [SUB_IDS.ITEMS_LIST]], ([modalState, items]: [CreateProductionPlanModalState, Item[]]) => {
-        const selectedItemName = modalState.selectedItemId
-            ? items.find(i => i.id === modalState.selectedItemId)?.name || ''
-            : '';
-
-        return {
-            defaultName: modalState.name,
-            currentSelectedItemId: modalState.selectedItemId,
-            currentTargetAmount: modalState.targetAmount,
-            defaultSelectedCorporationLevel: modalState.selectedCorporationLevel,
-            selectedItemName,
-            matchInputs: modalState.matchInputs,
         };
     });
 

@@ -62,6 +62,15 @@ type PlannerStatsSummary = {
 type PlannerFlowGraphResult = Pick<PlannerFlowGraph, 'nodes' | 'edges'>
     & Partial<Pick<PlannerFlowGraph, 'items'>>;
 
+type ProductionPlanModalFormValues = {
+    defaultName: string;
+    currentSelectedItemId: string;
+    currentTargetAmount: number;
+    defaultSelectedCorporationLevel: AppState['productionPlanModalState']['selectedCorporationLevel'];
+    selectedItemName: string;
+    matchInputs: boolean;
+};
+
 /**
  * The runtime's complete vocabulary. Feature contracts stay here so handlers,
  * effects, and hooks always agree on one application graph.
@@ -214,5 +223,9 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.PRODUCTION_PLAN_SECTION_IDS]: { params: []; result: string[] };
         [appIds.subscriptions.PRODUCTION_PLAN_SECTION_ENTITY_BY_ID]: { params: [baseId: string, sectionId: string]; result: Production | null };
         [appIds.subscriptions.PRODUCTION_PLAN_SECTION_ITEM_NAME_BY_ITEM_ID]: { params: [itemId: string]; result: string };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE]: { params: []; result: AppState['productionPlanModalState'] };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_OPEN_STATE]: { params: []; result: { isOpen: boolean } };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_HEADER_DATA]: { params: []; result: { isEditMode: boolean } };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALUES]: { params: []; result: ProductionPlanModalFormValues };
     };
 }

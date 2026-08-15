@@ -3,6 +3,7 @@ import { createItemsFeatureState } from '@/features/items/state';
 import { createPlannerFeatureState } from '@/features/planner/state';
 import { createBasesFeatureState } from '@/features/bases/state';
 import { createEnergyGroupsFeatureState } from '@/features/energy-groups/state';
+import { createProductionPlanModalFeatureState } from '@/features/production-plan-modal/state';
 
 /** Creates state owned by exactly one Uklad runtime. */
 export function createAppState(): AppState {
@@ -32,17 +33,6 @@ export function createAppState(): AppState {
         ...createPlannerFeatureState(),
         ...createBasesFeatureState(),
         ...createEnergyGroupsFeatureState(),
-        productionPlanModalState: {
-            isOpen: false,
-            baseId: null,
-            editSectionId: null,
-            name: '',
-            selectedItemId: '',
-            targetAmount: 60,
-            selectedCorporationLevel: null,
-            selectedInputIds: [],
-            recipeSelections: {},
-            matchInputs: false,
-        },
+        ...createProductionPlanModalFeatureState(),
     };
 }
