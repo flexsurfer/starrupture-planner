@@ -26,13 +26,15 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
+    "test:e2e:headless": "vitest run src/platform/headless/e2e",
+    "test:e2e:headless:coverage": "vitest run src/platform/headless/e2e --coverage",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "@types/dagre": "^0.7.53",
-    "@ukladjs/core": "^0.2.1",
+    "@ukladjs/core": "^0.2.2",
     "@ukladjs/persist": "^0.1.0",
     "@xyflow/react": "^12.8.2",
     "dagre": "^0.8.5",
@@ -50,7 +52,8 @@
     "@types/react-dom": "^19.1.6",
     "@ukladjs/devtools": "^0.2.0",
     "@vitejs/plugin-react": "^4.6.0",
-    "@vitest/ui": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.6",
+    "@vitest/ui": "^3.2.6",
     "daisyui": "^5.0.50",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^7.0.0",
@@ -62,7 +65,7 @@
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4",
     "vite-node": "^3.2.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.6"
   },
   "overrides": {
     "minimatch": "^10.2.1"
