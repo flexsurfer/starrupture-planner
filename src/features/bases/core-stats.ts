@@ -1,5 +1,8 @@
 import type { BaseBuilding, BuildingsByIdMap } from '@/app/uklad/model';
 
+/** The first Base Core level used when no level has been selected yet. */
+export const DEFAULT_BASE_CORE_LEVEL = 0;
+
 /** Default base core heat capacity when no building data is available */
 const DEFAULT_BASE_CORE_HEAT_CAPACITY = 1000;
 
@@ -48,7 +51,7 @@ export function getCoreLevels(
   if (coreBuilding?.levels) {
     return coreBuilding.levels;
   }
-  return [{ level: 0, heatCapacity: DEFAULT_BASE_CORE_HEAT_CAPACITY }];
+  return [{ level: DEFAULT_BASE_CORE_LEVEL, heatCapacity: DEFAULT_BASE_CORE_HEAT_CAPACITY }];
 }
 
 /**

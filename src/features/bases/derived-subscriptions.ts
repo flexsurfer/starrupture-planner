@@ -12,7 +12,7 @@ import type {
     MyBasesStats,
     PlanSummaryRow,
 } from '@/features/bases/types';
-import { calculateBaseCoreHeatCapacity, getCoreLevels, isAmplifierBuilding } from './core-stats';
+import { calculateBaseCoreHeatCapacity, DEFAULT_BASE_CORE_LEVEL, getCoreLevels, isAmplifierBuilding } from './core-stats';
 import { getAvailableBuildingsForSection, isBuildingAvailableForSection } from './building-section';
 import { buildActivePlanOccupancy } from './active-plan-occupancy';
 import { buildAllBaseLogisticsViewModels, buildBaseLogisticsViewModel } from './logistics';
@@ -98,13 +98,13 @@ function calculateBaseDetailStats(base: Base, buildingsById: BuildingsByIdMap, e
     }
     const energyGeneration = pooledGeneration ?? localGeneration;
     const energyGridConsumption = pooledConsumption ?? localConsumption;
-    const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(base.coreLevel ?? 0, base.buildings, buildingsById);
+    const baseCoreHeatCapacity = calculateBaseCoreHeatCapacity(base.coreLevel ?? DEFAULT_BASE_CORE_LEVEL, base.buildings, buildingsById);
     const energyPercentage = energyGeneration > 0
         ? Math.min((localConsumption / energyGeneration) * 100, 100)
         : localConsumption > 0 ? 100 : 0;
     return {
         baseName: base.name,
-        coreLevel: base.coreLevel ?? 0,
+        coreLevel: base.coreLevel ?? DEFAULT_BASE_CORE_LEVEL,
         buildingCount: base.buildings.length,
         totalHeat,
         energyGeneration,
@@ -280,7 +280,7 @@ export const registerBasesDerivedSubscriptions: UkladModule<UkladRegistrar<AppCo
             for (const base of bases) {
                 summary.totalBuildings += base.buildings.length;
                 summary.totalPlans += base.productions.length;
-                summary.totalHeatCapacity += calculateBaseCoreHeatCapacity(base.coreLevel ?? 0, base.buildings, buildingsById);
+                summary.totalHeatCapacity += calculateBaseCoreHeatCapacity(base.coreLevel ?? DEFAULT_BASE_CORE_LEVEL, base.buildings, buildingsById);
                 for (const baseBuilding of base.buildings) {
                     const building = buildingsById[baseBuilding.buildingTypeId];
                     if (!building) continue;

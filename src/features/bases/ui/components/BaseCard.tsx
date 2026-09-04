@@ -347,7 +347,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
                 <h3 className="truncate text-lg font-semibold leading-tight" title={base.name}>{base.name}</h3>
                 <div className="mt-1 text-xs text-base-content/55">{base.buildings.length} buildings</div>
               </div>
-              <span className="badge badge-sm badge-outline shrink-0">Lv.{coreLevel}</span>
+              <span className="badge badge-sm badge-outline shrink-0">Lv.{coreLevel + 1}</span>
             </div>
 
             <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3">

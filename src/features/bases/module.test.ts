@@ -13,7 +13,7 @@ describe('bases Uklad module', () => {
         harness.dispatchSync([appIds.events.BASES_CREATE_BASE, 'Outpost One']);
         const [base] = harness.getSubscriptionValue([appIds.subscriptions.BASES_LIST]);
 
-        expect(base).toMatchObject({ name: 'Outpost One', buildings: [], productions: [] });
+        expect(base).toMatchObject({ name: 'Outpost One', coreLevel: 0, buildings: [], productions: [] });
         expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_SELECTED_BASE_ID])).toBe(base.id);
         expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_SELECTED_BASE])).toMatchObject({ id: base.id });
         expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_BASE_BY_ID, base.id])).toMatchObject({ name: 'Outpost One' });

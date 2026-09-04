@@ -20,6 +20,7 @@ import {
     linkInputToOutput,
     unlinkInputsLinkedToOutput,
 } from './building-operations';
+import { DEFAULT_BASE_CORE_LEVEL } from './core-stats';
 
 function getBaseById(bases: Base[], baseId: string): Base | undefined {
     return bases.find((base) => base.id === baseId);
@@ -35,6 +36,7 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
         draftState.basesList.push({
             id: baseId,
             name,
+            coreLevel: DEFAULT_BASE_CORE_LEVEL,
             buildings: [],
             productions: [],
         });

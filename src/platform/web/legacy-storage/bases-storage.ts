@@ -5,6 +5,7 @@ import type {
     PlanRequiredBuilding,
     Production,
 } from '@/app/uklad/model';
+import { DEFAULT_BASE_CORE_LEVEL } from '@/features/bases/core-stats';
 
 const BASES_STORAGE_KEY = 'bases';
 const BASES_SCHEMA_VERSION = 4 as const;
@@ -244,10 +245,11 @@ export function normalizeBases(rawBases: unknown): Base[] {
 
         const coreLevel = typeof base.coreLevel === 'number' &&
             Number.isFinite(base.coreLevel) &&
+            Number.isInteger(base.coreLevel) &&
             base.coreLevel >= 0 &&
-            base.coreLevel <= 4
+            base.coreLevel <= 7
             ? base.coreLevel
-            : 0;
+            : DEFAULT_BASE_CORE_LEVEL;
 
         const normalized: Base = {
             id: base.id,

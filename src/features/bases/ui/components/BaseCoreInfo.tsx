@@ -85,9 +85,9 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
                     key={level}
                     className={`join-item btn btn-xs ${coreLevel === level ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => onCoreLeveChange(level)}
-                    title={`Level ${level} — Heat Capacity: ${heatCapacity.toLocaleString()}`}
+                    title={`Level ${level + 1} — Heat Capacity: ${heatCapacity.toLocaleString()}`}
                   >
-                    {level}
+                    {level + 1}
                   </button>
                 ))}
               </div>

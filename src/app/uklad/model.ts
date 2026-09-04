@@ -173,7 +173,7 @@ export interface RecipeAlternativePreset {
 export interface Base {
     id: string;
     name: string;
-    coreLevel?: number; // Base Core level (0-4), defaults to 0
+    coreLevel?: number; // Zero-based Base Core level (0-7), displayed as 1-8
     energyGroupId?: string; // References EnergyGroup.id for pooled energy grids
     buildings: BaseBuilding[];
     productions: Production[];

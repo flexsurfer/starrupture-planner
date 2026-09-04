@@ -3059,6 +3059,18 @@
       {
         "level": 4,
         "heatCapacity": 10000
+      },
+      {
+        "level": 5,
+        "heatCapacity": 25000
+      },
+      {
+        "level": 6,
+        "heatCapacity": 60000
+      },
+      {
+        "level": 7,
+        "heatCapacity": 100000
       }
     ]
   }
