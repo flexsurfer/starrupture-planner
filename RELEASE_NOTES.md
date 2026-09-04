@@ -1,3 +1,32 @@
+# Release Notes — 2026-09-04
+
+## What's New
+
+### 🎮 Update 2 QoL Game Data
+- Added the **Update 2 QoL** game-data set for items, buildings, corporations, and recipes.
+- Expanded the recipe catalog from 130 to 146 recipes, including new alternative variants.
+- Increased supported base-core levels to 1–8 with updated heat-capacity calculations.
+
+### 🧭 Recipe Planning Improvements
+- Added stable recipe IDs while preserving compatibility with existing saved selections.
+- Recipe alternatives now show recipe-type icons and inline previews, making it easier to compare options.
+- Added Update 2 QoL to the data-version selector and made it the default for new profiles.
+
+### ⚙️ Runtime and Reliability
+- Migrated application state to typed Uklad feature modules with browser and headless platform adapters.
+- Added local-storage migration and durable persistence coverage for planner data, bases, energy groups, themes, and recipe selections.
+- Added browserless end-to-end coverage for the catalog, planner, bases, production plans, persistence, and real bundled data.
+
+### Compatibility
+Existing installations keep their saved game-data version. Select **Update 2 QoL** in the version selector to use the new recipes.
+
+### Verification
+- 146 unit/integration tests and 32 headless end-to-end scenarios passed.
+- Production build and lint passed.
+- Headless coverage: 99.89% statements, 85.87% branches, and 100% functions.
+
+---
+
 # Release Notes — 2026-06-25
 
 ## What's New
