@@ -37,14 +37,14 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item,
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           {/* Production Recipes */}
           <div className="space-y-4 mb-4 lg:mb-6">
-            {itemRecipes.map(({ recipe, building }, idx) => (
-              <div key={idx} className="space-y-2">
+            {itemRecipes.map(({ recipe, building, recipeIndex, recipeType }) => (
+              <div key={`${building.id}:${recipe.id ?? recipeIndex}`} className="space-y-2">
                 <div className="flex items-start gap-2">
                   <BuildingImage buildingId={building.id} building={building} size="small" className="shrink-0" />
                   <span className="text-sm font-medium leading-snug">{building.name}</span>
                 </div>
 
-                <RecipeCard recipe={recipe} />
+                <RecipeCard recipe={recipe} recipeType={recipeType} />
               </div>
             ))}
           </div>

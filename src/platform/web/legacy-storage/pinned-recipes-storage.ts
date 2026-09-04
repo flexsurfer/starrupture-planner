@@ -1,3 +1,5 @@
+import { isRecipeSelectionKey } from '@/app/uklad/recipe-key';
+
 const PINNED_RECIPES_STORAGE_KEY = 'pinnedRecipeSelections';
 const PINNED_RECIPES_SCHEMA_VERSION = 1 as const;
 
@@ -14,7 +16,7 @@ function isPinnedRecipesStorageEnvelope(value: unknown): value is PinnedRecipesS
 }
 
 /**
- * Keeps only well-formed `outputItemId -> "${buildingId}:${recipeIndex}"` entries.
+ * Keeps only well-formed `outputItemId -> "${buildingId}:${recipeIdOrIndex}"` entries.
  * Stale keys that no longer match current game data are harmless: they are
  * ignored when building recipe options (see `buildRecipeOptionsForOutputItems`).
  */
@@ -25,8 +27,7 @@ export function normalizePinnedRecipeSelections(raw: unknown): Record<string, st
     for (const [itemId, value] of Object.entries(raw as Record<string, unknown>)) {
         if (typeof itemId !== 'string' || !itemId.trim()) continue;
         if (typeof value !== 'string') continue;
-        // Expect "buildingId:recipeIndex" with a numeric recipe index.
-        if (!/^.+:\d+$/.test(value)) continue;
+        if (!isRecipeSelectionKey(value)) continue;
         normalized[itemId] = value;
     }
 

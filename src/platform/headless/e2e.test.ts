@@ -10,6 +10,7 @@ import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { AppVersionedGameData } from '@/app/uklad/model';
 import { createAppRuntime } from '@/app/uklad/runtime';
+import { DEFAULT_DATA_VERSION } from '@/features/app-shell/data-version';
 import { registerHeadlessApplication } from './register';
 
 type AppScenario = UkladHeadlessScenario<AppContracts>;
@@ -169,8 +170,8 @@ describe('headless application E2E', () => {
             expect(shell.value('items').length).toBeGreaterThan(0);
         });
 
-        expect(shell.value('version')).toBe('update1');
-        expect(shell.value('versions')).toHaveLength(4);
+        expect(shell.value('version')).toBe(DEFAULT_DATA_VERSION);
+        expect(shell.value('versions')).toHaveLength(5);
 
         await dispatch(scenario, [appIds.events.UI_SET_THEME, 'light']);
         await dispatch(scenario, [appIds.events.UI_SET_ACTIVE_TAB, 'corporations']);

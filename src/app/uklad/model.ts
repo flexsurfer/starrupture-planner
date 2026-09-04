@@ -37,7 +37,12 @@ export interface RecipeOutput {
     amount_per_minute: number;
 }
 
+export type RecipeVariant = 'alternative';
+export type RecipeDisplayType = 'standard' | 'upgrade' | 'alternative';
+
 export interface Recipe {
+    id?: string;
+    variant?: RecipeVariant;
     output: RecipeOutput;
     inputs: RecipeInput[];
 }
@@ -147,7 +152,7 @@ export interface Production {
     targetAmount: number;
     active?: boolean;
     corporationLevel?: CorporationLevelSelection | null;
-    recipeSelections?: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
+    recipeSelections?: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
     inputs?: BaseBuilding[]; // Snapshot of BaseBuilding inputs (not linked to base)
     status?: 'active' | 'inactive' | 'error'; // Plan status: active when running, inactive when stopped, error when inputs insufficient
     requiredBuildings?: PlanRequiredBuilding[]; // Aggregated building requirements, populated on save
@@ -162,7 +167,7 @@ export interface EnergyGroup {
 export interface RecipeAlternativePreset {
     id: string;
     name: string;
-    selections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
+    selections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
 }
 
 export interface Base {
@@ -198,7 +203,7 @@ export interface CreateProductionPlanModalState {
     targetAmount: number;
     selectedCorporationLevel: CorporationLevelSelection | null;
     selectedInputIds: string[];
-    recipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
+    recipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
     matchInputs: boolean;
 }
 
@@ -221,9 +226,9 @@ export interface AppState {
     uiActiveTab: TabType;
     plannerSelectedItemId: string | null;
     plannerSelectedCorporationLevel: CorporationLevelSelection | null;
-    plannerRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
+    plannerRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
     /** Persisted recipe-alternative defaults used to seed new plans and the planner. */
-    pinnedRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIndex}`
+    pinnedRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
     /** Persisted, named recipe-alternative sets the user can save and reload. */
     recipeAlternativePresets: RecipeAlternativePreset[];
     plannerTargetAmount: number;

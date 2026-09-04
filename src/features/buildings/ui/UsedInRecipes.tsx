@@ -23,8 +23,8 @@ export const UsedInRecipes = ({ itemId, itemName }: UsedInRecipesProps) => {
         {itemName} is used in ({recipes.length}):
       </h4>
       <div className="space-y-3">
-        {recipes.map((entry, idx) => (
-          <div key={`${entry.building.id}-${idx}`} className="flex flex-col gap-2">
+        {recipes.map((entry) => (
+          <div key={`${entry.building.id}:${entry.recipe.id ?? entry.recipeIndex}`} className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <BuildingImage
                 buildingId={entry.building.id}
@@ -33,7 +33,7 @@ export const UsedInRecipes = ({ itemId, itemName }: UsedInRecipesProps) => {
               />
               <span className="text-sm font-medium">{entry.building.name}</span>
             </div>
-            <RecipeCard recipe={entry.recipe} />
+            <RecipeCard recipe={entry.recipe} recipeType={entry.recipeType} />
           </div>
         ))}
       </div>

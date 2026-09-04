@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import type { GameDataBundle } from '@/app/uklad/game-data';
-import type { DataVersion } from '@/features/app-shell/data-version';
+import { DEFAULT_DATA_VERSION, type DataVersion } from '@/features/app-shell/data-version';
 import {
     createHeadlessE2EApp,
     TEST_GAME_DATA,
@@ -56,7 +56,7 @@ describe('headless application shell E2E', () => {
         } as const);
 
         expect(shell.current()).toMatchObject({
-            version: 'update1',
+            version: DEFAULT_DATA_VERSION,
             theme: 'dark',
             pending: false,
             activeTab: 'items',
@@ -69,10 +69,11 @@ describe('headless application shell E2E', () => {
             'playtest',
             'update1_PTB',
             'update1',
+            'update2_QoL',
         ]);
 
         await app.dispatch([appIds.events.APP_SET_DATA_VERSION, 'playtest']);
-        expect(shell.value('version')).toBe('update1');
+        expect(shell.value('version')).toBe(DEFAULT_DATA_VERSION);
         expect(shell.value('items')).toEqual([]);
 
         await app.seed('playtest');
@@ -156,16 +157,16 @@ describe('headless application shell E2E', () => {
 
         await app.dispatch([appIds.events.APP_INIT]);
         expect(onThemeChange.mock.calls[0]?.[0]).toBe('dark');
-        expect(loadGameDataVersion).toHaveBeenCalledWith('update1');
+        expect(loadGameDataVersion).toHaveBeenCalledWith(DEFAULT_DATA_VERSION);
         expect(shell.value('pending')).toBe(false);
 
-        pendingLoads.get('update1')!.resolve(TEST_GAME_DATA);
+        pendingLoads.get(DEFAULT_DATA_VERSION)!.resolve(TEST_GAME_DATA);
         await vi.waitFor(async () => {
             await app.scenario.settle();
             expect(shell.value('items')).toHaveLength(TEST_GAME_DATA.items.length);
         });
 
-        await app.dispatch([appIds.events.APP_REQUEST_LOAD_GAME_DATA, 'update1']);
+        await app.dispatch([appIds.events.APP_REQUEST_LOAD_GAME_DATA, DEFAULT_DATA_VERSION]);
         expect(loadGameDataVersion).toHaveBeenCalledTimes(1);
 
         await app.dispatch([appIds.events.APP_REQUEST_LOAD_GAME_DATA, 'playtest']);
@@ -217,10 +218,10 @@ describe('headless application shell E2E', () => {
         await app.dispatch([appIds.events.APP_INIT]);
         await vi.waitFor(async () => {
             await app.scenario.settle();
-            expect(shell.value('version')).toBe('update1');
+            expect(shell.value('version')).toBe(DEFAULT_DATA_VERSION);
             expect(shell.value('items')).toHaveLength(TEST_GAME_DATA.items.length);
         });
-        expect(loadGameDataVersion).toHaveBeenCalledWith('update1');
+        expect(loadGameDataVersion).toHaveBeenCalledWith(DEFAULT_DATA_VERSION);
     });
 
     it('reports failed loads through the default headless error adapter', async () => {
@@ -244,7 +245,7 @@ describe('headless application shell E2E', () => {
                 await app.scenario.settle();
                 expect(shell.value('pending')).toBe(false);
             });
-            expect(shell.value('version')).toBe('update1');
+            expect(shell.value('version')).toBe(DEFAULT_DATA_VERSION);
             expect(consoleError).toHaveBeenCalledWith('Failed to load bundled game data:', loadError);
         } finally {
             consoleError.mockRestore();

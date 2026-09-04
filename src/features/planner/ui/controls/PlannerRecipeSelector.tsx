@@ -9,7 +9,7 @@ interface PlannerRecipeSelectorProps {
 
 /**
  * Planner recipe selector for per-item alternative recipes.
- * Defaults to slow-rate recipes and allows selecting alternative variants.
+ * Defaults to the slowest primary recipe and keeps explicit alternatives opt-in.
  */
 export const PlannerRecipeSelector: React.FC<PlannerRecipeSelectorProps> = ({ className = '' }) => {
     const runtime = useRuntime();

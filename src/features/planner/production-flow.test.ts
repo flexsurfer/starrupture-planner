@@ -233,6 +233,69 @@ describe('buildProductionFlow', () => {
             expect(fastNode!.buildingCount).toBe(1); // 60/60
         });
 
+        it('identifies upgraded and alternative recipes in the same building', () => {
+            const sameBuildingAlternatives = [
+                {
+                    id: 'crafter',
+                    name: 'Fabricator',
+                    upgrade: 'craftertier2',
+                    power: 15,
+                    heat: 4,
+                    recipes: [],
+                },
+                {
+                    id: 'craftertier2',
+                    name: 'Fabricator v.2',
+                    power: 25,
+                    heat: 8,
+                    recipes: [
+                        {
+                            variant: 'alternative' as const,
+                            output: { id: 'tube', amount_per_minute: 10 },
+                            inputs: [{ id: 'bar_titanium', amount_per_minute: 20 }],
+                        },
+                        {
+                            id: 'tube_v2',
+                            output: { id: 'tube', amount_per_minute: 60 },
+                            inputs: [{ id: 'bar_titanium', amount_per_minute: 10 }],
+                        },
+                    ],
+                },
+            ];
+
+            const result = buildProductionFlow(
+                {
+                    targetItemId: 'tube',
+                    targetAmount: 60,
+                    recipeSelections: { tube: 'craftertier2:tube_v2' },
+                },
+                sameBuildingAlternatives,
+            );
+
+            const tubeNode = result.nodes.find((node) => node.outputItem === 'tube');
+            expect(tubeNode?.recipeIndex).toBe(1);
+            expect(tubeNode?.recipeType).toBe('upgrade');
+            expect(tubeNode?.buildingCount).toBe(1);
+
+            const defaultResult = buildProductionFlow(
+                { targetItemId: 'tube', targetAmount: 60 },
+                sameBuildingAlternatives,
+            );
+            expect(defaultResult.nodes.find((node) => node.outputItem === 'tube')?.recipeIndex).toBe(1);
+
+            const alternativeResult = buildProductionFlow(
+                {
+                    targetItemId: 'tube',
+                    targetAmount: 60,
+                    recipeSelections: { tube: 'craftertier2:0' },
+                },
+                sameBuildingAlternatives,
+            );
+            const alternativeNode = alternativeResult.nodes.find((node) => node.outputItem === 'tube');
+            expect(alternativeNode?.recipeIndex).toBe(0);
+            expect(alternativeNode?.recipeType).toBe('alternative');
+        });
+
         it('falls back to slow-rate recipe when selected key is invalid', () => {
             const result = buildProductionFlow(
                 {

@@ -1,4 +1,9 @@
 import type { Building, Item } from '@/app/uklad/model';
+import {
+    getLegacyRecipeSelectionKey,
+    getRecipeSelectionKey,
+} from '@/app/uklad/recipe-key';
+import { getRecipeDisplayType } from '@/features/buildings/recipe-utils';
 import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
 
 /** Builds selectable recipe alternatives for the given produced item IDs. */
@@ -27,10 +32,12 @@ export function buildRecipeOptionsForOutputItems(
             }
 
             optionsByItem.get(itemId)!.options.push({
-                key: `${building.id}:${recipeIndex}`,
+                key: getRecipeSelectionKey(building.id, recipe, recipeIndex),
+                legacyKey: getLegacyRecipeSelectionKey(building.id, recipeIndex),
                 buildingId: building.id,
                 buildingName: building.name,
                 recipeIndex,
+                recipeType: getRecipeDisplayType(recipe, building, buildings),
                 outputRate: recipe.output.amount_per_minute,
             });
         }
@@ -40,15 +47,17 @@ export function buildRecipeOptionsForOutputItems(
     optionsByItem.forEach((entry) => {
         if (entry.options.length <= 1) return;
         entry.options.sort((a, b) => (
-            a.outputRate - b.outputRate
+            Number(a.recipeType === 'alternative') - Number(b.recipeType === 'alternative')
+            || a.outputRate - b.outputRate
             || a.buildingName.localeCompare(b.buildingName)
             || a.recipeIndex - b.recipeIndex
         ));
         entry.defaultKey = entry.options[0]!.key;
         const selectedKey = recipeSelections[entry.itemId];
-        entry.selectedKey = selectedKey && entry.options.some((option) => option.key === selectedKey)
-            ? selectedKey
-            : entry.defaultKey;
+        const selectedOption = selectedKey
+            ? entry.options.find((option) => option.key === selectedKey || option.legacyKey === selectedKey)
+            : undefined;
+        entry.selectedKey = selectedOption?.key ?? entry.defaultKey;
         result.push(entry);
     });
 

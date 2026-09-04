@@ -1,7 +1,7 @@
 import React from 'react';
 import type { FlowNode, Item } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
-import { ItemImage, BuildingImage } from '@/shared/ui';
+import { ItemImage, BuildingImage, RecipeTypeIcon } from '@/shared/ui';
 
 interface NodeCardProps {
     node: FlowNode;
@@ -23,6 +23,13 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                         input
                     </div>
                 </div>
+            )}
+
+            {node.recipeType && (
+                <RecipeTypeIcon
+                    recipeType={node.recipeType}
+                    className="absolute top-[-8px] left-[-8px]"
+                />
             )}
 
             {/* Fractional count badge at bottom center */}

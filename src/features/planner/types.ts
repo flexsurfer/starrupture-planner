@@ -11,6 +11,7 @@ import type {
     Building as DbBuilding,
     BaseBuilding,
     CorporationLevelSelection,
+    RecipeDisplayType,
 } from '@/app/uklad/model';
 
 /** Canonical item model from the app state layer. */
@@ -36,6 +37,8 @@ export interface FlowNode {
     buildingName: string;
     /** Index of the recipe being used (buildings can have multiple recipes) */
     recipeIndex: number;
+    /** Visual classification of the selected production recipe */
+    recipeType?: RecipeDisplayType;
     /** ID of the item this building instance is producing */
     outputItem: string;
     /** Production rate per building in units per minute */
@@ -97,10 +100,12 @@ export interface PlannerDetailedStats {
 
 /** Selectable recipe option for a produced item in planner. */
 export interface PlannerRecipeOption {
-    key: string; // `${buildingId}:${recipeIndex}`
+    key: string; // `${buildingId}:${recipeIdOrIndex}`
+    legacyKey: string; // `${buildingId}:${recipeIndex}`
     buildingId: string;
     buildingName: string;
     recipeIndex: number;
+    recipeType: RecipeDisplayType;
     outputRate: number;
 }
 
@@ -110,7 +115,7 @@ export interface PlannerRecipeOptionsItem {
     itemName: string;
     options: PlannerRecipeOption[];
     selectedKey: string;
-    defaultKey: string; // slow-rate default
+    defaultKey: string; // slowest primary recipe; explicit alternatives stay opt-in
 }
 
 /**
@@ -149,7 +154,7 @@ export interface ProductionFlowParams {
     rawProductionDisabled?: boolean;
     /** Adds a launcher node that consumes the target item */
     includeLauncher?: boolean;
-    /** Optional per-output recipe override map: output item id -> `${buildingId}:${recipeIndex}` */
+    /** Optional per-output recipe override map: output item id -> `${buildingId}:${recipeIdOrIndex}` */
     recipeSelections?: Record<string, string>;
 }
 

@@ -1,4 +1,5 @@
 import type { RecipeAlternativePreset } from '@/app/uklad/model';
+import { isRecipeSelectionKey } from '@/app/uklad/recipe-key';
 
 const RECIPE_PRESETS_STORAGE_KEY = 'recipeAlternativePresets';
 const RECIPE_PRESETS_SCHEMA_VERSION = 1 as const;
@@ -15,7 +16,7 @@ function isRecipePresetsStorageEnvelope(value: unknown): value is RecipePresetsS
     return typeof envelope.schemaVersion === 'number' && 'presets' in envelope;
 }
 
-/** Keeps only well-formed `outputItemId -> "${buildingId}:${recipeIndex}"` entries. */
+/** Keeps only well-formed `outputItemId -> "${buildingId}:${recipeIdOrIndex}"` entries. */
 function normalizeSelections(raw: unknown): Record<string, string> {
     if (typeof raw !== 'object' || raw === null) return {};
 
@@ -23,7 +24,7 @@ function normalizeSelections(raw: unknown): Record<string, string> {
     for (const [itemId, value] of Object.entries(raw as Record<string, unknown>)) {
         if (typeof itemId !== 'string' || !itemId.trim()) continue;
         if (typeof value !== 'string') continue;
-        if (!/^.+:\d+$/.test(value)) continue;
+        if (!isRecipeSelectionKey(value)) continue;
         normalized[itemId] = value;
     }
 

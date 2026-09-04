@@ -20,6 +20,8 @@ import type {
     RawMaterialDeficit,
 } from './types';
 import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '@/constants/buildingIds';
+import { matchesRecipeSelectionKey } from '@/app/uklad/recipe-key';
+import { getRecipeDisplayType } from '@/features/buildings/recipe-utils';
 
 // ============================================================================
 // Constants & helpers
@@ -47,6 +49,7 @@ interface RecipeInfo {
     building: Building;
     recipe: Recipe;
     recipeIndex: number;
+    recipeType: FlowNode['recipeType'];
 }
 
 const LAUNCHER_BUILDING_ID = ORBITAL_CARGO_LAUNCHER_BUILDING_ID;
@@ -132,12 +135,20 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             if (!recipeOptionsCache.has(recipe.output.id)) {
                 recipeOptionsCache.set(recipe.output.id, []);
             }
-            recipeOptionsCache.get(recipe.output.id)!.push({ building, recipe, recipeIndex: i });
+            recipeOptionsCache.get(recipe.output.id)!.push({
+                building,
+                recipe,
+                recipeIndex: i,
+                recipeType: getRecipeDisplayType(recipe, building, buildings),
+            });
         });
     }
 
     recipeOptionsCache.forEach((options) => {
         options.sort((a, b) => {
+            const alternativeDiff = Number(a.recipe.variant === 'alternative')
+                - Number(b.recipe.variant === 'alternative');
+            if (alternativeDiff !== 0) return alternativeDiff;
             const rateDiff = a.recipe.output.amount_per_minute - b.recipe.output.amount_per_minute;
             if (rateDiff !== 0) return rateDiff;
             const nameDiff = a.building.name.localeCompare(b.building.name);
@@ -153,12 +164,14 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         const selectedKey = recipeSelections[itemId];
         if (selectedKey) {
             const selected = options.find(
-                ({ building, recipeIndex }) => `${building.id}:${recipeIndex}` === selectedKey
+                ({ building, recipe, recipeIndex }) => (
+                    matchesRecipeSelectionKey(selectedKey, building.id, recipe, recipeIndex)
+                )
             );
             if (selected) return selected;
         }
 
-        // Slow-rate recipe is default.
+        // Slowest primary recipe is default; explicit alternatives stay opt-in.
         return options[0];
     };
 
@@ -257,7 +270,8 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             info.recipeIndex,
             itemId,
             info.recipe.output.amount_per_minute,
-            0
+            0,
+            { recipeType: info.recipeType },
         );
         ctx.nodes.push(node);
         ctx.producedNodeByItem.set(itemId, node);

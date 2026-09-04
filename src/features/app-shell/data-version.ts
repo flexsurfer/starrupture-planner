@@ -1,13 +1,14 @@
-export type DataVersion = 'earlyaccess' | 'playtest' | 'update1_PTB' | 'update1';
+export type DataVersion = 'earlyaccess' | 'playtest' | 'update1_PTB' | 'update1' | 'update2_QoL';
 
 export const DATA_VERSIONS: { id: DataVersion; label: string }[] = [
     { id: 'earlyaccess', label: 'Early Access' },
     { id: 'playtest', label: 'Playtest' },
     { id: 'update1_PTB', label: 'Update 1 PTB' },
     { id: 'update1', label: 'Update 1' },
+    { id: 'update2_QoL', label: 'Update 2 QoL' },
 ];
 
-export const DEFAULT_DATA_VERSION: DataVersion = 'update1';
+export const DEFAULT_DATA_VERSION: DataVersion = 'update2_QoL';
 
 const VALID_VERSIONS = new Set<DataVersion>(DATA_VERSIONS.map((v) => v.id));
 

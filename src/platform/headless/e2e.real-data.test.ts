@@ -2,11 +2,15 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
-import { DATA_VERSIONS } from '@/features/app-shell/data-version';
+import { DATA_VERSIONS, DEFAULT_DATA_VERSION } from '@/features/app-shell/data-version';
 import {
     createHeadlessE2EApp,
     type HeadlessE2EApp,
 } from './e2e-support';
+import {
+    gameDataBundleToAppVersioned,
+    loadHeadlessGameDataVersion,
+} from './game-data-loader';
 
 describe('headless bundled game-data compatibility E2E', () => {
     const apps: HeadlessE2EApp[] = [];
@@ -18,6 +22,105 @@ describe('headless bundled game-data compatibility E2E', () => {
 
     afterEach(async () => {
         await Promise.all(apps.splice(0).map((app) => app.dispose()));
+    });
+
+    it('keeps legacy recipes at their indexes and gives new recipes stable IDs', async () => {
+        const [previousVersion, latestVersion] = DATA_VERSIONS.slice(-2);
+        if (!previousVersion || !latestVersion) {
+            throw new Error('Recipe identity compatibility requires at least two data versions');
+        }
+
+        const [previousBundle, latestBundle] = await Promise.all([
+            loadHeadlessGameDataVersion(previousVersion.id),
+            loadHeadlessGameDataVersion(latestVersion.id),
+        ]);
+        const previous = gameDataBundleToAppVersioned(previousBundle);
+        const latest = gameDataBundleToAppVersioned(latestBundle);
+        const latestBuildingsById = new Map(latest.buildings.map((building) => [building.id, building]));
+        const matchedRecipeIndexesByBuilding = new Map<string, Set<number>>();
+
+        for (const previousBuilding of previous.buildings) {
+            const previousRecipes = previousBuilding.recipes ?? [];
+            if (previousRecipes.length === 0) continue;
+
+            const latestBuilding = latestBuildingsById.get(previousBuilding.id);
+            expect(
+                latestBuilding,
+                `${latestVersion.label} is missing ${previousVersion.label} building "${previousBuilding.id}"`,
+            ).toBeDefined();
+
+            const latestRecipes = latestBuilding?.recipes ?? [];
+            for (const [recipeIndex, previousRecipe] of previousRecipes.entries()) {
+                if (previousRecipe.id) {
+                    const latestRecipeIndex = latestRecipes.findIndex(({ id }) => id === previousRecipe.id);
+                    expect(
+                        latestRecipeIndex,
+                        `Recipe ID "${previousBuilding.id}:${previousRecipe.id}" was removed`,
+                    ).toBeGreaterThanOrEqual(0);
+                    if (latestRecipeIndex >= 0) {
+                        expect(latestRecipes[latestRecipeIndex]?.output.id).toBe(previousRecipe.output.id);
+                        const matchedIndexes = matchedRecipeIndexesByBuilding.get(previousBuilding.id) ?? new Set();
+                        matchedIndexes.add(latestRecipeIndex);
+                        matchedRecipeIndexesByBuilding.set(previousBuilding.id, matchedIndexes);
+                    }
+                    continue;
+                }
+
+                const latestRecipe = latestRecipes[recipeIndex];
+                expect(
+                    latestRecipe?.output.id,
+                    `Recipe index changed for "${previousBuilding.id}" at index ${recipeIndex}`,
+                ).toBe(previousRecipe.output.id);
+                expect(
+                    latestRecipe?.id,
+                    `Existing recipe "${previousBuilding.id}:${recipeIndex}" must keep its legacy index identity`,
+                ).toBeUndefined();
+                const matchedIndexes = matchedRecipeIndexesByBuilding.get(previousBuilding.id) ?? new Set();
+                matchedIndexes.add(recipeIndex);
+                matchedRecipeIndexesByBuilding.set(previousBuilding.id, matchedIndexes);
+            }
+        }
+
+        for (const latestBuilding of latest.buildings) {
+            const matchedIndexes = matchedRecipeIndexesByBuilding.get(latestBuilding.id) ?? new Set<number>();
+            const seenRecipeIds = new Set<string>();
+
+            for (const [recipeIndex, recipe] of (latestBuilding.recipes ?? []).entries()) {
+                if (!matchedIndexes.has(recipeIndex)) {
+                    expect(
+                        recipe.id,
+                        `New recipe "${latestBuilding.id}:${recipeIndex}" must have a stable ID`,
+                    ).toBeTruthy();
+                }
+
+                if (!recipe.id) continue;
+                expect(recipe.id).toMatch(/^[^:\s]+$/);
+                expect(
+                    seenRecipeIds.has(recipe.id),
+                    `Duplicate recipe ID "${latestBuilding.id}:${recipe.id}"`,
+                ).toBe(false);
+                seenRecipeIds.add(recipe.id);
+            }
+
+            const recipesByOutput = new Map<string, typeof latestBuilding.recipes>();
+            for (const recipe of latestBuilding.recipes ?? []) {
+                const recipes = recipesByOutput.get(recipe.output.id) ?? [];
+                recipes.push(recipe);
+                recipesByOutput.set(recipe.output.id, recipes);
+            }
+            for (const [outputItemId, recipes] of recipesByOutput) {
+                if (!recipes || recipes.length <= 1) continue;
+
+                expect(
+                    recipes.filter(({ variant }) => variant !== 'alternative'),
+                    `Duplicate output "${latestBuilding.id}:${outputItemId}" must have one primary recipe`,
+                ).toHaveLength(1);
+                expect(
+                    recipes.filter(({ variant }) => variant === 'alternative'),
+                    `Duplicate output "${latestBuilding.id}:${outputItemId}" must mark the others as alternatives`,
+                ).toHaveLength(recipes.length - 1);
+            }
+        }
     });
 
     it.each(DATA_VERSIONS)('loads %s and completes a real-data planning journey', async ({ id: version }) => {
@@ -35,7 +138,7 @@ describe('headless bundled game-data compatibility E2E', () => {
             productionBuildings: [appIds.subscriptions.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS],
         } as const);
 
-        if (version === 'update1') {
+        if (version === DEFAULT_DATA_VERSION) {
             await app.dispatch([appIds.events.APP_INIT]);
         } else {
             await app.dispatch([appIds.events.APP_REQUEST_LOAD_GAME_DATA, version]);

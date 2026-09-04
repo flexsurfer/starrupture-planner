@@ -1,6 +1,6 @@
 import { appIds } from '@/app/uklad/catalog';
-import type { Recipe, Item } from "@/app/uklad/model";
-import { ItemImage } from '@/shared/ui';
+import type { Item, Recipe, RecipeDisplayType } from "@/app/uklad/model";
+import { ItemImage, RecipeTypeIcon } from '@/shared/ui';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 interface RecipeItemIconProps {
@@ -35,18 +35,20 @@ const RecipeItemIcon = ({ itemId, amount, isOutput = false, item }: RecipeItemIc
 
 interface RecipeCardProps {
   recipe: Recipe;
+  recipeType?: RecipeDisplayType;
   className?: string;
 }
 
-export const RecipeCard = ({ recipe, className = "" }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, recipeType = 'standard', className = "" }: RecipeCardProps) => {
   const runtime = useRuntime();
   const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const outputItem = itemsMap[recipe.output.id];
 
   return (
-    <div className={`card bg-base-200 shadow-sm border border-base-300 ${className}`}>
+    <div className={`card relative bg-base-200 shadow-sm border border-base-300 ${className}`}>
+      <RecipeTypeIcon recipeType={recipeType} className="absolute left-3 top-3 z-10" />
       <div className="card-body p-4">
-        <div className="flex items-start gap-4 mb-3">
+        <div className={`flex items-start gap-4 mb-3 ${recipeType === 'standard' ? '' : 'pl-7'}`}>
           {/* Output */}
           <div className="flex flex-col gap-1 shrink-0">
             <h4 className="text-sm font-medium text-base-content/70">Output</h4>

@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Item, RecipeAlternativePreset } from '@/app/uklad/model';
 import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
-import { ItemImage, BuildingImage } from '@/shared/ui';
+import { ItemImage, BuildingImage, RecipeTypeIcon } from '@/shared/ui';
 
 const EMPTY_ITEMS_BY_ID: Record<string, Item> = {};
 const EMPTY_PINNED_SELECTIONS: Record<string, string> = {};
@@ -247,6 +247,10 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                                     >
                                                         {option.outputRate}/min
                                                     </div>
+                                                    <RecipeTypeIcon
+                                                        recipeType={option.recipeType}
+                                                        className="absolute -bottom-1 -left-1"
+                                                    />
                                                     <BuildingImage buildingId={option.buildingId} size="medium" />
                                                 </button>
                                                 <div

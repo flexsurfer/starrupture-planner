@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { Building, Recipe } from '@/app/uklad/model';
+import { findRecipesUsingInput } from '@/features/buildings/recipe-utils';
 import {
     DRONE_MERGER_3_TO_1_BUILDING_ID,
     ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
@@ -177,17 +177,7 @@ export const registerItemsSubscriptions: UkladModule<UkladRegistrar<AppContracts
         appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID,
         () => [[appIds.subscriptions.BUILDINGS_LIST]],
         ([buildings], itemId) => {
-            if (!itemId) return [];
-
-            const results: { recipe: Recipe; building: Building }[] = [];
-            for (const building of buildings) {
-                for (const recipe of building.recipes || []) {
-                    if (recipe.inputs.some((input) => input.id === itemId)) {
-                        results.push({ recipe, building });
-                    }
-                }
-            }
-            return results;
+            return findRecipesUsingInput(itemId, buildings);
         },
     );
 

@@ -4,6 +4,7 @@ import { useSubscription } from "@/app/uklad/bindings";
 import type { Building } from "@/app/uklad/model";
 import { BuildingImage } from '@/shared/ui';
 import { RecipeCard } from './RecipeCard';
+import { getRecipeDisplayType } from '../recipe-utils';
 import { useItemsData } from '@/features/items/ui/hooks/useItemsData';
 import { CorporationUsageBadge } from '@/features/corporations/ui/CorporationUsageBadge';
 
@@ -47,6 +48,17 @@ const RecipesPage = () => {
     onToggle: () => void;
   }) => {
     const corporationUsage = findBuildingCorporationUsage(building.name);
+    const displayRecipes = (building.recipes ?? [])
+      .map((recipe, recipeIndex) => ({
+        recipe,
+        recipeIndex,
+        recipeType: getRecipeDisplayType(recipe, building, sortedBuildings),
+      }))
+      .sort((a, b) => (
+        Number(a.recipeType === 'alternative') - Number(b.recipeType === 'alternative')
+        || a.recipeIndex - b.recipeIndex
+      ));
+
     return (
       <div className="card bg-base-100 shadow-lg border border-base-300">
         <div className="card-body">
@@ -101,10 +113,11 @@ const RecipesPage = () => {
             <div className="space-y-3">
               <h3 className="text-lg font-semibold">Recipes</h3>
               <div className="grid gap-3">
-                {building.recipes?.map((recipe, idx) => (
+                {displayRecipes.map(({ recipe, recipeIndex, recipeType }) => (
                   <RecipeCard
-                    key={`${building.id}-recipe-${idx}`}
+                    key={`${building.id}:${recipe.id ?? recipeIndex}`}
                     recipe={recipe}
+                    recipeType={recipeType}
                   />
                 ))}
               </div>

@@ -9,10 +9,10 @@ import type {
     Building,
     BuildingsByIdMap,
     CorporationLevelSelection,
-    Recipe,
     Production,
     TabType,
 } from '@/app/uklad/model';
+import type { ItemRecipe } from '@/features/buildings/recipe-utils';
 import type { DataVersion } from '@/features/app-shell/data-version';
 import type { ItemTableData, ItemsHelperLookups } from '@/features/items/types';
 import type { CorporationWithStats } from '@/features/corporations/types';
@@ -209,7 +209,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.ITEMS_TABLE_ROWS]: { params: []; result: ItemTableData[] };
         [appIds.subscriptions.ITEMS_HELPER_LOOKUPS]: { params: []; result: ItemsHelperLookups };
         [appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID]: { params: [buildingId: string]; result: AppState['itemsList'] };
-        [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID]: { params: [itemId: string]; result: { recipe: Recipe; building: Building }[] };
+        [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID]: { params: [itemId: string]; result: ItemRecipe[] };
         [appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST]: { params: []; result: Building[] };
         [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]: { params: []; result: AppState['plannerSelectedItemId'] };
         [appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL]: { params: []; result: AppState['plannerSelectedCorporationLevel'] };

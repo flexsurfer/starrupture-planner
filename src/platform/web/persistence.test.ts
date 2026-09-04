@@ -30,6 +30,7 @@ describe('persistence configuration', () => {
                 v: 1,
                 data: {
                     iron_ingot: 'smelter:0',
+                    glass: 'furnacetier2:glass',
                     broken_selection: 'not-a-recipe-key',
                 },
             }),
@@ -41,6 +42,7 @@ describe('persistence configuration', () => {
                         name: '  Default   set  ',
                         selections: {
                             iron_ingot: 'smelter:0',
+                            glass: 'furnacetier2:glass',
                             broken_selection: 'not-a-recipe-key',
                         },
                     },
@@ -70,11 +72,17 @@ describe('persistence configuration', () => {
             buildings: [{ id: 'building-1', buildingTypeId: 'smelter', sectionType: 'production' }],
             productions: [],
         }]);
-        expect(state.pinnedRecipeSelections).toEqual({ iron_ingot: 'smelter:0' });
+        expect(state.pinnedRecipeSelections).toEqual({
+            iron_ingot: 'smelter:0',
+            glass: 'furnacetier2:glass',
+        });
         expect(state.recipeAlternativePresets).toEqual([{
             id: 'preset-1',
             name: 'Default set',
-            selections: { iron_ingot: 'smelter:0' },
+            selections: {
+                iron_ingot: 'smelter:0',
+                glass: 'furnacetier2:glass',
+            },
         }]);
 
         runtime.dispose();
