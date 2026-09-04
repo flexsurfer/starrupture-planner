@@ -9,160 +9,160 @@
       {
         "output": {
           "id": "accumulator",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "electronics",
-            "amount_per_minute": 24
+            "amount_per_minute": 10
           },
           {
             "id": "stator",
-            "amount_per_minute": 12
+            "amount_per_minute": 20
           },
           {
             "id": "battery",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           }
         ]
       },
       {
         "output": {
           "id": "generator",
-          "amount_per_minute": 6
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "turbine",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "battery",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "nozzle",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           }
         ]
       },
       {
         "output": {
           "id": "electromagnet",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "electromagnetic_coil",
-            "amount_per_minute": 36
+            "amount_per_minute": 30
           },
           {
             "id": "synthetic_resin",
-            "amount_per_minute": 36
+            "amount_per_minute": 30
           },
           {
             "id": "accumulator",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           }
         ]
       },
       {
         "output": {
           "id": "pressure_tank",
-          "amount_per_minute": 6
+          "amount_per_minute": 5
         },
         "inputs": [
           {
             "id": "heat_sheet",
-            "amount_per_minute": 30
+            "amount_per_minute": 20
           },
           {
             "id": "valve",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           },
           {
             "id": "pump",
-            "amount_per_minute": 12
+            "amount_per_minute": 5
           }
         ]
       },
       {
         "output": {
           "id": "resonator",
-          "amount_per_minute": 6
+          "amount_per_minute": 5
         },
         "inputs": [
           {
             "id": "accumulator",
-            "amount_per_minute": 6
+            "amount_per_minute": 5
           },
           {
             "id": "generator",
-            "amount_per_minute": 12
+            "amount_per_minute": 5
           },
           {
             "id": "liquid_helium",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           }
         ]
       },
       {
         "output": {
           "id": "condenser",
-          "amount_per_minute": 4
+          "amount_per_minute": 5
         },
         "inputs": [
           {
             "id": "resonator",
-            "amount_per_minute": 4
+            "amount_per_minute": 5
           },
           {
             "id": "pump",
-            "amount_per_minute": 12
+            "amount_per_minute": 5
           },
           {
             "id": "nanofiber",
-            "amount_per_minute": 32
+            "amount_per_minute": 20
           }
         ]
       },
       {
         "output": {
           "id": "laser_emitter",
-          "amount_per_minute": 10
+          "amount_per_minute": 7.5
         },
         "inputs": [
           {
             "id": "lens",
-            "amount_per_minute": 10
+            "amount_per_minute": 7.5
           },
           {
             "id": "resonator",
-            "amount_per_minute": 10
+            "amount_per_minute": 7.5
           },
           {
             "id": "electromagnetic_coil",
-            "amount_per_minute": 60
+            "amount_per_minute": 22.5
           }
         ]
       },
       {
         "output": {
           "id": "scanner",
-          "amount_per_minute": 6
+          "amount_per_minute": 5
         },
         "inputs": [
           {
             "id": "lens",
-            "amount_per_minute": 18
+            "amount_per_minute": 10
           },
           {
             "id": "generator",
-            "amount_per_minute": 18
+            "amount_per_minute": 5
           },
           {
             "id": "stabilizer",
-            "amount_per_minute": 72
+            "amount_per_minute": 30
           }
         ]
       },
@@ -174,7 +174,7 @@
         "inputs": [
           {
             "id": "powder_calcium",
-            "amount_per_minute": 90
+            "amount_per_minute": 60
           },
           {
             "id": "goethitelattice",
@@ -189,20 +189,20 @@
       {
         "output": {
           "id": "onboardinstruments",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "electronics",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           },
           {
             "id": "stabilizer",
-            "amount_per_minute": 24
+            "amount_per_minute": 20
           },
           {
             "id": "reinforcedhousing",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           }
         ]
       },
@@ -230,7 +230,7 @@
         "inputs": [
           {
             "id": "uberoil",
-            "amount_per_minute": 25
+            "amount_per_minute": 15
           },
           {
             "id": "epoxy",
@@ -245,20 +245,20 @@
       {
         "output": {
           "id": "plasticdust",
-          "amount_per_minute": 12
+          "amount_per_minute": 20
         },
         "inputs": [
           {
             "id": "organiccompound",
-            "amount_per_minute": 12
+            "amount_per_minute": 20
           },
           {
             "id": "basicfuel",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "uberoil",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           }
         ]
       }
@@ -303,12 +303,12 @@
       {
         "output": {
           "id": "titanium_rod",
-          "amount_per_minute": 30
+          "amount_per_minute": 60
         },
         "inputs": [
           {
             "id": "bar_titanium",
-            "amount_per_minute": 30
+            "amount_per_minute": 60
           }
         ]
       },
@@ -368,14 +368,14 @@
         "inputs": [
           {
             "id": "bar_wolfram",
-            "amount_per_minute": 60
+            "amount_per_minute": 30
           }
         ]
       },
       {
         "output": {
           "id": "rotor",
-          "amount_per_minute": 10
+          "amount_per_minute": 20
         },
         "inputs": [
           {
@@ -391,7 +391,7 @@
       {
         "output": {
           "id": "tube",
-          "amount_per_minute": 60
+          "amount_per_minute": 120
         },
         "inputs": [
           {
@@ -439,12 +439,12 @@
       {
         "output": {
           "id": "applicator",
-          "amount_per_minute": 15
+          "amount_per_minute": 30
         },
         "inputs": [
           {
             "id": "tube",
-            "amount_per_minute": 120
+            "amount_per_minute": 90
           },
           {
             "id": "glass",
@@ -464,12 +464,12 @@
       {
         "output": {
           "id": "titanium_rod",
-          "amount_per_minute": 120
+          "amount_per_minute": 180
         },
         "inputs": [
           {
             "id": "bar_titanium",
-            "amount_per_minute": 60
+            "amount_per_minute": 90
           }
         ]
       },
@@ -488,16 +488,12 @@
       {
         "output": {
           "id": "wolfram_plate",
-          "amount_per_minute": 150
+          "amount_per_minute": 180
         },
         "inputs": [
           {
             "id": "bar_wolfram",
-            "amount_per_minute": 60
-          },
-          {
-            "id": "powder_wolfram",
-            "amount_per_minute": 30
+            "amount_per_minute": 90
           }
         ]
       },
@@ -516,27 +512,23 @@
       {
         "output": {
           "id": "rotor",
-          "amount_per_minute": 60
+          "amount_per_minute": 40
         },
         "inputs": [
           {
             "id": "titanium_rod",
-            "amount_per_minute": 10
+            "amount_per_minute": 30
           },
           {
             "id": "wolfram_wire",
-            "amount_per_minute": 20
-          },
-          {
-            "id": "wolfram_plate",
-            "amount_per_minute": 10
+            "amount_per_minute": 30
           }
         ]
       },
       {
         "output": {
           "id": "tube",
-          "amount_per_minute": 240
+          "amount_per_minute": 480
         },
         "inputs": [
           {
@@ -545,18 +537,14 @@
           },
           {
             "id": "titanium_sheet",
-            "amount_per_minute": 30
-          },
-          {
-            "id": "powder_wolfram",
-            "amount_per_minute": 30
+            "amount_per_minute": 90
           }
         ]
       },
       {
         "output": {
           "id": "stator",
-          "amount_per_minute": 60
+          "amount_per_minute": 40
         },
         "inputs": [
           {
@@ -565,11 +553,79 @@
           },
           {
             "id": "wolfram_wire",
+            "amount_per_minute": 40
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "applicator",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "tube",
+            "amount_per_minute": 150
+          },
+          {
+            "id": "glass",
+            "amount_per_minute": 45
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "calcite_sheets",
+          "amount_per_minute": 180
+        },
+        "inputs": [
+          {
+            "id": "block_calcium",
+            "amount_per_minute": 90
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "stabilizer",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "rotor",
             "amount_per_minute": 20
           },
           {
+            "id": "titanium_rod",
+            "amount_per_minute": 60
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "titanium_beam",
+          "amount_per_minute": 120
+        },
+        "inputs": [
+          {
+            "id": "bar_titanium",
+            "amount_per_minute": 60
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "tube",
+          "amount_per_minute": 300
+        },
+        "inputs": [
+          {
+            "id": "titanium_rod",
+            "amount_per_minute": 60
+          },
+          {
             "id": "titanium_sheet",
-            "amount_per_minute": 20
+            "amount_per_minute": 60
           }
         ]
       }
@@ -607,7 +663,7 @@
         "inputs": [
           {
             "id": "uberfilament",
-            "amount_per_minute": 12
+            "amount_per_minute": 6
           },
           {
             "id": "reinforcedframe",
@@ -643,7 +699,7 @@
           },
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 15
+            "amount_per_minute": 10
           }
         ]
       },
@@ -687,7 +743,7 @@
           },
           {
             "id": "nanofiber",
-            "amount_per_minute": 6
+            "amount_per_minute": 24
           },
           {
             "id": "substancefhs-135-493",
@@ -763,7 +819,7 @@
           },
           {
             "id": "pseudorubberinsulator",
-            "amount_per_minute": 12
+            "amount_per_minute": 6
           }
         ]
       },
@@ -787,7 +843,7 @@
           },
           {
             "id": "uberoil",
-            "amount_per_minute": 20
+            "amount_per_minute": 10
           }
         ]
       },
@@ -823,7 +879,7 @@
         "inputs": [
           {
             "id": "liquid_helium",
-            "amount_per_minute": 30
+            "amount_per_minute": 15
           },
           {
             "id": "basicfuel",
@@ -835,7 +891,7 @@
           },
           {
             "id": "refinedoil",
-            "amount_per_minute": 40
+            "amount_per_minute": 20
           }
         ]
       }
@@ -851,140 +907,100 @@
       {
         "output": {
           "id": "condenser",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "resonator",
-            "amount_per_minute": 6
+            "amount_per_minute": 5
           },
           {
             "id": "pump",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "nanofiber",
-            "amount_per_minute": 12
-          },
-          {
-            "id": "reinforcedhousing",
-            "amount_per_minute": 6
-          },
-          {
-            "id": "basicfuel",
-            "amount_per_minute": 18
+            "amount_per_minute": 40
           }
         ]
       },
       {
         "output": {
           "id": "ion_injector",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "applicator",
-            "amount_per_minute": 24
+            "amount_per_minute": 40
           },
           {
             "id": "electromagnet",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "pressure_tank",
-            "amount_per_minute": 6
-          },
-          {
-            "id": "goethitelattice",
-            "amount_per_minute": 6
-          },
-          {
-            "id": "uberoil",
-            "amount_per_minute": 6
+            "amount_per_minute": 5
           }
         ]
       },
       {
         "output": {
           "id": "laser_emitter",
-          "amount_per_minute": 20
+          "amount_per_minute": 15
         },
         "inputs": [
           {
             "id": "lens",
-            "amount_per_minute": 10
+            "amount_per_minute": 15
           },
           {
             "id": "resonator",
-            "amount_per_minute": 10
+            "amount_per_minute": 7.5
           },
           {
             "id": "electromagnetic_coil",
             "amount_per_minute": 30
-          },
-          {
-            "id": "grenade",
-            "amount_per_minute": 10
-          },
-          {
-            "id": "epoxy",
-            "amount_per_minute": 10
           }
         ]
       },
       {
         "output": {
           "id": "scanner",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "lens",
-            "amount_per_minute": 12
+            "amount_per_minute": 30
           },
           {
             "id": "generator",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           },
           {
             "id": "stabilizer",
-            "amount_per_minute": 36
-          },
-          {
-            "id": "uberfilament",
-            "amount_per_minute": 6
-          },
-          {
-            "id": "pseudorubberinsulator",
-            "amount_per_minute": 18
+            "amount_per_minute": 40
           }
         ]
       },
       {
         "output": {
           "id": "superconductor",
-          "amount_per_minute": 24
+          "amount_per_minute": 20
         },
         "inputs": [
           {
             "id": "synthetic_resin",
-            "amount_per_minute": 24
+            "amount_per_minute": 60
           },
           {
             "id": "electromagnet",
-            "amount_per_minute": 12
+            "amount_per_minute": 20
           },
           {
             "id": "supermagnet",
-            "amount_per_minute": 36
-          },
-          {
-            "id": "aerogel",
-            "amount_per_minute": 24
-          },
-          {
-            "id": "heatshield",
-            "amount_per_minute": 24
+            "amount_per_minute": 80
           }
         ]
       }
@@ -1110,7 +1126,7 @@
       {
         "output": {
           "id": "glass",
-          "amount_per_minute": 20
+          "amount_per_minute": 40
         },
         "inputs": [
           {
@@ -1146,7 +1162,7 @@
       {
         "output": {
           "id": "heat_sheet",
-          "amount_per_minute": 15
+          "amount_per_minute": 30
         },
         "inputs": [
           {
@@ -1186,27 +1202,27 @@
       {
         "output": {
           "id": "electronics",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "synthetic_silicon",
-            "amount_per_minute": 24
+            "amount_per_minute": 20
           },
           {
             "id": "inductor",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           },
           {
             "id": "stator",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           }
         ]
       },
       {
         "output": {
           "id": "chemicals",
-          "amount_per_minute": 60
+          "amount_per_minute": 120
         },
         "inputs": [
           {
@@ -1231,7 +1247,7 @@
         "inputs": [
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 75
+            "amount_per_minute": 60
           },
           {
             "id": "synthetic_silicon",
@@ -1251,11 +1267,11 @@
         "inputs": [
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 80
+            "amount_per_minute": 60
           },
           {
             "id": "wolfram_plate",
-            "amount_per_minute": 80
+            "amount_per_minute": 60
           },
           {
             "id": "chemicals",
@@ -1280,7 +1296,7 @@
         "inputs": [
           {
             "id": "block_calcium",
-            "amount_per_minute": 60
+            "amount_per_minute": 40
           }
         ]
       },
@@ -1304,22 +1320,18 @@
         "inputs": [
           {
             "id": "calcite_sheets",
-            "amount_per_minute": 30
-          },
-          {
-            "id": "helium",
             "amount_per_minute": 60
           },
           {
             "id": "powder_wolfram",
-            "amount_per_minute": 30
+            "amount_per_minute": 60
           }
         ]
       },
       {
         "output": {
           "id": "chemicals",
-          "amount_per_minute": 120
+          "amount_per_minute": 480
         },
         "inputs": [
           {
@@ -1343,7 +1355,7 @@
       {
         "output": {
           "id": "glass",
-          "amount_per_minute": 80
+          "amount_per_minute": 320
         },
         "inputs": [
           {
@@ -1363,7 +1375,7 @@
       {
         "output": {
           "id": "heat_sheet",
-          "amount_per_minute": 45
+          "amount_per_minute": 180
         },
         "inputs": [
           {
@@ -1383,24 +1395,172 @@
       {
         "output": {
           "id": "hardening_agent",
-          "amount_per_minute": 75
+          "amount_per_minute": 90
         },
         "inputs": [
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 30
+            "amount_per_minute": 60
           },
           {
             "id": "synthetic_silicon",
-            "amount_per_minute": 15
+            "amount_per_minute": 30
           },
           {
             "id": "applicator",
-            "amount_per_minute": 15
+            "amount_per_minute": 30
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "chemicals",
+          "amount_per_minute": 240
+        },
+        "inputs": [
+          {
+            "id": "synthetic_silicon",
+            "amount_per_minute": 30
           },
           {
-            "id": "pressurized_helium",
+            "id": "powder_wolfram",
+            "amount_per_minute": 150
+          },
+          {
+            "id": "helium",
+            "amount_per_minute": 60
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "electronics",
+          "amount_per_minute": 30
+        },
+        "inputs": [
+          {
+            "id": "synthetic_silicon",
+            "amount_per_minute": 20
+          },
+          {
+            "id": "inductor",
+            "amount_per_minute": 20
+          },
+          {
+            "id": "stator",
+            "amount_per_minute": 10
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "glass",
+          "amount_per_minute": 80
+        },
+        "inputs": [
+          {
+            "id": "helium",
+            "amount_per_minute": 40
+          },
+          {
+            "id": "powder_calcium",
+            "amount_per_minute": 60
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "heat_sheet",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "wolfram_plate",
+            "amount_per_minute": 45
+          },
+          {
+            "id": "titanium_sheet",
+            "amount_per_minute": 45
+          },
+          {
+            "id": "glass",
             "amount_per_minute": 15
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "inductor",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "tube",
+            "amount_per_minute": 60
+          },
+          {
+            "id": "wolfram_wire",
+            "amount_per_minute": 30
+          },
+          {
+            "id": "ceramics",
+            "amount_per_minute": 30
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "supermagnet",
+          "amount_per_minute": 80
+        },
+        "inputs": [
+          {
+            "id": "sulfuric_acid",
+            "amount_per_minute": 80
+          },
+          {
+            "id": "wolfram_plate",
+            "amount_per_minute": 80
+          },
+          {
+            "id": "chemicals",
+            "amount_per_minute": 40
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "synthetic_silicon",
+          "amount_per_minute": 120
+        },
+        "inputs": [
+          {
+            "id": "powder_calcium",
+            "amount_per_minute": 90
+          },
+          {
+            "id": "helium",
+            "amount_per_minute": 90
+          },
+          {
+            "id": "ceramics",
+            "amount_per_minute": 60
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "titanium_housing",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "titanium_beam",
+            "amount_per_minute": 90
+          },
+          {
+            "id": "titanium_sheet",
+            "amount_per_minute": 60
           }
         ]
       }
@@ -1512,20 +1672,20 @@
       {
         "output": {
           "id": "nozzle",
-          "amount_per_minute": 12
+          "amount_per_minute": 20
         },
         "inputs": [
           {
             "id": "heat_sheet",
-            "amount_per_minute": 24
+            "amount_per_minute": 20
           },
           {
             "id": "helium",
-            "amount_per_minute": 72
+            "amount_per_minute": 60
           },
           {
             "id": "stabilizer",
-            "amount_per_minute": 12
+            "amount_per_minute": 10
           }
         ]
       },
@@ -1576,31 +1736,31 @@
       {
         "output": {
           "id": "valve",
-          "amount_per_minute": 6
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "titanium_housing",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "titanium_beam",
-            "amount_per_minute": 18
+            "amount_per_minute": 30
           },
           {
             "id": "titanium_rod",
-            "amount_per_minute": 12
+            "amount_per_minute": 20
           },
           {
             "id": "nozzle",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           }
         ]
       },
       {
         "output": {
           "id": "electromagnetic_coil",
-          "amount_per_minute": 15
+          "amount_per_minute": 30
         },
         "inputs": [
           {
@@ -1624,51 +1784,51 @@
       {
         "output": {
           "id": "pump",
-          "amount_per_minute": 6
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "valve",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "turbine",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "impeller",
-            "amount_per_minute": 6
+            "amount_per_minute": 10
           },
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 18
+            "amount_per_minute": 20
           }
         ]
       },
       {
         "output": {
           "id": "reinforcedframe",
-          "amount_per_minute": 12
+          "amount_per_minute": 20
         },
         "inputs": [
           {
             "id": "tube",
-            "amount_per_minute": 48
+            "amount_per_minute": 40
           },
           {
             "id": "ubertitanium",
-            "amount_per_minute": 48
+            "amount_per_minute": 20
           },
           {
             "id": "titanium_beam",
-            "amount_per_minute": 24
+            "amount_per_minute": 20
           }
         ]
       },
       {
         "output": {
           "id": "reinforcedhousing",
-          "amount_per_minute": 15
+          "amount_per_minute": 45
         },
         "inputs": [
           {
@@ -1677,7 +1837,7 @@
           },
           {
             "id": "uberwolfram",
-            "amount_per_minute": 60
+            "amount_per_minute": 30
           },
           {
             "id": "wolfram_plate",
@@ -1688,12 +1848,12 @@
       {
         "output": {
           "id": "goethitelattice",
-          "amount_per_minute": 40
+          "amount_per_minute": 60
         },
         "inputs": [
           {
             "id": "goethiteingot",
-            "amount_per_minute": 40
+            "amount_per_minute": 20
           },
           {
             "id": "ubertitanium",
@@ -1713,43 +1873,43 @@
         "inputs": [
           {
             "id": "epoxy",
-            "amount_per_minute": 18
+            "amount_per_minute": 12
           },
           {
             "id": "aerogel",
-            "amount_per_minute": 18
+            "amount_per_minute": 12
           },
           {
             "id": "uberfilament",
-            "amount_per_minute": 18
+            "amount_per_minute": 6
           },
           {
             "id": "reinforcedframe",
-            "amount_per_minute": 12
+            "amount_per_minute": 6
           }
         ]
       },
       {
         "output": {
           "id": "ionstabilizer",
-          "amount_per_minute": 6
+          "amount_per_minute": 7.5
         },
         "inputs": [
           {
             "id": "epoxy",
-            "amount_per_minute": 6
+            "amount_per_minute": 7.5
           },
           {
             "id": "liquid_helium",
-            "amount_per_minute": 18
+            "amount_per_minute": 22.5
           },
           {
             "id": "onboardinstruments",
-            "amount_per_minute": 6
+            "amount_per_minute": 7.5
           },
           {
             "id": "grenade",
-            "amount_per_minute": 6
+            "amount_per_minute": 7.5
           }
         ]
       }
@@ -1828,21 +1988,21 @@
       {
         "output": {
           "id": "ore_wolfram",
-          "amount_per_minute": 300
+          "amount_per_minute": 180
         },
         "inputs": []
       },
       {
         "output": {
           "id": "ore_calcium",
-          "amount_per_minute": 300
+          "amount_per_minute": 180
         },
         "inputs": []
       },
       {
         "output": {
           "id": "ore_titanium",
-          "amount_per_minute": 300
+          "amount_per_minute": 180
         },
         "inputs": []
       }
@@ -1858,140 +2018,140 @@
       {
         "output": {
           "id": "biofilament",
-          "amount_per_minute": 4
+          "amount_per_minute": 3.75
         },
         "inputs": [
           {
             "id": "syntheticprotein",
-            "amount_per_minute": 8
+            "amount_per_minute": 3.75
           },
           {
             "id": "rnastabilizer",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           },
           {
             "id": "substancefhs-135-493",
-            "amount_per_minute": 16
+            "amount_per_minute": 7.5
           },
           {
             "id": "nanofiber",
-            "amount_per_minute": 32
+            "amount_per_minute": 15
           },
           {
             "id": "superconductor",
-            "amount_per_minute": 8
+            "amount_per_minute": 3.75
           }
         ]
       },
       {
         "output": {
           "id": "converter",
-          "amount_per_minute": 4
+          "amount_per_minute": 3.75
         },
         "inputs": [
           {
             "id": "laser_emitter",
-            "amount_per_minute": 8
+            "amount_per_minute": 3.75
           },
           {
             "id": "accumulator",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           },
           {
             "id": "electromagnetic_coil",
-            "amount_per_minute": 16
+            "amount_per_minute": 7.5
           },
           {
             "id": "uberoil",
-            "amount_per_minute": 12
+            "amount_per_minute": 7.5
           },
           {
             "id": "rtsc",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           }
         ]
       },
       {
         "output": {
           "id": "cyclotrone",
-          "amount_per_minute": 4
+          "amount_per_minute": 3.75
         },
         "inputs": [
           {
             "id": "aerogel",
-            "amount_per_minute": 32
+            "amount_per_minute": 15
           },
           {
             "id": "electromagnet",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           },
           {
             "id": "ion_injector",
-            "amount_per_minute": 8
+            "amount_per_minute": 7.5
           },
           {
             "id": "reinforcedhousing",
-            "amount_per_minute": 20
+            "amount_per_minute": 11.25
           },
           {
             "id": "plasticdust",
-            "amount_per_minute": 20
+            "amount_per_minute": 3.75
           }
         ]
       },
       {
         "output": {
           "id": "rocketengine",
-          "amount_per_minute": 4
+          "amount_per_minute": 3.75
         },
         "inputs": [
           {
             "id": "nozzle",
-            "amount_per_minute": 8
+            "amount_per_minute": 15
           },
           {
             "id": "turbine",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           },
           {
             "id": "pump",
-            "amount_per_minute": 12
+            "amount_per_minute": 7.5
           },
           {
             "id": "rocketfuel",
-            "amount_per_minute": 20
+            "amount_per_minute": 11.25
           },
           {
             "id": "condenser",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           }
         ]
       },
       {
         "output": {
           "id": "trackingdevice",
-          "amount_per_minute": 4
+          "amount_per_minute": 3.75
         },
         "inputs": [
           {
             "id": "carbonsonar",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           },
           {
             "id": "quantumtranqualizer",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           },
           {
             "id": "lens",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           },
           {
             "id": "onboardinstruments",
-            "amount_per_minute": 12
+            "amount_per_minute": 11.25
           },
           {
             "id": "scanner",
-            "amount_per_minute": 4
+            "amount_per_minute": 3.75
           }
         ]
       },
@@ -2003,11 +2163,11 @@
         "inputs": [
           {
             "id": "uberfilament",
-            "amount_per_minute": 24
+            "amount_per_minute": 6
           },
           {
             "id": "condenser",
-            "amount_per_minute": 6
+            "amount_per_minute": 3
           },
           {
             "id": "airlock",
@@ -2015,7 +2175,7 @@
           },
           {
             "id": "scafolding",
-            "amount_per_minute": 12
+            "amount_per_minute": 9
           },
           {
             "id": "converter",
@@ -2031,7 +2191,7 @@
         "inputs": [
           {
             "id": "ion_injector",
-            "amount_per_minute": 6
+            "amount_per_minute": 3
           },
           {
             "id": "ionstabilizer",
@@ -2039,7 +2199,7 @@
           },
           {
             "id": "grenade",
-            "amount_per_minute": 18
+            "amount_per_minute": 9
           },
           {
             "id": "trackingdevice",
@@ -2047,7 +2207,7 @@
           },
           {
             "id": "resonator",
-            "amount_per_minute": 3
+            "amount_per_minute": 6
           }
         ]
       },
@@ -2059,19 +2219,19 @@
         "inputs": [
           {
             "id": "rtsc",
-            "amount_per_minute": 6
+            "amount_per_minute": 3
           },
           {
             "id": "generator",
-            "amount_per_minute": 12
-          },
-          {
-            "id": "laser_emitter",
             "amount_per_minute": 6
           },
           {
+            "id": "laser_emitter",
+            "amount_per_minute": 3
+          },
+          {
             "id": "anti-radiationcovers",
-            "amount_per_minute": 12
+            "amount_per_minute": 6
           },
           {
             "id": "cyclotrone",
@@ -2087,15 +2247,15 @@
         "inputs": [
           {
             "id": "onboardinstruments",
-            "amount_per_minute": 12
+            "amount_per_minute": 9
           },
           {
             "id": "scanner",
-            "amount_per_minute": 6
+            "amount_per_minute": 3
           },
           {
             "id": "ionthrusters",
-            "amount_per_minute": 6
+            "amount_per_minute": 3
           },
           {
             "id": "rocketengine",
@@ -2103,7 +2263,7 @@
           },
           {
             "id": "heatshield",
-            "amount_per_minute": 18
+            "amount_per_minute": 9
           }
         ]
       },
@@ -2115,19 +2275,19 @@
         "inputs": [
           {
             "id": "syntheticprotein",
-            "amount_per_minute": 30
+            "amount_per_minute": 12
           },
           {
             "id": "substancefhs-135-493",
-            "amount_per_minute": 18
+            "amount_per_minute": 6
           },
           {
             "id": "nanosyringe",
-            "amount_per_minute": 15
+            "amount_per_minute": 6
           },
           {
             "id": "uberoil",
-            "amount_per_minute": 30
+            "amount_per_minute": 9
           },
           {
             "id": "biofilament",
@@ -2279,27 +2439,27 @@
       {
         "output": {
           "id": "synthetic_resin",
-          "amount_per_minute": 20
+          "amount_per_minute": 30
         },
         "inputs": [
           {
             "id": "hardening_agent",
-            "amount_per_minute": 20
+            "amount_per_minute": 15
           },
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 60
+            "amount_per_minute": 30
           },
           {
             "id": "calcite_sheets",
-            "amount_per_minute": 120
+            "amount_per_minute": 90
           }
         ]
       },
       {
         "output": {
           "id": "liquid_helium",
-          "amount_per_minute": 20
+          "amount_per_minute": 40
         },
         "inputs": [
           {
@@ -2315,20 +2475,20 @@
       {
         "output": {
           "id": "lens",
-          "amount_per_minute": 6
+          "amount_per_minute": 7.5
         },
         "inputs": [
           {
             "id": "glass",
-            "amount_per_minute": 60
+            "amount_per_minute": 45
           },
           {
             "id": "hardening_agent",
-            "amount_per_minute": 36
+            "amount_per_minute": 22.5
           },
           {
             "id": "synthetic_resin",
-            "amount_per_minute": 24
+            "amount_per_minute": 15
           }
         ]
       },
@@ -2340,15 +2500,15 @@
         "inputs": [
           {
             "id": "tube",
-            "amount_per_minute": 200
+            "amount_per_minute": 120
           },
           {
             "id": "liquid_helium",
-            "amount_per_minute": 50
+            "amount_per_minute": 40
           },
           {
             "id": "wolfram_wire",
-            "amount_per_minute": 80
+            "amount_per_minute": 40
           }
         ]
       },
@@ -2360,11 +2520,11 @@
         "inputs": [
           {
             "id": "applicator",
-            "amount_per_minute": 40
+            "amount_per_minute": 20
           },
           {
             "id": "electromagnet",
-            "amount_per_minute": 10
+            "amount_per_minute": 5
           },
           {
             "id": "pressure_tank",
@@ -2375,20 +2535,20 @@
       {
         "output": {
           "id": "superconductor",
-          "amount_per_minute": 12
+          "amount_per_minute": 10
         },
         "inputs": [
           {
             "id": "synthetic_resin",
-            "amount_per_minute": 48
+            "amount_per_minute": 40
           },
           {
             "id": "electromagnet",
-            "amount_per_minute": 24
+            "amount_per_minute": 10
           },
           {
             "id": "supermagnet",
-            "amount_per_minute": 72
+            "amount_per_minute": 40
           }
         ]
       },
@@ -2424,7 +2584,7 @@
           },
           {
             "id": "goethitepowder",
-            "amount_per_minute": 60
+            "amount_per_minute": 40
           },
           {
             "id": "synthetic_resin",
@@ -2435,7 +2595,7 @@
       {
         "output": {
           "id": "substancefhs-135-493",
-          "amount_per_minute": 10
+          "amount_per_minute": 20
         },
         "inputs": [
           {
@@ -2455,20 +2615,20 @@
       {
         "output": {
           "id": "uberoil",
-          "amount_per_minute": 30
+          "amount_per_minute": 37.5
         },
         "inputs": [
           {
             "id": "refinedoil",
-            "amount_per_minute": 18
+            "amount_per_minute": 22.5
           },
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 6
+            "amount_per_minute": 7.5
           },
           {
             "id": "chemicals",
-            "amount_per_minute": 6
+            "amount_per_minute": 7.5
           }
         ]
       },
@@ -2520,11 +2680,11 @@
         "inputs": [
           {
             "id": "goethitepowder",
-            "amount_per_minute": 40
+            "amount_per_minute": 30
           },
           {
             "id": "powder_calcium",
-            "amount_per_minute": 60
+            "amount_per_minute": 40
           },
           {
             "id": "liquid_helium",
@@ -2535,20 +2695,20 @@
       {
         "output": {
           "id": "syntheticprotein",
-          "amount_per_minute": 10
+          "amount_per_minute": 40
         },
         "inputs": [
           {
             "id": "organiccompound",
-            "amount_per_minute": 20
+            "amount_per_minute": 40
           },
           {
             "id": "substancefhs-135-493",
-            "amount_per_minute": 10
+            "amount_per_minute": 20
           },
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 20
+            "amount_per_minute": 40
           }
         ]
       }
@@ -2564,19 +2724,15 @@
       {
         "output": {
           "id": "pressurized_helium",
-          "amount_per_minute": 150
+          "amount_per_minute": 90
         },
         "inputs": [
           {
             "id": "helium",
-            "amount_per_minute": 90
+            "amount_per_minute": 60
           },
           {
             "id": "ore_sulfur",
-            "amount_per_minute": 120
-          },
-          {
-            "id": "powder_calcium",
             "amount_per_minute": 60
           }
         ]
@@ -2589,38 +2745,30 @@
         "inputs": [
           {
             "id": "ore_sulfur",
-            "amount_per_minute": 300
+            "amount_per_minute": 240
           },
           {
             "id": "chemicals",
-            "amount_per_minute": 60
-          },
-          {
-            "id": "powder_wolfram",
-            "amount_per_minute": 30
+            "amount_per_minute": 180
           }
         ]
       },
       {
         "output": {
           "id": "liquid_helium",
-          "amount_per_minute": 100
+          "amount_per_minute": 120
         },
         "inputs": [
           {
             "id": "pressurized_helium",
-            "amount_per_minute": 20
+            "amount_per_minute": 40
           },
           {
             "id": "hardening_agent",
-            "amount_per_minute": 20
+            "amount_per_minute": 40
           },
           {
             "id": "chemicals",
-            "amount_per_minute": 20
-          },
-          {
-            "id": "refinedoil",
             "amount_per_minute": 20
           }
         ]
@@ -2633,15 +2781,75 @@
         "inputs": [
           {
             "id": "hardening_agent",
-            "amount_per_minute": 40
+            "amount_per_minute": 60
           },
           {
             "id": "sulfuric_acid",
-            "amount_per_minute": 100
+            "amount_per_minute": 60
           },
           {
             "id": "calcite_sheets",
             "amount_per_minute": 120
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "epoxy",
+          "amount_per_minute": 120
+        },
+        "inputs": [
+          {
+            "id": "liquid_helium",
+            "amount_per_minute": 40
+          },
+          {
+            "id": "goethitepowder",
+            "amount_per_minute": 40
+          },
+          {
+            "id": "synthetic_resin",
+            "amount_per_minute": 40
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "lens",
+          "amount_per_minute": 22.5
+        },
+        "inputs": [
+          {
+            "id": "glass",
+            "amount_per_minute": 75
+          },
+          {
+            "id": "hardening_agent",
+            "amount_per_minute": 30
+          },
+          {
+            "id": "synthetic_resin",
+            "amount_per_minute": 30
+          }
+        ]
+      },
+	  {
+        "output": {
+          "id": "nanofiber",
+          "amount_per_minute": 60
+        },
+        "inputs": [
+          {
+            "id": "tube",
+            "amount_per_minute": 200
+          },
+          {
+            "id": "liquid_helium",
+            "amount_per_minute": 60
+          },
+          {
+            "id": "wolfram_wire",
+            "amount_per_minute": 60
           }
         ]
       }
