@@ -104,6 +104,7 @@ export interface PlannerRecipeOption {
     legacyKey: string; // `${buildingId}:${recipeIndex}`
     buildingId: string;
     buildingName: string;
+    recipe: Recipe;
     recipeIndex: number;
     recipeType: RecipeDisplayType;
     outputRate: number;

@@ -36,6 +36,7 @@ export function buildRecipeOptionsForOutputItems(
                 legacyKey: getLegacyRecipeSelectionKey(building.id, recipeIndex),
                 buildingId: building.id,
                 buildingName: building.name,
+                recipe,
                 recipeIndex,
                 recipeType: getRecipeDisplayType(recipe, building, buildings),
                 outputRate: recipe.output.amount_per_minute,
