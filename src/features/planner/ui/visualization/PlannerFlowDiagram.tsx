@@ -85,6 +85,7 @@ export const PlannerFlowDiagram: React.FC = () => {
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 attributionPosition="bottom-left"
+                minZoom={0.1}
             >
                 <Background />
                 <Controls />

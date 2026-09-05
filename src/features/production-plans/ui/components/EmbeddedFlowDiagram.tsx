@@ -90,6 +90,7 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
                 edgeTypes={edgeTypes}
                 attributionPosition="bottom-left"
                 fitView
+                minZoom={0.1}
                 panOnDrag={interactive}
                 zoomOnScroll={interactive}
                 zoomOnPinch={interactive}
