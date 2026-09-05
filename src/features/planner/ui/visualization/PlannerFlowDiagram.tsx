@@ -14,6 +14,7 @@ import '@xyflow/react/dist/style.css';
 
 import { useSubscription } from '@/app/uklad/bindings';
 import { NodeCard } from './NodeCard';
+import { useConnectedNodeHighlight } from './useConnectedNodeHighlight';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
@@ -40,6 +41,12 @@ export const PlannerFlowDiagram: React.FC = () => {
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+    const {
+        nodes: highlightedNodes,
+        edges: highlightedEdges,
+        onNodeDragStart,
+        onNodeDragStop,
+    } = useConnectedNodeHighlight(nodes, edges);
 
     // Update React Flow nodes and edges when subscription data changes
     useEffect(() => {
@@ -77,8 +84,8 @@ export const PlannerFlowDiagram: React.FC = () => {
     return (
         <div className="w-full h-full">
             <ReactFlow
-                nodes={nodes}
-                edges={edges}
+                nodes={highlightedNodes}
+                edges={highlightedEdges}
                 colorMode={theme}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
@@ -86,6 +93,9 @@ export const PlannerFlowDiagram: React.FC = () => {
                 edgeTypes={edgeTypes}
                 attributionPosition="bottom-left"
                 minZoom={0.1}
+                selectNodesOnDrag={false}
+                onNodeDragStart={onNodeDragStart}
+                onNodeDragStop={onNodeDragStop}
             >
                 <Background />
                 <Controls />

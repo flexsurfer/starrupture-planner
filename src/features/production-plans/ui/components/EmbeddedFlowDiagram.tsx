@@ -16,6 +16,7 @@ import '@xyflow/react/dist/style.css';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { ProductionFlowResult } from '@/features/planner/types';
 import { generateReactFlowData } from '@/features/planner/ui/visualization';
+import { useConnectedNodeHighlight } from '@/features/planner/ui/visualization/useConnectedNodeHighlight';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
@@ -56,6 +57,12 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+    const {
+        nodes: highlightedNodes,
+        edges: highlightedEdges,
+        onNodeDragStart,
+        onNodeDragStop,
+    } = useConnectedNodeHighlight(nodes, edges, interactive);
 
     // Update React Flow nodes and edges when data changes
     useEffect(() => {
@@ -81,8 +88,8 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     return (
         <div className={`w-full h-full min-h-[300px] ${!interactive ? 'pointer-events-none' : ''}`}>
             <ReactFlow
-                nodes={nodes}
-                edges={edges}
+                nodes={highlightedNodes}
+                edges={highlightedEdges}
                 colorMode={theme}
                 onNodesChange={interactive ? onNodesChange : undefined}
                 onEdgesChange={interactive ? onEdgesChange : undefined}
@@ -91,6 +98,9 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
                 attributionPosition="bottom-left"
                 fitView
                 minZoom={0.1}
+                selectNodesOnDrag={false}
+                onNodeDragStart={interactive ? onNodeDragStart : undefined}
+                onNodeDragStop={interactive ? onNodeDragStop : undefined}
                 panOnDrag={interactive}
                 zoomOnScroll={interactive}
                 zoomOnPinch={interactive}
