@@ -120,12 +120,13 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
 
     registrar.regSub(
         appIds.subscriptions.PLANNER_STATS_DETAILED,
-        () => [[appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.ITEMS_LIST]],
-        ([productionFlow, items], ..._params) => {
+        () => [[appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.ITEMS_LIST], [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]],
+        ([productionFlow, items, selectedItemId], ..._params) => {
             void _params;
             if (productionFlow.nodes.length === 0) {
                 return {
                     buildingStats: [],
+                    productionGroups: [],
                     totalEnergy: 0,
                     totalHotness: 0,
                     totalBuildings: 0,
@@ -153,6 +154,18 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             }
 
             const itemsByType = new Map<string, PlannerDetailedStatsItem[]>();
+            // Sum all consumers of shared ingredients. Terminal outputs have no
+            // outgoing edge, so use their production rate as a fallback.
+            const requiredRates = new Map<string, number>();
+            for (const edge of productionFlow.edges) {
+                requiredRates.set(edge.itemId, (requiredRates.get(edge.itemId) ?? 0) + edge.amount);
+            }
+            const outputRates = new Map<string, number>();
+            for (const node of productionFlow.nodes) {
+                if (node.nodeType === 'launcher') continue;
+                outputRates.set(node.outputItem, (outputRates.get(node.outputItem) ?? 0)
+                    + node.outputAmount * node.buildingCount);
+            }
             const itemIds = new Set<string>();
             productionFlow.nodes.forEach((node) => itemIds.add(node.outputItem));
             productionFlow.edges.forEach((edge) => itemIds.add(edge.itemId));
@@ -160,7 +173,12 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
                 const item = items.find((entry) => entry.id === itemId);
                 const type = item?.type || 'unknown';
                 if (!itemsByType.has(type)) itemsByType.set(type, []);
-                itemsByType.get(type)!.push({ id: itemId, name: getItemName(itemId, items), type });
+                itemsByType.get(type)!.push({
+                    id: itemId,
+                    name: getItemName(itemId, items),
+                    type,
+                    requiredRate: requiredRates.get(itemId) ?? outputRates.get(itemId) ?? 0,
+                });
             }
             itemsByType.forEach((entries) => entries.sort((a, b) => a.name.localeCompare(b.name)));
 
@@ -175,6 +193,15 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             });
 
             return {
+                productionGroups: ['target', ...sortedTypes, 'launcher'].map(type => ({
+                    type,
+                    nodes: productionFlow.nodes.filter(node => {
+                        if (node.nodeType === 'launcher') return type === 'launcher';
+                        if (node.outputItem === selectedItemId) return type === 'target';
+                        return type === (items.find(item => item.id === node.outputItem)?.type || 'unknown');
+                    }).sort((a, b) => getItemName(a.outputItem, items).localeCompare(getItemName(b.outputItem, items))
+                        || a.buildingName.localeCompare(b.buildingName) || a.recipeIndex - b.recipeIndex),
+                })).filter(group => group.nodes.length > 0),
                 buildingStats: Array.from(buildingMap.values()).sort((a, b) => b.count - a.count),
                 totalEnergy: productionFlow.nodes.reduce((sum, node) => sum + node.totalPower, 0),
                 totalHotness: productionFlow.nodes.reduce((sum, node) => sum + node.totalHeat, 0),

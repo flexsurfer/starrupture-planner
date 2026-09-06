@@ -1,8 +1,11 @@
 import { appIds } from '@/app/uklad/catalog';
-import React from 'react';
+import React, { useId, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import { BuildingImage, ItemImage } from '@/shared/ui';
 import { getCategoryBadgeClass, getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
+import { NodeCard } from '../visualization/NodeCard';
+
+const STAT_TABS = ['production', 'buildings', 'items'] as const;
 
 interface PlannerStatsModalProps {
     isOpen: boolean;
@@ -16,6 +19,14 @@ interface PlannerStatsModalProps {
 export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, onClose }) => {
     // Get detailed stats from subscription
     const stats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
+    const items = useSubscription([appIds.subscriptions.ITEMS_LIST]);
+    const [activeTab, setActiveTab] = useState<typeof STAT_TABS[number]>('production');
+    const closeModal = () => {
+        setActiveTab('production');
+        onClose();
+    };
+    const tabId = useId();
+    const itemCount = stats.sortedTypes.reduce((sum, type) => sum + (stats.itemsByType.get(type)?.length ?? 0), 0);
 
     if (!isOpen) {
         return null;
@@ -23,37 +34,98 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
 
     return (
         <div className="modal modal-open">
-            <div className="modal-box max-w-3xl max-h-[90vh]">
+            <div className="modal-box w-[95vw] max-w-6xl max-h-[95vh]">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between mb-4 lg:mb-6">
                     <h3 className="text-lg lg:text-xl font-bold pr-4">Production Statistics</h3>
                     <button
                         className="btn btn-sm btn-circle btn-ghost flex-shrink-0"
-                        onClick={onClose}
+                        onClick={closeModal}
                         aria-label="Close modal"
                     >
                         ✕
                     </button>
                 </div>
 
-                {/* Summary Stats */}
-                <div className="flex items-center gap-4 mb-4 px-2 py-2 bg-base-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">Buildings:</span>
-                        <span className="text-base font-bold">{stats.totalBuildings}</span>
-                    </div>
-                    <div className="divider divider-horizontal"></div>
-                    <div className="flex items-center gap-2">
+                <div role="tablist" aria-label="Production statistics views" className="tabs tabs-border mb-4">
+                    {STAT_TABS.map((tab, index) => (
+                        <button
+                            key={tab}
+                            type="button"
+                            role="tab"
+                            id={`${tabId}-${tab}-tab`}
+                            aria-controls={`${tabId}-${tab}-panel`}
+                            aria-selected={activeTab === tab}
+                            tabIndex={activeTab === tab ? 0 : -1}
+                            className={`tab ${activeTab === tab ? 'tab-active' : ''}`}
+                            onClick={() => setActiveTab(tab)}
+                            onKeyDown={(event) => {
+                                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                                event.preventDefault();
+                                const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? STAT_TABS.length - 1
+                                    : (index + (event.key === 'ArrowRight' ? 1 : -1) + STAT_TABS.length) % STAT_TABS.length;
+                                setActiveTab(STAT_TABS[nextIndex]);
+                                event.currentTarget.parentElement
+                                    ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus();
+                            }}
+                        >
+                            {tab === 'production' ? 'Production' : tab === 'buildings' ? `Buildings (${stats.totalBuildings})` : `Items (${itemCount})`}
+                        </button>
+                    ))}
+                </div>
+
+                <div
+                    role="tabpanel"
+                    id={`${tabId}-production-panel`}
+                    aria-labelledby={`${tabId}-production-tab`}
+                    hidden={activeTab !== 'production'}
+                    tabIndex={0}
+                    className="mb-6 overflow-auto max-h-[65vh] rounded-lg border border-base-300"
+                >
+                    <table className="w-full table-fixed">
+                        <caption className="sr-only">Production cards ordered by target and item category</caption>
+                        {stats.productionGroups.map(group => (
+                            <tbody key={group.type} className="border-b border-base-300 last:border-b-0">
+                                <tr>
+                                    <th scope="rowgroup" className="px-4 py-2 text-left text-sm font-semibold bg-base-200">
+                                        {group.type === 'target' ? 'Target' : group.type === 'launcher' ? 'Delivery' : getCategoryDisplayName(group.type)}
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td className="p-4">
+                                        <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
+                                            {group.nodes.map(node => (
+                                                <div
+                                                    key={`${node.nodeType}:${node.buildingId}:${node.recipeIndex}:${node.outputItem}:${node.baseBuildingId ?? ''}`}
+                                                    className={`relative rounded-md border bg-base-200 ${group.type === 'target' ? 'border-primary' : 'border-base-300'}`}
+                                                >
+                                                    <NodeCard node={node} items={items} outputColor="var(--color-success)" compact />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        ))}
+                    </table>
+                </div>
+
+                {/* Buildings by Type */}
+                <div
+                    role="tabpanel"
+                    id={`${tabId}-buildings-panel`}
+                    aria-labelledby={`${tabId}-buildings-tab`}
+                    hidden={activeTab !== 'buildings'}
+                    tabIndex={0}
+                    className="mb-6"
+                >
+                    <div className="flex flex-wrap items-center gap-2 mb-4 px-2 py-2 bg-base-200 rounded-lg">
                         <span className="text-sm font-semibold">Energy:</span>
                         <span className="text-base font-bold">⚡ {stats.totalEnergy.toFixed(0)}</span>
                         <span className="text-base font-bold">🔥 {stats.totalHotness.toFixed(0)}</span>
                     </div>
-                </div>
-
-                {/* Buildings by Type */}
-                <div className="mb-6">
                     <div className="border border-base-300 rounded-lg overflow-hidden bg-base-100 shadow-sm">
-                        <div className="overflow-y-scroll max-h-60 overflow-x-auto">
+                        <div className="overflow-y-auto max-h-[60vh] overflow-x-auto">
                             <table className="table table-zebra w-full">
                                 <thead className="sticky top-0 bg-base-200 z-10">
                                     <tr>
@@ -94,11 +166,16 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                 </div>
 
                 {/* Items Used */}
-                <div className="mb-6">
-                    <h4 className="text-md font-semibold mb-3">
-                        Items Used ({stats.sortedTypes.reduce((sum, type) => sum + (stats.itemsByType.get(type)?.length || 0), 0)})
-                    </h4>
-                    <div className="border border-base-300 rounded-lg p-3 overflow-y-scroll max-h-40 space-y-4 bg-base-100 shadow-sm">
+                <div
+                    role="tabpanel"
+                    id={`${tabId}-items-panel`}
+                    aria-labelledby={`${tabId}-items-tab`}
+                    hidden={activeTab !== 'items'}
+                    tabIndex={0}
+                    className="mb-6"
+                >
+                    <p className="mb-2 text-xs text-base-content/60">Required amounts per minute at the current production target.</p>
+                    <div className="border border-base-300 rounded-lg p-3 overflow-y-auto max-h-[60vh] space-y-4 bg-base-100 shadow-sm">
                         {stats.sortedTypes.map(type => {
                             const typeItems = stats.itemsByType.get(type) || [];
                             if (typeItems.length === 0) return null;
@@ -113,18 +190,21 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                                             ({typeItems.length})
                                         </span>
                                     </div>
-                                    <div className="flex flex-wrap gap-2 pl-2">
+                                    <div className="flex flex-wrap gap-3 pl-2">
                                         {typeItems.map(item => (
                                             <div
                                                 key={item.id}
-                                                className={`badge badge-sm gap-1.5 px-2 py-1 ${getCategoryBadgeClass(item.type)}`}
+                                                className={`flex items-center max-w-full rounded-lg gap-3 px-3 py-2 ${getCategoryBadgeClass(item.type)}`}
                                             >
-                                                <ItemImage
-                                                    itemId={item.id}
-                                                    size="small"
-                                                    className="w-4 h-4"
-                                                />
-                                                <span className="text-xs">{item.name}</span>
+                                                <span className="shrink-0">
+                                                    <ItemImage itemId={item.id} item={item} size="small" />
+                                                </span>
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-medium">{item.name}</div>
+                                                    <div className="text-sm font-semibold tabular-nums whitespace-nowrap">
+                                                        {item.requiredRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}/min
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -136,13 +216,13 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
 
                 {/* Modal Actions */}
                 <div className="modal-action">
-                    <button className="btn btn-primary btn-sm lg:btn-md" onClick={onClose}>
+                    <button className="btn btn-primary btn-sm lg:btn-md" onClick={closeModal}>
                         Close
                     </button>
                 </div>
             </div>
             {/* Backdrop */}
-            <div className="modal-backdrop" onClick={onClose}></div>
+            <div className="modal-backdrop" onClick={closeModal}></div>
         </div>
     );
 };

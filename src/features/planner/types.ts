@@ -86,10 +86,12 @@ export interface PlannerDetailedStatsItem {
     id: string;
     name: string;
     type: string;
+    requiredRate: number;
 }
 
 /** Full planner detailed stats payload for the stats modal. */
 export interface PlannerDetailedStats {
+    productionGroups: { type: string; nodes: FlowNode[] }[];
     buildingStats: PlannerBuildingStats[];
     totalEnergy: number;
     totalHotness: number;

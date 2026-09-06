@@ -7,12 +7,14 @@ interface NodeCardProps {
     node: FlowNode;
     items: Item[];
     outputColor: string;
+    compact?: boolean;
 }
 
 export const NodeCard: React.FC<NodeCardProps> = ({
     node,
     items,
-    outputColor
+    outputColor,
+    compact = false
 }) => {
     return (
         <div className="text-center p-2">
@@ -47,13 +49,13 @@ export const NodeCard: React.FC<NodeCardProps> = ({
             </div>
 
             {/* Building icon */}
-            <div className="flex items-center gap-2 justify-center">
+            {!compact && <div className="flex items-center gap-2 justify-center">
                 <BuildingImage
                     buildingId={node.buildingId}
                     className="w-19 h-19 rounded-full object-cover"
                     size="medium"
                 />
-            </div>
+            </div>}
 
             {/* Item image with per-building rate */}
             <div className="flex items-center gap-1.5 justify-center">
@@ -74,7 +76,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
             </div>
 
             {/* Buildings count and total production */}
-            <div className="text-xs mt-3 mb-2 leading-tight opacity-85">
+            <div className={`text-xs leading-tight opacity-85 ${compact ? 'mt-2' : 'mt-3 mb-2'}`}>
                 <span >&times;{(Math.floor(node.buildingCount * 10) / 10).toFixed(1)}</span>
                 <span className="opacity-60 mx-0.5">=</span>
                 <span className="font-xs font-medium" style={{ color: outputColor }}>
@@ -82,10 +84,10 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                 </span>
             </div>
 
-            <div className="text-xs absolute bottom-0.5 right-0.5">
+            {!compact && <div className="text-xs absolute bottom-0.5 right-0.5">
                 ⚡{node.powerPerBuilding}
                 🔥{node.heatPerBuilding}
-            </div>
+            </div>}
         </div>
     );
 };
