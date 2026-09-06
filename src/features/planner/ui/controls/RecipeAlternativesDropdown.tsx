@@ -1,27 +1,14 @@
 import { appIds } from '@/app/uklad/catalog';
-import { createPortal } from 'react-dom';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Item, RecipeAlternativePreset } from '@/app/uklad/model';
 import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
-import { ItemImage, BuildingImage, RecipeTypeIcon } from '@/shared/ui';
+import { BuildingImage, RecipeTypeIcon } from '@/shared/ui';
 import { RecipePreview } from './RecipePreview';
 
 const EMPTY_ITEMS_BY_ID: Record<string, Item> = {};
 const EMPTY_PINNED_SELECTIONS: Record<string, string> = {};
 const EMPTY_PRESETS: RecipeAlternativePreset[] = [];
-const RECIPE_PREVIEW_GAP = 8;
-const RECIPE_PREVIEW_WIDTH = 256;
-
-const getRecipePreviewId = (optionKey: string): string => (
-    `recipe-preview-${optionKey.replace(/[^a-zA-Z0-9_-]/g, '-')}`
-);
-
-interface RecipePreviewPosition {
-    left: number;
-    top: number;
-    placement: 'above' | 'below';
-}
 
 /** True when two `itemId -> recipeKey` maps hold exactly the same entries. */
 function sameSelections(a: Record<string, string>, b: Record<string, string>): boolean {
@@ -63,12 +50,6 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     const [isOpen, setIsOpen] = useState(false);
     const [isLoadOpen, setIsLoadOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement | null>(null);
-    const panelRef = useRef<HTMLDivElement | null>(null);
-    const panelHeaderRef = useRef<HTMLDivElement | null>(null);
-    const previewAnchorRef = useRef<HTMLElement | null>(null);
-    const previewRef = useRef<HTMLDivElement | null>(null);
-    const [activePreview, setActivePreview] = useState<PlannerRecipeOptionsItem['options'][number] | null>(null);
-    const [previewPosition, setPreviewPosition] = useState<RecipePreviewPosition | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -78,54 +59,12 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
             if (!rootRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
                 setIsLoadOpen(false);
-                setActivePreview(null);
-                previewAnchorRef.current = null;
             }
         };
 
         document.addEventListener('mousedown', onMouseDown);
         return () => document.removeEventListener('mousedown', onMouseDown);
     }, [isOpen]);
-
-    useEffect(() => {
-        if (!activePreview) return;
-
-        // Scrolling changes the anchor position; hide the transient preview until
-        // the pointer enters an option again rather than leaving it detached.
-        const hidePreview = () => setActivePreview(null);
-        const panelElement = panelRef.current;
-        panelElement?.addEventListener('scroll', hidePreview, { passive: true });
-        window.addEventListener('resize', hidePreview);
-
-        return () => {
-            panelElement?.removeEventListener('scroll', hidePreview);
-            window.removeEventListener('resize', hidePreview);
-        };
-    }, [activePreview]);
-
-    useLayoutEffect(() => {
-        if (!activePreview || !previewRef.current || !previewAnchorRef.current) return;
-
-        const anchorRect = previewAnchorRef.current.getBoundingClientRect();
-        const previewRect = previewRef.current.getBoundingClientRect();
-        const headerRect = panelHeaderRef.current?.getBoundingClientRect();
-        const aboveTop = anchorRect.top - RECIPE_PREVIEW_GAP - previewRect.height;
-        const minimumTop = (headerRect?.bottom ?? 8) + RECIPE_PREVIEW_GAP;
-        const placement = aboveTop >= minimumTop ? 'above' : 'below';
-        const maxLeft = Math.max(8, window.innerWidth - RECIPE_PREVIEW_WIDTH - 8);
-        const left = Math.min(
-            Math.max(8, anchorRect.right - RECIPE_PREVIEW_WIDTH),
-            maxLeft,
-        );
-
-        setPreviewPosition({
-            left,
-            top: placement === 'above'
-                ? anchorRect.top - RECIPE_PREVIEW_GAP
-                : anchorRect.bottom + RECIPE_PREVIEW_GAP,
-            placement,
-        });
-    }, [activePreview]);
 
     if (!options.length) return null;
 
@@ -174,13 +113,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
             <button
                 type="button"
                 className="btn btn-sm btn-ghost gap-2 border border-base-300 bg-transparent hover:bg-base-200"
-                onClick={() => {
-                    if (isOpen) {
-                        setActivePreview(null);
-                        previewAnchorRef.current = null;
-                    }
-                    setIsOpen((prev) => !prev);
-                }}
+                onClick={() => setIsOpen((prev) => !prev)}
             >
                 <span className="text-xs font-semibold">Alternatives</span>
                 {showChevron ? (
@@ -199,11 +132,9 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
 
             {isOpen && (
                 <div
-                    ref={panelRef}
                     className={`absolute right-0 mt-2 z-30 w-[min(92vw,560px)] ${panelMaxHeightClass} overflow-y-auto rounded-md border border-base-300 bg-base-100 p-2 shadow-xl`}
                 >
                     <div
-                        ref={panelHeaderRef}
                         className="sticky -top-2 z-20 -mx-2 -mt-2 mb-2 border-b border-base-300 bg-base-100 px-3 pt-2 pb-2"
                     >
                         <div className="flex flex-wrap items-center gap-2">
@@ -283,20 +214,13 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
 
                     {normalizedOptions.map(({ entry, selectedOption }) => (
                         <div key={entry.itemId} className="rounded-md border border-base-300 bg-base-200/40 p-2 mb-2 last:mb-0">
-                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                                <div className="flex items-start gap-2 min-w-0" title={`Selected building: ${selectedOption.buildingName}`}>
-                                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                                        <div className="badge badge-success badge-xs font-medium">
-                                            {selectedOption.outputRate}/min
-                                        </div>
-                                        <ItemImage itemId={entry.itemId} item={itemsById[entry.itemId]} size="medium" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <div className="text-xs font-medium truncate">{entry.itemName}</div>
-                                    </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                                <div className="min-w-0 space-y-2">
+                                    <div className="text-xs font-medium">{entry.itemName}</div>
+                                    <RecipePreview option={selectedOption} itemsById={itemsById} />
                                 </div>
 
-                                <div className="flex items-start justify-end gap-2 flex-shrink-0">
+                                <div className="flex items-end justify-end gap-2 flex-shrink-0">
                                     {entry.options.map((option) => {
                                         const isSelected = option.key === entry.selectedKey;
 
@@ -304,13 +228,6 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                             <div
                                                 key={option.key}
                                                 className="relative flex flex-col items-center gap-1"
-                                                onMouseEnter={(event) => {
-                                                    previewAnchorRef.current = event.currentTarget;
-                                                    setActivePreview(option);
-                                                }}
-                                                onMouseLeave={() => {
-                                                    setActivePreview((current) => current?.key === option.key ? null : current);
-                                                }}
                                             >
                                                 <button
                                                     type="button"
@@ -319,18 +236,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                                             ? 'border-primary bg-primary/10'
                                                             : 'border-base-300 bg-base-100 hover:bg-base-200'
                                                     }`}
-                                                    aria-describedby={activePreview?.key === option.key ? getRecipePreviewId(option.key) : undefined}
                                                     title={`${option.buildingName} - ${option.outputRate}/min`}
-                                                    onFocus={(event) => {
-                                                        previewAnchorRef.current = event.currentTarget.parentElement;
-                                                        setActivePreview(option);
-                                                    }}
-                                                    onBlur={(event) => {
-                                                        const wrapper = event.currentTarget.parentElement;
-                                                        if (!event.relatedTarget || !wrapper?.contains(event.relatedTarget as Node)) {
-                                                            setActivePreview((current) => current?.key === option.key ? null : current);
-                                                        }
-                                                    }}
                                                     onClick={() => onSelectRecipe(entry.itemId, option.key)}
                                                 >
                                                     <div
@@ -362,24 +268,6 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                 </div>
             )}
 
-            {isOpen && activePreview && createPortal(
-                <div
-                    ref={previewRef}
-                    className="pointer-events-none fixed z-[60]"
-                    style={{
-                        left: `${previewPosition?.left ?? 8}px`,
-                        top: `${previewPosition?.top ?? 8}px`,
-                        transform: previewPosition?.placement === 'below' ? undefined : 'translateY(-100%)',
-                    }}
-                >
-                    <RecipePreview
-                        id={getRecipePreviewId(activePreview.key)}
-                        option={activePreview}
-                        itemsById={itemsById}
-                    />
-                </div>,
-                document.body,
-            )}
         </div>
     );
 };
