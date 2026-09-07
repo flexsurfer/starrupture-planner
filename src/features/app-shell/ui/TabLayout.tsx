@@ -96,7 +96,7 @@ const TabLayout = () => {
   return (
       <div className="h-screen flex flex-col bg-base-100">
         {/* Header */}
-        <div className="lg:navbar flex flex-row items-center gap-2 lg:gap-0 bg-base-200 shadow-lg flex-shrink-0 px-2 py-0.5 lg:p-2">
+        <div className="flex flex-row lg:grid lg:grid-cols-[1fr_auto] 2xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 bg-base-200 shadow-lg flex-shrink-0 px-2 py-0.5 lg:p-2">
           {/* Mobile Layout */}
           <div className="lg:hidden flex min-w-0 flex-1 items-center gap-2">
             <img
@@ -118,11 +118,11 @@ const TabLayout = () => {
           </div>
 
           {/* Desktop Layout */}
-          <div className="navbar-start hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex min-w-0 items-center gap-3 lg:col-start-1 lg:row-start-1">
             <img
               src="/logo_black_bg.webp"
               alt="Rupture Planner Logo"
-              className="h-8 w-auto rounded shadow-sm"
+              className="h-8 w-auto shrink-0 rounded shadow-sm"
               width={32}
               height={32}
               loading="eager"
@@ -133,12 +133,12 @@ const TabLayout = () => {
                 target.style.display = 'none';
               }}
             />
-            <h1 className="text-xl font-bold">Rupture Planner</h1>
-            <VersionSelector />
+            <h1 className="text-xl font-bold whitespace-nowrap">Rupture Planner</h1>
+            <VersionSelector className="shrink-0" />
           </div>
 
           {/* Desktop Tab Navigation */}
-          <div className="navbar-center hidden lg:flex">
+          <div className="hidden lg:flex justify-center lg:col-span-2 lg:row-start-2 2xl:col-span-1 2xl:col-start-2 2xl:row-start-1">
             <div className="tabs tabs-bordered tabs-lg justify-center">
               {tabs.map((tab) => (
                 <button
@@ -154,7 +154,7 @@ const TabLayout = () => {
           </div>
 
           {/* Controls - always visible but compact on mobile */}
-          <div className="lg:navbar-end ml-auto flex shrink-0 items-center gap-1 lg:gap-2">
+          <div className="ml-auto flex shrink-0 items-center justify-end gap-1 lg:gap-2 lg:col-start-2 lg:row-start-1 2xl:col-start-3">
             <DiscordButton className="btn btn-ghost btn-sm max-lg:btn-square" />
             <GitHubButton className="btn btn-ghost btn-sm max-lg:btn-square" />
             <ThemeToggle className="max-lg:h-8 max-lg:w-8" />
