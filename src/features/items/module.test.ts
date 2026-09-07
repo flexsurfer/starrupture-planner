@@ -38,6 +38,18 @@ describe('items Uklad module', () => {
             'smelter',
         ])).toEqual([{ id: 'iron-plate', name: 'Iron Plate', type: 'product' }]);
 
+        expect(harness.getSubscriptionValue([
+            appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID,
+            'iron-plate',
+        ])).toMatchObject([{
+            building: { id: 'smelter' },
+            recipe: { output: { id: 'iron-plate', amount_per_minute: 60 } },
+        }]);
+        expect(harness.getSubscriptionValue([
+            appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID,
+            'iron-ore',
+        ])).toEqual([]);
+
         runtime.dispose();
     });
 });

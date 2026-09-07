@@ -47,6 +47,7 @@ export const PlannerTargetInput: React.FC<PlannerTargetInputProps> = ({ classNam
         <div className="form-control flex flex-row items-center gap-1">
             <input
                 type="number"
+                aria-label="Target items per minute"
                 min="1"
                 step="1"
                 value={inputValue}

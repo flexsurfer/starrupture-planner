@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import { findRecipesUsingInput } from '@/features/buildings/recipe-utils';
+import { findItemRecipes, findRecipesUsingInput } from '@/features/buildings/recipe-utils';
 import {
     DRONE_MERGER_3_TO_1_BUILDING_ID,
     ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
@@ -12,6 +12,11 @@ import {
 import type { CorporationUsage } from '@/features/items/types';
 
 export const registerItemsSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regSub(
+        appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID,
+        () => [[appIds.subscriptions.BUILDINGS_LIST]],
+        ([buildings], itemId) => findItemRecipes(itemId, buildings),
+    );
     registrar.regRootSub(appIds.subscriptions.ITEMS_LIST, stateKeys.itemsList);
     registrar.regRootSub(appIds.subscriptions.ITEMS_BY_ID_MAP, stateKeys.itemsById);
     registrar.regRootSub(appIds.subscriptions.ITEMS_SELECTED_CATEGORY, stateKeys.itemsSelectedCategory);

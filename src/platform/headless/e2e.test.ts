@@ -226,6 +226,7 @@ describe('headless application E2E', () => {
             tableRows: [appIds.subscriptions.ITEMS_TABLE_ROWS],
             helperLookups: [appIds.subscriptions.ITEMS_HELPER_LOOKUPS],
             recipesUsingIron: [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID, 'iron-ore'],
+            recipesForIronPlate: [appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID, 'iron-plate'],
             buildings: [appIds.subscriptions.BUILDINGS_LIST],
             buildingsById: [appIds.subscriptions.BUILDINGS_BY_ID_MAP],
             sortedProductionBuildings: [appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST],
@@ -264,6 +265,10 @@ describe('headless application E2E', () => {
         });
         expect(catalog.value('helperLookups').corporationNameToId.get('Miners')).toBe('miners');
         expect(catalog.value('recipesUsingIron').map(({ building }) => building.id)).toEqual([
+            'smelter',
+            'smelter_mk2',
+        ]);
+        expect(catalog.value('recipesForIronPlate').map(({ building }) => building.id)).toEqual([
             'smelter',
             'smelter_mk2',
         ]);

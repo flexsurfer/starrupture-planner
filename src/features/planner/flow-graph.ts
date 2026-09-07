@@ -34,7 +34,7 @@ function getItemColor(itemId: string, items: Item[]): string {
 export function buildPlannerFlowGraph(flowNodes: FlowNode[], flowEdges: FlowEdge[], items: Item[]): PlannerFlowGraph {
     const graph = new dagre.graphlib.Graph();
     graph.setDefaultEdgeLabel(() => ({}));
-    graph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 100 });
+    graph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 80 });
 
     flowNodes.forEach((_, index) => {
         graph.setNode(`node_${index}`, { width: 200, height: 120 });

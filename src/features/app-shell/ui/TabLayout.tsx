@@ -96,15 +96,15 @@ const TabLayout = () => {
   return (
       <div className="h-screen flex flex-col bg-base-100">
         {/* Header */}
-        <div className="lg:navbar flex flex-row bg-base-200 shadow-lg flex-shrink-0 p-2">
+        <div className="lg:navbar flex flex-row items-center gap-2 lg:gap-0 bg-base-200 shadow-lg flex-shrink-0 px-2 py-0.5 lg:p-2">
           {/* Mobile Layout */}
-          <div className="navbar-start lg:hidden flex items-center">
+          <div className="lg:hidden flex min-w-0 flex-1 items-center gap-2">
             <img
               src="/logo_black_bg.webp"
               alt="Rupture Planner Logo"
-              className="h-4 w-auto rounded shadow-sm"
-              width={16}
-              height={16}
+              className="h-9 w-9 shrink-0 rounded shadow-sm"
+              width={36}
+              height={36}
               loading="eager"
               decoding="async"
               fetchPriority="high"
@@ -113,8 +113,8 @@ const TabLayout = () => {
                 target.style.display = 'none';
               }}
             />
-            <h1 className="text-sm font-bold mr-2">Rupture Planner</h1>
-            <VersionSelector />
+            <h1 className="sr-only">Rupture Planner</h1>
+            <VersionSelector className="min-w-0 max-w-full" />
           </div>
 
           {/* Desktop Layout */}
@@ -154,21 +154,21 @@ const TabLayout = () => {
           </div>
 
           {/* Controls - always visible but compact on mobile */}
-          <div className="navbar-end flex items-center gap-1 lg:gap-2">
-            <DiscordButton />
-            <GitHubButton />
-            <ThemeToggle />
+          <div className="lg:navbar-end ml-auto flex shrink-0 items-center gap-1 lg:gap-2">
+            <DiscordButton className="btn btn-ghost btn-sm max-lg:btn-square" />
+            <GitHubButton className="btn btn-ghost btn-sm max-lg:btn-square" />
+            <ThemeToggle className="max-lg:h-8 max-lg:w-8" />
           </div>
         </div>
 
         {/* Mobile Tab Navigation - Below header */}
         <div className="lg:hidden bg-base-200 border-t border-base-300">
-          <div className="flex overflow-x-auto py-1">
+          <div className="flex overflow-x-auto">
             <div className="flex min-w-full justify-center px-1">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  className={`flex-1 min-w-0 py-2 px-2 text-xs font-medium transition-colors border-b-2 ${
+                  className={`flex-1 min-w-0 py-1.5 px-1.5 text-xs font-medium transition-colors border-b-2 ${
                     activeTab === tab.id 
                       ? 'border-primary text-primary' 
                       : 'border-transparent text-base-content/70 hover:text-base-content'

@@ -33,6 +33,7 @@ export const PlannerFlowDiagram: React.FC = () => {
     const flowGraph = useSubscription([appIds.subscriptions.PLANNER_FLOW_GRAPH]);
     const renderedNodes = useMemo<Node[]>(() => flowGraph.nodes.map(({ flowNode, outputColor, ...node }) => ({
         ...node,
+        style: { ...node.style, padding: 0 },
         data: {
             label: <NodeCard node={flowNode} items={flowGraph.items!} outputColor={outputColor} />,
         },

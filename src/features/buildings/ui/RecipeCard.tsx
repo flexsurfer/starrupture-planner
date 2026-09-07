@@ -37,9 +37,10 @@ interface RecipeCardProps {
   recipe: Recipe;
   recipeType?: RecipeDisplayType;
   className?: string;
+  showPlannerButton?: boolean;
 }
 
-export const RecipeCard = ({ recipe, recipeType = 'standard', className = "" }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, recipeType = 'standard', className = "", showPlannerButton = true }: RecipeCardProps) => {
   const runtime = useRuntime();
   const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const outputItem = itemsMap[recipe.output.id];
@@ -97,7 +98,7 @@ export const RecipeCard = ({ recipe, recipeType = 'standard', className = "" }: 
         </div>
 
         {/* Open in Planner button */}
-        {outputItem?.type !== 'raw' && (
+        {showPlannerButton && outputItem?.type !== 'raw' && (
           <div>
             <button
               className="btn btn-xs btn-primary btn-outline"

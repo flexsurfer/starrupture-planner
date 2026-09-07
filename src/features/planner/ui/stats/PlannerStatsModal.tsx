@@ -3,9 +3,8 @@ import React, { useId, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import { BuildingImage, ItemImage } from '@/shared/ui';
 import { getCategoryBadgeClass, getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
-import { NodeCard } from '../visualization/NodeCard';
 
-const STAT_TABS = ['production', 'buildings', 'items'] as const;
+const STAT_TABS = ['buildings', 'items'] as const;
 
 interface PlannerStatsModalProps {
     isOpen: boolean;
@@ -19,10 +18,9 @@ interface PlannerStatsModalProps {
 export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, onClose }) => {
     // Get detailed stats from subscription
     const stats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
-    const items = useSubscription([appIds.subscriptions.ITEMS_LIST]);
-    const [activeTab, setActiveTab] = useState<typeof STAT_TABS[number]>('production');
+    const [activeTab, setActiveTab] = useState<typeof STAT_TABS[number]>('buildings');
     const closeModal = () => {
-        setActiveTab('production');
+        setActiveTab('buildings');
         onClose();
     };
     const tabId = useId();
@@ -69,46 +67,11 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                                     ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus();
                             }}
                         >
-                            {tab === 'production' ? 'Production' : tab === 'buildings' ? `Buildings (${stats.totalBuildings})` : `Items (${itemCount})`}
+                            {tab === 'buildings' ? `Buildings (${stats.totalBuildings})` : `Items (${itemCount})`}
                         </button>
                     ))}
                 </div>
 
-                <div
-                    role="tabpanel"
-                    id={`${tabId}-production-panel`}
-                    aria-labelledby={`${tabId}-production-tab`}
-                    hidden={activeTab !== 'production'}
-                    tabIndex={0}
-                    className="mb-6 overflow-auto max-h-[65vh] rounded-lg border border-base-300"
-                >
-                    <table className="w-full table-fixed">
-                        <caption className="sr-only">Production cards ordered by target and item category</caption>
-                        {stats.productionGroups.map(group => (
-                            <tbody key={group.type} className="border-b border-base-300 last:border-b-0">
-                                <tr>
-                                    <th scope="rowgroup" className="px-4 py-2 text-left text-sm font-semibold bg-base-200">
-                                        {group.type === 'target' ? 'Target' : group.type === 'launcher' ? 'Delivery' : getCategoryDisplayName(group.type)}
-                                    </th>
-                                </tr>
-                                <tr>
-                                    <td className="p-4">
-                                        <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
-                                            {group.nodes.map(node => (
-                                                <div
-                                                    key={`${node.nodeType}:${node.buildingId}:${node.recipeIndex}:${node.outputItem}:${node.baseBuildingId ?? ''}`}
-                                                    className={`relative rounded-md border bg-base-200 ${group.type === 'target' ? 'border-primary' : 'border-base-300'}`}
-                                                >
-                                                    <NodeCard node={node} items={items} outputColor="var(--color-success)" compact />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        ))}
-                    </table>
-                </div>
 
                 {/* Buildings by Type */}
                 <div

@@ -125,9 +125,11 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                 type="button"
                 className="btn btn-sm btn-ghost gap-2 border border-base-300 bg-transparent hover:bg-base-200"
                 aria-expanded={isOpen}
+                aria-label={`Recipe alternatives: ${selectedNonDefault} of ${total} customized`}
+                title="Choose recipe alternatives"
                 onClick={() => setIsOpen((prev) => !prev)}
             >
-                <span className="text-xs font-semibold">Alternatives</span>
+                <span className="text-xs font-semibold">Recipes</span>
                 {showChevron ? (
                     <span className="flex items-center gap-2">
                         <span className="text-xs">

@@ -210,6 +210,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.ITEMS_HELPER_LOOKUPS]: { params: []; result: ItemsHelperLookups };
         [appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID]: { params: [buildingId: string]; result: AppState['itemsList'] };
         [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID]: { params: [itemId: string]; result: ItemRecipe[] };
+        [appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID]: { params: [itemId: string]; result: ItemRecipe[] };
         [appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST]: { params: []; result: Building[] };
         [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]: { params: []; result: AppState['plannerSelectedItemId'] };
         [appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL]: { params: []; result: AppState['plannerSelectedCorporationLevel'] };

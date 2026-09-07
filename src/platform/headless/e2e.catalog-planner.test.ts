@@ -36,6 +36,7 @@ describe('headless catalog and planner E2E', () => {
             productionBuildings: [appIds.subscriptions.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS],
             missingBuildingItems: [appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, 'missing'],
             emptyInputRecipes: [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID, ''],
+            emptyOutputRecipes: [appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID, ''],
             buildings: [appIds.subscriptions.BUILDINGS_LIST],
             buildingsById: [appIds.subscriptions.BUILDINGS_BY_ID_MAP],
             sortedBuildings: [appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST],
@@ -69,6 +70,7 @@ describe('headless catalog and planner E2E', () => {
             productionBuildings: ['all'],
             missingBuildingItems: [],
             emptyInputRecipes: [],
+            emptyOutputRecipes: [],
             buildings: [],
             buildingsById: {},
             sortedBuildings: [],
@@ -154,6 +156,8 @@ describe('headless catalog and planner E2E', () => {
             missingItems: [appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, 'missing'],
             ironRecipes: [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID, 'iron-ore'],
             unknownRecipes: [appIds.subscriptions.ITEMS_RECIPES_BY_INPUT_ITEM_ID, 'unknown'],
+            plateRecipes: [appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID, 'iron-plate'],
+            unknownOutputRecipes: [appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID, 'unknown'],
             tableRows: [appIds.subscriptions.ITEMS_TABLE_ROWS],
             helpers: [appIds.subscriptions.ITEMS_HELPER_LOOKUPS],
             sortedBuildings: [appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST],
@@ -184,6 +188,11 @@ describe('headless catalog and planner E2E', () => {
             'smelter_mk2',
         ]);
         expect(view.value('unknownRecipes')).toEqual([]);
+        expect(view.value('plateRecipes').map(({ building }) => building.id)).toEqual([
+            'smelter',
+            'smelter_mk2',
+        ]);
+        expect(view.value('unknownOutputRecipes')).toEqual([]);
 
         const ironRow = view.value('tableRows').find(({ item }) => item.id === 'iron-plate');
         expect(ironRow).toMatchObject({

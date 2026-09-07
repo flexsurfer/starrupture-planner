@@ -11,7 +11,7 @@
  * - Building count calculations and material flow rates
  */
 
-import React from 'react';
+import React, { useId, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 
 import {
@@ -21,65 +21,45 @@ import {
     PlannerTargetInput,
 } from './controls';
 import { PlannerStatsDisplay } from './stats';
-import { PlannerFlowDiagram } from './visualization';
+import { PlannerViews } from './visualization/PlannerViews';
 
 /**
  * Inner component for the production planner
  */
 const PlannerPageInner: React.FC = () => {
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const settingsId = useId();
     return (
         <div className="h-full flex flex-col bg-base-100">
-            {/* Header Section */}
-            <div className="p-1 bg-base-200 shadow-lg flex-shrink-0">
-                {/* Mobile Layout - Compact */}
-                <div className="flex flex-col gap-2 sm:hidden">
-                    <div className="flex gap-2">
-                        <PlannerItemSelector
-                            className="select-sm text-xs"
-                        />
-
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-base-content/70 whitespace-nowrap">Target/min:</span>
-                            <PlannerTargetInput
-                                className="input-sm text-xs"
-                            />
+            <PlannerViews renderHeader={(viewControl) => (
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-4 lg:gap-6 p-2 sm:p-1 bg-base-200 shadow-lg shrink-0">
+                    <div className="flex w-full min-w-0 sm:w-auto sm:shrink-0 items-center gap-2 sm:gap-4">
+                        <PlannerItemSelector className="select-sm min-w-0 flex-1 sm:w-50 sm:flex-none text-xs sm:text-sm" />
+                        <div className="flex shrink-0 items-center gap-2">
+                            <PlannerTargetInput className="input-sm text-xs sm:text-sm" />
                         </div>
                     </div>
-
-                    <div className="flex gap-2 items-center flex-wrap">
-                        <PlannerStatsDisplay />
-                        <PlannerCorporationLevelSelector />
+                    <div className="order-2 shrink-0 sm:order-none">{viewControl}</div>
+                    <div className="order-3 shrink-0 sm:order-none"><PlannerStatsDisplay /></div>
+                    <button
+                        type="button"
+                        className={`order-4 ml-auto sm:hidden btn btn-sm gap-1 text-xs ${settingsOpen ? 'btn-active' : 'btn-ghost border border-base-300'}`}
+                        aria-expanded={settingsOpen}
+                        aria-controls={settingsId}
+                        onClick={() => setSettingsOpen(open => !open)}
+                    >
+                        Settings <span aria-hidden="true">{settingsOpen ? '▴' : '▾'}</span>
+                    </button>
+                    <div
+                        id={settingsId}
+                        className={`order-5 w-full min-w-0 flex-wrap items-center gap-2 border-t border-base-300 pt-2 sm:contents ${settingsOpen ? 'flex' : 'hidden'}`}
+                    >
+                        <PlannerCorporationLevelSelector className="max-w-full sm:max-w-md" />
                         <PlannerRecipeSelector />
                     </div>
                 </div>
 
-                {/* Desktop Layout */}
-                <div className="hidden sm:flex flex-row items-center gap-4 lg:gap-6">
-                    <div className="form-control">
-                        <PlannerItemSelector
-                            className="select-sm"
-                        />
-                    </div>
-
-                    <PlannerTargetInput
-                        className="input-sm"
-                    />
-
-                    <div className="flex items-center">
-                        <PlannerStatsDisplay />
-                    </div>
-
-                    <PlannerCorporationLevelSelector
-                        className="max-w-md"
-                    />
-                    <PlannerRecipeSelector />
-                </div>
-            </div>
-
-            {/* Flow Diagram Section */}
-            <div className="flex-1 min-h-0">
-                <PlannerFlowDiagram />
-            </div>
+            )} />
         </div>
     );
 };

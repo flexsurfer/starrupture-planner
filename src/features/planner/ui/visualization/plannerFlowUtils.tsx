@@ -47,7 +47,7 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items }: FlowDataG
     // Dagre arranges nodes in a hierarchical layout (left-to-right)
     const dagreGraph = new dagre.graphlib.Graph();
     dagreGraph.setDefaultEdgeLabel(() => ({}));
-    dagreGraph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 100 });
+    dagreGraph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 80 });
 
     // Add all nodes to the layout graph
     flowNodes.forEach((_, index) => {
@@ -85,6 +85,7 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items }: FlowDataG
         return {
             id: `node_${index}`,
             type: 'default',
+            style: { padding: 0 },
             position: { x: nodeWithPosition.x - 100, y: nodeWithPosition.y - 60 },
             data: {
                 label: (

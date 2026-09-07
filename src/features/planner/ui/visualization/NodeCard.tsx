@@ -2,92 +2,58 @@ import React from 'react';
 import type { FlowNode, Item } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
 import { ItemImage, BuildingImage, RecipeTypeIcon } from '@/shared/ui';
+import { NodeRecipeButton } from './NodeRecipeButton';
 
 interface NodeCardProps {
     node: FlowNode;
     items: Item[];
     outputColor: string;
-    compact?: boolean;
 }
 
 export const NodeCard: React.FC<NodeCardProps> = ({
     node,
     items,
-    outputColor,
-    compact = false
+    outputColor
 }) => {
+    const item = items.find(({ id }) => id === node.outputItem);
     return (
-        <div className="text-center p-2">
-            {/* Custom input badge */}
-            {node.nodeType === 'input' && (
-                <div className="text-xs font-semibold absolute top-[-8px] left-[-8px]">
-                    <div className="badge badge-sm badge-success">
-                        input
-                    </div>
-                </div>
-            )}
-
-            {node.recipeType && (
-                <RecipeTypeIcon
-                    recipeType={node.recipeType}
-                    className="absolute top-[-8px] left-[-8px]"
-                />
-            )}
-
-            {/* Fractional count badge at bottom center */}
-            {Math.ceil(node.buildingCount) > 1 && (
-                <div className="text-xs font-semibold absolute top-[-8px] right-[-8px]">
-                    <div className="badge badge-sm badge-secondary">
-                        {Math.ceil(node.buildingCount)}
-                    </div>
-                </div>
-            )}
-
-            {/* Building information */}
-            <div className="text-xs font-semibold mb-1">
-                {node.buildingName}
+        <div className="flex h-full flex-col text-center">
+            <div className="absolute top-[-8px] left-[-8px] flex items-center gap-1">
+                {node.nodeType === 'input' && <div className="badge badge-sm badge-success">input</div>}
+                {node.recipeType && <RecipeTypeIcon recipeType={node.recipeType} />}
             </div>
 
-            {/* Building icon */}
-            {!compact && <div className="flex items-center gap-2 justify-center">
-                <BuildingImage
-                    buildingId={node.buildingId}
-                    className="w-19 h-19 rounded-full object-cover"
-                    size="medium"
-                />
-            </div>}
-
-            {/* Item image with per-building rate */}
-            <div className="flex items-center gap-1.5 justify-center">
-                <div className="relative flex-shrink-0">
-                    <ItemImage
-                        itemId={node.outputItem}
-                        size="small"
-                    />
-                </div>
-                <div className="text-left">
-                    <div className="text-xs opacity-75 leading-tight">
+            {/* Item and final output are the primary information. */}
+            <div className="p-2 space-y-2">
+                <div className="flex items-start justify-between gap-1.5">
+                    <div className="min-w-0 flex-1 text-base font-normal leading-tight break-words">
                         {getItemName(node.outputItem, items)}
                     </div>
-                    <div className="text-xs leading-tight">
-                        {node.outputAmount.toFixed(1)}/min
+                    {item && <NodeRecipeButton item={item} node={node} />}
+                </div>
+                <div className="flex items-center justify-center gap-1.5">
+                    <div className="shrink-0">
+                        <ItemImage itemId={node.outputItem} size="medium" />
+                    </div>
+                    <div className="min-w-0 text-xl font-semibold leading-tight break-words tabular-nums" style={{ color: outputColor }} aria-label="Total output per minute">
+                        {(node.outputAmount * node.buildingCount).toFixed(1)}<span className="block text-xs font-normal">/min</span>
                     </div>
                 </div>
             </div>
 
-            {/* Buildings count and total production */}
-            <div className={`text-xs leading-tight opacity-85 ${compact ? 'mt-2' : 'mt-3 mb-2'}`}>
-                <span >&times;{(Math.floor(node.buildingCount * 10) / 10).toFixed(1)}</span>
-                <span className="opacity-60 mx-0.5">=</span>
-                <span className="font-xs font-medium" style={{ color: outputColor }}>
-                    {(node.outputAmount * node.buildingCount).toFixed(1)}/min
-                </span>
+            {/* Building details stay secondary, below the item. */}
+            <div className="mt-auto border-t border-base-content/10 bg-base-content/5 rounded-b p-2">
+                <div className="mb-1 text-sm leading-tight text-base-content/60 break-words">{node.buildingName}</div>
+                <div className="flex items-center gap-1.5">
+                    <BuildingImage buildingId={node.buildingId} size="small" className="!w-8 !h-8 shrink-0" />
+                    <div className="min-w-0 flex-1 text-left text-[10px] leading-tight break-words space-y-0.5">
+                        <div className="text-xs text-base-content/55">{node.outputAmount.toFixed(1)}/min</div>
+                    </div>
+                    <span className={`shrink-0 rounded border px-1.5 py-0.5 text-sm font-semibold ${Math.ceil(node.buildingCount) > 1 ? 'border-secondary/40 bg-secondary/15 text-secondary' : 'border-base-content/15 text-base-content/75'}`} title={`${Math.ceil(node.buildingCount)} buildings required`}>
+                        ×{Math.ceil(node.buildingCount)}
+                    </span>
+                </div>
             </div>
-
-            {!compact && <div className="text-xs absolute bottom-0.5 right-0.5">
-                ⚡{node.powerPerBuilding}
-                🔥{node.heatPerBuilding}
-            </div>}
         </div>
     );
 };
