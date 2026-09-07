@@ -63,7 +63,18 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
         };
 
         document.addEventListener('mousedown', onMouseDown);
-        return () => document.removeEventListener('mousedown', onMouseDown);
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            event.stopPropagation();
+            setIsOpen(false);
+            setIsLoadOpen(false);
+            rootRef.current?.querySelector('button')?.focus();
+        };
+        document.addEventListener('keydown', onKeyDown, true);
+        return () => {
+            document.removeEventListener('mousedown', onMouseDown);
+            document.removeEventListener('keydown', onKeyDown, true);
+        };
     }, [isOpen]);
 
     if (!options.length) return null;
@@ -113,6 +124,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
             <button
                 type="button"
                 className="btn btn-sm btn-ghost gap-2 border border-base-300 bg-transparent hover:bg-base-200"
+                aria-expanded={isOpen}
                 onClick={() => setIsOpen((prev) => !prev)}
             >
                 <span className="text-xs font-semibold">Alternatives</span>
@@ -132,17 +144,21 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
 
             {isOpen && (
                 <div
-                    className={`absolute right-0 mt-2 z-30 w-[min(92vw,560px)] ${panelMaxHeightClass} overflow-y-auto rounded-md border border-base-300 bg-base-100 p-2 shadow-xl`}
+                    className={`fixed inset-x-2 bottom-2 z-30 flex max-sm:max-h-[85dvh] flex-col sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-2 sm:w-[min(92vw,560px)] ${panelMaxHeightClass} rounded-md border border-base-300 bg-base-100 shadow-xl`}
                 >
                     <div
-                        className="sticky -top-2 z-20 -mx-2 -mt-2 mb-2 border-b border-base-300 bg-base-100 px-3 pt-2 pb-2"
+                        className="relative z-20 shrink-0 rounded-t-md border-b border-base-300 bg-base-100 px-3 py-2"
                     >
+                        <div className="mb-2 flex items-center justify-between sm:hidden">
+                            <span className="text-sm font-semibold">Recipe Alternatives</span>
+                            <button type="button" className="btn btn-ghost min-h-11 min-w-11" aria-label="Close recipe alternatives" onClick={() => { setIsOpen(false); setIsLoadOpen(false); }}>✕</button>
+                        </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-semibold text-base-content/80 mr-auto">Recipe Alternatives</span>
+                            <span className="hidden sm:inline text-xs font-semibold text-base-content/80 mr-auto">Recipe Alternatives</span>
 
                             <button
                                 type="button"
-                                className="btn btn-xs btn-ghost border border-base-300"
+                                className="btn btn-xs max-sm:min-h-11 btn-ghost border border-base-300"
                                 disabled={!hasCustomSelection}
                                 title="Save the current alternatives as a named set"
                                 onClick={handleSavePreset}
@@ -153,7 +169,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                             <div className="relative">
                                 <button
                                     type="button"
-                                    className="btn btn-xs btn-ghost border border-base-300 gap-1"
+                                    className="btn btn-xs max-sm:min-h-11 btn-ghost border border-base-300 gap-1"
                                     disabled={!presets.length || !onApplySelections}
                                     title="Load a saved set of alternatives"
                                     onClick={() => setIsLoadOpen((prev) => !prev)}
@@ -164,14 +180,20 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                 </button>
 
                                 {isLoadOpen && presets.length > 0 && (
-                                    <div className="absolute right-0 mt-1 z-40 w-56 max-h-60 overflow-y-auto rounded-md border border-base-300 bg-base-100 p-1 shadow-xl">
+                                    <div className="absolute left-0 sm:left-auto sm:right-0 mt-1 z-40 w-48 max-h-[35dvh] overflow-y-auto overscroll-contain rounded-md border border-base-300 bg-base-100 p-1 shadow-xl">
                                         {presets.map((preset) => (
                                             <div
                                                 key={preset.id}
                                                 role="button"
                                                 tabIndex={0}
-                                                className="flex items-center gap-2 rounded px-2 py-1 hover:bg-base-200 cursor-pointer"
+                                                className="flex items-center gap-2 rounded px-2 py-1 max-sm:min-h-11 hover:bg-base-200 cursor-pointer"
                                                 onClick={() => handleLoadPreset(preset)}
+                                                onKeyDown={(event) => {
+                                                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                                                        event.preventDefault();
+                                                        handleLoadPreset(preset);
+                                                    }
+                                                }}
                                             >
                                                 <span className="text-xs truncate flex-1" title={preset.name}>
                                                     {preset.name}
@@ -181,7 +203,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                                 </span>
                                                 <button
                                                     type="button"
-                                                    className="btn btn-ghost btn-xs px-1 text-error/80 hover:text-error"
+                                                    className="btn btn-ghost btn-xs max-sm:min-h-11 max-sm:min-w-11 px-1 text-error/80 hover:text-error"
                                                     title={`Delete "${preset.name}"`}
                                                     onClick={(event) => handleDeletePreset(event, preset.id)}
                                                 >
@@ -195,7 +217,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
 
                             <button
                                 type="button"
-                                className={`btn btn-xs gap-1 ${isCurrentDefault ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
+                                className={`btn btn-xs max-sm:min-h-11 gap-1 ${isCurrentDefault ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
                                 title={
                                     isCurrentDefault
                                         ? 'These alternatives are the default for new plans — click to clear'
@@ -212,15 +234,16 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                         </div>
                     </div>
 
+                    <div className="min-h-0 overflow-y-auto overscroll-contain p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                     {normalizedOptions.map(({ entry, selectedOption }) => (
                         <div key={entry.itemId} className="rounded-md border border-base-300 bg-base-200/40 p-2 mb-2 last:mb-0">
                             <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
                                 <div className="min-w-0 space-y-2">
-                                    <div className="text-xs font-medium">{entry.itemName}</div>
+                                    <div className="text-sm sm:text-xs font-medium">{entry.itemName}</div>
                                     <RecipePreview option={selectedOption} itemsById={itemsById} />
                                 </div>
 
-                                <div className="flex items-end justify-end gap-2 flex-shrink-0">
+                                <div className="flex flex-wrap items-end justify-start sm:justify-end gap-x-2 gap-y-3 min-w-0">
                                     {entry.options.map((option) => {
                                         const isSelected = option.key === entry.selectedKey;
 
@@ -237,6 +260,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                                             : 'border-base-300 bg-base-100 hover:bg-base-200'
                                                     }`}
                                                     title={`${option.buildingName} - ${option.outputRate}/min`}
+                                                    aria-pressed={isSelected}
                                                     onClick={() => onSelectRecipe(entry.itemId, option.key)}
                                                 >
                                                     <div
@@ -265,6 +289,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                             </div>
                         </div>
                     ))}
+                    </div>
                 </div>
             )}
 
