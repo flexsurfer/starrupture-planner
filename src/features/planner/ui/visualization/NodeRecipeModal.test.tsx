@@ -8,8 +8,10 @@ import { useSubscription } from '@/app/uklad/bindings';
 import { NodeRecipeButton } from './NodeRecipeButton';
 import type { FlowNode } from '@/features/planner/types';
 
+const dispatch = vi.hoisted(() => vi.fn());
+
 vi.mock('@/app/uklad/bindings', () => ({
-    useRuntime: () => ({ dispatch: vi.fn() }),
+    useRuntime: () => ({ dispatch }),
     useSubscription: vi.fn(([id]: [string]) => id === appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID
         ? recipes
         : ({ plate: { id: 'plate', name: 'Plate', type: 'processed' } })),
@@ -34,6 +36,24 @@ const recipes: ItemRecipe[] = [
 }));
 
 describe('NodeRecipeModal', () => {
+    it.each([undefined, 'plate-alternative'])('applies a recipe using the shared planner action (recipe ID: %s)', (id) => {
+        recipes[2].recipe.id = id;
+        const onClose = vi.fn();
+        render(<NodeRecipeModal
+            item={{ id: 'plate', name: 'Plate', type: 'processed' }}
+            node={{ buildingId: 'smelter', recipeIndex: 0 }}
+            onClose={onClose}
+        />);
+
+        expect(screen.getByRole('button', { name: 'Selected smelter Standard recipe' })).toBeDisabled();
+        fireEvent.click(screen.getByRole('button', { name: 'Select smelter Alternative recipe' }));
+        expect(dispatch).toHaveBeenCalledExactlyOnceWith([
+            appIds.events.PLANNER_SET_RECIPE_SELECTION, 'plate', `smelter:${id ?? 1}`,
+        ]);
+        expect(onClose).toHaveBeenCalledOnce();
+        delete recipes[2].recipe.id;
+    });
+
     it.each(recipes)('highlights only the exact $recipeType recipe', (selected) => {
         render(<NodeRecipeModal
             item={{ id: 'plate', name: 'Plate', type: 'processed' }}
