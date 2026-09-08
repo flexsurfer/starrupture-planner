@@ -21,6 +21,7 @@
     "headless": "vite-node --watch src/headless.ts",
     "headless:once": "vite-node src/headless.ts",
     "build": "tsc -b && vite build",
+    "predeploy": "npm run test:run && npm run build && node scripts/prepare-deploy.mjs",
     "deploy": "gh-pages -d dist",
     "images:webp": "./scripts/generate-webp.sh",
     "lint": "eslint .",

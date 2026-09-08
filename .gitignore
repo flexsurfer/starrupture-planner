@@ -13,6 +13,9 @@ dist-ssr
 coverage
 *.local
 
+# Local deployment analytics token
+.env.deploy.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
