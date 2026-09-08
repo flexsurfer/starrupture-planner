@@ -7,6 +7,8 @@ import { appIds } from '@/app/uklad/catalog';
 import { useSubscription } from '@/app/uklad/bindings';
 import { NodeRecipeButton } from './NodeRecipeButton';
 import type { FlowNode } from '@/features/planner/types';
+import { generateReactFlowData } from './plannerFlowUtils';
+import type { ReactNode } from 'react';
 
 const dispatch = vi.hoisted(() => vi.fn());
 
@@ -36,20 +38,51 @@ const recipes: ItemRecipe[] = [
 }));
 
 describe('NodeRecipeModal', () => {
-    it.each([undefined, 'plate-alternative'])('applies a recipe using the shared planner action (recipe ID: %s)', (id) => {
+    it('routes embedded graph selections to the owning plan', () => {
+        const onSelectRecipe = vi.fn();
+        const { nodes } = generateReactFlowData({
+            flowNodes: [{
+                nodeType: 'production', buildingId: 'smelter', buildingName: 'Smelter', recipeIndex: 0,
+                outputItem: 'plate', outputAmount: 60, buildingCount: 1,
+                powerPerBuilding: 0, heatPerBuilding: 0, totalPower: 0, totalHeat: 0,
+            }],
+            flowEdges: [],
+            items: [{ id: 'plate', name: 'Plate', type: 'processed' }],
+            onSelectRecipe,
+        });
+        render(<>{nodes[0].data.label as ReactNode}</>);
+        fireEvent.click(screen.getByRole('button', { name: 'Recipes for Plate' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Select smelter Alternative recipe' }));
+        expect(onSelectRecipe).toHaveBeenCalledExactlyOnceWith('plate', 'smelter:1');
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('supports view-only recipe comparison', () => {
+        render(<NodeRecipeModal
+            item={{ id: 'plate', name: 'Plate', type: 'processed' }}
+            node={{ buildingId: 'smelter', recipeIndex: 0 }}
+            onClose={vi.fn()}
+        />);
+        expect(screen.getAllByRole('region')).toHaveLength(3);
+        expect(screen.queryByRole('button', { name: /Select/ })).not.toBeInTheDocument();
+    });
+
+    it.each([undefined, 'plate-alternative'])('passes the recipe key to the selection callback (recipe ID: %s)', (id) => {
         recipes[2].recipe.id = id;
         const onClose = vi.fn();
+        const onSelectRecipe = vi.fn();
         render(<NodeRecipeModal
             item={{ id: 'plate', name: 'Plate', type: 'processed' }}
             node={{ buildingId: 'smelter', recipeIndex: 0 }}
             onClose={onClose}
+            onSelectRecipe={onSelectRecipe}
         />);
 
         expect(screen.getByRole('button', { name: 'Selected smelter Standard recipe' })).toBeDisabled();
         fireEvent.click(screen.getByRole('button', { name: 'Select smelter Alternative recipe' }));
-        expect(dispatch).toHaveBeenCalledExactlyOnceWith([
-            appIds.events.PLANNER_SET_RECIPE_SELECTION, 'plate', `smelter:${id ?? 1}`,
-        ]);
+        expect(onSelectRecipe).toHaveBeenCalledExactlyOnceWith('plate', `smelter:${id ?? 1}`);
+        expect(dispatch).not.toHaveBeenCalled();
         expect(onClose).toHaveBeenCalledOnce();
         delete recipes[2].recipe.id;
     });

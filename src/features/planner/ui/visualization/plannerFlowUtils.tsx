@@ -10,6 +10,7 @@ export interface FlowDataGenerationParams {
     flowNodes: FlowNode[];
     flowEdges: FlowEdge[];
     items: Item[];
+    onSelectRecipe?: (itemId: string, recipeKey: string) => void;
 }
 
 export interface FlowData {
@@ -26,7 +27,7 @@ export interface FlowData {
  * 3. Converts flow edges to React Flow edges with labels
  * 4. Applies the calculated positions to all nodes
  */
-export const generateReactFlowData = ({ flowNodes, flowEdges, items }: FlowDataGenerationParams): FlowData => {
+export const generateReactFlowData = ({ flowNodes, flowEdges, items, onSelectRecipe }: FlowDataGenerationParams): FlowData => {
     // Color function for items (pure function based on items)
     const getItemColor = (itemId: string): string => {
         const item = items.find(i => i.id === itemId);
@@ -92,6 +93,7 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items }: FlowDataG
                     <NodeCard
                         node={node}
                         items={items}
+                        onSelectRecipe={onSelectRecipe}
                         outputColor={getItemColor(node.outputItem)}
                     />
                 ),

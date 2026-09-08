@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import type { FlowNode, Item } from '@/features/planner/types';
 import { NodeRecipeModal } from './NodeRecipeModal';
 
-export const NodeRecipeButton = ({ item, node }: { item: Item; node: FlowNode }) => {
+export const NodeRecipeButton = ({ item, node, onSelectRecipe }: { item: Item; node: FlowNode; onSelectRecipe?: (itemId: string, recipeKey: string) => void }) => {
     const [isOpen, setIsOpen] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,7 @@ export const NodeRecipeButton = ({ item, node }: { item: Item; node: FlowNode })
                     }
                 }}
             >
-                <NodeRecipeModal onClose={close} item={item} node={node} />
+                <NodeRecipeModal onClose={close} item={item} node={node} onSelectRecipe={onSelectRecipe} />
             </div>,
             document.body,
         )}

@@ -26,6 +26,7 @@ interface EmbeddedFlowDiagramInnerProps {
     /** Pre-computed production flow result from a subscription */
     productionFlow: ProductionFlowResult;
     interactive?: boolean;
+    onSelectRecipe?: (itemId: string, recipeKey: string) => void;
 }
 
 /**
@@ -34,6 +35,7 @@ interface EmbeddedFlowDiagramInnerProps {
 const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     productionFlow,
     interactive = true,
+    onSelectRecipe,
 }) => {
     const { fitView } = useReactFlow();
 
@@ -50,9 +52,10 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
         return generateReactFlowData({
             flowNodes: productionFlow.nodes,
             flowEdges: productionFlow.edges,
-            items
+            items,
+            onSelectRecipe,
         });
-    }, [productionFlow, items]);
+    }, [productionFlow, items, onSelectRecipe]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -121,6 +124,7 @@ interface EmbeddedFlowDiagramProps {
     productionFlow: ProductionFlowResult;
     className?: string;
     interactive?: boolean;
+    onSelectRecipe?: (itemId: string, recipeKey: string) => void;
 }
 
 /**
@@ -132,6 +136,7 @@ export const EmbeddedFlowDiagram: React.FC<EmbeddedFlowDiagramProps> = ({
     productionFlow,
     className = '',
     interactive = true,
+    onSelectRecipe,
 }) => {
     return (
         <div className={`${className}`}>
@@ -139,6 +144,7 @@ export const EmbeddedFlowDiagram: React.FC<EmbeddedFlowDiagramProps> = ({
                 <EmbeddedFlowDiagramInner
                     productionFlow={productionFlow}
                     interactive={interactive}
+                    onSelectRecipe={onSelectRecipe}
                 />
             </ReactFlowProvider>
         </div>

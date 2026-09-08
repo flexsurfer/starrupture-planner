@@ -8,12 +8,14 @@ interface NodeCardProps {
     node: FlowNode;
     items: Item[];
     outputColor: string;
+    onSelectRecipe?: (itemId: string, recipeKey: string) => void;
 }
 
 export const NodeCard: React.FC<NodeCardProps> = ({
     node,
     items,
-    outputColor
+    outputColor,
+    onSelectRecipe,
 }) => {
     const item = items.find(({ id }) => id === node.outputItem);
     return (
@@ -29,7 +31,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                     <div className="min-w-0 flex-1 text-base font-normal leading-tight break-words">
                         {getItemName(node.outputItem, items)}
                     </div>
-                    {item && <NodeRecipeButton item={item} node={node} />}
+                    {item && <NodeRecipeButton item={item} node={node} onSelectRecipe={node.nodeType === 'input' ? undefined : onSelectRecipe} />}
                 </div>
                 <div className="flex items-center justify-center gap-1.5">
                     <div className="shrink-0">

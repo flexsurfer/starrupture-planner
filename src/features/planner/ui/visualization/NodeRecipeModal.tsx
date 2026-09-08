@@ -1,5 +1,5 @@
 import { appIds } from '@/app/uklad/catalog';
-import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import { useSubscription } from '@/app/uklad/bindings';
 import { getRecipeSelectionKey } from '@/app/uklad/recipe-key';
 import { RecipeCard } from '@/features/buildings/ui/RecipeCard';
 import { BuildingImage } from '@/shared/ui';
@@ -9,11 +9,11 @@ interface NodeRecipeModalProps {
     item: Item;
     node: Pick<FlowNode, 'buildingId' | 'recipeIndex'>;
     onClose: () => void;
+    onSelectRecipe?: (itemId: string, recipeKey: string) => void;
 }
 
 /** Recipe comparison and planner selection for a production node. */
-export const NodeRecipeModal = ({ item, node, onClose }: NodeRecipeModalProps) => {
-    const runtime = useRuntime();
+export const NodeRecipeModal = ({ item, node, onClose, onSelectRecipe }: NodeRecipeModalProps) => {
     const recipes = useSubscription([appIds.subscriptions.ITEMS_RECIPES_BY_OUTPUT_ITEM_ID, item.id]);
 
     return (
@@ -23,7 +23,7 @@ export const NodeRecipeModal = ({ item, node, onClose }: NodeRecipeModalProps) =
                 <h3 className="text-lg font-bold">Recipes for {item.name}</h3>
                 <button type="button" className="btn btn-sm btn-circle btn-ghost shrink-0" aria-label="Close recipes" onClick={onClose}>✕</button>
             </div>
-            <p className="text-sm text-base-content/60 mb-3 shrink-0">Select a recipe for this item in the current plan. Use the planner’s Recipes control to save the selection as part of a set.</p>
+            {onSelectRecipe && <p className="text-sm text-base-content/60 mb-3 shrink-0">Select a recipe for this item in the current plan. The selection is shared with the plan’s Recipes control.</p>}
             <div className="min-h-0 overflow-y-auto overscroll-contain space-y-3 p-1">
                 {recipes.length === 0 && <p className="text-sm text-base-content/60">No production recipes available for this item.</p>}
                 {recipes.map(({ recipe, building, recipeIndex, recipeType }) => {
@@ -43,24 +43,21 @@ export const NodeRecipeModal = ({ item, node, onClose }: NodeRecipeModalProps) =
                                 {selected && <span className="badge badge-sm badge-primary">Used in this node</span>}
                             </div>
                             <RecipeCard recipe={recipe} recipeType={recipeType} showPlannerButton={false} />
-                            <div className="flex justify-end">
+                            {onSelectRecipe && <div className="flex justify-end">
                                 <button
                                     type="button"
                                     className="btn btn-sm btn-primary"
                                     disabled={selected}
                                     aria-label={`${selected ? 'Selected' : 'Select'} ${building.name} ${typeLabel} recipe`}
                                     onClick={() => {
-                                        runtime.dispatch([
-                                            appIds.events.PLANNER_SET_RECIPE_SELECTION,
-                                            item.id,
-                                            getRecipeSelectionKey(building.id, recipe, recipeIndex),
-                                        ]);
+                                        const recipeKey = getRecipeSelectionKey(building.id, recipe, recipeIndex);
+                                        onSelectRecipe(item.id, recipeKey);
                                         onClose();
                                     }}
                                 >
                                     {selected ? 'Selected' : 'Select recipe'}
                                 </button>
-                            </div>
+                            </div>}
                         </section>
                     );
                 })}

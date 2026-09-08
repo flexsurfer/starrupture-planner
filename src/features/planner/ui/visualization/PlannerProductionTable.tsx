@@ -1,9 +1,14 @@
+import { useCallback } from 'react';
 import { appIds } from '@/app/uklad/catalog';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
 import { NodeCard } from './NodeCard';
 
 export const PlannerProductionTable = () => {
+    const runtime = useRuntime();
+    const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
+        runtime.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, itemId, recipeKey]);
+    }, [runtime]);
     const stats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
     const items = useSubscription([appIds.subscriptions.ITEMS_LIST]);
 
@@ -32,7 +37,7 @@ export const PlannerProductionTable = () => {
                                             key={`${node.nodeType}:${node.buildingId}:${node.recipeIndex}:${node.outputItem}:${node.baseBuildingId ?? ''}`}
                                             className={`relative flex h-full flex-col rounded-md border bg-base-200 ${group.type === 'target' ? 'border-primary' : 'border-base-300'}`}
                                         >
-                                            <NodeCard node={node} items={items} outputColor="var(--color-success)" />
+                                            <NodeCard onSelectRecipe={onSelectRecipe} node={node} items={items} outputColor="var(--color-success)" />
                                         </div>
                                     ))}
                                 </div>

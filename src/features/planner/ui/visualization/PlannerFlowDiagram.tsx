@@ -1,5 +1,5 @@
 import { appIds } from '@/app/uklad/catalog';
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
     ReactFlow,
     type Node,
@@ -12,7 +12,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { NodeCard } from './NodeCard';
 import { useConnectedNodeHighlight } from './useConnectedNodeHighlight';
 
@@ -25,6 +25,10 @@ const edgeTypes = {};
  * Handles the React Flow visualization with automatic layout
  */
 export const PlannerFlowDiagram: React.FC = () => {
+    const runtime = useRuntime();
+    const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
+        runtime.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, itemId, recipeKey]);
+    }, [runtime]);
     const { fitView } = useReactFlow();
 
     // State subscriptions
@@ -35,9 +39,9 @@ export const PlannerFlowDiagram: React.FC = () => {
         ...node,
         style: { ...node.style, padding: 0 },
         data: {
-            label: <NodeCard node={flowNode} items={flowGraph.items!} outputColor={outputColor} />,
+            label: <NodeCard onSelectRecipe={onSelectRecipe} node={flowNode} items={flowGraph.items!} outputColor={outputColor} />,
         },
-    })), [flowGraph]);
+    })), [flowGraph, onSelectRecipe]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);

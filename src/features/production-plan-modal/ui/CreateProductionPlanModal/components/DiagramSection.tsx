@@ -1,9 +1,13 @@
 import { appIds } from '@/app/uklad/catalog';
-import React from 'react';
-import { useSubscription } from '@/app/uklad/bindings';
+import React, { useCallback } from 'react';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { EmbeddedFlowDiagram } from '@/features/production-plans/ui';
 
 export const DiagramSection: React.FC = () => {
+    const runtime = useRuntime();
+    const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
+        runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, itemId, recipeKey]);
+    }, [runtime]);
 
     const productionFlow = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FLOW])
         || { nodes: [], edges: [], rawMaterialDeficits: [] };
@@ -25,6 +29,7 @@ export const DiagramSection: React.FC = () => {
         <div className="flex-1 overflow-hidden relative min-h-0">
             <EmbeddedFlowDiagram
                 productionFlow={productionFlow}
+                onSelectRecipe={onSelectRecipe}
                 className="w-full h-full"
             />
         </div>
