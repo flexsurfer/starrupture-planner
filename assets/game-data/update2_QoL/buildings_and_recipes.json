@@ -189,7 +189,7 @@
       {
         "output": {
           "id": "onboardinstruments",
-          "amount_per_minute": 10
+          "amount_per_minute": 20
         },
         "inputs": [
           {
@@ -550,7 +550,7 @@
         "inputs": [
           {
             "id": "titanium_housing",
-            "amount_per_minute": 20
+            "amount_per_minute": 40
           },
           {
             "id": "wolfram_wire",
@@ -1526,7 +1526,7 @@
         "id": "supermagnet_v2",
         "output": {
           "id": "supermagnet",
-          "amount_per_minute": 80
+          "amount_per_minute": 40
         },
         "inputs": [
           {
@@ -2300,7 +2300,7 @@
           },
           {
             "id": "nanosyringe",
-            "amount_per_minute": 6
+            "amount_per_minute": 3
           },
           {
             "id": "uberoil",
@@ -2798,7 +2798,7 @@
         "inputs": [
           {
             "id": "hardening_agent",
-            "amount_per_minute": 60
+            "amount_per_minute": 30
           },
           {
             "id": "sulfuric_acid",
