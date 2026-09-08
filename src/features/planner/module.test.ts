@@ -43,8 +43,8 @@ describe('planner Uklad module', () => {
                 .productionGroups.map(group => ({ type: group.type, items: group.nodes.map(node => node.outputItem) })))
                 .toEqual([
                     { type: 'target', items: ['product'] },
-                    { type: 'raw', items: ['ore'] },
                     { type: 'processed', items: ['plate'] },
+                    { type: 'raw', items: ['ore'] },
                 ]);
             harness.dispatchSync([appIds.events.PLANNER_SET_TARGET_AMOUNT, 25]);
             expect(rates()).toEqual({ ore: 87.5, plate: 50, product: 25 });
