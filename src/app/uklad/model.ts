@@ -1,3 +1,4 @@
+import type { PlannerFlowDirection } from '@/features/planner/flow-graph';
 import type { DataVersion } from '@/features/app-shell/data-version';
 
 export interface RawCorporationData {
@@ -224,6 +225,12 @@ export interface AppState {
     /** True while a user-requested game-data fetch is in flight (not used for `APP_INIT` load). */
     uiGameDataLoadPending: boolean;
     uiActiveTab: TabType;
+    plannerMultiRecipeSelections: Record<string, string>;
+    plannerGroupByStage: boolean;
+    plannerFlowDirection: PlannerFlowDirection;
+    plannerMode: 'single' | 'multi';
+    plannerMultiTargets: { itemId: string; amount: number }[];
+    plannerTargetWarning: string | null;
     plannerSelectedItemId: string | null;
     plannerSelectedCorporationLevel: CorporationLevelSelection | null;
     plannerRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`

@@ -1,3 +1,7 @@
+import { appIds } from '@/app/uklad/catalog';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import { PlannerTargetAlert } from './controls/PlannerTargetAlert';
+import { PlannerMultiTargets } from './controls/PlannerMultiTargets';
 /**
  * Production Planner Page
  * 
@@ -27,19 +31,30 @@ import { PlannerViews } from './visualization/PlannerViews';
  * Inner component for the production planner
  */
 const PlannerPageInner: React.FC = () => {
+    const runtime = useRuntime();
+    const mode = useSubscription([appIds.subscriptions.PLANNER_MODE]);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const settingsId = useId();
     return (
         <div className="h-full flex flex-col bg-base-100">
-            <PlannerViews renderHeader={(viewControl) => (
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-4 lg:gap-6 p-2 sm:p-1 bg-base-200 shadow-lg shrink-0">
-                    <div className="flex w-full min-w-0 sm:w-auto sm:shrink-0 items-center gap-2 sm:gap-4">
+            <PlannerTargetAlert />
+            <PlannerViews renderHeader={() => (
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 sm:gap-x-4 lg:gap-x-6 p-2 sm:p-1 bg-base-200 shadow-lg shrink-0">
+                    <div className="join" role="group" aria-label="Planner mode">
+                        {(['single', 'multi'] as const).map(value => <button
+                            key={value} type="button"
+                            className={`btn btn-sm join-item ${mode === value ? 'btn-active' : ''}`}
+                            aria-pressed={mode === value}
+                            onClick={() => runtime.dispatch([appIds.events.PLANNER_SET_MODE, value])}
+                        >{value === 'single' ? 'Single target' : 'Multi-target'}</button>)}
+                    </div>
+                    {mode === 'multi' ? <PlannerMultiTargets /> : <div className="flex w-full min-w-0 sm:w-auto sm:shrink-0 items-center gap-2 sm:gap-4">
                         <PlannerItemSelector className="select-sm min-w-0 flex-1 sm:w-50 sm:flex-none text-xs sm:text-sm" />
                         <div className="flex shrink-0 items-center gap-2">
                             <PlannerTargetInput className="input-sm text-xs sm:text-sm" />
                         </div>
                     </div>
-                    <div className="order-2 shrink-0 sm:order-none">{viewControl}</div>
+                    }
                     <div className="order-3 shrink-0 sm:order-none"><PlannerStatsDisplay /></div>
                     <button
                         type="button"
@@ -54,7 +69,7 @@ const PlannerPageInner: React.FC = () => {
                         id={settingsId}
                         className={`order-5 w-full min-w-0 flex-wrap items-center gap-2 border-t border-base-300 pt-2 sm:contents ${settingsOpen ? 'flex' : 'hidden'}`}
                     >
-                        <PlannerCorporationLevelSelector className="max-w-full sm:max-w-md" />
+                        {mode === 'single' && <PlannerCorporationLevelSelector className="max-w-full sm:max-w-md" />}
                         <PlannerRecipeSelector />
                     </div>
                 </div>

@@ -16,11 +16,12 @@ import '@xyflow/react/dist/style.css';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { ProductionFlowResult } from '@/features/planner/types';
 import { generateReactFlowData } from '@/features/planner/ui/visualization';
-import { useConnectedNodeHighlight } from '@/features/planner/ui/visualization/useConnectedNodeHighlight';
+import { ProductionFlowEdge } from '@/features/planner/ui/visualization/ProductionFlowEdge';
+import { usePinnableNodeHighlight } from '@/features/planner/ui/visualization/usePinnableNodeHighlight';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
-const edgeTypes = {};
+const edgeTypes = { production: ProductionFlowEdge };
 
 interface EmbeddedFlowDiagramInnerProps {
     /** Pre-computed production flow result from a subscription */
@@ -63,12 +64,15 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     const {
         nodes: highlightedNodes,
         edges: highlightedEdges,
+        resetHighlight,
         onNodeDragStart,
         onNodeDragStop,
-    } = useConnectedNodeHighlight(nodes, edges, interactive);
+    } = usePinnableNodeHighlight(nodes, edges, interactive);
 
     // Update React Flow nodes and edges when data changes
     useEffect(() => {
+        // A recalculated plan may reuse node IDs for different buildings.
+        resetHighlight();
         if (reactFlowData) {
             setNodes(reactFlowData.nodes);
             setEdges(reactFlowData.edges);
@@ -76,16 +80,17 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
             setNodes([]);
             setEdges([]);
         }
-    }, [reactFlowData, setNodes, setEdges]);
+    }, [reactFlowData, setNodes, setEdges, resetHighlight]);
 
     // Auto-fit view when production flow changes
     useEffect(() => {
         // Small delay to ensure DOM is updated
-        setTimeout(() => { 
+        const timer = setTimeout(() => {
             if (nodes.length > 0) { 
                 fitView({ duration: 300, padding: 0.1 }); 
             } 
         }, 10);
+        return () => clearTimeout(timer);
     }, [productionFlow, nodes.length, fitView]);
 
     return (

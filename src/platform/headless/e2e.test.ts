@@ -152,6 +152,146 @@ afterAll(() => {
 });
 
 describe('headless application E2E', () => {
+    it('switches global planner modes, blocks overlapping targets, and removes targets', async () => {
+        const scenario = await createSeededScenario();
+        const view = mountView(scenario, 'global multi-target planner', {
+            groupByStage: [appIds.subscriptions.PLANNER_GROUP_BY_STAGE],
+            direction: [appIds.subscriptions.PLANNER_FLOW_DIRECTION],
+            graph: [appIds.subscriptions.PLANNER_FLOW_GRAPH],
+            mode: [appIds.subscriptions.PLANNER_MODE],
+            targets: [appIds.subscriptions.PLANNER_MULTI_TARGETS],
+            warning: [appIds.subscriptions.PLANNER_TARGET_WARNING],
+            activeIds: [appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS],
+            singleRecipes: [appIds.subscriptions.PLANNER_SINGLE_RECIPE_SELECTIONS],
+            multiRecipes: [appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS],
+            flow: [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
+        } as const);
+        await dispatch(scenario, [appIds.events.PLANNER_OPEN_ITEM, 'steel-plate']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
+        expect(view.value('activeIds')).toEqual(['iron-plate']);
+        const originalFlow = view.value('flow');
+        expect(view.value('groupByStage')).toBe(false);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_GROUP_BY_STAGE, false]);
+        expect(view.value('groupByStage')).toBe(false);
+        expect(view.value('flow')).toEqual(originalFlow);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_GROUP_BY_STAGE, true]);
+        expect(view.value('groupByStage')).toBe(true);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_FLOW_DIRECTION, 'TB']);
+        expect(view.value('direction')).toBe('TB');
+        expect(view.value('graph').nodes.every(node => node.sourcePosition === 'bottom')).toBe(true);
+        expect(view.value('flow')).toEqual(originalFlow);
+
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
+        expect(view.value('targets')).toHaveLength(1);
+        expect(view.value('warning')).toContain('Iron Plate is required to produce Steel Plate');
+        await dispatch(scenario, [appIds.events.PLANNER_DISMISS_TARGET_WARNING]);
+        expect(view.value('warning')).toBeNull();
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
+        expect(view.value('warning')).toContain('Iron Plate is required to produce Steel Plate');
+
+        await dispatch(scenario, [appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'iron-plate', 120]);
+        expect(view.value('targets')).toEqual([{ itemId: 'iron-plate', amount: 120 }]);
+        expect(view.value('flow').nodes.find(node => node.outputItem === 'iron-plate')?.buildingCount).toBe(2);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
+        expect(view.value('multiRecipes')).toEqual({ 'iron-plate': 'smelter_mk2:0' });
+        expect(view.value('singleRecipes')).toEqual({});
+        expect(view.value('flow').nodes.find(node => node.outputItem === 'iron-plate')?.buildingCount).toBe(1);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'single']);
+        expect(view.value('mode')).toBe('single');
+        expect(view.value('activeIds')).toEqual(['steel-plate']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_REMOVE_TARGET, 'iron-plate']);
+        expect(view.value('flow').nodes).toEqual([]);
+        expect(view.value('warning')).toBeNull();
+    });
+
+    it.each(['earlyaccess', 'playtest'] as const)(
+        'revalidates multi-target plans when recipe data is replaced in %s',
+        async (nextVersion) => {
+            const scenario = createScenario();
+            const independentData: AppVersionedGameData = structuredClone(TEST_GAME_DATA);
+            independentData.buildings.find(building => building.id === 'assembler')!.recipes!.push({
+                id: 'steel-direct',
+                variant: 'alternative',
+                output: { id: 'steel-plate', amount_per_minute: 30 },
+                inputs: [{ id: 'iron-ore', amount_per_minute: 30 }],
+            });
+            // The selected recipe disappears; its replacement remains available for repair.
+            const updatedData = structuredClone(independentData);
+            updatedData.buildings.find(building => building.id === 'assembler')!.recipes![1].id = 'steel-replacement';
+            const view = mountView(scenario, 'multi-target data validation', {
+                mode: [appIds.subscriptions.PLANNER_MODE],
+                targets: [appIds.subscriptions.PLANNER_MULTI_TARGETS],
+                warning: [appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING],
+                recipes: [appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS],
+                options: [appIds.subscriptions.PLANNER_RECIPE_OPTIONS],
+                flow: [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
+                graph: [appIds.subscriptions.PLANNER_FLOW_GRAPH],
+                stats: [appIds.subscriptions.PLANNER_STATS_SUMMARY],
+            } as const);
+            await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', independentData]);
+            await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+            await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
+            await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'steel-plate', 'assembler:steel-direct']);
+            await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
+            await dispatch(scenario, [appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'steel-plate', 60]);
+            const targets = view.value('targets');
+            const flow = view.value('flow');
+            expect(view.value('warning')).toBeNull();
+            expect(flow.nodes.length).toBeGreaterThan(0);
+
+            // Covers both a version switch and a refresh under the same version ID.
+            await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, nextVersion, updatedData]);
+            expect(view.value('warning')).toContain('Iron Plate is required to produce Steel Plate');
+            expect(view.value('targets')).toEqual(targets);
+            expect(view.value('recipes')).toEqual({ 'steel-plate': 'assembler:steel-direct' });
+            expect(view.value('flow').nodes).toEqual([]);
+            expect(view.value('graph').nodes).toEqual([]);
+            expect(view.value('stats')).toEqual({ totalBuildings: 0, totalEnergy: 0, totalHotness: 0 });
+            expect(view.value('options').find(option => option.itemId === 'steel-plate')?.options)
+                .toEqual(expect.arrayContaining([expect.objectContaining({ key: 'assembler:steel-replacement' })]));
+            await dispatch(scenario, [appIds.events.PLANNER_DISMISS_TARGET_WARNING]);
+            expect(view.value('warning')).not.toBeNull();
+            await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'single']);
+            await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+            expect(view.value('mode')).toBe('multi');
+            expect(view.value('targets')).toEqual(targets);
+            expect(view.value('flow').nodes).toEqual([]);
+
+            await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', independentData]);
+            expect(view.value('warning')).toBeNull();
+            expect(view.value('flow')).toEqual(flow);
+            await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, nextVersion, updatedData]);
+            await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'steel-plate', 'assembler:steel-replacement']);
+            expect(view.value('warning')).toBeNull();
+            expect(view.value('targets')).toEqual(targets);
+            expect(view.value('flow')).toEqual(flow);
+        },
+    );
+
+    it('pauses an unavailable target after a recipe update and allows its removal', async () => {
+        const scenario = await createSeededScenario();
+        const view = mountView(scenario, 'unavailable production target', {
+            targets: [appIds.subscriptions.PLANNER_MULTI_TARGETS],
+            warning: [appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING],
+            flow: [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
+        } as const);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
+        const updatedData: AppVersionedGameData = structuredClone(TEST_GAME_DATA);
+        updatedData.buildings = updatedData.buildings.filter(building => building.id !== 'assembler');
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', updatedData]);
+        expect(view.value('warning')).toContain('Steel Plate has no usable production recipe');
+        expect(view.value('targets')).toEqual([{ itemId: 'steel-plate', amount: 30 }]);
+        expect(view.value('flow').nodes).toEqual([]);
+        await dispatch(scenario, [appIds.events.PLANNER_REMOVE_TARGET, 'steel-plate']);
+        expect(view.value('warning')).toBeNull();
+        expect(view.value('targets')).toEqual([]);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
+        expect(view.value('flow').nodes.length).toBeGreaterThan(0);
+    });
+
     it('boots the Node adapter, changes data versions, and drives shell controls', async () => {
         const scenario = createScenario();
         const shell = mountView(scenario, 'application shell', {

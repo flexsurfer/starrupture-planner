@@ -20,9 +20,8 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     const item = items.find(({ id }) => id === node.outputItem);
     return (
         <div className="flex h-full flex-col text-center">
-            <div className="absolute top-[-8px] left-[-8px] flex items-center gap-1">
+            <div className="absolute top-[-8px] right-[-8px] flex items-center gap-1">
                 {node.nodeType === 'input' && <div className="badge badge-sm badge-success">input</div>}
-                {node.recipeType && <RecipeTypeIcon recipeType={node.recipeType} />}
             </div>
 
             {/* Item and final output are the primary information. */}
@@ -33,7 +32,8 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                     </div>
                     {item && <NodeRecipeButton item={item} node={node} onSelectRecipe={node.nodeType === 'input' ? undefined : onSelectRecipe} />}
                 </div>
-                <div className="flex items-center justify-center gap-1.5">
+                <div className="relative flex items-center justify-center gap-1.5">
+                    {node.recipeType && <RecipeTypeIcon recipeType={node.recipeType} className="absolute left-0 top-1/2 -translate-y-1/2 z-10" />}
                     <div className="shrink-0">
                         <ItemImage itemId={node.outputItem} size="medium" />
                     </div>

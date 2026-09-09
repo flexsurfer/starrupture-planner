@@ -5,6 +5,25 @@ import {
 } from '@/app/uklad/recipe-key';
 import { getRecipeDisplayType } from '@/features/buildings/recipe-utils';
 import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
+import { createRecipeResolver } from './production-flow';
+
+/** Keep recipe controls available even when target validation pauses calculation. */
+export function collectRecipeOutputItems(
+    targetIds: string[],
+    buildings: Building[],
+    recipeSelections: Record<string, string>,
+): Set<string> {
+    const getRecipe = createRecipeResolver(buildings, recipeSelections);
+    const outputItems = new Set<string>();
+    const pending = [...targetIds];
+    while (pending.length) {
+        const itemId = pending.pop()!;
+        if (outputItems.has(itemId)) continue;
+        outputItems.add(itemId);
+        pending.push(...(getRecipe(itemId)?.recipe.inputs ?? []).map(input => input.id));
+    }
+    return outputItems;
+}
 
 /** Builds selectable recipe alternatives for the given produced item IDs. */
 export function buildRecipeOptionsForOutputItems(

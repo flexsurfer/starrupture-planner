@@ -1,6 +1,19 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { appIds } from '@/app/uklad/catalog';
 import { PlannerViews } from './PlannerViews';
+
+const planner = vi.hoisted(() => ({
+    mode: 'single' as 'single' | 'multi',
+    warning: null as string | null,
+}));
+vi.mock('@/app/uklad/bindings', () => ({
+    useSubscription: ([id]: [string]) => {
+        if (id === appIds.subscriptions.PLANNER_MODE) return planner.mode;
+        if (id === appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING) return planner.warning;
+        throw new Error(`Unexpected subscription: ${id}`);
+    },
+}));
 
 vi.mock('./PlannerFlowDiagram', () => ({
     PlannerFlowDiagram: () => <input aria-label="Graph viewport" defaultValue="initial" />,
@@ -8,7 +21,11 @@ vi.mock('./PlannerFlowDiagram', () => ({
 vi.mock('./PlannerProductionTable', () => ({
     PlannerProductionTable: () => <div data-testid="table-scroll"><input aria-label="Table state" defaultValue="initial" /></div>,
 }));
-afterEach(cleanup);
+afterEach(() => {
+    cleanup();
+    planner.mode = 'single';
+    planner.warning = null;
+});
 
 it('keeps both views and their state when switching tabs', () => {
     render(<PlannerViews />);
@@ -37,4 +54,27 @@ it('supports keyboard navigation between views', () => {
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Graph' }), { key: 'ArrowRight' });
     expect(screen.getByRole('tab', { name: 'Table' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: 'Table' })).toHaveFocus();
+});
+
+it('pauses invalid multi-target views and resumes when repaired or switched to single mode', () => {
+    planner.mode = 'multi';
+    planner.warning = 'Iron Plate is required to produce Steel Plate.';
+    const { rerender } = render(<PlannerViews />);
+    expect(screen.queryByLabelText('Graph viewport')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Table state')).not.toBeInTheDocument();
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Resolve the target warning to calculate production.');
+    fireEvent.click(screen.getByRole('tab', { name: 'Table' }));
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('Resolve the target warning to calculate production.');
+
+    planner.warning = null;
+    rerender(<PlannerViews />);
+    expect(screen.getByLabelText('Graph viewport')).toBeInTheDocument();
+    expect(screen.getByLabelText('Table state')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Table' })).toHaveAttribute('aria-selected', 'true');
+
+    planner.mode = 'single';
+    planner.warning = 'The saved multi-target plan is still invalid.';
+    rerender(<PlannerViews />);
+    expect(screen.getByLabelText('Graph viewport')).toBeInTheDocument();
+    expect(screen.getByLabelText('Table state')).toBeInTheDocument();
 });

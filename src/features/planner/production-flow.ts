@@ -112,22 +112,13 @@ const createFlowNode = (
 // Main function
 // ============================================================================
 
-export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[]): ProductionFlowResult {
-    const {
-        targetItemId,
-        targetAmount = 60,
-        inputBuildings = [],
-        recipeSelections = {},
-        rawProductionDisabled = false,
-        includeLauncher = false
-    } = params;
+export interface ProductionTarget {
+    itemId: string;
+    amount: number;
+}
 
-    if (!buildings?.length) return emptyResult();
-    if (targetAmount <= 0) return emptyResult();
-
-    // ── Lookup caches ────────────────────────────────────────────────────
-    const buildingById = new Map(buildings.filter(Boolean).map(b => [b.id, b]));
-
+/** Shared selection rules for calculation and structural target validation. */
+export function createRecipeResolver(buildings: Building[], recipeSelections: Record<string, string> = {}) {
     const recipeOptionsCache = new Map<string, RecipeInfo[]>();
     for (const building of buildings) {
         if (!building?.recipes) continue;
@@ -175,6 +166,41 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         return options[0];
     };
 
+    return getRecipe;
+}
+
+/** Existing single-target API retained for saved plans and bases. */
+export function buildProductionFlow(params: ProductionFlowParams, buildings: Building[]): ProductionFlowResult {
+    return buildFlow(params, buildings, [{ itemId: params.targetItemId, amount: params.targetAmount ?? 60 }]);
+}
+
+/** Global planner mode: shared recipes and capacity, without delivery settings. */
+export function buildMultiTargetProductionFlow(
+    targets: ProductionTarget[],
+    buildings: Building[],
+    recipeSelections: Record<string, string> = {},
+): ProductionFlowResult {
+    return buildFlow({ targetItemId: '', recipeSelections }, buildings, targets);
+}
+
+function buildFlow(params: ProductionFlowParams, buildings: Building[], targets: ProductionTarget[]): ProductionFlowResult {
+    const {
+        targetItemId,
+        targetAmount = 60,
+        inputBuildings = [],
+        recipeSelections = {},
+        rawProductionDisabled = false,
+        includeLauncher = false
+    } = params;
+
+    if (!buildings?.length) return emptyResult();
+    if (!targets.length) return emptyResult();
+
+    // ── Lookup caches ────────────────────────────────────────────────────
+    const buildingById = new Map(buildings.filter(Boolean).map(b => [b.id, b]));
+
+    const getRecipe = createRecipeResolver(buildings, recipeSelections);
+
     // "Raw" = leaf node in production graph (no recipe OR zero-input recipe).
     // Raw items CAN be produced via their recipes when rawProductionDisabled=false.
     const rawCache = new Map<string, boolean>();
@@ -187,7 +213,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
     };
 
     // Target must be producible (non-raw).
-    if (isRaw(targetItemId)) return emptyResult();
+    const validTargets = targets.filter(target => Number.isFinite(target.amount) && target.amount > 0 && !isRaw(target.itemId));
+    if (!validTargets.length) return emptyResult();
+    const targetIds = new Set(validTargets.map(target => target.itemId));
 
     // ── Phase 1: Normalize external inputs ───────────────────────────────
     const sources = inputBuildings
@@ -197,7 +225,7 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
             !!ib.selectedItemId &&
             !!ib.ratePerMinute &&
             ib.ratePerMinute > 0 &&
-            ib.selectedItemId !== targetItemId
+            !targetIds.has(ib.selectedItemId)
         )
         .map((ib) => {
             const bid = ib.buildingTypeId;
@@ -360,7 +388,9 @@ export function buildProductionFlow(params: ProductionFlowParams, buildings: Bui
         path.delete(itemId);
     };
 
-    fulfillDemand(targetItemId, targetAmount, null, new Set());
+    for (const target of validTargets) {
+        fulfillDemand(target.itemId, target.amount, null, new Set());
+    }
 
     // ── Phase 3: Finalize ────────────────────────────────────────────────
 

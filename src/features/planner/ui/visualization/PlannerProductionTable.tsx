@@ -26,7 +26,7 @@ export const PlannerProductionTable = () => {
                     <tbody key={group.type} className="border-b border-base-300 last:border-b-0">
                         <tr>
                             <th scope="rowgroup" className="px-4 py-2 text-left text-sm font-semibold bg-base-200">
-                                {group.type === 'target' ? 'Target' : group.type === 'launcher' ? 'Delivery' : getCategoryDisplayName(group.type)}
+                                {group.type === 'target' ? 'Targets' : group.type === 'launcher' ? 'Delivery' : getCategoryDisplayName(group.type)}
                             </th>
                         </tr>
                         <tr>

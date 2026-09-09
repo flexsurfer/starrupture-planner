@@ -13,12 +13,14 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import { ProductionFlowEdge } from './ProductionFlowEdge';
+import { DiagramSettings } from './DiagramSettings';
 import { NodeCard } from './NodeCard';
-import { useConnectedNodeHighlight } from './useConnectedNodeHighlight';
+import { usePinnableNodeHighlight } from './usePinnableNodeHighlight';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
-const edgeTypes = {};
+const edgeTypes = { production: ProductionFlowEdge };
 
 /**
  * Flow diagram component for the production planner
@@ -32,7 +34,9 @@ export const PlannerFlowDiagram: React.FC = () => {
     const { fitView } = useReactFlow();
 
     // State subscriptions
-    const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]);
+    const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]);
+    const groupByStage = useSubscription([appIds.subscriptions.PLANNER_GROUP_BY_STAGE]);
+    const direction = useSubscription([appIds.subscriptions.PLANNER_FLOW_DIRECTION]);
     const theme = useSubscription([appIds.subscriptions.UI_THEME]);
     const flowGraph = useSubscription([appIds.subscriptions.PLANNER_FLOW_GRAPH]);
     const renderedNodes = useMemo<Node[]>(() => flowGraph.nodes.map(({ flowNode, outputColor, ...node }) => ({
@@ -49,12 +53,15 @@ export const PlannerFlowDiagram: React.FC = () => {
     const {
         nodes: highlightedNodes,
         edges: highlightedEdges,
+        resetHighlight,
         onNodeDragStart,
         onNodeDragStop,
-    } = useConnectedNodeHighlight(nodes, edges);
+    } = usePinnableNodeHighlight(nodes, edges);
 
     // Update React Flow nodes and edges when subscription data changes
     useEffect(() => {
+        // Pins belong only to the current calculation, even if node IDs survive.
+        resetHighlight();
         if (flowGraph) {
             setNodes(renderedNodes);
             setEdges(flowGraph.edges);
@@ -62,15 +69,16 @@ export const PlannerFlowDiagram: React.FC = () => {
             setNodes([]);
             setEdges([]);
         }
-    }, [flowGraph, renderedNodes, setNodes, setEdges]);
+    }, [flowGraph, renderedNodes, setNodes, setEdges, resetHighlight]);
 
     // Auto-fit view when item changes
     useEffect(() => {
         // Small delay to ensure DOM is updated
-        setTimeout(() => { if (nodes.length > 0) { fitView({ duration: 300, padding: 0.1 }); } }, 10);
-    }, [selectedItemId, nodes.length, fitView]);
+        const timer = setTimeout(() => { if (nodes.length > 0) { fitView({ duration: 300, padding: 0.1 }); } }, 10);
+        return () => clearTimeout(timer);
+    }, [selectedItemId, direction, groupByStage, nodes.length, fitView]);
 
-    if (!selectedItemId) {
+    if (!selectedItemId.length) {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -87,7 +95,8 @@ export const PlannerFlowDiagram: React.FC = () => {
     }
 
     return (
-        <div className="w-full h-full">
+        <div className="relative w-full h-full">
+            <DiagramSettings />
             <ReactFlow
                 nodes={highlightedNodes}
                 edges={highlightedEdges}

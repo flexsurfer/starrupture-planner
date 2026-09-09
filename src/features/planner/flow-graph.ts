@@ -1,8 +1,11 @@
+import { buildProductionStageLayout } from './production-stage-layout';
 import dagre from 'dagre';
 import { Position } from '@xyflow/react';
 import type { Edge, Node } from '@xyflow/react';
 import type { FlowEdge, FlowNode, Item } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
+
+export type PlannerFlowDirection = 'LR' | 'RL' | 'TB' | 'BT';
 
 export type PlannerFlowGraphNode = Omit<Node, 'data'> & {
     flowNode: FlowNode;
@@ -31,13 +34,13 @@ function getItemColor(itemId: string, items: Item[]): string {
  * A pure, view-ready graph. React node labels are deliberately created in the
  * diagram component, so subscriptions do not import presentation components.
  */
-export function buildPlannerFlowGraph(flowNodes: FlowNode[], flowEdges: FlowEdge[], items: Item[]): PlannerFlowGraph {
+export function buildPlannerFlowGraph(flowNodes: FlowNode[], flowEdges: FlowEdge[], items: Item[], targetItemIds: string[] = [], direction: PlannerFlowDirection = 'LR', groupByStage = false): PlannerFlowGraph {
     const graph = new dagre.graphlib.Graph();
     graph.setDefaultEdgeLabel(() => ({}));
-    graph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 80 });
+    graph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 40 });
 
     flowNodes.forEach((_, index) => {
-        graph.setNode(`node_${index}`, { width: 200, height: 120 });
+        graph.setNode(`node_${index}`, { width: 160, height: 180 });
     });
 
     const nodeIdByFlowKey = new Map<string, string>();
@@ -56,14 +59,30 @@ export function buildPlannerFlowGraph(flowNodes: FlowNode[], flowEdges: FlowEdge
 
     dagre.layout(graph);
 
-    const nodes: PlannerFlowGraphNode[] = flowNodes.map((flowNode, index) => {
+    const positions = groupByStage
+        ? buildProductionStageLayout(graph, flowNodes, items, targetItemIds)
+        : new Map<number, { x: number; y: number }>();
+
+    const canonicalPositions = flowNodes.map((_, index) => {
         const position = graph.node(`node_${index}`);
+        return positions.get(index) ?? { x: position.x - 100, y: position.y - 100 };
+    });
+    const maxStage = Math.max(0, ...canonicalPositions.map(position => position.x));
+    const vertical = direction === 'TB' || direction === 'BT';
+    const reverse = direction === 'RL' || direction === 'BT';
+    const sourcePosition = { LR: Position.Right, RL: Position.Left, TB: Position.Bottom, BT: Position.Top }[direction];
+    const targetPosition = { LR: Position.Left, RL: Position.Right, TB: Position.Top, BT: Position.Bottom }[direction];
+
+    const nodes: PlannerFlowGraphNode[] = flowNodes.map((flowNode, index) => {
+        const canonical = canonicalPositions[index];
+        const stage = reverse ? maxStage - canonical.x : canonical.x;
+        const position = vertical ? { x: canonical.y, y: stage * 0.8 } : { x: stage, y: canonical.y };
         return {
             id: `node_${index}`,
             type: 'default',
-            position: { x: position.x - 100, y: position.y - 60 },
-            sourcePosition: Position.Right,
-            targetPosition: Position.Left,
+            position,
+            sourcePosition,
+            targetPosition,
             flowNode,
             outputColor: getItemColor(flowNode.outputItem, items),
         };
@@ -84,10 +103,12 @@ export function buildPlannerFlowGraph(flowNodes: FlowNode[], flowEdges: FlowEdge
             id,
             source,
             target,
-            type: 'default',
-            style: { stroke: color, strokeWidth: 2 },
-            label: `${getItemName(edge.itemId, items)} (${edge.amount.toFixed(1)}/min)`,
-            labelStyle: { fontSize: 12, fontWeight: 'bold', color },
+            type: 'production',
+            style: { stroke: color, strokeWidth: 1.5, strokeOpacity: 0.4 },
+            data: { itemName: getItemName(edge.itemId, items), rateLabel: `${edge.amount.toFixed(1)}/min` },
+            label: `${getItemName(edge.itemId, items)}
+${edge.amount.toFixed(1)}/min`,
+            labelStyle: { fontSize: 14, fontWeight: 400 },
         });
     });
 

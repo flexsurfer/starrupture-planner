@@ -1,19 +1,23 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Edge, Node } from '@xyflow/react';
 
 const HIGHLIGHT_COLOR = '#f59e0b';
-const DIMMED_OPACITY = 0.58;
+const DIMMED_OPACITY = 0.35;
+const HIGHLIGHT_Z_INDEX = 1000;
 
 interface ConnectedNodeHighlightResult {
     nodes: Node[];
     edges: Edge[];
+    pinnedNodeId: string | null;
+    toggleNodePin: (nodeId: string) => void;
+    resetHighlight: () => void;
     onNodeDragStart: (event: MouseEvent | TouchEvent, node: Node, nodes: Node[]) => void;
     onNodeDragStop: (event: MouseEvent | TouchEvent, node: Node, nodes: Node[]) => void;
 }
 
 /**
  * Highlights the node being dragged, its directly connected neighbours, and
- * the edges between them. The highlight is active only for the drag gesture.
+ * the edges between them. Pinning keeps this highlight active between gestures.
  */
 export const useConnectedNodeHighlight = (
     nodes: Node[],
@@ -21,7 +25,26 @@ export const useConnectedNodeHighlight = (
     enabled = true,
 ): ConnectedNodeHighlightResult => {
     const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
-    const highlightedNodeId = enabled ? activeNodeId : null;
+    const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
+    const visiblePinnedNodeId = enabled && nodes.some((node) => node.id === pinnedNodeId)
+        ? pinnedNodeId : null;
+    const highlightedNodeId = enabled ? visiblePinnedNodeId ?? activeNodeId : null;
+
+    useEffect(() => {
+        if (pinnedNodeId && !nodes.some(node => node.id === pinnedNodeId)) {
+            setPinnedNodeId(null);
+        }
+    }, [nodes, pinnedNodeId]);
+
+    const toggleNodePin = useCallback((nodeId: string) => {
+        setPinnedNodeId((current) => current === nodeId ? null : nodeId);
+        setActiveNodeId(null);
+    }, []);
+
+    const resetHighlight = useCallback(() => {
+        setPinnedNodeId(null);
+        setActiveNodeId(null);
+    }, []);
 
     const connectedNodeIds = useMemo(() => {
         if (!highlightedNodeId) {
@@ -52,6 +75,7 @@ export const useConnectedNodeHighlight = (
 
             return {
                 ...node,
+                draggable: node.id === visiblePinnedNodeId ? false : node.draggable,
                 style: {
                     ...node.style,
                     opacity: isConnected ? 1 : DIMMED_OPACITY,
@@ -61,7 +85,7 @@ export const useConnectedNodeHighlight = (
                 },
             };
         });
-    }, [connectedNodeIds, highlightedNodeId, nodes]);
+    }, [connectedNodeIds, highlightedNodeId, nodes, visiblePinnedNodeId]);
 
     const highlightedEdges = useMemo(() => {
         if (!highlightedNodeId) {
@@ -76,6 +100,7 @@ export const useConnectedNodeHighlight = (
 
             return {
                 ...edge,
+                zIndex: isConnected ? HIGHLIGHT_Z_INDEX : edge.zIndex,
                 style: {
                     ...edge.style,
                     opacity: isConnected ? 1 : DIMMED_OPACITY,
@@ -84,12 +109,14 @@ export const useConnectedNodeHighlight = (
                         strokeWidth: Math.max(originalStrokeWidth + 1, 4),
                     }),
                 },
-                labelStyle: edge.labelStyle
-                    ? {
-                        ...edge.labelStyle,
-                        opacity: isConnected ? 1 : DIMMED_OPACITY,
-                    }
-                    : edge.labelStyle,
+                labelStyle: {
+                    ...edge.labelStyle,
+                    opacity: isConnected ? 1 : DIMMED_OPACITY,
+                    ...(isConnected && {
+                        outline: `2px solid ${HIGHLIGHT_COLOR}`,
+                        zIndex: HIGHLIGHT_Z_INDEX + 1,
+                    }),
+                },
             };
         });
     }, [edges, highlightedNodeId]);
@@ -113,6 +140,9 @@ export const useConnectedNodeHighlight = (
     return {
         nodes: highlightedNodes,
         edges: highlightedEdges,
+        pinnedNodeId: visiblePinnedNodeId,
+        toggleNodePin,
+        resetHighlight,
         onNodeDragStart,
         onNodeDragStop,
     };

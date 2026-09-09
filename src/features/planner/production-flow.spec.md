@@ -331,3 +331,22 @@ Example pattern:
 4. **Per-source conservation**
    - For each `baseBuildingId`, `used` (derived from node utilization) must match
      the sum of edge amounts emitted by that source, within floating tolerance.
+
+
+## Global planner multi-target mode
+
+`buildMultiTargetProductionFlow(targets, buildings, recipeSelections)` reuses the
+same builder as the single-target API. It initializes one context, fulfills every
+positive finite non-raw target demand, and finalizes once. Shared production nodes
+and edge flows accumulate across all targets before building totals are displayed.
+The single-target API remains the entry point for saved plans and bases.
+
+This mode has no corporation delivery, launcher, or external-input configuration.
+Its targets and recipe selections are session state, independent of single-target
+planner selections; saved-plan storage is unchanged.
+
+The global planner validates structural dependencies before accepting target additions
+or recipe changes (including preset application). Duplicate targets and targets that
+are direct or transitive ingredients of another target are rejected with a visible
+warning. Shared non-target ingredients are allowed. Validation uses the same recipe
+resolver as calculation and is independent of production rates or floating tolerance.

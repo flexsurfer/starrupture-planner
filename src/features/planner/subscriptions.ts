@@ -1,20 +1,48 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import { buildProductionFlow } from '@/features/planner/production-flow';
+import { buildProductionFlow, buildMultiTargetProductionFlow } from '@/features/planner/production-flow';
 import type {
     CorporationLevelInfo,
     PlannerBuildingStats,
     PlannerDetailedStatsItem,
 } from '@/features/planner/types';
 import { buildPlannerFlowGraph } from './flow-graph';
-import { buildRecipeOptionsForOutputItems } from './recipe-options';
+import { buildRecipeOptionsForOutputItems, collectRecipeOutputItems } from './recipe-options';
+import { getMultiTargetWarning } from './target-conflicts';
 import { getItemName } from '@/utils/itemUtils';
 
 export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regRootSub(appIds.subscriptions.PLANNER_GROUP_BY_STAGE, stateKeys.plannerGroupByStage);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_FLOW_DIRECTION, stateKeys.plannerFlowDirection);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_MODE, stateKeys.plannerMode);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_MULTI_TARGETS, stateKeys.plannerMultiTargets);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_TARGET_WARNING, stateKeys.plannerTargetWarning);
+    registrar.regSub(
+        appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING,
+        () => [
+            [appIds.subscriptions.PLANNER_MULTI_TARGETS],
+            [appIds.subscriptions.BUILDINGS_LIST],
+            [appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS],
+            [appIds.subscriptions.ITEMS_LIST],
+        ],
+        ([targets, buildings, selections, items]) =>
+            getMultiTargetWarning(targets.map(target => target.itemId), buildings, selections, items),
+    );
+    registrar.regSub(
+        appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS,
+        () => [[appIds.subscriptions.PLANNER_MODE], [appIds.subscriptions.PLANNER_MULTI_TARGETS], [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]],
+        ([mode, targets, selectedItem]) => mode === 'multi' ? targets.map(t => t.itemId) : selectedItem ? [selectedItem] : [],
+    );
     registrar.regRootSub(appIds.subscriptions.PLANNER_SELECTED_ITEM_ID, stateKeys.plannerSelectedItemId);
     registrar.regRootSub(appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL, stateKeys.plannerSelectedCorporationLevel);
-    registrar.regRootSub(appIds.subscriptions.PLANNER_RECIPE_SELECTIONS, stateKeys.plannerRecipeSelections);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_SINGLE_RECIPE_SELECTIONS, stateKeys.plannerRecipeSelections);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS, stateKeys.plannerMultiRecipeSelections);
+    registrar.regSub(
+        appIds.subscriptions.PLANNER_RECIPE_SELECTIONS,
+        () => [[appIds.subscriptions.PLANNER_MODE], [appIds.subscriptions.PLANNER_SINGLE_RECIPE_SELECTIONS], [appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS]],
+        ([mode, single, multi]) => mode === 'multi' ? multi : single,
+    );
     registrar.regRootSub(appIds.subscriptions.PINNED_RECIPE_SELECTIONS, stateKeys.pinnedRecipeSelections);
     registrar.regRootSub(appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS, stateKeys.recipeAlternativePresets);
     registrar.regRootSub(appIds.subscriptions.PLANNER_TARGET_AMOUNT, stateKeys.plannerTargetAmount);
@@ -49,14 +77,23 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
     registrar.regSub(
         appIds.subscriptions.PLANNER_PRODUCTION_FLOW,
         () => [
+            [appIds.subscriptions.PLANNER_MODE],
+            [appIds.subscriptions.PLANNER_MULTI_TARGETS],
             [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID],
             [appIds.subscriptions.PLANNER_TARGET_AMOUNT],
             [appIds.subscriptions.BUILDINGS_LIST],
             [appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL],
             [appIds.subscriptions.PLANNER_RECIPE_SELECTIONS],
+            [appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING],
         ],
-        ([selectedItem, targetAmount, buildings, selectedCorporationLevel, recipeSelections], ..._params) => {
+        ([mode, targets, selectedItem, targetAmount, buildings, selectedCorporationLevel, recipeSelections, multiTargetWarning], ..._params) => {
             void _params;
+            if (mode === 'multi') {
+                // Depend on recipe data itself, so same-version updates are validated too.
+                return multiTargetWarning
+                    ? { nodes: [], edges: [], rawMaterialDeficits: [] }
+                    : buildMultiTargetProductionFlow(targets, buildings, recipeSelections);
+            }
             if (!selectedItem) return { nodes: [], edges: [] };
             return buildProductionFlow(
                 {
@@ -73,17 +110,20 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
     registrar.regSub(
         appIds.subscriptions.PLANNER_RECIPE_OPTIONS,
         () => [
-            [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID],
+            [appIds.subscriptions.PLANNER_MODE],
+            [appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS],
             [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
             [appIds.subscriptions.BUILDINGS_LIST],
             [appIds.subscriptions.ITEMS_BY_ID_MAP],
             [appIds.subscriptions.PLANNER_RECIPE_SELECTIONS],
         ],
-        ([selectedItem, productionFlow, buildings, itemsById, recipeSelections], ..._params) => {
+        ([mode, selectedItem, productionFlow, buildings, itemsById, recipeSelections], ..._params) => {
             void _params;
-            if (!selectedItem || productionFlow.nodes.length === 0) return [];
+            if (!selectedItem.length) return [];
 
-            const outputItems = new Set<string>();
+            const outputItems = mode === 'multi' && productionFlow.nodes.length === 0
+                ? collectRecipeOutputItems(selectedItem, buildings, recipeSelections)
+                : new Set<string>();
             for (const node of productionFlow.nodes) {
                 if (node.nodeType === 'production') outputItems.add(node.outputItem);
             }
@@ -93,21 +133,21 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
 
     registrar.regSub(
         appIds.subscriptions.PLANNER_FLOW_GRAPH,
-        () => [[appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.ITEMS_LIST]],
-        ([productionFlow, items], ..._params) => {
+        () => [[appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.ITEMS_LIST], [appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS], [appIds.subscriptions.PLANNER_FLOW_DIRECTION], [appIds.subscriptions.PLANNER_GROUP_BY_STAGE]],
+        ([productionFlow, items, targetIds, direction, groupByStage], ..._params) => {
             void _params;
             return productionFlow.nodes.length === 0
                 ? { nodes: [], edges: [] }
-                : buildPlannerFlowGraph(productionFlow.nodes, productionFlow.edges, items);
+                : buildPlannerFlowGraph(productionFlow.nodes, productionFlow.edges, items, targetIds, direction, groupByStage);
         },
     );
 
     registrar.regSub(
         appIds.subscriptions.PLANNER_STATS_SUMMARY,
-        () => [[appIds.subscriptions.PLANNER_SELECTED_ITEM_ID], [appIds.subscriptions.PLANNER_PRODUCTION_FLOW]],
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS], [appIds.subscriptions.PLANNER_PRODUCTION_FLOW]],
         ([selectedItem, productionFlow], ..._params) => {
             void _params;
-            if (!selectedItem || productionFlow.nodes.length === 0) {
+            if (!selectedItem.length || productionFlow.nodes.length === 0) {
                 return { totalBuildings: 0, totalEnergy: 0, totalHotness: 0 };
             }
             return {
@@ -120,7 +160,7 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
 
     registrar.regSub(
         appIds.subscriptions.PLANNER_STATS_DETAILED,
-        () => [[appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.ITEMS_LIST], [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]],
+        () => [[appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.ITEMS_LIST], [appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]],
         ([productionFlow, items, selectedItemId], ..._params) => {
             void _params;
             if (productionFlow.nodes.length === 0) {
@@ -197,7 +237,7 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
                     type,
                     nodes: productionFlow.nodes.filter(node => {
                         if (node.nodeType === 'launcher') return type === 'launcher';
-                        if (node.outputItem === selectedItemId) return type === 'target';
+                        if (selectedItemId.includes(node.outputItem)) return type === 'target';
                         return type === (items.find(item => item.id === node.outputItem)?.type || 'unknown');
                     }).sort((a, b) => getItemName(a.outputItem, items).localeCompare(getItemName(b.outputItem, items))
                         || a.buildingName.localeCompare(b.buildingName) || a.recipeIndex - b.recipeIndex),

@@ -8,15 +8,15 @@ import { PlannerStatsModal } from './PlannerStatsModal';
  * Handles both mobile and desktop layouts responsively
  */
 export const PlannerStatsDisplay: React.FC = () => {
-    const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]);
+    const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]);
     const statsForButton = useSubscription([appIds.subscriptions.PLANNER_STATS_SUMMARY]);
     const detailedStats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
 
     // Stats modal state
     const [isStatsModalOpen, setIsStatsModalOpen] = useState<boolean>(false);
 
-    // Don't render if no item is selected
-    if (!selectedItemId) {
+    // Invalid plans pause calculation, so don't present empty totals as requirements.
+    if (!selectedItemId.length || !detailedStats.productionGroups.length) {
         return null;
     }
 

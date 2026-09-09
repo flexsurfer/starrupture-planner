@@ -1,10 +1,15 @@
 import { useId, useState, type ReactNode } from 'react';
+import { appIds } from '@/app/uklad/catalog';
+import { useSubscription } from '@/app/uklad/bindings';
 import { PlannerFlowDiagram } from './PlannerFlowDiagram';
 import { PlannerProductionTable } from './PlannerProductionTable';
 
 const VIEWS = ['graph', 'table'] as const;
 
-export const PlannerViews = ({ renderHeader }: { renderHeader?: (viewControl: ReactNode) => ReactNode }) => {
+export const PlannerViews = ({ renderHeader }: { renderHeader?: () => ReactNode }) => {
+    const mode = useSubscription([appIds.subscriptions.PLANNER_MODE]);
+    const warning = useSubscription([appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING]);
+    const calculationPaused = mode === 'multi' && warning !== null;
     const [activeView, setActiveView] = useState<typeof VIEWS[number]>(() => (
         typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches
             ? 'table'
@@ -41,8 +46,9 @@ export const PlannerViews = ({ renderHeader }: { renderHeader?: (viewControl: Re
 
     return (
         <div className="h-full min-h-0 flex flex-col">
-            {renderHeader ? renderHeader(viewControl) : viewControl}
+            {renderHeader?.()}
             <div className="relative isolate flex-1 min-h-0">
+                <div className="absolute left-2 top-2 z-20 shadow">{viewControl}</div>
                 {/* Keep both panels mounted and sized to preserve viewport and scroll state. */}
                 {VIEWS.map(view => (
                     <div
@@ -52,9 +58,11 @@ export const PlannerViews = ({ renderHeader }: { renderHeader?: (viewControl: Re
                         aria-labelledby={`${id}-${view}-tab`}
                         aria-hidden={activeView !== view}
                         inert={activeView !== view}
-                        className={`absolute inset-0 bg-base-100 ${activeView === view ? 'visible opacity-100 z-10' : 'invisible opacity-0 z-0 pointer-events-none'}`}
+                        className={`absolute inset-0 bg-base-100 ${view === 'table' ? 'pt-14' : ''} ${activeView === view ? 'visible opacity-100 z-10' : 'invisible opacity-0 z-0 pointer-events-none'}`}
                     >
-                        {view === 'graph' ? <PlannerFlowDiagram /> : <PlannerProductionTable />}
+                        {calculationPaused ? <div className="flex h-full items-center justify-center p-4 text-base-content/70">
+                            Resolve the target warning to calculate production.
+                        </div> : view === 'graph' ? <PlannerFlowDiagram /> : <PlannerProductionTable />}
                     </div>
                 ))}
             </div>
