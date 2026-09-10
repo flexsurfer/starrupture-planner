@@ -1,173 +1,78 @@
+import { useState } from 'react';
 import { appIds } from '@/app/uklad/catalog';
-import { useState } from "react";
-import { useSubscription } from "@/app/uklad/bindings";
-import type { Building } from "@/app/uklad/model";
-import { BuildingImage } from '@/shared/ui';
+import { useSubscription } from '@/app/uklad/bindings';
+import { BuildingImage, ExpandableSection } from '@/shared/ui';
 import { RecipeCard } from './RecipeCard';
 import { getRecipeDisplayType } from '../recipe-utils';
 import { useItemsData } from '@/features/items/ui/hooks/useItemsData';
 import { CorporationUsageBadge } from '@/features/corporations/ui/CorporationUsageBadge';
 
-const RecipesPage = () => {
+const BuildingsPage = () => {
   const sortedBuildings = useSubscription([appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST]);
   const { findBuildingCorporationUsage, getCorporationId } = useItemsData();
-
-  // Track expanded state for each building (collapsed by default)
   const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
 
   const toggleBuilding = (buildingId: string) => {
-    const newExpanded = new Set(expandedBuildings);
-    if (newExpanded.has(buildingId)) {
-      newExpanded.delete(buildingId);
-    } else {
-      newExpanded.add(buildingId);
-    }
-    setExpandedBuildings(newExpanded);
+    setExpandedBuildings(previous => {
+      const next = new Set(previous);
+      if (next.has(buildingId)) next.delete(buildingId);
+      else next.add(buildingId);
+      return next;
+    });
   };
 
-  const BuildingIcon = ({ building }: { building: Building }) => {
-    return (
-      <div className="flex items-center justify-center w-30 h-30">
-        <BuildingImage
-          buildingId={building.id}
-          building={building}
-          size="large"
-        />
-        <div className="hidden w-20 h-20 bg-base-300 rounded-lg shadow-md items-center justify-center">
-          <span className="text-xs text-center font-medium px-2">
-            {building.name}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  const BuildingCard = ({ building, isCollapsed, onToggle }: {
-    building: Building;
-    isCollapsed: boolean;
-    onToggle: () => void;
-  }) => {
-    const corporationUsage = findBuildingCorporationUsage(building.name);
-    const displayRecipes = (building.recipes ?? [])
-      .map((recipe, recipeIndex) => ({
-        recipe,
-        recipeIndex,
-        recipeType: getRecipeDisplayType(recipe, building, sortedBuildings),
-      }))
-      .sort((a, b) => (
-        Number(a.recipeType === 'alternative') - Number(b.recipeType === 'alternative')
-        || a.recipeIndex - b.recipeIndex
-      ));
-
-    return (
-      <div className="card bg-base-100 shadow-lg border border-base-300">
-        <div className="card-body">
-          {/* Building Header - Clickable & Sticky */}
-          <div
-            className="flex items-start gap-4 mb-4 cursor-pointer hover:bg-base-200 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg transition-colors sticky top-0 z-10 bg-base-100"
-            onClick={onToggle}
-          >
-            <BuildingIcon building={building} />
-            <div className="flex-1 min-w-0">
-              <h2 className="card-title text-xl">{building.name}</h2>
-              <div className="flex gap-2 flex-wrap items-center">
-                <div className="badge badge-outline">
-                  {building.recipes?.length || 0} recipe{building.recipes?.length !== 1 ? 's' : ''}
-                </div>
-                ⚡ {building.power || 0}
-                <span className="text-xs text-base-content/40">|</span>
-                🔥 {building.heat || 0}
-                <span className="text-xs text-base-content/40">|</span>
-                {corporationUsage.length > 0 && (
-                  <div className="flex gap-1">
-                    {corporationUsage.map((usage, index) => {
-                      const corporationId = getCorporationId(usage.corporation);
-
-                      return (
-                        <CorporationUsageBadge
-                          key={index}
-                          usage={usage}
-                          corporationId={corporationId}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Collapse Arrow */}
-            <div className="flex-shrink-0">
-              <svg
-                className={`w-6 h-6 text-base-content transition-transform duration-200 ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Recipes - Collapsible */}
-          {!isCollapsed && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold">Recipes</h3>
-              <div className="grid gap-3">
-                {displayRecipes.map(({ recipe, recipeIndex, recipeType }) => (
-                  <RecipeCard
-                    key={`${building.id}:${recipe.id ?? recipeIndex}`}
-                    recipe={recipe}
-                    recipeType={recipeType}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+  const totalRecipes = sortedBuildings.reduce((total, building) => total + (building.recipes?.length ?? 0), 0);
 
   return (
-    <div className="h-full p-4 lg:p-6">
-      <div className="flex flex-col gap-4 lg:gap-6">
-        {/* Header section - responsive */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
-          <h1 className="text-2xl lg:text-3xl font-bold">Buildings & Recipes</h1>
-          <div className="stats shadow stats-horizontal">
-            <div className="stat">
-              <div className="stat-title text-xs sm:text-sm">Total Buildings</div>
-              <div className="stat-value text-lg sm:text-2xl">{sortedBuildings.length}</div>
-            </div>
-            <div className="stat">
-              <div className="stat-title text-xs sm:text-sm">Total Recipes</div>
-              <div className="stat-value text-lg sm:text-2xl">
-                {sortedBuildings.reduce((total, building) => total + (building.recipes?.length || 0), 0)}
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="mx-auto w-full max-w-7xl p-2 sm:p-4">
+      <header className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h1 className="text-lg font-bold sm:text-xl">Buildings & Recipes</h1>
+        <p className="text-xs text-base-content/60 tabular-nums">
+          <span className="font-semibold text-base-content">{sortedBuildings.length}</span> buildings
+          <span className="mx-2" aria-hidden="true">·</span>
+          <span className="font-semibold text-base-content">{totalRecipes}</span> recipes
+        </p>
+      </header>
 
-        {/* Buildings Grid */}
-        <div className="grid gap-4 lg:gap-6">
-          {sortedBuildings.map((building) => (
-            <BuildingCard
+      <div className="space-y-2 sm:space-y-3">
+        {sortedBuildings.map(building => {
+          const displayRecipes = (building.recipes ?? [])
+            .map((recipe, recipeIndex) => ({
+              recipe,
+              recipeIndex,
+              recipeType: getRecipeDisplayType(recipe, building, sortedBuildings),
+            }))
+            .sort((a, b) => Number(a.recipeType === 'alternative') - Number(b.recipeType === 'alternative') || a.recipeIndex - b.recipeIndex);
+
+          return (
+            <ExpandableSection
               key={building.id}
-              building={building}
-              isCollapsed={!expandedBuildings.has(building.id)}
+              title={building.name}
+              icon={<BuildingImage buildingId={building.id} building={building} size="small" className="sm:!size-12" />}
+              expanded={expandedBuildings.has(building.id)}
               onToggle={() => toggleBuilding(building.id)}
-            />
-          ))}
-        </div>
-
-        {sortedBuildings.length === 0 && (
-          <div className="text-center py-8">
-            <div className="text-base-content/60">No production buildings available</div>
-          </div>
-        )}
+              summary={<>
+                <span>{displayRecipes.length} {displayRecipes.length === 1 ? 'recipe' : 'recipes'}</span>
+                <span title="Power consumption">⚡ {building.power ?? 0}</span>
+                <span title="Heat generation">🔥 {building.heat ?? 0}</span>
+                {findBuildingCorporationUsage(building.name).map((usage, index) => (
+                  <CorporationUsageBadge key={index} usage={usage} corporationId={getCorporationId(usage.corporation)} />
+                ))}
+              </>}
+            >
+              <div className="grid items-start gap-2 xl:grid-cols-2 xl:gap-3">
+                {displayRecipes.map(({ recipe, recipeIndex, recipeType }) => (
+                  <RecipeCard key={`${building.id}:${recipe.id ?? recipeIndex}`} recipe={recipe} recipeType={recipeType} />
+                ))}
+              </div>
+            </ExpandableSection>
+          );
+        })}
       </div>
+
+      {sortedBuildings.length === 0 && <p className="py-8 text-center text-sm text-base-content/60">No production buildings available</p>}
     </div>
   );
 };
 
-export default RecipesPage;
+export default BuildingsPage;

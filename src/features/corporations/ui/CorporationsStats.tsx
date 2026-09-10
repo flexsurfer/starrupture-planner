@@ -1,23 +1,14 @@
-import { useSubscription } from "@/app/uklad/bindings";
-import { appIds } from "@/app/uklad/catalog";
-  
+import { useSubscription } from '@/app/uklad/bindings';
+import { appIds } from '@/app/uklad/catalog';
+
 export const CorporationsStats = () => {
   const stats = useSubscription([appIds.subscriptions.CORPORATIONS_STATS_SUMMARY]);
 
   return (
-    <div className="stats shadow">
-      <div className="stat">
-        <div className="stat-title">Total Corporations</div>
-        <div className="stat-value text-2xl">{stats.totalCorporations}</div>
-      </div>
-      <div className="stat">
-        <div className="stat-title">Total Levels</div>
-        <div className="stat-value text-2xl">{stats.totalLevels}</div>
-      </div>
-      <div className="stat">
-        <div className="stat-title">Total Cost</div>
-        <div className="stat-value text-2xl">{stats.totalCost.toLocaleString()} G</div>
-      </div>
+    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/60 tabular-nums">
+      <span><strong className="font-semibold text-base-content">{stats.totalCorporations}</strong> corporations</span>
+      <span><strong className="font-semibold text-base-content">{stats.totalLevels}</strong> levels</span>
+      <span><strong className="font-semibold text-base-content">{stats.totalCost.toLocaleString()} G</strong> total cost</span>
     </div>
   );
 };

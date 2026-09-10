@@ -1,7 +1,6 @@
 import React from 'react';
 import type { Item } from '@/app/uklad/model';
 import { RecipeCard } from './RecipeCard';
-import { BuildingImage } from '@/shared/ui';
 import { UsedInRecipes } from './UsedInRecipes';
 import type { ItemRecipe } from '../recipe-utils';
 
@@ -19,13 +18,17 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item,
   }
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="modal modal-open p-1 sm:p-4" role="dialog" aria-modal="true" aria-label={`Recipes for ${item.name}`}>
+      <div className="modal-box flex max-h-[calc(100dvh-0.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg p-0 sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl">
         {/* Modal Header */}
-        <div className="flex items-center justify-between mb-4 lg:mb-6 flex-shrink-0">
-          <h3 className="text-lg lg:text-xl font-bold pr-4">Recipe for {item.name}</h3>
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-base-300 px-3 py-2 sm:px-4 sm:py-3">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold leading-tight break-words sm:text-lg">{item.name}</h3>
+            <p className="mt-0.5 text-[11px] text-base-content/60 sm:text-xs">{itemRecipes.length} {itemRecipes.length === 1 ? 'recipe' : 'recipes'} · Rates per building</p>
+          </div>
           <button
-            className="btn btn-sm btn-circle btn-ghost flex-shrink-0"
+            type="button"
+            className="btn btn-sm btn-circle btn-ghost size-9 shrink-0"
             onClick={onClose}
             aria-label="Close modal"
           >
@@ -34,30 +37,16 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item,
         </div>
 
         {/* Scrollable content */}
-        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 sm:p-3">
           {/* Production Recipes */}
-          <div className="space-y-4 mb-4 lg:mb-6">
+          <div className="space-y-2 sm:space-y-3">
             {itemRecipes.map(({ recipe, building, recipeIndex, recipeType }) => (
-              <div key={`${building.id}:${recipe.id ?? recipeIndex}`} className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <BuildingImage buildingId={building.id} building={building} size="small" className="shrink-0" />
-                  <span className="text-sm font-medium leading-snug">{building.name}</span>
-                </div>
-
-                <RecipeCard recipe={recipe} recipeType={recipeType} />
-              </div>
+              <RecipeCard key={`${building.id}:${recipe.id ?? recipeIndex}`} recipe={recipe} recipeType={recipeType} building={building} />
             ))}
           </div>
 
           {/* Recipes where this item is used as input */}
           <UsedInRecipes itemId={item.id} itemName={item.name} />
-        </div>
-
-        {/* Modal Actions */}
-        <div className="modal-action flex-shrink-0">
-          <button className="btn btn-primary btn-sm lg:btn-md" onClick={onClose}>
-            Close
-          </button>
         </div>
       </div>
       {/* Backdrop */}

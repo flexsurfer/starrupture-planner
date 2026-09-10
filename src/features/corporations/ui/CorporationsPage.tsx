@@ -7,16 +7,16 @@ const CorporationsPage = () => {
   const { collapsedCorporations, toggleCorporation } = useCorporationCollapse(corporationsWithStats);
 
   return (
-    <div className="h-full p-4 lg:p-6">
-      <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="mx-auto w-full max-w-7xl p-2 sm:p-4">
+      <div className="flex flex-col gap-3">
         {/* Header section - responsive */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
-          <h1 className="text-2xl lg:text-3xl font-bold">Corporations</h1>
-          <CorporationsStats  />
-        </div>
+        <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h1 className="text-lg font-bold sm:text-xl">Corporations</h1>
+          <CorporationsStats />
+        </header>
 
         {/* Corporations Grid */}
-        <div className="grid gap-4 lg:gap-6">
+        <div className="grid gap-2 sm:gap-3">
           {corporationsWithStats.map((corporation) => (
             <CorporationCard
               key={corporation.name}

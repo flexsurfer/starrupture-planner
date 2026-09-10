@@ -7,12 +7,12 @@ export const CorporationIcon = ({ corporationId, corporationName }: CorporationI
   const webpImagePath = `./icons/corporations/${corporationId}.webp`;
   
   return (
-    <div className="flex items-center justify-center w-16 h-16">
+    <div className="flex size-10 shrink-0 items-center justify-center sm:size-12">
       <img
         key={corporationId}
         src={webpImagePath}
         alt={corporationName}
-        className="w-16 h-16"
+        className="size-full object-contain"
         width={64}
         height={64}
         loading="lazy"
@@ -26,8 +26,8 @@ export const CorporationIcon = ({ corporationId, corporationName }: CorporationI
           target.nextElementSibling?.classList.add('flex');
         }}
       />
-      <div className="w-16 h-16 bg-base-300 rounded-lg shadow-md hidden items-center justify-center">
-        <span className="text-xs text-center font-medium px-2">
+      <div className="hidden size-full items-center justify-center rounded bg-base-300">
+        <span className="text-[9px] text-center font-medium px-1 break-words">
           {corporationName}
         </span>
       </div>

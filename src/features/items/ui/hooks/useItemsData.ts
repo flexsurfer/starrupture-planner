@@ -36,15 +36,3 @@ export const getCategoryDisplayName = (category: string) => {
   if (category === 'all') return 'All Items';
   return category.charAt(0).toUpperCase() + category.slice(1);
 };
-
-export const getCategoryBadgeClass = (type: string) => {
-  const badgeClasses = {
-    raw: 'badge-primary',
-    processed: 'badge-secondary',
-    component: 'badge-accent',
-    material: 'badge-info',
-    ammo: 'badge-warning',
-    final: 'badge-success',
-  };
-  return badgeClasses[type as keyof typeof badgeClasses] || 'badge-neutral';
-};

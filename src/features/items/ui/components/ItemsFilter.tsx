@@ -1,6 +1,7 @@
 import { useRuntime } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 import { getCategoryDisplayName } from "../hooks/useItemsData";
+import { getItemCategoryStyle } from '@/utils/itemColors';
 
 interface ItemsFilterProps {
   categories: string[];
@@ -17,7 +18,9 @@ export const ItemsFilter = ({ categories, selectedCategory }: ItemsFilterProps) 
           key={category}
           className={`btn btn-xs ${
             selectedCategory === category ? 'btn-primary' : 'btn-outline'
-          }`}
+          } ${selectedCategory === category && category !== 'all' ? 'ring-1 ring-current' : ''}`}
+          style={category === 'all' ? undefined : getItemCategoryStyle(category)}
+          aria-pressed={selectedCategory === category}
           onClick={() => runtime.dispatch([appIds.events.ITEMS_SET_SELECTED_CATEGORY, category])}
         >
           {getCategoryDisplayName(category)}

@@ -4,7 +4,7 @@ import { Position } from '@xyflow/react';
 import type { Edge, Node } from '@xyflow/react';
 import type { FlowEdge, FlowNode, Item } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
-import { getItemColor } from './item-color';
+import { getItemColor } from '@/utils/itemColors';
 
 export type PlannerFlowDirection = 'LR' | 'RL' | 'TB' | 'BT';
 

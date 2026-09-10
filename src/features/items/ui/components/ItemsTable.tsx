@@ -3,7 +3,8 @@ import { appIds } from '@/app/uklad/catalog';
 import { ItemRow } from "./ItemRow";
 import { ItemIcon } from "./ItemIcon";
 import { CorporationUsageBadge } from '@/features/corporations/ui/CorporationUsageBadge';
-import { getCategoryDisplayName, getCategoryBadgeClass } from "../hooks/useItemsData";
+import { getCategoryDisplayName } from "../hooks/useItemsData";
+import { getItemCategoryStyle } from '@/utils/itemColors';
 import type { ItemTableData } from '@/features/items/types';
 
 interface ItemsTableProps {
@@ -39,7 +40,7 @@ export const ItemsTable = ({
           <ItemIcon item={item} />
           <div className="flex-1">
             <h3 className="font-semibold text-sm">{item.name}</h3>
-            <div className={`badge badge-xs mt-1 ${getCategoryBadgeClass(item.type)}`}>
+            <div className="badge badge-xs mt-1" style={getItemCategoryStyle(item.type)}>
               {getCategoryDisplayName(item.type)}
             </div>
           </div>

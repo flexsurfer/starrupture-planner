@@ -14,7 +14,7 @@ export { ItemsTable } from "./components/ItemsTable";
 export { ItemRow } from "./components/ItemRow";
 
 // Hooks and utilities
-export { useItemsData, getCategoryDisplayName, getCategoryBadgeClass } from "./hooks/useItemsData";
+export { useItemsData, getCategoryDisplayName } from "./hooks/useItemsData";
 export { default as ItemsPage } from './ItemsPage';
 
 // Types

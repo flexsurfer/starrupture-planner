@@ -2,7 +2,8 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useId, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import { BuildingImage, ItemImage } from '@/shared/ui';
-import { getCategoryBadgeClass, getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
+import { getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
+import { getItemCategoryStyle } from '@/utils/itemColors';
 
 const STAT_TABS = ['buildings', 'items'] as const;
 
@@ -146,7 +147,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                             return (
                                 <div key={type} className="space-y-2">
                                     <div className="flex items-center gap-2">
-                                        <span className={`badge ${getCategoryBadgeClass(type)}`}>
+                                        <span className="badge" style={getItemCategoryStyle(type)}>
                                             {getCategoryDisplayName(type)}
                                         </span>
                                         <span className="text-xs text-base-content/60">
@@ -157,7 +158,8 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                                         {typeItems.map(item => (
                                             <div
                                                 key={item.id}
-                                                className={`flex items-center max-w-full rounded-lg gap-3 px-3 py-2 ${getCategoryBadgeClass(item.type)}`}
+                                                className="flex items-center max-w-full rounded-lg gap-3 px-3 py-2"
+                                                style={getItemCategoryStyle(item.type)}
                                             >
                                                 <span className="shrink-0">
                                                     <ItemImage itemId={item.id} item={item} size="small" />

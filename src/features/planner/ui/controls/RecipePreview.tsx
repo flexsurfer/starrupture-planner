@@ -1,21 +1,21 @@
 import type { Item, Recipe } from '@/app/uklad/model';
 import type { PlannerRecipeOption } from '@/features/planner/types';
 import { ItemImage } from '@/shared/ui';
+import { getItemCategoryStyle } from '@/utils/itemColors';
 
 interface RecipeIngredientProps {
     itemId: string;
     amount: number;
     item?: Item;
-    isOutput?: boolean;
 }
 
 const formatRate = (rate: number): string => (
     Number.isInteger(rate) ? String(rate) : rate.toFixed(1)
 );
 
-const RecipeIngredient = ({ itemId, amount, item, isOutput = false }: RecipeIngredientProps) => (
+const RecipeIngredient = ({ itemId, amount, item }: RecipeIngredientProps) => (
     <div className="flex w-12 shrink-0 flex-col items-center gap-0.5">
-        <span className={`badge badge-xs text-[9px] ${isOutput ? 'badge-success' : 'badge-primary'}`}>
+        <span className="badge badge-xs text-[9px]" style={getItemCategoryStyle(item?.type)}>
             {formatRate(amount)}/min
         </span>
         <ItemImage
@@ -49,7 +49,6 @@ export const RecipePreview = ({ option, itemsById }: RecipePreviewProps) => {
                     itemId={recipe.output.id}
                     amount={recipe.output.amount_per_minute}
                     item={itemsById[recipe.output.id]}
-                    isOutput
                 />
                 <span className="shrink-0 self-center text-base-content/50" aria-hidden="true">←</span>
                 <div className="flex min-w-0 flex-wrap items-end gap-1">

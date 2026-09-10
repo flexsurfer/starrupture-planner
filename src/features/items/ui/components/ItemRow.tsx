@@ -2,7 +2,8 @@ import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import { ItemIcon } from "./ItemIcon";
 import { CorporationUsageBadge } from '@/features/corporations/ui/CorporationUsageBadge';
-import { getCategoryDisplayName, getCategoryBadgeClass } from "../hooks/useItemsData";
+import { getCategoryDisplayName } from "../hooks/useItemsData";
+import { getItemCategoryStyle } from '@/utils/itemColors';
 import type { Item, CorporationUsage } from '@/features/items/types';
 
 interface ItemRowProps {
@@ -35,7 +36,7 @@ export const ItemRow = ({
       
       {/* Category Column */}
       <td className="py-1.5">
-        <div className={`badge badge-sm ${getCategoryBadgeClass(item.type)}`}>
+        <div className="badge badge-sm" style={getItemCategoryStyle(item.type)}>
           {getCategoryDisplayName(item.type)}
         </div>
       </td>
