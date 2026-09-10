@@ -1,5 +1,6 @@
+import { PlannerTabs, PlannerTabCreation } from './PlannerTabs';
 import { appIds } from '@/app/uklad/catalog';
-import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import { useSubscription } from '@/app/uklad/bindings';
 import { PlannerTargetAlert } from './controls/PlannerTargetAlert';
 import { PlannerMultiTargets } from './controls/PlannerMultiTargets';
 /**
@@ -15,7 +16,7 @@ import { PlannerMultiTargets } from './controls/PlannerMultiTargets';
  * - Building count calculations and material flow rates
  */
 
-import React, { useId, useState } from 'react';
+import React from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 
 import {
@@ -31,44 +32,22 @@ import { PlannerViews } from './visualization/PlannerViews';
  * Inner component for the production planner
  */
 const PlannerPageInner: React.FC = () => {
-    const runtime = useRuntime();
     const mode = useSubscription([appIds.subscriptions.PLANNER_MODE]);
-    const [settingsOpen, setSettingsOpen] = useState(false);
-    const settingsId = useId();
     return (
         <div className="h-full flex flex-col bg-base-100">
             <PlannerTargetAlert />
             <PlannerViews renderHeader={() => (
-                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 sm:gap-x-4 lg:gap-x-6 p-2 sm:p-1 bg-base-200 shadow-lg shrink-0">
-                    <div className="join" role="group" aria-label="Planner mode">
-                        {(['single', 'multi'] as const).map(value => <button
-                            key={value} type="button"
-                            className={`btn btn-sm join-item ${mode === value ? 'btn-active' : ''}`}
-                            aria-pressed={mode === value}
-                            onClick={() => runtime.dispatch([appIds.events.PLANNER_SET_MODE, value])}
-                        >{value === 'single' ? 'Single target' : 'Multi-target'}</button>)}
-                    </div>
-                    {mode === 'multi' ? <PlannerMultiTargets /> : <div className="flex w-full min-w-0 sm:w-auto sm:shrink-0 items-center gap-2 sm:gap-4">
-                        <PlannerItemSelector className="select-sm min-w-0 flex-1 sm:w-50 sm:flex-none text-xs sm:text-sm" />
-                        <div className="flex shrink-0 items-center gap-2">
-                            <PlannerTargetInput className="input-sm text-xs sm:text-sm" />
+                <div className="flex flex-col gap-2 p-2 sm:p-1 bg-base-200 shadow-lg shrink-0">
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 sm:gap-x-4 lg:gap-x-6">
+                        <div className={mode === 'single' ? 'flex w-full min-w-0 items-center gap-1.5 sm:contents' : 'contents'}>
+                            {mode === 'multi' ? <PlannerMultiTargets /> : <div className="flex min-w-0 flex-1 sm:flex-none items-center gap-2 sm:gap-4">
+                                <PlannerItemSelector className="select-sm w-0 min-w-0 flex-1 sm:w-50 sm:flex-none text-xs sm:text-sm" />
+                                <div className="flex shrink-0 items-center gap-2">
+                                    <PlannerTargetInput className="input-sm text-xs sm:text-sm" />
+                                </div>
+                            </div>}
+                            <div className="shrink-0"><PlannerStatsDisplay /></div>
                         </div>
-                    </div>
-                    }
-                    <div className="order-3 shrink-0 sm:order-none"><PlannerStatsDisplay /></div>
-                    <button
-                        type="button"
-                        className={`order-4 ml-auto sm:hidden btn btn-sm gap-1 text-xs ${settingsOpen ? 'btn-active' : 'btn-ghost border border-base-300'}`}
-                        aria-expanded={settingsOpen}
-                        aria-controls={settingsId}
-                        onClick={() => setSettingsOpen(open => !open)}
-                    >
-                        Settings <span aria-hidden="true">{settingsOpen ? '▴' : '▾'}</span>
-                    </button>
-                    <div
-                        id={settingsId}
-                        className={`order-5 w-full min-w-0 flex-wrap items-center gap-2 border-t border-base-300 pt-2 sm:contents ${settingsOpen ? 'flex' : 'hidden'}`}
-                    >
                         {mode === 'single' && <PlannerCorporationLevelSelector className="max-w-full sm:max-w-md" />}
                         <PlannerRecipeSelector />
                     </div>
@@ -83,11 +62,18 @@ const PlannerPageInner: React.FC = () => {
  * Main Production Planner component wrapper with ReactFlowProvider
  */
 const PlannerPage: React.FC = () => {
-    return (
-        <ReactFlowProvider>
-            <PlannerPageInner />
-        </ReactFlowProvider>
-    );
+    const activeTab = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TAB]);
+    return <div className="flex h-full min-h-0 min-w-0 flex-col bg-base-100">
+        {activeTab ? <>
+            <PlannerTabs />
+            <div id="planner-tab-panel" role="tabpanel" aria-labelledby={`planner-tab-${activeTab.id}`} className="min-h-0 flex-1">
+                <ReactFlowProvider key={activeTab.id}>
+                    <PlannerPageInner />
+                </ReactFlowProvider>
+            </div>
+            <PlannerTabCreation />
+        </> : <PlannerTabCreation empty />}
+    </div>;
 };
 
 export default PlannerPage;

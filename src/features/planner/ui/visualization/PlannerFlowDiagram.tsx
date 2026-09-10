@@ -41,11 +41,17 @@ export const PlannerFlowDiagram: React.FC = () => {
     const flowGraph = useSubscription([appIds.subscriptions.PLANNER_FLOW_GRAPH]);
     const renderedNodes = useMemo<Node[]>(() => flowGraph.nodes.map(({ flowNode, outputColor, ...node }) => ({
         ...node,
-        style: { ...node.style, padding: 0 },
+        style: {
+            ...node.style,
+            padding: 0,
+            ...(flowNode.nodeType !== 'launcher' && selectedItemId.includes(flowNode.outputItem) && {
+                borderColor: 'var(--color-primary)',
+            }),
+        },
         data: {
             label: <NodeCard onSelectRecipe={onSelectRecipe} node={flowNode} items={flowGraph.items!} outputColor={outputColor} />,
         },
-    })), [flowGraph, onSelectRecipe]);
+    })), [flowGraph, onSelectRecipe, selectedItemId]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);

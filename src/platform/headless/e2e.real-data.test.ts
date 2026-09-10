@@ -181,6 +181,7 @@ describe('headless bundled game-data compatibility E2E', () => {
             options: [appIds.subscriptions.PLANNER_RECIPE_OPTIONS],
         } as const);
         await app.dispatch([appIds.events.PLANNER_OPEN_ITEM, targetItemId]);
+        await app.dispatch([appIds.events.PLANNER_CREATE_TAB, 'single', 'Single plan', 'single']);
         expect(planner.current()).toMatchObject({ selectedItem: targetItemId });
         expect(planner.value('target')).toBeGreaterThan(0);
         expect(planner.value('flow').nodes.length).toBeGreaterThan(0);

@@ -21,7 +21,7 @@ const buildings: Building[] = [{
     ],
 }];
 
-describe('global multi-target planner', () => {
+describe('multi-target planner tabs', () => {
     it('shares production capacity and rounds combined building counts', () => {
         const flow = buildMultiTargetProductionFlow([{ itemId: 'a', amount: 10 }, { itemId: 'b', amount: 10 }], buildings);
         const plate = flow.nodes.filter(n => n.outputItem === 'plate');
@@ -43,7 +43,7 @@ describe('global multi-target planner', () => {
         expect(findTargetConflict(['a', 'b'], buildings, { b: 'factory:4' })).toEqual({ target: 'b', ingredient: 'a' });
     });
 
-    it('rejects conflicting additions and recipe changes while preserving modes and updating stats', () => {
+    it('rejects conflicting additions and recipe changes while preserving tabs and updating stats', () => {
         const runtime = createAppRuntime();
         runtime.registerModule(registerBuildingsModule);
         runtime.registerModule(registerItemsModule);
@@ -55,10 +55,11 @@ describe('global multi-target planner', () => {
         });
         try {
             harness.dispatchSync([appIds.events.PLANNER_OPEN_ITEM, 'c']);
-            harness.dispatchSync([appIds.events.PLANNER_SET_MODE, 'multi']);
+            harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'single', 'Single plan', 'single']);
+            harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'multi', 'Multi plan', 'multi']);
             harness.dispatchSync([appIds.events.PLANNER_ADD_TARGET, 'a']);
             harness.dispatchSync([appIds.events.PLANNER_ADD_TARGET, 'b']);
-            const targets = () => harness.getState().plannerMultiTargets;
+            const targets = () => harness.getSubscriptionValue([appIds.subscriptions.PLANNER_MULTI_TARGETS]);
             expect(targets()).toHaveLength(2);
             const rates = () => Object.fromEntries(
                 [...harness.getSubscriptionValue([appIds.subscriptions.PLANNER_STATS_DETAILED]).itemsByType.values()]
@@ -76,24 +77,24 @@ describe('global multi-target planner', () => {
             harness.dispatchSync([appIds.events.PLANNER_ADD_TARGET, 'a']);
             expect(harness.getState().plannerTargetWarning).toContain('already a target');
             harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'b', 'factory:4']);
-            expect(harness.getState().plannerMultiRecipeSelections).toEqual({});
+            expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS])).toEqual({});
             expect(harness.getState().plannerTargetWarning).toContain('A is required to produce B');
             harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTIONS, { b: 'factory:4' }]);
-            expect(harness.getState().plannerMultiRecipeSelections).toEqual({});
+            expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS])).toEqual({});
             harness.dispatchSync([appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'a', 20]);
             expect(rates()).toEqual({ ore: 45, plate: 30, a: 20, b: 10 });
             harness.dispatchSync([appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'a', Infinity]);
             expect(targets()[0].amount).toBe(20);
-            harness.dispatchSync([appIds.events.PLANNER_SET_MODE, 'single']);
+            harness.dispatchSync([appIds.events.PLANNER_SELECT_TAB, 'single']);
             expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS])).toEqual(['c']);
             harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'b', 'factory:4']);
-            harness.dispatchSync([appIds.events.PLANNER_SET_MODE, 'multi']);
+            harness.dispatchSync([appIds.events.PLANNER_SELECT_TAB, 'multi']);
             expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RECIPE_SELECTIONS])).toEqual({});
             expect(targets()).toHaveLength(2);
             harness.dispatchSync([appIds.events.PLANNER_REMOVE_TARGET, 'a']);
             harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'b', 'factory:4']);
             expect(harness.getState().plannerTargetWarning).toBeNull();
-            expect(harness.getState().plannerMultiRecipeSelections).toEqual({ b: 'factory:4' });
+            expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS])).toEqual({ b: 'factory:4' });
             harness.dispatchSync([appIds.events.PLANNER_REMOVE_TARGET, 'b']);
             expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_PRODUCTION_FLOW]).nodes).toEqual([]);
         } finally {

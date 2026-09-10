@@ -260,6 +260,7 @@ describe('headless catalog and planner E2E', () => {
         } as const);
 
         await app.dispatch([appIds.events.PLANNER_OPEN_ITEM, 'unknown-item']);
+        await app.dispatch([appIds.events.PLANNER_CREATE_TAB, 'unknown', 'Unknown item', 'single']);
         expect(view.current()).toMatchObject({
             selectedItem: 'unknown-item',
             target: 60,
@@ -276,6 +277,7 @@ describe('headless catalog and planner E2E', () => {
             'iron-plate',
             { corporationId: 'miners', level: 1 },
         ]);
+        await app.dispatch([appIds.events.PLANNER_CREATE_TAB, 'single', 'Iron Plate', 'single']);
         expect(view.current()).toMatchObject({
             selectedItem: 'iron-plate',
             corporationLevel: { corporationId: 'miners', level: 1 },
@@ -315,7 +317,7 @@ describe('headless catalog and planner E2E', () => {
         });
 
         await app.dispatch([appIds.events.PLANNER_SET_TARGET_AMOUNT, -5]);
-        expect(view.value('target')).toBe(-5);
+        expect(view.value('target')).toBe(120);
         expect(view.value('flow').nodes.length).toBeGreaterThan(0);
 
         await app.dispatch([appIds.events.PLANNER_SET_SELECTED_ITEM, null]);

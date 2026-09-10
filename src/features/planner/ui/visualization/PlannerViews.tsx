@@ -1,6 +1,6 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { appIds } from '@/app/uklad/catalog';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { PlannerFlowDiagram } from './PlannerFlowDiagram';
 import { PlannerProductionTable } from './PlannerProductionTable';
 
@@ -10,11 +10,9 @@ export const PlannerViews = ({ renderHeader }: { renderHeader?: () => ReactNode 
     const mode = useSubscription([appIds.subscriptions.PLANNER_MODE]);
     const warning = useSubscription([appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING]);
     const calculationPaused = mode === 'multi' && warning !== null;
-    const [activeView, setActiveView] = useState<typeof VIEWS[number]>(() => (
-        typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches
-            ? 'table'
-            : 'graph'
-    ));
+    const runtime = useRuntime();
+    const activeView = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_VIEW]);
+    const setActiveView = (view: typeof VIEWS[number]) => runtime.dispatch([appIds.events.PLANNER_SET_ACTIVE_VIEW, view]);
     const id = useId();
 
     const viewControl = (

@@ -1,3 +1,4 @@
+import { getActivePlannerTab } from './state';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
@@ -13,10 +14,24 @@ import { getMultiTargetWarning } from './target-conflicts';
 import { getItemName } from '@/utils/itemUtils';
 
 export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
-    registrar.regRootSub(appIds.subscriptions.PLANNER_GROUP_BY_STAGE, stateKeys.plannerGroupByStage);
-    registrar.regRootSub(appIds.subscriptions.PLANNER_FLOW_DIRECTION, stateKeys.plannerFlowDirection);
-    registrar.regRootSub(appIds.subscriptions.PLANNER_MODE, stateKeys.plannerMode);
-    registrar.regRootSub(appIds.subscriptions.PLANNER_MULTI_TARGETS, stateKeys.plannerMultiTargets);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_TABS, stateKeys.plannerTabs);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_ACTIVE_TAB_ID, stateKeys.plannerActiveTabId);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_TAB_CREATION, stateKeys.plannerTabCreation);
+    registrar.regSub(
+        appIds.subscriptions.PLANNER_ACTIVE_TAB,
+        () => [[appIds.subscriptions.PLANNER_TABS], [appIds.subscriptions.PLANNER_ACTIVE_TAB_ID]],
+        ([plannerTabs, plannerActiveTabId]) => getActivePlannerTab({ plannerTabs, plannerActiveTabId }),
+    );
+    registrar.regSub(appIds.subscriptions.PLANNER_ACTIVE_VIEW,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.activeView ?? 'graph');
+    registrar.regSub(appIds.subscriptions.PLANNER_GROUP_BY_STAGE,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.groupByStage ?? false);
+    registrar.regSub(appIds.subscriptions.PLANNER_FLOW_DIRECTION,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.flowDirection ?? 'LR');
+    registrar.regSub(appIds.subscriptions.PLANNER_MODE,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.mode ?? 'single');
+    registrar.regSub(appIds.subscriptions.PLANNER_MULTI_TARGETS,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.multiTargets ?? []);
     registrar.regRootSub(appIds.subscriptions.PLANNER_TARGET_WARNING, stateKeys.plannerTargetWarning);
     registrar.regSub(
         appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING,
@@ -34,10 +49,14 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
         () => [[appIds.subscriptions.PLANNER_MODE], [appIds.subscriptions.PLANNER_MULTI_TARGETS], [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]],
         ([mode, targets, selectedItem]) => mode === 'multi' ? targets.map(t => t.itemId) : selectedItem ? [selectedItem] : [],
     );
-    registrar.regRootSub(appIds.subscriptions.PLANNER_SELECTED_ITEM_ID, stateKeys.plannerSelectedItemId);
-    registrar.regRootSub(appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL, stateKeys.plannerSelectedCorporationLevel);
-    registrar.regRootSub(appIds.subscriptions.PLANNER_SINGLE_RECIPE_SELECTIONS, stateKeys.plannerRecipeSelections);
-    registrar.regRootSub(appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS, stateKeys.plannerMultiRecipeSelections);
+    registrar.regSub(appIds.subscriptions.PLANNER_SELECTED_ITEM_ID,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.selectedItemId ?? null);
+    registrar.regSub(appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.selectedCorporationLevel ?? null);
+    registrar.regSub(appIds.subscriptions.PLANNER_SINGLE_RECIPE_SELECTIONS,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.mode === 'single' ? tab.recipeSelections : {});
+    registrar.regSub(appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.mode === 'multi' ? tab.recipeSelections : {});
     registrar.regSub(
         appIds.subscriptions.PLANNER_RECIPE_SELECTIONS,
         () => [[appIds.subscriptions.PLANNER_MODE], [appIds.subscriptions.PLANNER_SINGLE_RECIPE_SELECTIONS], [appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS]],
@@ -45,7 +64,8 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
     );
     registrar.regRootSub(appIds.subscriptions.PINNED_RECIPE_SELECTIONS, stateKeys.pinnedRecipeSelections);
     registrar.regRootSub(appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS, stateKeys.recipeAlternativePresets);
-    registrar.regRootSub(appIds.subscriptions.PLANNER_TARGET_AMOUNT, stateKeys.plannerTargetAmount);
+    registrar.regSub(appIds.subscriptions.PLANNER_TARGET_AMOUNT,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.targetAmount ?? 60);
 
     registrar.regSub(
         appIds.subscriptions.PLANNER_AVAILABLE_CORPORATION_LEVELS,

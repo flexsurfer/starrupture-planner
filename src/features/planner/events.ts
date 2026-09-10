@@ -1,3 +1,4 @@
+import { createPlannerTab, getActivePlannerTab, type PlannerTab } from './state';
 import { getMultiTargetWarning } from './target-conflicts';
 import { createRecipeResolver } from './production-flow';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
@@ -19,96 +20,131 @@ function getSlowestOutputRateForItem(buildings: Building[], itemId: string): num
     return bestRate ?? 60;
 }
 
-function setTargetAmountToDefault(draftState: AppState, itemId: string): void {
-    draftState.plannerTargetAmount = getSlowestOutputRateForItem(draftState.buildingsList, itemId);
-}
-
 function createRecipeAlternativePresetId(): string {
     return `rap_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
 
-function validateTargets(state: AppState, ids: string[], selections = state.plannerMultiRecipeSelections): boolean {
+function validateTargets(state: AppState, tab: PlannerTab, ids: string[], selections = tab.recipeSelections): boolean {
     state.plannerTargetWarning = getMultiTargetWarning(ids, state.buildingsList, selections, state.itemsList);
     return state.plannerTargetWarning === null;
 }
 
 export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regEvent(appIds.events.PLANNER_REQUEST_TAB_CREATION, ({ draftState }) => {
+        draftState.plannerTabCreation = {};
+    });
+    registrar.regEvent(appIds.events.PLANNER_CANCEL_TAB_CREATION, ({ draftState }) => {
+        draftState.plannerTabCreation = null;
+    });
+    registrar.regEvent(appIds.events.PLANNER_CREATE_TAB, ({ draftState }, id, name, mode, view = 'graph') => {
+        const trimmedName = name.trim();
+        if (!id.trim() || !trimmedName || !['single', 'multi'].includes(mode)
+            || !['graph', 'table'].includes(view) || draftState.plannerTabs.some(tab => tab.id === id)) return;
+        const tab = createPlannerTab(id, trimmedName, mode, view);
+        tab.recipeSelections = { ...draftState.pinnedRecipeSelections };
+        const request = draftState.plannerTabCreation;
+        if (request?.itemId) {
+            if (mode === 'single') {
+                tab.selectedItemId = request.itemId;
+                tab.selectedCorporationLevel = request.corporationLevel ? { ...request.corporationLevel } : null;
+                tab.targetAmount = getSlowestOutputRateForItem(draftState.buildingsList, request.itemId);
+            } else {
+                const info = createRecipeResolver(draftState.buildingsList, tab.recipeSelections)(request.itemId);
+                if (info?.recipe.inputs.length) {
+                    tab.multiTargets = [{ itemId: request.itemId, amount: info.recipe.output.amount_per_minute }];
+                }
+            }
+        }
+        draftState.plannerTabs.push(tab);
+        draftState.plannerActiveTabId = id;
+        draftState.plannerTabCreation = null;
+        draftState.plannerTargetWarning = null;
+    });
+    registrar.regEvent(appIds.events.PLANNER_SELECT_TAB, ({ draftState }, id) => {
+        if (!draftState.plannerTabs.some(tab => tab.id === id)) return;
+        draftState.plannerActiveTabId = id;
+        draftState.plannerTargetWarning = null;
+    });
+    registrar.regEvent(appIds.events.PLANNER_CLOSE_TAB, ({ draftState }, id) => {
+        const index = draftState.plannerTabs.findIndex(tab => tab.id === id);
+        if (index < 0) return;
+        const activeId = getActivePlannerTab(draftState)?.id;
+        draftState.plannerTabs.splice(index, 1);
+        if (id === activeId) {
+            draftState.plannerActiveTabId = draftState.plannerTabs[Math.min(index, draftState.plannerTabs.length - 1)]?.id ?? null;
+            draftState.plannerTargetWarning = null;
+        }
+    });
+    registrar.regEvent(appIds.events.PLANNER_SET_ACTIVE_VIEW, ({ draftState }, view) => {
+        const tab = getActivePlannerTab(draftState);
+        if (tab && ['graph', 'table'].includes(view)) tab.activeView = view;
+    });
     registrar.regEvent(appIds.events.PLANNER_SET_GROUP_BY_STAGE, ({ draftState }, enabled) => {
-        draftState.plannerGroupByStage = enabled;
+        const tab = getActivePlannerTab(draftState);
+        if (tab) tab.groupByStage = enabled;
     });
     registrar.regEvent(appIds.events.PLANNER_SET_FLOW_DIRECTION, ({ draftState }, direction) => {
-        if (['LR', 'RL', 'TB', 'BT'].includes(direction)) draftState.plannerFlowDirection = direction;
-    });
-    registrar.regEvent(appIds.events.PLANNER_SET_MODE, ({ draftState }, mode) => {
-        // Keep an invalid plan accessible so its targets and recipes can be repaired.
-        draftState.plannerMode = mode;
-        draftState.plannerTargetWarning = null;
+        const tab = getActivePlannerTab(draftState);
+        if (tab && ['LR', 'RL', 'TB', 'BT'].includes(direction)) tab.flowDirection = direction;
     });
     registrar.regEvent(appIds.events.PLANNER_DISMISS_TARGET_WARNING, ({ draftState }) => {
         draftState.plannerTargetWarning = null;
     });
     registrar.regEvent(appIds.events.PLANNER_ADD_TARGET, ({ draftState }, itemId) => {
-        if (draftState.plannerMultiTargets.some(target => target.itemId === itemId)) {
+        const tab = getActivePlannerTab(draftState);
+        if (tab?.mode !== 'multi') return;
+        if (tab.multiTargets.some(target => target.itemId === itemId)) {
             draftState.plannerTargetWarning = 'This item is already a target.';
             return;
         }
-        // The first successful addition starts a fresh plan with the saved defaults.
-        // Subsequent additions and mode switches retain this plan's overrides.
-        const selections = draftState.plannerMultiTargets.length === 0
-            ? { ...draftState.pinnedRecipeSelections }
-            : draftState.plannerMultiRecipeSelections;
-        const info = createRecipeResolver(draftState.buildingsList, selections)(itemId);
+        const info = createRecipeResolver(draftState.buildingsList, tab.recipeSelections)(itemId);
         if (!info?.recipe.inputs.length) return;
-        if (!validateTargets(draftState as AppState, [...draftState.plannerMultiTargets.map(t => t.itemId), itemId], selections)) return;
-        draftState.plannerMultiRecipeSelections = selections;
-        draftState.plannerMultiTargets.push({ itemId, amount: info.recipe.output.amount_per_minute });
+        if (!validateTargets(draftState, tab, [...tab.multiTargets.map(t => t.itemId), itemId])) return;
+        tab.multiTargets.push({ itemId, amount: info.recipe.output.amount_per_minute });
     });
     registrar.regEvent(appIds.events.PLANNER_REMOVE_TARGET, ({ draftState }, itemId) => {
-        draftState.plannerMultiTargets = draftState.plannerMultiTargets.filter(t => t.itemId !== itemId);
+        const tab = getActivePlannerTab(draftState);
+        if (tab?.mode !== 'multi') return;
+        tab.multiTargets = tab.multiTargets.filter(t => t.itemId !== itemId);
         draftState.plannerTargetWarning = null;
     });
     registrar.regEvent(appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, ({ draftState }, itemId, amount) => {
         if (!Number.isFinite(amount) || amount <= 0) return;
-        const target = draftState.plannerMultiTargets.find(t => t.itemId === itemId);
+        const tab = getActivePlannerTab(draftState);
+        if (tab?.mode !== 'multi') return;
+        const target = tab.multiTargets.find(t => t.itemId === itemId);
         if (target) target.amount = amount;
     });
     registrar.regEvent(appIds.events.PLANNER_OPEN_ITEM, ({ draftState }, itemId, corporationLevel) => {
-        draftState.plannerMode = 'single';
-        draftState.plannerTargetWarning = null;
-        draftState.plannerSelectedItemId = itemId;
-        draftState.plannerSelectedCorporationLevel = corporationLevel || null;
-        draftState.plannerRecipeSelections = { ...draftState.pinnedRecipeSelections };
+        draftState.plannerTabCreation = { itemId, ...(corporationLevel ? { corporationLevel: { ...corporationLevel } } : {}) };
         draftState.uiActiveTab = 'planner';
-        setTargetAmountToDefault(draftState as AppState, itemId);
     });
-
     registrar.regEvent(appIds.events.PLANNER_SET_SELECTED_ITEM, ({ draftState }, itemId) => {
-        draftState.plannerMode = 'single';
+        const tab = getActivePlannerTab(draftState);
+        if (tab?.mode !== 'single') return;
         draftState.plannerTargetWarning = null;
-        draftState.plannerSelectedItemId = itemId;
-        draftState.plannerSelectedCorporationLevel = null;
-        draftState.plannerRecipeSelections = { ...draftState.pinnedRecipeSelections };
-        setTargetAmountToDefault(draftState as AppState, itemId || '');
+        tab.selectedItemId = itemId;
+        tab.selectedCorporationLevel = null;
+        tab.targetAmount = getSlowestOutputRateForItem(draftState.buildingsList, itemId || '');
     });
-
     registrar.regEvent(appIds.events.PLANNER_SET_SELECTED_CORPORATION_LEVEL, ({ draftState }, corporationLevel) => {
-        draftState.plannerSelectedCorporationLevel = corporationLevel;
+        const tab = getActivePlannerTab(draftState);
+        if (tab?.mode === 'single') tab.selectedCorporationLevel = corporationLevel ? { ...corporationLevel } : null;
     });
-
     registrar.regEvent(appIds.events.PLANNER_SET_RECIPE_SELECTION, ({ draftState }, itemId, recipeKey) => {
-        if (!itemId) return;
-        const selections = { ...(draftState.plannerMode === 'multi' ? draftState.plannerMultiRecipeSelections : draftState.plannerRecipeSelections) };
+        const tab = getActivePlannerTab(draftState);
+        if (!tab || !itemId) return;
+        const selections = { ...tab.recipeSelections };
         if (recipeKey) selections[itemId] = recipeKey;
         else delete selections[itemId];
-        if (draftState.plannerMode === 'multi' && !validateTargets(draftState as AppState, draftState.plannerMultiTargets.map(t => t.itemId), selections)) return;
-        if (draftState.plannerMode === 'multi') draftState.plannerMultiRecipeSelections = selections;
-        else draftState.plannerRecipeSelections = selections;
+        if (tab.mode === 'multi' && !validateTargets(draftState, tab, tab.multiTargets.map(t => t.itemId), selections)) return;
+        tab.recipeSelections = selections;
     });
-
     registrar.regEvent(appIds.events.PLANNER_SET_RECIPE_SELECTIONS, ({ draftState }, selections) => {
-        if (draftState.plannerMode === 'multi' && !validateTargets(draftState as AppState, draftState.plannerMultiTargets.map(t => t.itemId), selections || {})) return;
-        if (draftState.plannerMode === 'multi') draftState.plannerMultiRecipeSelections = { ...(selections || {}) };
-        else draftState.plannerRecipeSelections = { ...(selections || {}) };
+        const tab = getActivePlannerTab(draftState);
+        if (!tab) return;
+        if (tab.mode === 'multi' && !validateTargets(draftState, tab, tab.multiTargets.map(t => t.itemId), selections || {})) return;
+        tab.recipeSelections = { ...(selections || {}) };
     });
 
     registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULTS, ({ draftState }, selections) => {
@@ -143,6 +179,7 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
     });
 
     registrar.regEvent(appIds.events.PLANNER_SET_TARGET_AMOUNT, ({ draftState }, targetAmount) => {
-        draftState.plannerTargetAmount = targetAmount;
+        const tab = getActivePlannerTab(draftState);
+        if (tab?.mode === 'single' && Number.isFinite(targetAmount) && targetAmount > 0) tab.targetAmount = targetAmount;
     });
 };

@@ -1,6 +1,36 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* Compact editor tabs, matching the VS Code tab-strip geometry. */
+.planner-tab-bar {
+  display: flex;
+  flex-shrink: 0;
+  min-width: 0;
+  height: 36px;
+  background: var(--color-base-200);
+  border-bottom: 1px solid var(--color-base-300);
+}
+.planner-tab-list { display: flex; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+.planner-tab {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  max-width: 240px;
+  border-right: 1px solid var(--color-base-300);
+  border-top: 1px solid transparent;
+  color: color-mix(in srgb, var(--color-base-content) 65%, transparent);
+}
+.planner-tab.is-active { background: var(--color-base-100); border-top-color: #007acc; color: var(--color-base-content); }
+.planner-tab-select { display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; padding: 0 8px 0 12px; font-size: 13px; cursor: pointer; }
+.planner-tab-close { margin-right: 7px; border-radius: 3px; padding: 2px; cursor: pointer; }
+.planner-tab-close:hover, .planner-tab-add:hover { background: color-mix(in srgb, var(--color-base-content) 12%, transparent); }
+.planner-tab-add { display: grid; place-items: center; align-self: center; flex-shrink: 0; width: 28px; height: 28px; margin: 0 4px; border-radius: 3px; cursor: pointer; }
+.planner-tab-select:focus-visible, .planner-tab-close:focus-visible, .planner-tab-add:focus-visible { outline: 1px solid #007acc; outline-offset: -2px; }
+@media (hover: hover) {
+  .planner-tab:not(.is-active) .planner-tab-close { opacity: 0; }
+  .planner-tab:hover .planner-tab-close, .planner-tab:focus-within .planner-tab-close { opacity: 1; }
+}
+
 /* Mobile-friendly React Flow controls */
 @media (max-width: 1024px) {
   .react-flow__controls {

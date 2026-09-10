@@ -1,4 +1,5 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, fireEvent, render, renderHook } from '@testing-library/react';
+import { createElement } from 'react';
 import type { Edge, Node } from '@xyflow/react';
 import { describe, expect, it } from 'vitest';
 import { useConnectedNodeHighlight } from './useConnectedNodeHighlight';
@@ -17,8 +18,12 @@ describe('pinned connection highlighting', () => {
         expect(result.current.nodes[2].style?.opacity).toBeLessThan(0.5);
         expect(result.current.edges[0].labelStyle?.outline).toBeDefined();
 
-        act(() => result.current.onNodeDragStart(new MouseEvent('mousedown'), nodes[2], nodes));
-        act(() => result.current.onNodeDragStop(new MouseEvent('mouseup'), nodes[2], nodes));
+        const { getByRole } = render(createElement('button', {
+            onMouseDown: (event) => result.current.onNodeDragStart(event, nodes[2], nodes),
+            onMouseUp: (event) => result.current.onNodeDragStop(event, nodes[2], nodes),
+        }, 'Drag node'));
+        fireEvent.mouseDown(getByRole('button', { name: 'Drag node' }));
+        fireEvent.mouseUp(getByRole('button', { name: 'Drag node' }));
         expect(result.current.pinnedNodeId).toBe('a');
         expect(result.current.nodes[0].draggable).toBe(false);
         expect(result.current.edges[0].labelStyle?.outline).toBeDefined();

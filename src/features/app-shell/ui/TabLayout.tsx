@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ItemsPage } from '@/features/items/ui';
 import { BuildingsPage } from '@/features/buildings/ui';
@@ -15,14 +15,15 @@ import {
 import { useNavigationSync } from './navigation/useNavigationSync';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import type { Tab, TabType } from '@/app/uklad/model';
+import type { TabType } from '@/app/uklad/model';
+import { SectionIcon, type SectionIconName } from '@/shared/ui';
 
-const tabs: Tab[] = [
-  { id: 'mybases', label: 'My Bases', icon: '🏗️' },
-  { id: 'items', label: 'Items', icon: '📦' },
-  { id: 'recipes', label: 'Buildings', icon: '🏭' },
-  { id: 'corporations', label: 'Corporations', icon: '🏢' },
-  { id: 'planner', label: 'Planner', icon: '📐' },
+const tabs: { id: TabType; label: string; icon: SectionIconName }[] = [
+  { id: 'mybases', label: 'My Bases', icon: 'bases' },
+  { id: 'items', label: 'Items', icon: 'items' },
+  { id: 'recipes', label: 'Buildings', icon: 'buildings' },
+  { id: 'corporations', label: 'Corporations', icon: 'corporations' },
+  { id: 'planner', label: 'Planner', icon: 'planner' },
 ];
 
 const TabLayout = () => {
@@ -30,6 +31,31 @@ const TabLayout = () => {
   const activeTab = useSubscription([appIds.subscriptions.UI_ACTIVE_TAB]);
   const location = useLocation();
   const navigate = useNavigate();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const desktopBrandRef = useRef<HTMLDivElement>(null);
+  const desktopTabsRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const [tabsFitHeader, setTabsFitHeader] = useState(false);
+
+  useLayoutEffect(() => {
+    const header = headerRef.current!;
+    const brand = desktopBrandRef.current!;
+    const navigation = desktopTabsRef.current!;
+    const controls = controlsRef.current!;
+    const updateLayout = () => {
+      const style = getComputedStyle(header);
+      const availableWidth = header.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      // Keep the desktop layout measurable in compact mode so the threshold stays stable.
+      const requiredWidth = [brand, navigation, controls].reduce(
+        (width, element) => width + element.getBoundingClientRect().width, 0,
+      ) + parseFloat(style.columnGap) * 2;
+      setTabsFitHeader(requiredWidth <= availableWidth);
+    };
+    updateLayout();
+    const observer = new ResizeObserver(updateLayout);
+    [header, brand, navigation, controls].forEach(element => observer.observe(element));
+    return () => observer.disconnect();
+  }, []);
   
   // Handle programmatic navigation sync
   useNavigationSync(activeTab);
@@ -96,73 +122,87 @@ const TabLayout = () => {
   return (
       <div className="h-screen flex flex-col bg-base-100">
         {/* Header */}
-        <div className="flex flex-row lg:grid lg:grid-cols-[1fr_auto] 2xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 bg-base-200 shadow-lg flex-shrink-0 px-2 py-0.5 lg:p-2">
-          {/* Mobile Layout */}
-          <div className="lg:hidden flex min-w-0 flex-1 items-center gap-2">
-            <img
-              src="/logo_black_bg.webp"
-              alt="Rupture Planner Logo"
-              className="h-9 w-9 shrink-0 rounded shadow-sm"
-              width={36}
-              height={36}
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
-            />
-            <h1 className="sr-only">Rupture Planner</h1>
-            <VersionSelector className="min-w-0 max-w-full" />
-          </div>
+        <div className="relative flex-shrink-0 bg-base-200 shadow-lg">
+          <div
+            ref={headerRef}
+            inert={!tabsFitHeader}
+            aria-hidden={!tabsFitHeader}
+            className={`grid grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-2 p-2 ${tabsFitHeader ? '' : 'absolute inset-x-0 top-0 invisible overflow-hidden'}`}
+          >
+            {/* Desktop Layout */}
+            <div ref={desktopBrandRef} className="flex w-max items-center gap-3 col-start-1 row-start-1">
+              <img
+                src="/logo_black_bg.webp"
+                alt="Rupture Planner Logo"
+                className="h-8 w-auto shrink-0 rounded shadow-sm"
+                width={32}
+                height={32}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+              <h1 className="text-xl font-bold whitespace-nowrap">Rupture Planner</h1>
+              <VersionSelector className="shrink-0" />
+            </div>
 
-          {/* Desktop Layout */}
-          <div className="hidden lg:flex min-w-0 items-center gap-3 lg:col-start-1 lg:row-start-1">
-            <img
-              src="/logo_black_bg.webp"
-              alt="Rupture Planner Logo"
-              className="h-8 w-auto shrink-0 rounded shadow-sm"
-              width={32}
-              height={32}
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
-            />
-            <h1 className="text-xl font-bold whitespace-nowrap">Rupture Planner</h1>
-            <VersionSelector className="shrink-0" />
-          </div>
+            {/* Desktop Tab Navigation */}
+            <div className="flex justify-center col-start-2 row-start-1">
+              <div ref={desktopTabsRef} className="tabs tabs-bordered tabs-lg w-max flex-nowrap justify-center">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    className={`tab ${activeTab === tab.id ? 'tab-active' : ''}`}
+                    onClick={() => handleTabClick(tab.id)}
+                  >
+                    <SectionIcon name={tab.icon} className="mr-2 h-5 w-5" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Desktop Tab Navigation */}
-          <div className="hidden lg:flex justify-center lg:col-span-2 lg:row-start-2 2xl:col-span-1 2xl:col-start-2 2xl:row-start-1">
-            <div className="tabs tabs-bordered tabs-lg justify-center">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  className={`tab ${activeTab === tab.id ? 'tab-active' : ''}`}
-                  onClick={() => handleTabClick(tab.id)}
-                >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
+            {/* Desktop Controls */}
+            <div ref={controlsRef} className="ml-auto flex w-max shrink-0 items-center justify-end gap-2 row-start-1 col-start-3">
+              <DiscordButton className="btn btn-ghost btn-sm" />
+              <GitHubButton className="btn btn-ghost btn-sm" />
+              <ThemeToggle />
             </div>
           </div>
 
-          {/* Controls - always visible but compact on mobile */}
-          <div className="ml-auto flex shrink-0 items-center justify-end gap-1 lg:gap-2 lg:col-start-2 lg:row-start-1 2xl:col-start-3">
-            <DiscordButton className="btn btn-ghost btn-sm max-lg:btn-square" />
-            <GitHubButton className="btn btn-ghost btn-sm max-lg:btn-square" />
-            <ThemeToggle className="max-lg:h-8 max-lg:w-8" />
+          {/* Compact Layout */}
+          <div className={`${tabsFitHeader ? 'hidden' : 'flex'} items-center gap-2 px-2 py-0.5`}>
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <img
+                src="/logo_black_bg.webp"
+                alt="Rupture Planner Logo"
+                className="h-9 w-9 shrink-0 rounded shadow-sm"
+                width={36}
+                height={36}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+              <h1 className="sr-only">Rupture Planner</h1>
+              <VersionSelector className="min-w-0 max-w-full" />
+            </div>
+            <div className="ml-auto flex shrink-0 items-center justify-end gap-1">
+              <DiscordButton className="btn btn-ghost btn-sm btn-square" />
+              <GitHubButton className="btn btn-ghost btn-sm btn-square" />
+              <ThemeToggle className="h-8 w-8" />
+            </div>
           </div>
         </div>
 
-        {/* Mobile Tab Navigation - Below header */}
-        <div className="lg:hidden bg-base-200 border-t border-base-300">
+        {/* Compact Tab Navigation - Below header */}
+        <div className={`${tabsFitHeader ? 'hidden' : ''} bg-base-200 border-t border-base-300`}>
           <div className="flex overflow-x-auto">
             <div className="flex min-w-full justify-center px-1">
               {tabs.map((tab) => (
@@ -176,7 +216,7 @@ const TabLayout = () => {
                   onClick={() => handleTabClick(tab.id)}
                 >
                   <div className="flex flex-row items-center gap-1">
-                    <span className="text-sm">{tab.icon}</span>
+                    <SectionIcon name={tab.icon} className="h-4 w-4" />
                     <span className="text-xs leading-none truncate">{tab.label}</span>
                   </div>
                 </button>

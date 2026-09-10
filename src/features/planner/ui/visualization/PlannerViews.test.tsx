@@ -1,14 +1,23 @@
+import { useSyncExternalStore } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { PlannerViews } from './PlannerViews';
 
 const planner = vi.hoisted(() => ({
+    view: 'graph' as 'graph' | 'table',
+    listeners: new Set<() => void>(),
     mode: 'single' as 'single' | 'multi',
     warning: null as string | null,
 }));
 vi.mock('@/app/uklad/bindings', () => ({
-    useSubscription: ([id]: [string]) => {
+    useRuntime: () => ({ dispatch: ([, view]: [string, 'graph' | 'table']) => {
+        planner.view = view;
+        planner.listeners.forEach(listener => listener());
+    } }),
+    useSubscription: function useSubscription([id]: [string]) {
+        const view = useSyncExternalStore(listener => { planner.listeners.add(listener); return () => { planner.listeners.delete(listener); }; }, () => planner.view);
+        if (id === appIds.subscriptions.PLANNER_ACTIVE_VIEW) return view;
         if (id === appIds.subscriptions.PLANNER_MODE) return planner.mode;
         if (id === appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING) return planner.warning;
         throw new Error(`Unexpected subscription: ${id}`);
@@ -23,6 +32,7 @@ vi.mock('./PlannerProductionTable', () => ({
 }));
 afterEach(() => {
     cleanup();
+    planner.view = 'graph';
     planner.mode = 'single';
     planner.warning = null;
 });

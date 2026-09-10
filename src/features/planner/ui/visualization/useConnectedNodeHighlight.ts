@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Edge, Node } from '@xyflow/react';
+import type { Edge, Node, OnNodeDrag } from '@xyflow/react';
 
 const HIGHLIGHT_COLOR = '#f59e0b';
 const DIMMED_OPACITY = 0.35;
@@ -11,8 +11,8 @@ interface ConnectedNodeHighlightResult {
     pinnedNodeId: string | null;
     toggleNodePin: (nodeId: string) => void;
     resetHighlight: () => void;
-    onNodeDragStart: (event: MouseEvent | TouchEvent, node: Node, nodes: Node[]) => void;
-    onNodeDragStop: (event: MouseEvent | TouchEvent, node: Node, nodes: Node[]) => void;
+    onNodeDragStart: OnNodeDrag;
+    onNodeDragStop: OnNodeDrag;
 }
 
 /**
@@ -121,8 +121,8 @@ export const useConnectedNodeHighlight = (
         });
     }, [edges, highlightedNodeId]);
 
-    const onNodeDragStart = useCallback(
-        (_event: MouseEvent | TouchEvent, node: Node) => {
+    const onNodeDragStart = useCallback<OnNodeDrag>(
+        (_event, node) => {
             if (enabled) {
                 setActiveNodeId(node.id);
             }
@@ -130,7 +130,7 @@ export const useConnectedNodeHighlight = (
         [enabled],
     );
 
-    const onNodeDragStop = useCallback(
+    const onNodeDragStop = useCallback<OnNodeDrag>(
         () => {
             setActiveNodeId(null);
         },

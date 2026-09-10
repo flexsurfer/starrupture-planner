@@ -152,7 +152,67 @@ afterAll(() => {
 });
 
 describe('headless application E2E', () => {
-    it('switches global planner modes, blocks overlapping targets, and removes targets', async () => {
+    it('creates named tabs, isolates their settings, and deletes only the chosen tab', async () => {
+        const scenario = await createSeededScenario();
+        const view = mountView(scenario, 'planner documents', {
+            tabs: [appIds.subscriptions.PLANNER_TABS],
+            active: [appIds.subscriptions.PLANNER_ACTIVE_TAB],
+            activeId: [appIds.subscriptions.PLANNER_ACTIVE_TAB_ID],
+            creation: [appIds.subscriptions.PLANNER_TAB_CREATION],
+            activeView: [appIds.subscriptions.PLANNER_ACTIVE_VIEW],
+        } as const);
+        expect(view.value('tabs')).toEqual([]);
+        expect(view.value('active')).toBeNull();
+        await dispatch(scenario, [appIds.events.PLANNER_REQUEST_TAB_CREATION]);
+        expect(view.value('creation')).toEqual({});
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'single', '   ', 'single']);
+        expect(view.value('tabs')).toEqual([]);
+        await dispatch(scenario, [appIds.events.PLANNER_CANCEL_TAB_CREATION]);
+        expect(view.value('creation')).toBeNull();
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'single', '  Iron plan  ', 'single']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_SELECTED_ITEM, 'iron-plate']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_TARGET_AMOUNT, 150]);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_SELECTED_CORPORATION_LEVEL, { corporationId: 'miners', level: 1 }]);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_ACTIVE_VIEW, 'table']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_FLOW_DIRECTION, 'BT']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_GROUP_BY_STAGE, true]);
+        const single = view.value('active');
+        expect(single).toMatchObject({ name: 'Iron plan', mode: 'single', targetAmount: 150, activeView: 'table' });
+        // Duplicate IDs and events belonging to the other mode cannot overwrite the tab.
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'single', 'Replacement', 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'copper-wire']);
+        expect(view.value('active')).toEqual(single);
+
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'multi', 'Shared production', 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'iron-plate', 90]);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_SELECTED_ITEM, 'steel-plate']);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_SELECTED_CORPORATION_LEVEL, { corporationId: 'miners', level: 1 }]);
+        expect(view.value('active')).toMatchObject({ mode: 'multi', selectedItemId: null, selectedCorporationLevel: null });
+        expect(view.value('activeView')).toBe('graph');
+        const multi = view.value('active');
+        await dispatch(scenario, [appIds.events.PLANNER_SELECT_TAB, 'single']);
+        expect(view.value('active')).toEqual(single);
+        await dispatch(scenario, [appIds.events.PLANNER_SELECT_TAB, 'missing']);
+        expect(view.value('activeId')).toBe('single');
+        await dispatch(scenario, [appIds.events.PLANNER_OPEN_ITEM, 'steel-plate']);
+        expect(view.value('creation')).toEqual({ itemId: 'steel-plate' });
+        expect(view.value('active')).toEqual(single);
+        await dispatch(scenario, [appIds.events.PLANNER_CANCEL_TAB_CREATION]);
+        await dispatch(scenario, [appIds.events.PLANNER_CLOSE_TAB, 'single']);
+        expect(view.value('active')).toEqual(multi);
+        expect(view.value('activeId')).toBe('multi');
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'third', 'Third plan', 'single']);
+        await dispatch(scenario, [appIds.events.PLANNER_CLOSE_TAB, 'multi']);
+        expect(view.value('activeId')).toBe('third');
+        await dispatch(scenario, [appIds.events.PLANNER_CLOSE_TAB, 'third']);
+        expect(view.value('tabs')).toEqual([]);
+        expect(view.value('activeId')).toBeNull();
+        expect(view.value('active')).toBeNull();
+    });
+
+    it('switches planner tabs, blocks overlapping targets, and removes targets', async () => {
         const scenario = await createSeededScenario();
         const view = mountView(scenario, 'global multi-target planner', {
             groupByStage: [appIds.subscriptions.PLANNER_GROUP_BY_STAGE],
@@ -167,7 +227,8 @@ describe('headless application E2E', () => {
             flow: [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
         } as const);
         await dispatch(scenario, [appIds.events.PLANNER_OPEN_ITEM, 'steel-plate']);
-        await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'single', 'Single plan', 'single']);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'multi', 'Multi plan', 'multi']);
         await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
         expect(view.value('activeIds')).toEqual(['iron-plate']);
         const originalFlow = view.value('flow');
@@ -197,10 +258,10 @@ describe('headless application E2E', () => {
         expect(view.value('multiRecipes')).toEqual({ 'iron-plate': 'smelter_mk2:0' });
         expect(view.value('singleRecipes')).toEqual({});
         expect(view.value('flow').nodes.find(node => node.outputItem === 'iron-plate')?.buildingCount).toBe(1);
-        await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'single']);
+        await dispatch(scenario, [appIds.events.PLANNER_SELECT_TAB, 'single']);
         expect(view.value('mode')).toBe('single');
         expect(view.value('activeIds')).toEqual(['steel-plate']);
-        await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_SELECT_TAB, 'multi']);
         await dispatch(scenario, [appIds.events.PLANNER_REMOVE_TARGET, 'iron-plate']);
         expect(view.value('flow').nodes).toEqual([]);
         expect(view.value('warning')).toBeNull();
@@ -231,7 +292,7 @@ describe('headless application E2E', () => {
                 stats: [appIds.subscriptions.PLANNER_STATS_SUMMARY],
             } as const);
             await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', independentData]);
-            await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+            await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'multi', 'Multi plan', 'multi']);
             await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
             await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'steel-plate', 'assembler:steel-direct']);
             await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
@@ -253,8 +314,8 @@ describe('headless application E2E', () => {
                 .toEqual(expect.arrayContaining([expect.objectContaining({ key: 'assembler:steel-replacement' })]));
             await dispatch(scenario, [appIds.events.PLANNER_DISMISS_TARGET_WARNING]);
             expect(view.value('warning')).not.toBeNull();
-            await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'single']);
-            await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+            await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'single', 'Single plan', 'single']);
+            await dispatch(scenario, [appIds.events.PLANNER_SELECT_TAB, 'multi']);
             expect(view.value('mode')).toBe('multi');
             expect(view.value('targets')).toEqual(targets);
             expect(view.value('flow').nodes).toEqual([]);
@@ -277,7 +338,7 @@ describe('headless application E2E', () => {
             warning: [appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING],
             flow: [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
         } as const);
-        await dispatch(scenario, [appIds.events.PLANNER_SET_MODE, 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'multi', 'Multi plan', 'multi']);
         await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
         const updatedData: AppVersionedGameData = structuredClone(TEST_GAME_DATA);
         updatedData.buildings = updatedData.buildings.filter(building => building.id !== 'assembler');
@@ -428,6 +489,7 @@ describe('headless application E2E', () => {
             { 'iron-plate': 'smelter:0' },
         ]);
         await dispatch(scenario, [appIds.events.PLANNER_OPEN_ITEM, 'iron-plate']);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'single', 'Single plan', 'single']);
         await dispatch(scenario, [
             appIds.events.PLANNER_SET_SELECTED_CORPORATION_LEVEL,
             { corporationId: 'miners', level: 1 },

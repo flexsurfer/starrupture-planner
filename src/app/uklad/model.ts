@@ -1,4 +1,4 @@
-import type { PlannerFlowDirection } from '@/features/planner/flow-graph';
+import type { PlannerFeatureState } from '@/features/planner/state';
 import type { DataVersion } from '@/features/app-shell/data-version';
 
 export interface RawCorporationData {
@@ -208,7 +208,7 @@ export interface CreateProductionPlanModalState {
     matchInputs: boolean;
 }
 
-export interface AppState {
+export interface AppState extends PlannerFeatureState {
     appDataVersion: DataVersion;
     appDataVersions: { id: DataVersion; label: string }[];
     /** Populated as versions are fetched from `/game-data/{version}/`. */
@@ -225,20 +225,6 @@ export interface AppState {
     /** True while a user-requested game-data fetch is in flight (not used for `APP_INIT` load). */
     uiGameDataLoadPending: boolean;
     uiActiveTab: TabType;
-    plannerMultiRecipeSelections: Record<string, string>;
-    plannerGroupByStage: boolean;
-    plannerFlowDirection: PlannerFlowDirection;
-    plannerMode: 'single' | 'multi';
-    plannerMultiTargets: { itemId: string; amount: number }[];
-    plannerTargetWarning: string | null;
-    plannerSelectedItemId: string | null;
-    plannerSelectedCorporationLevel: CorporationLevelSelection | null;
-    plannerRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
-    /** Persisted recipe-alternative defaults used to seed new plans and the planner. */
-    pinnedRecipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
-    /** Persisted, named recipe-alternative sets the user can save and reload. */
-    recipeAlternativePresets: RecipeAlternativePreset[];
-    plannerTargetAmount: number;
     basesList: Base[];
     energyGroups: EnergyGroup[];
     basesCardCollapsedSections: Record<string, BaseCardCollapsedSections>;

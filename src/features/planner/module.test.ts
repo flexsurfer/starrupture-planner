@@ -34,6 +34,7 @@ describe('planner Uklad module', () => {
         });
         try {
             harness.dispatchSync([appIds.events.PLANNER_OPEN_ITEM, 'product']);
+            harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'single', 'Single plan', 'single']);
             const rates = () => Object.fromEntries(
                 [...harness.getSubscriptionValue([appIds.subscriptions.PLANNER_STATS_DETAILED]).itemsByType.values()]
                     .flat().map(item => [item.id, item.requiredRate]),
@@ -76,6 +77,7 @@ describe('planner Uklad module', () => {
         });
 
         harness.dispatchSync([appIds.events.PLANNER_OPEN_ITEM, 'iron-plate']);
+        harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'single', 'Single plan', 'single']);
 
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_SELECTED_ITEM_ID])).toBe('iron-plate');
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_TARGET_AMOUNT])).toBe(45);
