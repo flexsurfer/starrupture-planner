@@ -4,6 +4,7 @@ import { Position } from '@xyflow/react';
 import type { Edge, Node } from '@xyflow/react';
 import type { FlowEdge, FlowNode, Item } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
+import { getItemColor } from './item-color';
 
 export type PlannerFlowDirection = 'LR' | 'RL' | 'TB' | 'BT';
 
@@ -16,18 +17,6 @@ export interface PlannerFlowGraph {
     nodes: PlannerFlowGraphNode[];
     edges: Edge[];
     items: Item[];
-}
-
-function getItemColor(itemId: string, items: Item[]): string {
-    const item = items.find((candidate) => candidate.id === itemId);
-    const colors = {
-        raw: '#3b82f6',
-        processed: '#8b5cf6',
-        component: '#06d6a0',
-        ammo: '#f59e0b',
-        final: '#10b981',
-    } as const;
-    return item ? (colors[item.type as keyof typeof colors] || '#6b7280') : '#6b7280';
 }
 
 /**

@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
+import { getItemColor } from '@/features/planner/item-color';
 import { NodeCard } from './NodeCard';
 
 export const PlannerProductionTable = () => {
@@ -37,7 +38,7 @@ export const PlannerProductionTable = () => {
                                             key={`${node.nodeType}:${node.buildingId}:${node.recipeIndex}:${node.outputItem}:${node.baseBuildingId ?? ''}`}
                                             className={`relative flex h-full flex-col rounded-md border bg-base-200 ${group.type === 'target' ? 'border-primary' : 'border-base-300'}`}
                                         >
-                                            <NodeCard onSelectRecipe={onSelectRecipe} node={node} items={items} outputColor="var(--color-success)" />
+                                            <NodeCard onSelectRecipe={onSelectRecipe} node={node} items={items} outputColor={getItemColor(node.outputItem, items)} />
                                         </div>
                                     ))}
                                 </div>
