@@ -1,5 +1,5 @@
 import { createUkladInspector } from '@ukladjs/core/devtools';
-import { enableDevtools, type UkladInspector } from '@ukladjs/devtools';
+import { enableDevtools } from '@ukladjs/devtools';
 import { localStorageAdapter, persist } from '@ukladjs/persist';
 import { registerWebApplication } from '@/app/uklad/register';
 import { createAppRuntime } from '@/app/uklad/runtime';
@@ -23,8 +23,7 @@ const persistence = persist(runtime, {
 persistence.hydrate();
 
 if (import.meta.env.DEV) {
-        // Core 0.2.4 added subscription kind "external"; published @ukladjs/devtools@0.2.0 types still omit it.
-        enableDevtools(createUkladInspector(runtime) as unknown as UkladInspector, {
+    enableDevtools(createUkladInspector(runtime), {
         operations: { evidence: { stateChanges: 'patches' } },
     });
 }

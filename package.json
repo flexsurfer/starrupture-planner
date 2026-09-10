@@ -51,7 +51,7 @@
     "@types/node": "^26.2.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@ukladjs/devtools": "^0.2.0",
+    "@ukladjs/devtools": "^0.2.1",
     "@vitejs/plugin-react": "^4.6.0",
     "@vitest/coverage-v8": "^3.2.6",
     "@vitest/ui": "^3.2.6",

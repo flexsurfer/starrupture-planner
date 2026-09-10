@@ -1,5 +1,5 @@
 import { createUkladInspector } from '@ukladjs/core/devtools';
-import { enableDevtools, type UkladInspector } from '@ukladjs/devtools';
+import { enableDevtools } from '@ukladjs/devtools';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerHeadlessApplication } from '@/platform/headless/register';
@@ -12,8 +12,7 @@ export const runtime = createAppRuntime({
 
 registerHeadlessApplication(runtime);
 
-// Core 0.2.4 added subscription kind "external"; published @ukladjs/devtools@0.2.0 types still omit it.
-enableDevtools(createUkladInspector(runtime) as unknown as UkladInspector, {
+enableDevtools(createUkladInspector(runtime), {
     effectMode: 'safe',
     effects: {
         [appIds.effects.setTheme]: 'no-op',
