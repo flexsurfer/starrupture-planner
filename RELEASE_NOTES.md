@@ -1,3 +1,35 @@
+# Release Notes — 2026-09-10
+
+## What's New
+
+### 📑 Multiple Planner Tabs
+- Keep several plans open and switch between them without losing your setup.
+- Each tab has its own production targets, recipe selections, and view settings.
+- Planner tabs and the active tab are saved across sessions.
+
+### 🎯 Multi-Target Production Planning
+- Plan several output items together, each with its own target rate.
+- Combine shared ingredient demand into one production chain to calculate the capacity needed across all targets.
+- Receive conflict warnings when a target depends on another target, including when changing recipes would introduce a conflict.
+
+### 📊 Production Views and Statistics
+- Switch between **Graph** and **Table** views, with production cards grouped by item category in the table.
+- Choose any of four diagram directions and optionally group nodes by production stage.
+- See capacity usage on production cards, including the percentage used and required versus available output per minute.
+- Explore separate **Buildings** and **Items** statistics tabs, including total ingredient demand per minute.
+
+### 🧭 Diagram and Recipe Improvements
+- Highlight connected production paths while dragging a node, or pin a node to keep its connections highlighted.
+- Zoom out further to inspect large production chains.
+- Inspect and select recipes directly from production cards in the planner and embedded production-plan diagrams.
+- Improved recipe previews, keyboard controls, and mobile layouts for recipe alternatives and presets.
+- Refined navigation and planner layouts for smaller screens.
+
+### 🎮 Game Data Corrections
+- Updated **Update 2 QoL** output rates for Onboard Instruments, Titanium Housing, Supermagnet, Nanosyringe, and Hardening Agent.
+
+---
+
 # Release Notes — 2026-09-04
 
 ## What's New
