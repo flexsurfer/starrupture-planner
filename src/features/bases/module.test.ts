@@ -5,6 +5,30 @@ import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerBasesModule } from './module';
 
 describe('bases Uklad module', () => {
+    it('shares the details preference across bases and tabs, expanded by default', () => {
+        const runtime = createAppRuntime();
+        runtime.registerModule(registerBasesModule);
+        const harness = createUkladTestHarness(runtime);
+        const expanded = () => harness.getSubscriptionValue([appIds.subscriptions.BASES_DETAILS_EXPANDED]);
+
+        expect(expanded()).toBe(true);
+        harness.dispatchSync([appIds.events.BASES_CREATE_BASE, 'First']);
+        const firstId = harness.getState().basesSelectedBaseId!;
+        harness.dispatchSync([appIds.events.BASES_SET_DETAILS_EXPANDED, false]);
+        harness.dispatchSync([appIds.events.BASES_CREATE_BASE, 'Second']);
+        expect(expanded()).toBe(false);
+        harness.dispatchSync([appIds.events.BASES_OPEN_BASE, firstId, 'plans']);
+        expect(expanded()).toBe(false);
+        harness.dispatchSync([appIds.events.BASES_SET_DETAIL_TAB, 'buildings']);
+        expect(expanded()).toBe(false);
+        harness.dispatchSync([appIds.events.BASES_SET_SELECTED_BASE, null]);
+        harness.dispatchSync([appIds.events.BASES_OPEN_BASE, firstId]);
+        expect(expanded()).toBe(false);
+        harness.dispatchSync([appIds.events.BASES_SET_DETAILS_EXPANDED, true]);
+        expect(expanded()).toBe(true);
+        runtime.dispose();
+    });
+
     it('owns base selection, editing, and collapsed-card state', () => {
         const runtime = createAppRuntime();
         runtime.registerModule(registerBasesModule);

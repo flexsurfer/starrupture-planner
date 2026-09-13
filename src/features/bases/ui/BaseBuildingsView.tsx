@@ -54,7 +54,7 @@ export const BaseBuildingsView: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4 lg:space-y-6">
+      <div className="space-y-3 sm:space-y-4">
         <BuildingSection
           title="Inputs"
           description="Buildings that extract resources or receive packages from other bases."

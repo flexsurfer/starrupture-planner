@@ -15,5 +15,7 @@ export const RecipeAlternativesSelector: React.FC = () => {
         onApplySelections={(selections) => {
             runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, selections]);
         }}
+        showChevron
+        panelMaxHeightClass="max-h-[65vh]"
     />;
 };

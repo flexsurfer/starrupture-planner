@@ -1,52 +1,35 @@
 import { appIds } from '@/app/uklad/catalog';
-import React from 'react';
-import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import { PlanProductionCard } from '@/features/production-plans/ui';
-import { MaterialBalanceCard } from './components/MaterialBalanceCard';
-import { BuildingCoverageCard } from './components/BuildingCoverageCard';
+import { useSubscription } from '@/app/uklad/bindings';
+import { BaseProductionCard } from './components/BaseProductionCard';
+import { getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
 
 export const BaseOverviewView: React.FC = () => {
-  const runtime = useRuntime();
   const selectedBaseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
-  const planRows = useSubscription([appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS]);
-  const materialBalanceRows = useSubscription([appIds.subscriptions.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS]);
-  const buildingCoverageRows = useSubscription([appIds.subscriptions.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS]);
+  const table = useSubscription([appIds.subscriptions.BASES_PRODUCTION_TABLE]);
 
   if (!selectedBaseId) {
     return null;
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
-      <div className="card border border-base-300 bg-base-100 shadow-sm">
-        <div className="card-body gap-4">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm text-base-content/65"
-              onClick={() => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN])}
-            >
-              Add Plan
-            </button>
-          </div>
-
-          {planRows.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-base-300 bg-base-200/40 px-4 py-5 text-sm text-base-content/70">
-              No production plans yet.
-            </div>
-          ) : (
-            <div className="grid gap-3 lg:grid-cols-2">
-              {planRows.map((plan) => (
-                <PlanProductionCard key={plan.id} plan={plan} baseId={selectedBaseId} />
-              ))}
-            </div>
-          )}
+    <div>
+      {table.groups.length === 0 ? <p className="rounded-lg border border-base-300 bg-base-100 p-4 text-sm text-base-content/60">No production plans yet. Add a plan to see its production chain and requirements.</p> : (
+        <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100">
+          <table className="w-full table-fixed">
+            <caption className="sr-only">Base production cards ordered by target and item category</caption>
+            {table.groups.map(group => <tbody key={group.type} className="border-b border-base-300 last:border-b-0">
+              <tr><th scope="rowgroup" className="bg-base-200 px-2 py-1.5 text-left text-xs font-medium text-base-content/75 sm:px-3 sm:py-2 sm:text-sm">
+                {group.type === 'target' ? 'Targets' : group.type === 'launcher' ? 'Delivery' : getCategoryDisplayName(group.type)}
+              </th></tr>
+              <tr><td className="p-2 sm:p-3">
+                <div className="grid grid-cols-2 items-start gap-x-2 gap-y-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] sm:gap-3">
+                  {group.cards.map(card => <BaseProductionCard key={card.id} card={card} baseId={selectedBaseId} target={group.type === 'target'} />)}
+                </div>
+              </td></tr>
+            </tbody>)}
+          </table>
         </div>
-      </div>
-
-      <MaterialBalanceCard plans={planRows} rows={materialBalanceRows} />
-
-      <BuildingCoverageCard baseId={selectedBaseId} plans={planRows} rows={buildingCoverageRows} />
+      )}
     </div>
   );
 };

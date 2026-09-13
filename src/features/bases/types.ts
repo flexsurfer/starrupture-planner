@@ -6,6 +6,7 @@
 
 import type { BaseBuilding, BaseDetailTab as DbBaseDetailTab, Building, Item, Production } from '@/app/uklad/model';
 import type { LinkedOutputStatus } from '../../utils/productionPlanInputs';
+import type { FlowNode } from '@/features/planner/types';
 
 /**
  * Section types for categorizing buildings in a base.
@@ -262,6 +263,15 @@ export interface PlanSummaryRow {
   corporationLabel: string;
 }
 
+/** A plan's contribution to one material or building requirement. */
+export interface CoveragePlanDemand {
+  planId: string;
+  name: string;
+  status: PlanSummaryRow['status'];
+  targetItem: Item | null;
+  amount: number;
+}
+
 /**
  * Per-item material balance across all plans in a base.
  */
@@ -269,6 +279,7 @@ export interface MaterialBalanceRow {
   itemId: string;
   item: Item;
   perPlan: Record<string, number>;
+  planDemands: CoveragePlanDemand[];
   totalRequired: number;
   covered: number;
   available: number;
@@ -326,8 +337,40 @@ export interface BuildingCoverageRow {
   buildingId: string;
   building: Building;
   perPlan: Record<string, number>;
+  planDemands: CoveragePlanDemand[];
   totalRequired: number;
   covered: number;
   owned: number;
   missing: number;
+}
+
+/** Local item capacity or input supply, allocated across plans without counting it twice. */
+export interface ProductionItemCoverage {
+  required: number;
+  covered: number;
+  planDemands: (CoveragePlanDemand & { covered: number })[];
+}
+
+/** Recipe totals keep each plan's whole-building requirement before aggregation. */
+export interface BaseProductionRecipeCard {
+  kind: 'recipe';
+  id: string;
+  item: Item;
+  node: FlowNode;
+  rate: number;
+  targetRate: number;
+  requiredBuildings: number;
+  coverage: BuildingCoverageRow | null;
+  itemCoverage: ProductionItemCoverage;
+}
+
+export type BaseProductionTableCard = BaseProductionRecipeCard
+  | { kind: 'input'; id: string; item: Item; balance: MaterialBalanceRow; itemCoverage: ProductionItemCoverage }
+  | { kind: 'unavailable'; id: string; item: Item; rate: number; itemCoverage: ProductionItemCoverage };
+
+export interface BaseProductionTable {
+  groups: { type: string; cards: BaseProductionTableCard[] }[];
+  requiredBuildings: number;
+  missingBuildings: number;
+  missingMaterials: number;
 }

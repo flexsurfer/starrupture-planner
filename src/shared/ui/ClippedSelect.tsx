@@ -4,7 +4,9 @@ interface ClippedSelectProps {
   value: string;
   displayValue: string;
   title: string;
+  ariaLabel?: string;
   size?: 'xs' | 'sm';
+  tone?: 'default' | 'muted';
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   children: React.ReactNode;
 }
@@ -18,12 +20,17 @@ export const ClippedSelect: React.FC<ClippedSelectProps> = ({
   value,
   displayValue,
   title,
+  ariaLabel,
   size = 'xs',
+  tone = 'default',
   onChange,
   children,
 }) => {
   const heightClass = size === 'sm' ? 'h-8' : 'h-7';
   const textClass = size === 'sm' ? 'text-sm' : 'text-xs';
+  const emphasisClass = tone === 'muted'
+    ? 'text-xs font-normal text-base-content/70'
+    : `${textClass} font-medium text-base-content/90`;
 
   return (
     <div className="relative min-w-0 w-0 max-w-full flex-1">
@@ -32,11 +39,12 @@ export const ClippedSelect: React.FC<ClippedSelectProps> = ({
         value={value}
         onChange={onChange}
         title={title}
+        aria-label={ariaLabel}
       >
         {children}
       </select>
       <div
-        className={`pointer-events-none flex ${heightClass} w-full items-center rounded-md border border-base-300 bg-base-200/55 px-2.5 pr-7 ${textClass} font-medium text-base-content/90 shadow-inner shadow-base-300/20 transition-colors peer-focus-visible:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/20`}
+        className={`pointer-events-none flex ${heightClass} w-full items-center rounded-md border border-base-300 bg-base-200/55 px-2.5 pr-7 ${emphasisClass} shadow-inner shadow-base-300/20 transition-colors peer-focus-visible:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/20`}
       >
         <span className="block max-w-full truncate">
           {displayValue}

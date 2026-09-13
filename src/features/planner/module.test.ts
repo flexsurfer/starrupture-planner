@@ -5,6 +5,7 @@ import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerBuildingsModule } from '@/features/buildings/module';
 import { registerItemsModule } from '@/features/items/module';
 import { registerPlannerModule } from './module';
+import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '@/constants/buildingIds';
 
 describe('planner Uklad module', () => {
     it('totals shared ingredient demand and scales item rates with the target', () => {
@@ -30,7 +31,7 @@ describe('planner Uklad module', () => {
                         { id: 'ore', amount_per_minute: 5 },
                     ] },
                 ],
-            }],
+            }, { id: ORBITAL_CARGO_LAUNCHER_BUILDING_ID, name: 'Orbital Cargo Launcher' }],
         });
         try {
             harness.dispatchSync([appIds.events.PLANNER_OPEN_ITEM, 'product']);
@@ -49,6 +50,9 @@ describe('planner Uklad module', () => {
                 ]);
             harness.dispatchSync([appIds.events.PLANNER_SET_TARGET_AMOUNT, 25]);
             expect(rates()).toEqual({ ore: 87.5, plate: 50, product: 25 });
+            harness.dispatchSync([appIds.events.PLANNER_SET_SELECTED_CORPORATION_LEVEL, { corporationId: 'corp', level: 1 }]);
+            expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_STATS_DETAILED]).productionGroups.map(group => group.type))
+                .toEqual(['launcher', 'target', 'processed', 'raw']);
         } finally {
             runtime.dispose();
         }

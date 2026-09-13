@@ -8,6 +8,7 @@ import type {
     BuildingCoverageRow,
     BuildingSectionBuilding,
     BuildingSectionStats,
+    CoveragePlanDemand,
     MaterialBalanceRow,
     MyBasesStats,
     PlanSummaryRow,
@@ -20,6 +21,13 @@ import { getFlowInputBuildings, resolveInputBuilding, resolveLinkedOutput } from
 import { resolveOutputBuilding } from '@/utils/planOutputAllocations';
 import type { LinkedOutputStatus } from '@/utils/productionPlanInputs';
 import { buildProductionFlow } from '@/features/planner/production-flow';
+import { buildBaseProductionTable } from './production-table';
+
+function getPlanDemands(perPlan: Record<string, number>, plans: PlanSummaryRow[]): CoveragePlanDemand[] {
+    return plans.flatMap((plan) => perPlan[plan.id] > 0 ? [{
+        planId: plan.id, name: plan.name, status: plan.status, targetItem: plan.targetItem, amount: perPlan[plan.id],
+    }] : []);
+}
 
 interface ConfiguredSectionItem {
     baseBuildingId: string;
@@ -135,6 +143,10 @@ function comparePlanSummaryRows(left: PlanSummaryRow, right: PlanSummaryRow): nu
 }
 
 export const registerBasesDerivedSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regSub(appIds.subscriptions.BASES_PRODUCTION_TABLE,
+        () => [[appIds.subscriptions.BASES_SELECTED_BASE], [appIds.subscriptions.BASES_LIST], [appIds.subscriptions.BUILDINGS_LIST], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS], [appIds.subscriptions.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS]],
+        ([base, bases, buildings, itemsById, plans, materials], ..._params) => (void _params, buildBaseProductionTable(base, bases, buildings, itemsById, plans, materials)));
+
     registrar.regSub(appIds.subscriptions.BASES_SELECTED_BASE_DETAIL_STATS,
         () => [[appIds.subscriptions.BASES_SELECTED_BASE], [appIds.subscriptions.BUILDINGS_BY_ID_MAP], [appIds.subscriptions.ENERGY_GROUPS_BY_ID_MAP], [appIds.subscriptions.BASES_LIST]],
         ([base, buildingsById, groupsById, bases], ..._params) => (void _params, base ? calculateBaseDetailStats(base, buildingsById, groupsById, bases) : null));
@@ -315,8 +327,8 @@ export const registerBasesDerivedSubscriptions: UkladModule<UkladRegistrar<AppCo
         });
 
     registrar.regSub(appIds.subscriptions.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS,
-        () => [[appIds.subscriptions.BASES_SELECTED_BASE], [appIds.subscriptions.BASES_LIST], [appIds.subscriptions.BUILDINGS_LIST], [appIds.subscriptions.ITEMS_BY_ID_MAP]],
-        ([base, bases, buildings, itemsById], ..._params) => {
+        () => [[appIds.subscriptions.BASES_SELECTED_BASE], [appIds.subscriptions.BASES_LIST], [appIds.subscriptions.BUILDINGS_LIST], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS]],
+        ([base, bases, buildings, itemsById, plans], ..._params) => {
             void _params;
             if (!base) return [];
             const coverage = new Map<string, number>();
@@ -328,7 +340,7 @@ export const registerBasesDerivedSubscriptions: UkladModule<UkladRegistrar<AppCo
                     coverage.set(resolved.selectedItemId, (coverage.get(resolved.selectedItemId) || 0) + resolved.ratePerMinute);
                 }
             }
-            const rows = new Map<string, MaterialBalanceRow>();
+            const rows = new Map<string, Omit<MaterialBalanceRow, 'planDemands'>>();
             const rawKeys = new Set<string>();
             const add = (planId: string, itemId: string, required: number) => {
                 const existing = rows.get(itemId);
@@ -349,19 +361,19 @@ export const registerBasesDerivedSubscriptions: UkladModule<UkladRegistrar<AppCo
             for (const [itemId, available] of coverage) if (!rows.has(itemId)) rows.set(itemId, { itemId, item: itemsById[itemId] || { id: itemId, name: itemId, type: 'unknown' }, perPlan: {}, totalRequired: 0, covered: 0, available, missing: 0 });
             return Array.from(rows.values()).map((row) => {
                 const available = coverage.get(row.itemId) || 0;
-                return { ...row, available, covered: Math.min(row.totalRequired, available), missing: Math.max(0, row.totalRequired - available) };
+                return { ...row, planDemands: getPlanDemands(row.perPlan, plans), available, covered: Math.min(row.totalRequired, available), missing: Math.max(0, row.totalRequired - available) };
             }).sort((left, right) => right.missing - left.missing || right.totalRequired - left.totalRequired || left.item.name.localeCompare(right.item.name));
         });
 
     registrar.regSub(appIds.subscriptions.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS,
-        () => [[appIds.subscriptions.BASES_SELECTED_BASE], [appIds.subscriptions.BUILDINGS_LIST]],
-        ([base, buildings], ..._params) => {
+        () => [[appIds.subscriptions.BASES_SELECTED_BASE], [appIds.subscriptions.BUILDINGS_LIST], [appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS]],
+        ([base, buildings, plans], ..._params) => {
             void _params;
             if (!base || base.productions.length === 0) return [];
             const owned = new Map<string, number>();
             for (const building of base.buildings) if (building.sectionType === 'production') owned.set(building.buildingTypeId, (owned.get(building.buildingTypeId) || 0) + 1);
             const byId = new Map(buildings.map((building) => [building.id, building]));
-            const rows = new Map<string, BuildingCoverageRow>();
+            const rows = new Map<string, Omit<BuildingCoverageRow, 'planDemands'>>();
             for (const plan of base.productions) for (const requirement of plan.requiredBuildings || []) {
                 const building = byId.get(requirement.buildingId);
                 if (!building || !isBuildingAvailableForSection(building, 'production')) continue;
@@ -371,7 +383,7 @@ export const registerBasesDerivedSubscriptions: UkladModule<UkladRegistrar<AppCo
             }
             return Array.from(rows.values()).map((row) => {
                 const count = owned.get(row.buildingId) || 0;
-                return { ...row, owned: count, covered: Math.min(row.totalRequired, count), missing: Math.max(0, row.totalRequired - count) };
-            }).sort((left, right) => right.totalRequired - left.totalRequired);
+                return { ...row, planDemands: getPlanDemands(row.perPlan, plans), owned: count, covered: Math.min(row.totalRequired, count), missing: Math.max(0, row.totalRequired - count) };
+            }).sort((left, right) => right.missing - left.missing || right.totalRequired - left.totalRequired);
         });
 };

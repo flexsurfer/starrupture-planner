@@ -9,12 +9,14 @@ import {
     useNodesState,
     useEdgesState,
     useReactFlow,
+    useStore,
     ReactFlowProvider
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { useSubscription } from '@/app/uklad/bindings';
 import type { ProductionFlowResult } from '@/features/planner/types';
+import type { PlannerFlowDirection } from '@/features/planner/flow-graph';
 import { generateReactFlowData } from '@/features/planner/ui/visualization';
 import { ProductionFlowEdge } from '@/features/planner/ui/visualization/ProductionFlowEdge';
 import { usePinnableNodeHighlight } from '@/features/planner/ui/visualization/usePinnableNodeHighlight';
@@ -27,6 +29,10 @@ interface EmbeddedFlowDiagramInnerProps {
     /** Pre-computed production flow result from a subscription */
     productionFlow: ProductionFlowResult;
     interactive?: boolean;
+    nodesDraggable?: boolean;
+    zoomOnScroll?: boolean;
+    direction?: PlannerFlowDirection;
+    targetItemId?: string;
     onSelectRecipe?: (itemId: string, recipeKey: string) => void;
 }
 
@@ -36,9 +42,15 @@ interface EmbeddedFlowDiagramInnerProps {
 const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     productionFlow,
     interactive = true,
+    nodesDraggable = interactive,
+    zoomOnScroll = interactive,
+    direction = 'LR',
+    targetItemId,
     onSelectRecipe,
 }) => {
     const { fitView } = useReactFlow();
+    const width = useStore(state => state.width);
+    const height = useStore(state => state.height);
 
     // State subscriptions for rendering
     const theme = useSubscription([appIds.subscriptions.UI_THEME]);
@@ -55,8 +67,10 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
             flowEdges: productionFlow.edges,
             items,
             onSelectRecipe,
+            direction,
+            targetItemId,
         });
-    }, [productionFlow, items, onSelectRecipe]);
+    }, [productionFlow, items, onSelectRecipe, direction, targetItemId]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -91,10 +105,10 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
             } 
         }, 10);
         return () => clearTimeout(timer);
-    }, [productionFlow, nodes.length, fitView]);
+    }, [productionFlow, nodes.length, fitView, direction, width, height]);
 
     return (
-        <div className={`w-full h-full min-h-[300px] ${!interactive ? 'pointer-events-none' : ''}`}>
+        <div className={`w-full h-full min-h-0 ${!interactive ? 'pointer-events-none' : ''}`}>
             <ReactFlow
                 nodes={highlightedNodes}
                 edges={highlightedEdges}
@@ -110,10 +124,11 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
                 onNodeDragStart={interactive ? onNodeDragStart : undefined}
                 onNodeDragStop={interactive ? onNodeDragStop : undefined}
                 panOnDrag={interactive}
-                zoomOnScroll={interactive}
+                zoomOnScroll={interactive && zoomOnScroll}
+                preventScrolling={interactive && zoomOnScroll}
                 zoomOnPinch={interactive}
                 zoomOnDoubleClick={interactive}
-                nodesDraggable={interactive}
+                nodesDraggable={interactive && nodesDraggable}
                 nodesConnectable={false}
                 elementsSelectable={interactive}
             >
@@ -129,6 +144,10 @@ interface EmbeddedFlowDiagramProps {
     productionFlow: ProductionFlowResult;
     className?: string;
     interactive?: boolean;
+    nodesDraggable?: boolean;
+    zoomOnScroll?: boolean;
+    direction?: PlannerFlowDirection;
+    targetItemId?: string;
     onSelectRecipe?: (itemId: string, recipeKey: string) => void;
 }
 
@@ -141,6 +160,10 @@ export const EmbeddedFlowDiagram: React.FC<EmbeddedFlowDiagramProps> = ({
     productionFlow,
     className = '',
     interactive = true,
+    nodesDraggable,
+    zoomOnScroll,
+    direction,
+    targetItemId,
     onSelectRecipe,
 }) => {
     return (
@@ -149,6 +172,10 @@ export const EmbeddedFlowDiagram: React.FC<EmbeddedFlowDiagramProps> = ({
                 <EmbeddedFlowDiagramInner
                     productionFlow={productionFlow}
                     interactive={interactive}
+                    nodesDraggable={nodesDraggable}
+                    zoomOnScroll={zoomOnScroll}
+                    direction={direction}
+                    targetItemId={targetItemId}
                     onSelectRecipe={onSelectRecipe}
                 />
             </ReactFlowProvider>

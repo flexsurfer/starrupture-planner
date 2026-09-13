@@ -8,6 +8,7 @@ import { normalizeRecipePresets } from './legacy-storage/recipe-presets-storage'
 
 /** Durable roots and their boundary validation for Uklad persistence. */
 export const PERSIST_KEYS = [
+    { key: stateKeys.basesDetailsExpanded, deserialize: (value: unknown) => typeof value === 'boolean' ? value : true },
     { key: stateKeys.plannerTabs, deserialize: normalizePlannerTabs },
     { key: stateKeys.plannerActiveTabId, deserialize: normalizePlannerActiveTabId },
     'uiTheme',

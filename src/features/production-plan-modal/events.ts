@@ -78,6 +78,74 @@ function computeUsedInputSnapshots(flow: ProductionFlowResult, inputBuildings: B
         : inputBuildings.filter((inputBuilding) => usedInputIdSet.has(inputBuilding.id));
 }
 
+/** Commit valid edits to the persisted base without closing the editor. */
+function saveProductionPlan(draftState: AppState): void {
+    const modal = draftState.productionPlanModalState;
+    const { baseId, editSectionId, name, selectedItemId, targetAmount, selectedCorporationLevel } = modal;
+    if (!modal.isOpen || !baseId || !name.trim() || !selectedItemId || !Number.isFinite(targetAmount) || targetAmount <= 0) return;
+
+    const base = getBaseById(draftState.basesList, baseId);
+    if (!base) return;
+
+    const selectedInputBuildings = getSelectedFlowInputBuildings(base, modal.selectedInputIds || [], draftState.basesList);
+    const recipeSelections = sanitizeRecipeSelectionsForInputItems(modal.recipeSelections, selectedInputBuildings);
+    const flow = buildProductionFlow(
+        {
+            targetItemId: selectedItemId,
+            targetAmount: targetAmount > 0 ? targetAmount : 1,
+            inputBuildings: selectedInputBuildings,
+            rawProductionDisabled: true,
+            includeLauncher: selectedCorporationLevel !== null,
+            recipeSelections,
+        },
+        draftState.buildingsList,
+    );
+    const usedInputSnapshots = computeUsedInputSnapshots(flow, selectedInputBuildings).map((input) => ({ ...input }));
+    const requiredBuildings = computeRequiredBuildings(flow);
+
+    if (editSectionId) {
+        const section = base.productions.find((candidate) => candidate.id === editSectionId);
+        if (!section) return;
+
+        section.name = name.trim();
+        section.selectedItemId = selectedItemId;
+        section.targetAmount = targetAmount;
+        section.corporationLevel = selectedCorporationLevel;
+        section.inputs = usedInputSnapshots;
+        section.requiredBuildings = requiredBuildings;
+        section.recipeSelections = { ...recipeSelections };
+        return;
+    }
+
+    const newSection: Production = {
+        id: createProductionPlanId(),
+        name: name.trim(),
+        selectedItemId,
+        targetAmount,
+        active: false,
+        corporationLevel: selectedCorporationLevel,
+        inputs: usedInputSnapshots,
+        status: 'inactive',
+        requiredBuildings,
+        recipeSelections: { ...recipeSelections },
+    };
+    base.productions.push(newSection);
+    modal.editSectionId = newSection.id;
+}
+
+/** Include newly created inputs in the open plan in the same state transaction. */
+export function selectAddedProductionPlanInputs(draftState: AppState, baseId: string, inputIds: string[]): void {
+    const modal = draftState.productionPlanModalState;
+    if (!modal.isOpen || modal.baseId !== baseId || inputIds.length === 0) return;
+
+    modal.selectedInputIds.push(...inputIds.filter((id) => !modal.selectedInputIds.includes(id)));
+    const base = getBaseById(draftState.basesList, baseId);
+    const inputs = getSelectedFlowInputBuildings(base, modal.selectedInputIds, draftState.basesList);
+    modal.recipeSelections = sanitizeRecipeSelectionsForInputItems(modal.recipeSelections, inputs);
+    applyMatchInputs(draftState);
+    saveProductionPlan(draftState);
+}
+
 export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_CLOSE, ({ draftState }) => {
         draftState.productionPlanModalState = createProductionPlanModalFeatureState().productionPlanModalState;
@@ -85,16 +153,20 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_SET_NAME, ({ draftState }, name) => {
         draftState.productionPlanModalState.name = name;
+        saveProductionPlan(draftState as AppState);
     });
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, ({ draftState }, amount) => {
         if (!draftState.productionPlanModalState.matchInputs) {
             draftState.productionPlanModalState.targetAmount = amount;
+            saveProductionPlan(draftState as AppState);
         }
     });
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL, ({ draftState }, level) => {
         draftState.productionPlanModalState.selectedCorporationLevel = level;
+        applyMatchInputs(draftState as AppState);
+        saveProductionPlan(draftState as AppState);
     });
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_OPEN, ({ draftState }, editSectionId) => {
@@ -132,57 +204,9 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
             };
     });
 
+    // Keep explicit submit compatible with headless callers; edits already save in their event turn.
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_SUBMIT, ({ draftState }) => {
-        const modal = draftState.productionPlanModalState;
-        const { baseId, editSectionId, name, selectedItemId, targetAmount, selectedCorporationLevel } = modal;
-        if (!baseId || !name.trim() || !selectedItemId || targetAmount <= 0) return;
-
-        const base = getBaseById(draftState.basesList, baseId);
-        if (!base) return;
-
-        const selectedInputBuildings = getSelectedFlowInputBuildings(base, modal.selectedInputIds || [], draftState.basesList);
-        const recipeSelections = sanitizeRecipeSelectionsForInputItems(modal.recipeSelections, selectedInputBuildings);
-        const flow = buildProductionFlow(
-            {
-                targetItemId: selectedItemId,
-                targetAmount: targetAmount > 0 ? targetAmount : 1,
-                inputBuildings: selectedInputBuildings,
-                rawProductionDisabled: true,
-                includeLauncher: selectedCorporationLevel !== null,
-                recipeSelections,
-            },
-            draftState.buildingsList,
-        );
-        const usedInputSnapshots = computeUsedInputSnapshots(flow, selectedInputBuildings).map((input) => ({ ...input }));
-        const requiredBuildings = computeRequiredBuildings(flow);
-
-        if (editSectionId) {
-            const section = base.productions.find((candidate) => candidate.id === editSectionId);
-            if (!section) return;
-
-            section.name = name.trim();
-            section.selectedItemId = selectedItemId;
-            section.targetAmount = targetAmount;
-            section.corporationLevel = selectedCorporationLevel;
-            section.inputs = usedInputSnapshots;
-            section.requiredBuildings = requiredBuildings;
-            section.recipeSelections = { ...recipeSelections };
-            return;
-        }
-
-        const newSection: Production = {
-            id: createProductionPlanId(),
-            name: name.trim(),
-            selectedItemId,
-            targetAmount,
-            active: false,
-            corporationLevel: selectedCorporationLevel,
-            inputs: usedInputSnapshots,
-            status: 'inactive',
-            requiredBuildings,
-            recipeSelections: { ...recipeSelections },
-        };
-        base.productions.push(newSection);
+        saveProductionPlan(draftState as AppState);
     });
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, ({ draftState }, itemId) => {
@@ -192,9 +216,14 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
         modalState.recipeSelections = { ...draftState.pinnedRecipeSelections };
 
         if (itemId) {
+            if (!modalState.name.trim()) {
+                const itemName = draftState.itemsList.find((item) => item.id === itemId)?.name || itemId;
+                modalState.name = `${itemName} Production`;
+            }
             modalState.targetAmount = getSlowestOutputRateForItem(draftState.buildingsList, itemId);
             applyMatchInputs(draftState as AppState);
         }
+        saveProductionPlan(draftState as AppState);
     });
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, ({ draftState }, itemId, recipeKey) => {
@@ -216,6 +245,7 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
             delete modalState.recipeSelections[itemId];
         }
         applyMatchInputs(draftState as AppState);
+        saveProductionPlan(draftState as AppState);
     });
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS, ({ draftState }, selections) => {
@@ -224,11 +254,13 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
         const selectedInputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds || [], draftState.basesList);
         modalState.recipeSelections = sanitizeRecipeSelectionsForInputItems({ ...(selections || {}) }, selectedInputBuildings);
         applyMatchInputs(draftState as AppState);
+        saveProductionPlan(draftState as AppState);
     });
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, ({ draftState }, enabled) => {
         draftState.productionPlanModalState.matchInputs = enabled;
         if (enabled) applyMatchInputs(draftState as AppState);
+        saveProductionPlan(draftState as AppState);
     });
 
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftState }, baseBuildingId) => {
@@ -244,6 +276,7 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
         const selectedInputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds, draftState.basesList);
         modalState.recipeSelections = sanitizeRecipeSelectionsForInputItems(modalState.recipeSelections, selectedInputBuildings);
         applyMatchInputs(draftState as AppState);
+        saveProductionPlan(draftState as AppState);
     });
 
     registrar.regEvent(
@@ -300,6 +333,7 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
             const selectedInputBuildings = getSelectedFlowInputBuildings(targetBase, modalState.selectedInputIds, draftState.basesList);
             modalState.recipeSelections = sanitizeRecipeSelectionsForInputItems(modalState.recipeSelections, selectedInputBuildings);
             applyMatchInputs(draftState as AppState);
+            saveProductionPlan(draftState as AppState);
         },
     );
 };

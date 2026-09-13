@@ -19,9 +19,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onCreateBase }) => {
           You can create and manage multiple Bases to organize your production facilities.
         </p>
         <button
-          className="btn btn-primary btn-lg"
+          type="button"
+          className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 gap-1 px-2 text-xs"
           onClick={onCreateBase}
         >
+          <span aria-hidden="true">＋</span>
           Create Base
         </button>
       </div>

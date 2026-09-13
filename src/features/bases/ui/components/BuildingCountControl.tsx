@@ -7,6 +7,8 @@ interface BuildingCountControlProps {
   onChange: (nextValue: number) => void;
   min?: number;
   max?: number;
+  compact?: boolean;
+  cardLayout?: boolean;
 }
 
 export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
@@ -15,9 +17,18 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
   onChange,
   min = 0,
   max = MAX_BULK_BUILDING_COUNT,
+  compact = false,
+  cardLayout = false,
 }) => {
   const [draftOverride, setDraftOverride] = useState<string | null>(null);
   const [pendingCommittedValue, setPendingCommittedValue] = useState<number | null>(null);
+  const [previousValue, setPreviousValue] = useState(value);
+  // Other cards can edit the same building type. Discard a draft when its source changes.
+  if (previousValue !== value) {
+    setPreviousValue(value);
+    setDraftOverride(null);
+    setPendingCommittedValue(null);
+  }
 
   const sanitizeValue = useCallback((nextValue: number) => {
     return Math.min(max, Math.max(min, sanitizeBuildingCount(nextValue)));
@@ -66,15 +77,25 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
     }
   }, [onChange, parsedDraftValue, sanitizeValue, value]);
 
+  const stepClass = cardLayout
+    ? 'btn-sm h-8 min-h-8 p-0 font-normal text-base-content/65'
+    : compact ? 'join-item btn-sm h-8 min-h-8 w-8 p-0 font-normal text-base-content/65' : 'join-item btn-xs';
+  const inputClass = cardLayout
+    ? 'input-sm h-8 w-full min-w-0 rounded-none px-0 text-xs text-base-content/80'
+    : `join-item w-16 ${compact ? 'input-sm h-8 px-1 text-base-content/80' : 'input-xs'}`;
+  const saveClass = cardLayout
+    ? `btn-sm col-span-3 mt-1 h-8 min-h-8 ${canSave ? '' : 'hidden'}`
+    : `join-item w-8 ${compact ? 'btn-sm h-8 min-h-8' : 'btn-xs'} ${canSave ? '' : 'invisible pointer-events-none'}`;
+
   return (
-    <div className="join">
-      <div
+    <div className={cardLayout ? 'grid w-full min-w-0 grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] sm:grid-cols-[2rem_minmax(0,1fr)_2rem]' : 'join shrink-0'}>
+      {!compact && !cardLayout && <div
         aria-hidden="true"
         className="join-item w-8 invisible pointer-events-none"
-      />
+      />}
       <button
         type="button"
-        className="btn btn-xs join-item"
+        className={`btn ${stepClass} ${cardLayout ? 'rounded-r-none' : ''}`}
         onClick={() => {
           adjustValue(-1);
         }}
@@ -85,7 +106,7 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
       </button>
       <input
         aria-label={ariaLabel}
-        className={`input input-bordered input-xs join-item w-16 text-center font-mono ${hasInvalidDraft ? 'input-error' : ''}`}
+        className={`input input-bordered text-center font-mono ${inputClass} ${hasInvalidDraft ? 'input-error' : ''}`}
         inputMode="numeric"
         value={draftValue}
         onChange={(event) => {
@@ -103,7 +124,7 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
       />
       <button
         type="button"
-        className="btn btn-xs join-item"
+        className={`btn ${stepClass} ${cardLayout ? 'rounded-l-none' : ''}`}
         onClick={() => {
           adjustValue(1);
         }}
@@ -114,7 +135,7 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
       </button>
       <button
         type="button"
-        className={`btn btn-primary btn-xs join-item w-8 px-0 ${canSave ? '' : 'invisible pointer-events-none'}`}
+        className={`btn btn-primary px-0 ${saveClass}`}
         onClick={commitDraftValue}
         aria-label={`Save ${ariaLabel}`}
         tabIndex={canSave ? 0 : -1}

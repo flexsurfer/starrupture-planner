@@ -8,11 +8,20 @@ interface PlannerTargetInputProps {
 /**
  * Target amount input for the production planner
  */
-export const PlannerTargetInput: React.FC<PlannerTargetInputProps> = ({ className = ''}) => {
-    
+export const PlannerTargetInput: React.FC<PlannerTargetInputProps> = ({ className }) => {
     const { targetAmount, setTargetAmount } = useTargetAmount();
+    return <TargetAmountInput targetAmount={targetAmount} setTargetAmount={setTargetAmount} className={className} />;
+};
+
+interface TargetAmountInputProps extends PlannerTargetInputProps {
+    targetAmount: number;
+    setTargetAmount: (amount: number) => void;
+    disabled?: boolean;
+}
+
+export const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ targetAmount, setTargetAmount, disabled, className = '' }) => {
     const [inputValueDraft, setInputValueDraft] = useState<string | null>(null);
-    const inputValue = inputValueDraft ?? (targetAmount === 0 ? '' : targetAmount.toString());
+    const inputValue = (!disabled ? inputValueDraft : null) ?? (targetAmount === 0 ? '' : targetAmount.toString());
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -50,6 +59,7 @@ export const PlannerTargetInput: React.FC<PlannerTargetInputProps> = ({ classNam
                 aria-label="Target items per minute"
                 min="1"
                 step="1"
+                disabled={disabled}
                 value={inputValue}
                 onChange={handleChange}
                 onBlur={handleBlur}

@@ -4,11 +4,12 @@ import type { FlowNode, Item } from '@/features/planner/types';
 import { NodeRecipeModal } from './NodeRecipeModal';
 
 export const NodeRecipeButton = ({ item, node, onSelectRecipe }: { item: Item; node: FlowNode; onSelectRecipe?: (itemId: string, recipeKey: string) => void }) => {
-    const [isOpen, setIsOpen] = useState(false);
+    const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+    const isOpen = portalContainer !== null;
     const buttonRef = useRef<HTMLButtonElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
     const close = () => {
-        setIsOpen(false);
+        setPortalContainer(null);
         buttonRef.current?.focus();
     };
 
@@ -17,8 +18,9 @@ export const NodeRecipeButton = ({ item, node, onSelectRecipe }: { item: Item; n
         modalRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
+                event.preventDefault();
                 event.stopPropagation();
-                setIsOpen(false);
+                setPortalContainer(null);
                 buttonRef.current?.focus();
             }
         };
@@ -34,13 +36,17 @@ export const NodeRecipeButton = ({ item, node, onSelectRecipe }: { item: Item; n
             title={`Recipes for ${item.name}`}
             aria-label={`Recipes for ${item.name}`}
             aria-haspopup="dialog"
-            onClick={(event) => { event.stopPropagation(); setIsOpen(true); }}
+            onClick={(event) => {
+                event.stopPropagation();
+                // Native full-screen dialogs make content outside their top layer inert.
+                setPortalContainer(event.currentTarget.closest('dialog') ?? document.body);
+            }}
         >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
                 <path d="M5 3h14v18H5zM8 7h8M8 12h8M8 17h5" />
             </svg>
         </button>
-        {isOpen && createPortal(
+        {portalContainer && createPortal(
             <div
                 ref={modalRef}
                 role="dialog"
@@ -67,7 +73,7 @@ export const NodeRecipeButton = ({ item, node, onSelectRecipe }: { item: Item; n
             >
                 <NodeRecipeModal onClose={close} item={item} node={node} onSelectRecipe={onSelectRecipe} />
             </div>,
-            document.body,
+            portalContainer,
         )}
     </>;
 };

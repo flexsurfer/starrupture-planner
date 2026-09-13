@@ -5,6 +5,7 @@ export interface BasesFeatureState {
     basesCardCollapsedSections: Record<string, BaseCardCollapsedSections>;
     basesSelectedBaseId: string | null;
     basesSelectedDetailTab: BaseDetailTab;
+    basesDetailsExpanded: boolean;
 }
 
 /** Creates the persisted base-management state. */
@@ -14,5 +15,6 @@ export function createBasesFeatureState(): BasesFeatureState {
         basesCardCollapsedSections: {},
         basesSelectedBaseId: null,
         basesSelectedDetailTab: 'base',
+        basesDetailsExpanded: true,
     };
 }

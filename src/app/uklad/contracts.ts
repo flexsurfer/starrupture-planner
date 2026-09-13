@@ -23,6 +23,7 @@ import type {
     BaseInputItem,
     BaseLogisticsViewModel,
     BaseOutputItem,
+    BaseProductionTable,
     BuildingCoverageRow,
     BuildingSectionBuilding,
     BuildingSectionStats,
@@ -124,6 +125,7 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.basesCardCollapsedSections]: AppState['basesCardCollapsedSections'];
         [stateKeys.basesSelectedBaseId]: AppState['basesSelectedBaseId'];
         [stateKeys.basesSelectedDetailTab]: AppState['basesSelectedDetailTab'];
+        [stateKeys.basesDetailsExpanded]: boolean;
         [stateKeys.productionPlanModalState]: AppState['productionPlanModalState'];
     };
     events: {
@@ -165,6 +167,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.BASES_OPEN_BASE]: [baseId: string, tab?: BaseDetailTab];
         [appIds.events.BASES_SET_SELECTED_BASE]: [baseId: string | null];
         [appIds.events.BASES_SET_DETAIL_TAB]: [tab: BaseDetailTab];
+        [appIds.events.BASES_SET_DETAILS_EXPANDED]: [expanded: boolean];
         [appIds.events.BASES_SET_CORE_LEVEL]: [level: number];
         [appIds.events.BASES_ADD_BUILDING]: [baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string];
         [appIds.events.BASES_ADD_BUILDINGS]: [baseId: string, buildingTypeId: string, sectionType: string, count: number, name?: string, description?: string, selectedItemId?: string | null, ratePerMinute?: number | null, linkedOutput?: BaseBuilding['linkedOutput'] | null, sourceProductionId?: string | null, allocationMode?: BaseBuilding['allocationMode'] | null, requestedRatePerMinute?: number | null, capacityPerMinute?: number | null, priority?: number | null, linkedInputRef?: LinkedInputReference | null];
@@ -256,6 +259,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS]: { params: []; result: AppState['basesCardCollapsedSections'] };
         [appIds.subscriptions.BASES_SELECTED_BASE_ID]: { params: []; result: AppState['basesSelectedBaseId'] };
         [appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]: { params: []; result: AppState['basesSelectedDetailTab'] };
+        [appIds.subscriptions.BASES_DETAILS_EXPANDED]: { params: []; result: boolean };
         [appIds.subscriptions.BASES_BY_ID_MAP]: { params: []; result: Record<string, AppState['basesList'][number]> };
         [appIds.subscriptions.BASES_SELECTED_BASE]: { params: []; result: AppState['basesList'][number] | null };
         [appIds.subscriptions.BASES_BASE_BY_ID]: { params: [baseId: string]; result: AppState['basesList'][number] | null };
@@ -276,6 +280,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS]: { params: []; result: PlanSummaryRow[] };
         [appIds.subscriptions.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS]: { params: []; result: MaterialBalanceRow[] };
         [appIds.subscriptions.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS]: { params: []; result: BuildingCoverageRow[] };
+        [appIds.subscriptions.BASES_PRODUCTION_TABLE]: { params: []; result: BaseProductionTable };
         [appIds.subscriptions.ENERGY_GROUPS_LIST]: { params: []; result: AppState['energyGroups'] };
         [appIds.subscriptions.ENERGY_GROUPS_BY_ID_MAP]: { params: []; result: Record<string, AppState['energyGroups'][number]> };
         [appIds.subscriptions.PRODUCTION_PLAN_SECTION_IDS]: { params: []; result: string[] };

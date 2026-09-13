@@ -551,6 +551,7 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.BASES_CREATE_BASE, 'Alpha']);
         const baseId = bases.value('selectedId')!;
         const baseDetails = mountView(scenario, 'selected base details', {
+            detailsExpanded: [appIds.subscriptions.BASES_DETAILS_EXPANDED],
             collapsedSections: [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS],
             collapsedForBase: [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS_BY_BASE_ID, baseId],
             basesById: [appIds.subscriptions.BASES_BY_ID_MAP],
@@ -572,6 +573,7 @@ describe('headless application E2E', () => {
             planRows: [appIds.subscriptions.BASES_OVERVIEW_PLAN_ROWS],
             materialRows: [appIds.subscriptions.BASES_OVERVIEW_MATERIAL_BALANCE_ROWS],
             coverageRows: [appIds.subscriptions.BASES_OVERVIEW_BUILDING_COVERAGE_ROWS],
+            productionTable: [appIds.subscriptions.BASES_PRODUCTION_TABLE],
         } as const);
 
         await dispatch(scenario, [appIds.events.BASES_UPDATE_BASE_NAME, baseId, 'Main Outpost']);
@@ -579,6 +581,9 @@ describe('headless application E2E', () => {
         expect(bases.value('selectedTab')).toBe('plans');
         await dispatch(scenario, [appIds.events.BASES_SET_SELECTED_BASE, baseId]);
         await dispatch(scenario, [appIds.events.BASES_SET_DETAIL_TAB, 'buildings']);
+        expect(baseDetails.value('detailsExpanded')).toBe(true);
+        await dispatch(scenario, [appIds.events.BASES_SET_DETAILS_EXPANDED, false]);
+        expect(baseDetails.value('detailsExpanded')).toBe(false);
         await dispatch(scenario, [appIds.events.BASES_SET_CORE_LEVEL, 1]);
 
         await dispatch(scenario, [
@@ -790,7 +795,7 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, 120]);
 
         expect(modal.value('openState')).toEqual({ isOpen: true });
-        expect(modal.value('header')).toEqual({ isEditMode: false });
+        expect(modal.value('header')).toEqual({ isEditMode: true });
         expect(modal.value('formValues')).toMatchObject({
             defaultName: ' Iron plates ',
             currentSelectedItemId: 'iron-plate',

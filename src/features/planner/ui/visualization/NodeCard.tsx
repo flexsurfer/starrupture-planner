@@ -30,12 +30,12 @@ export const NodeCard: React.FC<NodeCardProps> = ({
 
     return (
         <div className="flex h-full flex-col text-center">
-            <div className="absolute top-[-8px] right-[-8px] flex items-center gap-1">
-                {node.nodeType === 'input' && <div className="badge badge-sm badge-success">input</div>}
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                {node.nodeType === 'input' && <div className="rounded border border-teal-400/20 bg-base-200 px-1.5 text-[10px] leading-4 text-teal-300/70">input</div>}
             </div>
 
             {/* Item and final output are the primary information. */}
-            <div className={compactOnMobile ? 'p-1.5 space-y-1 sm:p-2 sm:space-y-2' : 'p-2 space-y-2'}>
+            <div className={`${compactOnMobile ? 'p-1.5 space-y-1 sm:p-2 sm:space-y-2' : 'p-2 space-y-2'} ${node.nodeType === 'input' ? 'pt-4 sm:pt-4' : ''}`}>
                 <div className="flex items-start justify-between gap-1.5">
                     <div className={`min-w-0 flex-1 font-normal leading-tight break-words ${compactOnMobile ? 'text-xs sm:text-base' : 'text-base'}`}>
                         {getItemName(node.outputItem, items)}

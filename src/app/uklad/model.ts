@@ -230,6 +230,7 @@ export interface AppState extends PlannerFeatureState {
     basesCardCollapsedSections: Record<string, BaseCardCollapsedSections>;
     basesSelectedBaseId: string | null;
     basesSelectedDetailTab: BaseDetailTab;
+    basesDetailsExpanded: boolean;
     uiConfirmationDialog: ConfirmationDialog;
     productionPlanModalState: CreateProductionPlanModalState;
 }

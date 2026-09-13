@@ -6,6 +6,3 @@ export { BuildingSection } from './BuildingSection';
 export { BuildingSectionCard } from './BuildingSectionCard';
 export { MyBasesStats } from './MyBasesStats';
 export { ShareBasesStatsButton } from './ShareBasesStatsButton';
-export { CoverageTableHeader } from './CoverageTableHeader';
-export { MaterialBalanceCard } from './MaterialBalanceCard';
-export { BuildingCoverageCard } from './BuildingCoverageCard';

@@ -1,6 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
+import { ExpandableSection, SectionIcon } from '@/shared/ui';
 import { BuildingSectionCard } from './BuildingSectionCard';
 import type { BuildingSectionType } from '@/features/bases/types';
 
@@ -12,134 +13,49 @@ interface BuildingSectionProps {
   onAdd: () => void;
 }
 
-export const BuildingSection: React.FC<BuildingSectionProps> = ({title, description, baseId, sectionType, onAdd}) => {
-  
+export const BuildingSection: React.FC<BuildingSectionProps> = ({ title, description, baseId, sectionType, onAdd }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-
   const sectionBuildings = useSubscription([appIds.subscriptions.BASES_BUILDING_SECTION_BUILDINGS, baseId, sectionType]);
   const stats = useSubscription([appIds.subscriptions.BASES_BUILDING_SECTION_STATS, baseId, sectionType]);
-
-  const isEmpty = sectionBuildings.length === 0;
-
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
+  const isLogisticsSection = sectionType === 'inputs' || sectionType === 'outputs';
 
   return (
-    <div className="card bg-base-100 shadow-lg border border-base-300">
-      <div className="card-body">
-        {/* Collapsible Header */}
-        <div
-          className="flex items-center gap-4 mb-4 cursor-pointer hover:bg-base-200 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg transition-colors sticky top-0 z-10 bg-base-100"
-          onClick={toggleCollapse}
-        >
-          <div className="flex-1">
-            <h2 className="card-title text-xl">{title}</h2>
-            {description && (
-              <p className="text-sm text-base-content/70 mt-1">{description}</p>
-            )}
-            <div className="flex gap-2 flex-wrap items-center mt-3">
-              <div className="badge badge-outline">
-                {stats.buildingCount} building{stats.buildingCount !== 1 ? 's' : ''}
-              </div>
-              {stats.totalHeat > 0 && (
-                <>
-                  <span className="text-xs text-base-content/40">|</span>
-                  <span className="text-sm">🔥 {stats.totalHeat}</span>
-                </>
-              )}
-              {stats.totalPowerGeneration > 0 && (
-                <>
-                  <span className="text-xs text-base-content/40">|</span>
-                  <span className="text-sm">⚡ +{stats.totalPowerGeneration} MW</span>
-                </>
-              )}
-              {stats.totalPowerConsumption > 0 && (
-                <>
-                  <span className="text-xs text-base-content/40">|</span>
-                  <span className="text-sm">⚡ -{stats.totalPowerConsumption} MW</span>
-                </>
-              )}
-            </div>
-          </div>
-          {/* Collapse Arrow */}
-          <div className="flex-shrink-0">
-            <svg
-              className={`w-6 h-6 text-base-content transition-transform duration-200 ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
+    <ExpandableSection
+      title={title}
+      icon={null}
+      expanded={!isCollapsed}
+      onToggle={() => setIsCollapsed(previous => !previous)}
+      summary={<>
+        <span className="inline-flex items-center gap-1" aria-label={`${stats.buildingCount} ${stats.buildingCount === 1 ? 'building' : 'buildings'}`} title="Buildings">
+          <SectionIcon name="buildings" className="size-3.5" />
+          {stats.buildingCount}
+        </span>
+        {stats.totalHeat > 0 && <span title="Heat">🔥 {stats.totalHeat}</span>}
+        {stats.totalPowerGeneration > 0 && <span title="Power generation">⚡ +{stats.totalPowerGeneration} MW</span>}
+        {stats.totalPowerConsumption > 0 && <span title="Power consumption">⚡ −{stats.totalPowerConsumption} MW</span>}
+      </>}
+      actions={
+        <button type="button" className="btn btn-sm btn-ghost h-8 min-h-8 gap-1 px-2 text-xs font-normal text-base-content/65"
+          aria-label={`Add ${title.toLowerCase()} building`} onClick={onAdd}>
+          <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m7-7H5" />
+          </svg>
+          Add
+        </button>
+      }
+    >
+      <p className="text-xs leading-relaxed text-base-content/60">{description}</p>
+      {sectionBuildings.length > 0 ? (
+        <div className={`mt-2 grid items-start gap-2 ${isLogisticsSection
+          ? 'grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]'
+          : 'grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))]'}`}>
+          {sectionBuildings.map(sectionBuilding => (
+            <BuildingSectionCard key={sectionBuilding.id} sectionBuilding={sectionBuilding} baseId={baseId} />
+          ))}
         </div>
-
-        {/* Collapsible Content */}
-        {!isCollapsed && (
-          <>
-            {isEmpty ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-base-content/70 mb-4">{description}</p>
-                <button
-                  className="btn btn-ghost btn-sm text-base-content/65"
-                  onClick={onAdd}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Add Building
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {sectionBuildings.map((sectionBuilding) => (
-                  <BuildingSectionCard
-                    key={sectionBuilding.id}
-                    sectionBuilding={sectionBuilding}
-                    baseId={baseId}
-                  />
-                ))}
-                {/* Add button when section has buildings */}
-                <div
-                  className="card bg-base-200 border border-dashed border-base-300 hover:border-base-content/40 cursor-pointer transition-colors"
-                  onClick={onAdd}
-                >
-                  <div className="card-body p-3 flex items-center justify-center min-h-[150px]">
-                    <div className="btn btn-circle btn-ghost btn-sm pointer-events-none text-base-content/65">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+      ) : (
+        <p className="mt-1 text-xs text-base-content/45">No buildings yet.</p>
+      )}
+    </ExpandableSection>
   );
 };

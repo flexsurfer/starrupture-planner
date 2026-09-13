@@ -12,6 +12,7 @@ import { resolveInputBuilding, resolveLinkedOutput } from '@/utils/productionPla
 import type { ResolvedInputBuilding } from '@/utils/productionPlanInputs';
 import { resolveOutputBuilding } from '@/utils/planOutputAllocations';
 import type { ResolvedOutputBuilding } from '@/utils/planOutputAllocations';
+import { getItemCategoryColor } from '@/utils/itemColors';
 
 interface LinkedInputData {
   resolved: ResolvedInputBuilding;
@@ -45,50 +46,33 @@ const useLinkedInputData = (baseBuilding: BaseBuilding): LinkedInputData => {
   return { resolved, hasError, label };
 };
 
-interface LinkedInputItemButtonProps {
-  baseBuilding: BaseBuilding;
+interface BuildingItemSummaryProps {
+  item?: Item | null;
+  rate?: number;
+  status?: string;
+  hasError?: boolean;
 }
 
-const LinkedInputItemButton: React.FC<LinkedInputItemButtonProps> = ({ baseBuilding }) => {
+const BuildingItemSummary = ({ item, rate, status, hasError }: BuildingItemSummaryProps) => (
+  <span className="flex min-w-0 flex-1 items-center gap-2">
+    {item && <span className="shrink-0 [&>div]:size-8 [&_img]:size-8"><ItemImage itemId={item.id} item={item} size="small" /></span>}
+    <span className="min-w-0 flex-1">
+      <span className="block text-sm font-normal leading-snug text-base-content/75 break-words">{item?.name || 'No item selected'}</span>
+      {item && <span className="block text-xs font-medium tabular-nums" style={{ color: getItemCategoryColor(item.type) }}>{formatRate(rate)}/min</span>}
+    </span>
+    {status && <span className={`shrink-0 text-[11px] ${hasError ? 'text-error' : 'text-base-content/60'}`}>{status}</span>}
+  </span>
+);
+
+const LinkedInputItemSummary = ({ baseBuilding }: { baseBuilding: BaseBuilding }) => {
   const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const { resolved, hasError, label } = useLinkedInputData(baseBuilding);
   const selectedItem = resolved.selectedItemId ? itemsMap[resolved.selectedItemId] : null;
 
   return (
-    <div
-      className={`flex-shrink-0 w-20 min-h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 bg-base-100 px-1 ${
-        hasError ? 'border-error' : 'border-base-300'
-      }`}
-      title={`${hasError ? 'Broken linked output' : 'Linked output'}: ${label}`}
-    >
-      {selectedItem ? (
-        <>
-          <ItemImage
-            itemId={selectedItem.id}
-            item={selectedItem}
-            size="small"
-            className="w-8 h-8"
-          />
-          <span className="text-xs text-center">{formatRate(resolved.ratePerMinute)}/min</span>
-          <span className={`badge badge-xs px-1 min-h-0 h-4 ${hasError ? 'badge-error' : 'badge-outline'}`}>
-            Linked
-          </span>
-        </>
-      ) : (
-        <svg
-          className="w-6 h-6 text-base-content/50"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-      )}
+    <div className={`rounded-md border bg-base-content/5 p-2 ${hasError ? 'border-error/50' : 'border-transparent'}`}
+      title={`${hasError ? 'Broken linked output' : 'Linked output'}: ${label}`}>
+      <BuildingItemSummary item={selectedItem} rate={resolved.ratePerMinute} status={hasError ? 'Broken link' : 'Linked'} hasError={hasError} />
     </div>
   );
 };
@@ -209,10 +193,13 @@ const InputOutputLinkControls: React.FC<InputOutputLinkControlsProps> = ({ baseI
   };
 
   return (
-    <div className="rounded-md border border-base-300/70 bg-base-100/55 p-2 space-y-2">
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="text-[11px] text-base-content/60 shrink-0">Source</span>
+    <div className="min-w-0">
+      <label className="flex min-w-0 items-center gap-2">
+        <span className="w-10 shrink-0 text-xs text-base-content/60">Source</span>
         <ClippedSelect
+          size="sm"
+          tone="muted"
+          ariaLabel="Source"
           value={selectedOutputKey}
           onChange={handleSourceChange}
           displayValue={selectedOutputLabel}
@@ -234,7 +221,7 @@ const InputOutputLinkControls: React.FC<InputOutputLinkControlsProps> = ({ baseI
             );
           })}
         </ClippedSelect>
-      </div>
+      </label>
     </div>
   );
 };
@@ -375,9 +362,12 @@ const OutputInputLinkControls: React.FC<OutputInputLinkControlsProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="text-[11px] text-base-content/60 shrink-0">Target</span>
+      <label className="flex min-w-0 items-center gap-2">
+        <span className="w-10 shrink-0 text-xs text-base-content/60">Target</span>
         <ClippedSelect
+          size="sm"
+          tone="muted"
+          ariaLabel="Target"
           value={selectedInputKey}
           onChange={handleTargetChange}
           displayValue={selectedInputLabel}
@@ -396,7 +386,7 @@ const OutputInputLinkControls: React.FC<OutputInputLinkControlsProps> = ({
             );
           })}
         </ClippedSelect>
-      </div>
+      </label>
     </div>
   );
 };
@@ -459,9 +449,12 @@ const OutputPlanLinkControls: React.FC<OutputPlanLinkControlsProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="text-[11px] text-base-content/60 shrink-0">Source</span>
+      <label className="flex min-w-0 items-center gap-2">
+        <span className="w-10 shrink-0 text-xs text-base-content/60">Source</span>
         <ClippedSelect
+          size="sm"
+          tone="muted"
+          ariaLabel="Source"
           value={selectedPlanId}
           onChange={handlePlanChange}
           displayValue={selectedPlanLabel}
@@ -474,26 +467,26 @@ const OutputPlanLinkControls: React.FC<OutputPlanLinkControlsProps> = ({
             </option>
           ))}
         </ClippedSelect>
-      </div>
+      </label>
 
       {isPlanLinked && (
         <div className="grid grid-cols-2 gap-2">
-          <label className="form-control">
-            <span className="label-text text-[10px] mb-1">Capacity/min</span>
+          <label className="flex min-w-0 flex-col gap-1">
+            <span className="text-xs text-base-content/60">Capacity/min</span>
             <input
               type="number"
               min={1}
-              className="input input-bordered input-xs"
+              className="input input-bordered input-sm h-8 w-full min-w-0 bg-transparent text-xs tabular-nums"
               value={resolvedOutput.capacityPerMinuteResolved || ''}
               onChange={handleCapacityChange}
             />
           </label>
-          <label className="form-control">
-            <span className="label-text text-[10px] mb-1">Priority</span>
+          <label className="flex min-w-0 flex-col gap-1">
+            <span className="text-xs text-base-content/60">Priority</span>
             <input
               type="number"
               min={0}
-              className="input input-bordered input-xs"
+              className="input input-bordered input-sm h-8 w-full min-w-0 bg-transparent text-xs tabular-nums"
               value={baseBuilding.priority ?? 0}
               onChange={handlePriorityChange}
             />
@@ -580,152 +573,60 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
 
   return (
     <>
-      <div className={`card bg-base-200 shadow-md relative ${isInActivePlan ? 'border-2 border-primary ring-1 ring-primary/30' : 'border border-base-300'}`}>
-        <div className="card-body p-3">
-          <div className="flex flex-col gap-3">
-            {/* Building name and active plan badge */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-start justify-between gap-2">
-                <div className="text-xs font-semibold min-w-0 truncate" title={displayName}>
-                  {displayName}
-                </div>
-                {isGrouped && (
-                  <span className="badge badge-outline badge-xs font-mono shrink-0">x{count}</span>
-                )}
-              </div>
-              {description && (
-                <div className="text-xs text-base-content/60 line-clamp-2" title={description}>
-                  {description}
-                </div>
-              )}
-              {isInActivePlan && (
-                <div className="flex flex-wrap gap-1">
-                  {activePlanNames.map((planName) => (
-                    <span
-                      key={planName}
-                      className="badge badge-primary badge-xs text-[10px] text-left inline-block truncate w-full"
-                      title={planName}
-                    >
-                      {planName}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-row flex-1 justify-between gap-2">
-              <div className="flex flex-col items-center gap-2">
-                {/* Building icon - left side, bigger */}
-                <BuildingImage
-                  buildingId={building.id}
-                  building={building}
-                  className="w-30 h-30 rounded-lg object-cover"
-                  size="medium"
-                />
-                {isGrouped && (
-                  <BuildingCountControl
-                    value={count}
-                    ariaLabel={`${building.name} ${sectionType} count`}
-                    onChange={setGroupedCount}
-                  />
-                )}
-              </div>
-              {/* Item selection area */}
-              {isLinkedInput && baseBuilding ? (
-                <LinkedInputItemButton baseBuilding={baseBuilding} />
-              ) : (isInputBuilding || isOutputBuilding) && baseBuilding ? (
-                <button
-                  onClick={() => {
-                    if (!isPlanLinkedOutput && !isLinkedInput) {
-                      setShowSelectItemModal(true);
-                    }
-                  }}
-                  className="flex-shrink-0 w-20 min-h-20 border-2 border-dashed border-base-300 hover:border-primary rounded-lg flex flex-col items-center justify-center gap-1 transition-colors bg-base-100 px-1"
-                  title={selectedItem ? `${selectedItem.name} - ${selectedRatePerMinute}/min` : 'Select item'}
-                >
-                  {selectedItem ? (
-                    <>
-                      <ItemImage
-                        itemId={selectedItem.id}
-                        item={selectedItem}
-                        size="small"
-                        className="w-8 h-8"
-                      />
-                      <span className="text-xs text-center">{formatRate(selectedRatePerMinute)}/min</span>
-                      {isPlanLinkedOutput && (
-                        <span className="badge badge-xs px-1 min-h-0 h-4 badge-primary">
-                          Plan
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <svg
-                      className="w-6 h-6 text-base-content/50"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                  )}
-                </button>
-              ) : null}
-
-            </div>
-
-            {isLinkableInputBuilding && baseBuilding && (
-              <InputOutputLinkControls
-                baseId={baseId}
-                baseBuilding={baseBuilding}
-              />
-            )}
-
-            {isOutputBuilding && baseBuilding && resolvedOutput && (
-              <div className="rounded-md border border-base-300/70 bg-base-100/55 p-2.5 space-y-2">
-                <OutputPlanLinkControls
-                  baseId={baseId}
-                  base={base}
-                  baseBuilding={baseBuilding}
-                  resolvedOutput={resolvedOutput}
-                />
-                {isLinkableOutputBuilding && (
-                  <>
-                    <div className="h-px bg-base-300/60" />
-                    <OutputInputLinkControls
-                      baseId={baseId}
-                      baseBuilding={baseBuilding}
-                    />
-                  </>
-                )}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between gap-2 border-t border-base-300/50 pt-2">
-
-              <div className="text-xs flex flex-row gap-1 items-center" >
-                <span>⚡</span>
-                <span>{totalPower}</span>
-                <span>🔥</span>
-                <span>{totalHeat}</span>
-              </div>
-
-              <div className="flex items-center justify-end">
-                <button
-                  className="btn btn-xs btn-error btn-outline"
-                  onClick={handleRemoveClick}
-                >
-                  Remove
-                </button>
-              </div>
+      <article className={`min-w-0 rounded-lg border bg-base-200 p-2 sm:p-3 ${isInActivePlan ? 'border-primary/60' : 'border-base-300'}`}>
+        <div className="flex items-start gap-2">
+          <BuildingImage buildingId={building.id} building={building} size="small" className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-medium leading-snug text-base-content/80 break-words">{displayName}</h3>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-base-content/60 tabular-nums">
+              <span title={building.type === 'generator' ? 'Power generation' : 'Power consumption'}>⚡ {building.type === 'generator' ? '+' : ''}{totalPower} MW</span>
+              <span title="Heat">🔥 {totalHeat}</span>
             </div>
           </div>
+          <button type="button" className="btn btn-sm btn-ghost h-8 min-h-8 w-8 shrink-0 p-0 text-base-content/50 hover:text-error"
+            aria-label={`Remove ${displayName}`} title={`Remove ${displayName}`} onClick={handleRemoveClick}>
+            <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
         </div>
-      </div>
+
+        {description && <p className="mt-2 text-xs leading-relaxed text-base-content/60 break-words">{description}</p>}
+        {isInActivePlan && <p className="mt-2 text-xs leading-snug text-base-content/60 break-words">
+          <span aria-hidden="true" className="mr-1.5 inline-block size-1.5 rounded-full bg-primary align-middle" />
+          Active in {activePlanNames.join(', ')}
+        </p>}
+
+        {isGrouped && <div className="mt-2 flex flex-wrap items-center justify-between gap-1 border-t border-base-300 pt-2">
+          <span className="text-xs text-base-content/60">Count</span>
+          <BuildingCountControl compact value={count} ariaLabel={`${building.name} ${sectionType} count`} onChange={setGroupedCount} />
+        </div>}
+
+        {(isInputBuilding || isOutputBuilding) && baseBuilding && <div className="mt-2 space-y-2">
+          {isLinkedInput ? (
+            <LinkedInputItemSummary baseBuilding={baseBuilding} />
+          ) : isPlanLinkedOutput ? (
+            <div className="rounded-md border border-transparent bg-base-content/5 p-2">
+              <BuildingItemSummary item={selectedItem} rate={selectedRatePerMinute} status="Plan" />
+            </div>
+          ) : (
+            <button type="button" onClick={() => setShowSelectItemModal(true)}
+              className="flex w-full min-w-0 items-center gap-2 rounded-md border border-base-300 bg-base-content/5 p-2 text-left transition-colors hover:border-base-content/40 focus-visible:outline-2 focus-visible:outline-primary"
+              aria-label={selectedItem ? `Edit ${selectedItem.name} item and rate` : `Select item for ${displayName}`}>
+              {selectedItem ? <BuildingItemSummary item={selectedItem} rate={selectedRatePerMinute} /> : <span className="flex-1 text-sm text-base-content/65">Select item & rate</span>}
+              <svg aria-hidden="true" className="size-3.5 shrink-0 text-base-content/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="m16.862 4.487 1.687-1.688a1.875 1.875 0 0 1 2.652 2.652L9.832 16.82a4.5 4.5 0 0 1-1.897 1.13L5.25 18.75l.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.862 4.487Zm0 0 2.651 2.652" />
+              </svg>
+            </button>
+          )}
+
+          {isLinkableInputBuilding && <InputOutputLinkControls baseId={baseId} baseBuilding={baseBuilding} />}
+          {isOutputBuilding && resolvedOutput && <div className="space-y-2">
+            <OutputPlanLinkControls baseId={baseId} base={base} baseBuilding={baseBuilding} resolvedOutput={resolvedOutput} />
+            {isLinkableOutputBuilding && <OutputInputLinkControls baseId={baseId} baseBuilding={baseBuilding} />}
+          </div>}
+        </div>}
+      </article>
 
       {(isInputBuilding || isOutputBuilding) && !isLinkedInput && !isPlanLinkedOutput && baseBuilding && (
         <SelectItemModal

@@ -7,7 +7,6 @@ import {
     FormControls,
     DeficitsAlert,
     DiagramSection,
-    FormActions,
 } from './components';
 
 export const CreateProductionPlanModal: React.FC = () => {
@@ -26,18 +25,15 @@ export const CreateProductionPlanModal: React.FC = () => {
             {/* Select Inputs section */}
             <InputsSelector />
 
+            <DeficitsAlert />
+
             {/* Controls section */}
             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col flex-1 min-h-0">
                 <FormControls />
 
-                {/* Raw Material Deficits Alert */}
-                <DeficitsAlert />
-
                 {/* Diagram section - takes all remaining space */}
                 <DiagramSection />
 
-                {/* Action buttons at bottom */}
-                <FormActions />
             </form>
         </div>
     );

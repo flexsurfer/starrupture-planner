@@ -253,7 +253,7 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             });
 
             return {
-                productionGroups: ['target', ...[...sortedTypes].reverse(), 'launcher'].map(type => ({
+                productionGroups: ['launcher', 'target', ...[...sortedTypes].reverse()].map(type => ({
                     type,
                     nodes: productionFlow.nodes.filter(node => {
                         if (node.nodeType === 'launcher') return type === 'launcher';

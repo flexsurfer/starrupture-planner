@@ -121,4 +121,22 @@ describe('NodeRecipeModal', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Close recipes' }));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+
+    it('keeps recipes inside a full-screen dialog and consumes Escape before closing the parent', () => {
+        const node: FlowNode = {
+            nodeType: 'production', buildingId: 'smelter', buildingName: 'Smelter', recipeIndex: 0,
+            outputItem: 'plate', outputAmount: 60, buildingCount: 1,
+            powerPerBuilding: 0, heatPerBuilding: 0, totalPower: 0, totalHeat: 0,
+        };
+        render(<dialog open aria-label="Plan diagram"><NodeRecipeButton item={{ id: 'plate', name: 'Plate', type: 'processed' }} node={node} /></dialog>);
+        fireEvent.click(screen.getByRole('button', { name: 'Recipes for Plate' }));
+        const parent = screen.getByRole('dialog', { name: 'Plan diagram' });
+        expect(parent).toContainElement(screen.getByRole('dialog', { name: 'Recipes for Plate' }));
+        const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+        fireEvent(screen.getByRole('button', { name: 'Close recipes' }), escape);
+        expect(escape.defaultPrevented).toBe(true);
+        expect(screen.queryByRole('dialog', { name: 'Recipes for Plate' })).not.toBeInTheDocument();
+        expect(parent).toHaveAttribute('open');
+        expect(screen.getByRole('button', { name: 'Recipes for Plate' })).toHaveFocus();
+    });
 });

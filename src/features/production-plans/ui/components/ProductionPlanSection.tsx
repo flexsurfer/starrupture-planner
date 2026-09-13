@@ -1,8 +1,9 @@
 import { appIds } from '@/app/uklad/catalog';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useId } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { ProductionFlowResult } from '@/features/planner/types';
-import { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
+import { PlanDiagram } from './PlanDiagram';
+import { ItemImage, SectionIcon } from '@/shared/ui';
 import { BuildingRequirementsModal } from '../modals';
 import { getPlanOutputAllocationSummary } from '@/utils/planOutputAllocations';
 
@@ -16,6 +17,8 @@ const EMPTY_PRODUCTION_FLOW: ProductionFlowResult = { nodes: [], edges: [], rawM
 interface ProductionFlowDiagramProps {
     baseId: string;
     sectionId: string;
+    name: string;
+    targetItemId: string;
 }
 
 const formatRatePerMinute = (value: number | undefined): string => {
@@ -24,23 +27,16 @@ const formatRatePerMinute = (value: number | undefined): string => {
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 };
 
-const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, sectionId }) => {
-
+const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, sectionId, name, targetItemId }) => {
     const productionFlow = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId]) || EMPTY_PRODUCTION_FLOW;
 
-    return (
-        <div className="h-[400px] border border-base-300 rounded-lg overflow-hidden">
-            <EmbeddedFlowDiagram
-                productionFlow={productionFlow}
-                className="w-full h-full"
-                interactive={false}
-            />
-        </div>
-    );
+    return <PlanDiagram productionFlow={productionFlow} name={name} targetItemId={targetItemId} />;
 };
 
 export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ baseId, sectionId }) => {
     const runtime = useRuntime();
+    const diagramId = useId();
+    const items = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [showRequirementsModal, setShowRequirementsModal] = useState(false);
 
@@ -94,7 +90,6 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
     }
 
     const {
-        itemName,
         corporationName,
         stats,
         buildingRequirements,
@@ -115,179 +110,79 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
         : null;
     const hasLinkedOutputs = !!outputSummary && outputSummary.outputs.length > 0;
 
-    const toggleCollapse = () => {
-        setIsCollapsed((prev) => !prev);
-    };
+    const item = items[section.selectedItemId];
+    const statusColor = hasError ? 'text-error' : section.active
+        ? (allRequirementsSatisfied && !hasMaterialShortage ? 'text-success' : 'text-warning')
+        : 'text-base-content/60';
+    const warningLabels = [showBuildingWarning && 'buildings', showMaterialWarning && 'materials', showInputWarning && 'inputs'].filter(Boolean);
 
     return (
-        <div className={`card bg-base-100 shadow-lg border ${hasError ? 'border-error/50' : 'border-primary/30'}`}>
-            <div className="card-body">
-                {/* Collapsible Header */}
-                <div className="flex flex-col gap-3 mb-4 -mx-4 -mt-4 px-4 pt-4 pb-4 rounded-t-lg sticky top-0 z-10 bg-base-100 border-b border-base-300">
-                    {/* Top row: Title and badges */}
-                    <div
-                        className="flex items-center gap-4 cursor-pointer hover:bg-base-200 -mx-2 px-2 py-1 rounded transition-colors"
-                        onClick={toggleCollapse}
-                    >
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                                <h2 className="card-title text-xl">{section.name}</h2>
-                                <span className={`badge badge-sm ${
-                                    hasError 
-                                        ? 'badge-error' 
-                                        : section.active 
-                                            ? (allRequirementsSatisfied && !hasMaterialShortage ? 'badge-success' : 'badge-warning') 
-                                            : 'badge-dash'
-                                }`}>
-                                    {section.active ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
-                            <p className="text-sm text-base-content/70 mt-1">
-                                Producing <span className="font-semibold">{itemName}</span> at <span className="font-semibold">{section.targetAmount}/min</span>
-                                {corporationName && (
-                                    <>
-                                        {' • '}
-                                        <span className="text-base-content/70">
-                                            {corporationName} Lv.{section.corporationLevel?.level}
-                                        </span>
-                                    </>
-                                )}
-                            </p>
-                            <div className="flex gap-2 flex-wrap items-center mt-3">
-                                <div className={`badge badge-outline ${hasError ? 'badge-error' : allRequirementsSatisfied ? 'badge-success' : 'badge-warning'}`}>
-                                    {stats.buildingCount} building{stats.buildingCount !== 1 ? 's' : ''}
-                                </div>
-                                {showManageButton && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowRequirementsModal(true);
-                                        }}
-                                        className={`btn btn-sm h-6 min-h-6 px-2 ${hasError ? 'btn-error' : 'btn-primary'}`}
-                                    >
-                                        manage buildings
-                                    </button>
-                                )}
-                                {stats.totalHeat > 0 && (
-                                    <>
-                                        <span className="text-xs text-base-content/40">|</span>
-                                        <span className="text-sm">🔥 {stats.totalHeat}</span>
-                                    </>
-                                )}
-                                {stats.totalPowerConsumption > 0 && (
-                                    <>
-                                        <span className="text-xs text-base-content/40">|</span>
-                                        <span className="text-sm">⚡ -{stats.totalPowerConsumption} MW</span>
-                                    </>
-                                )}
-                                {hasLinkedOutputs && outputSummary && (
-                                    <>
-                                        <span className="text-xs text-base-content/40">|</span>
-                                        <span
-                                            className={`badge badge-outline ${
-                                                outputSummary.remainingRatePerMinute > 0 ? 'badge-warning' : ''
-                                            }`}
-                                            title={`${formatRatePerMinute(outputSummary.remainingRatePerMinute)}/min remaining`}
-                                        >
-                                            Outputs {formatRatePerMinute(outputSummary.assignedRatePerMinute)}/min assigned
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                        {/* Collapse Arrow */}
-                        <div className="flex-shrink-0">
-                            <svg
-                                className={`w-6 h-6 text-base-content transition-transform duration-200 ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
+        <section className={`min-w-0 rounded-lg border bg-base-100 ${hasError ? 'border-error/50' : 'border-base-300'}`}>
+            <header className="rounded-t-lg border-b border-base-300 bg-base-200 p-2 sm:p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="min-w-0 flex-1 basis-full sm:basis-auto">
+                        <button type="button" className="flex w-full min-w-0 items-center gap-2 rounded text-left focus-visible:outline-2 focus-visible:outline-primary"
+                            aria-label={section.name} aria-expanded={!isCollapsed} aria-controls={diagramId}
+                            onClick={() => setIsCollapsed(previous => !previous)}>
+                            <svg aria-hidden="true" className={`size-4 shrink-0 text-base-content/50 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
-                        </div>
-                    </div>
-
-                    {/* Action buttons row - doesn't scroll */}
-                    <div className="flex gap-2 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
-                        {section.active ? (
-                            <button
-                                className="btn btn-sm btn-outline btn-warning"
-                                onClick={handleDeactivate}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Deactivate
-                            </button>
-                        ) : (
-                            <button
-                                className="btn btn-sm btn-outline btn-primary"
-                                onClick={handleActivate}
-                                disabled={hasError}
-                                title={hasError ? 'Cannot activate: inputs are insufficient' : ''}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Activate
-                            </button>
-                        )}
-                        <button
-                            className="btn btn-sm btn-outline btn-primary"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditProductionPlan();
-                            }}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
+                            <span className="shrink-0 [&>div]:size-7 [&_img]:size-7"><ItemImage itemId={section.selectedItemId} item={item} size="small" /></span>
+                            <span className="min-w-0 text-sm font-semibold leading-snug break-words sm:text-base">{section.name}</span>
+                            <span className={`flex shrink-0 items-center gap-1 text-[11px] font-medium ${statusColor}`}>
+                                <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
+                                {section.active ? 'Active' : 'Inactive'}
+                            </span>
                         </button>
-                        <button
-                            className="btn btn-sm btn-outline btn-error"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete();
-                            }}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-1">
+                        {showManageButton && <button type="button" onClick={() => setShowRequirementsModal(true)}
+                            className="btn btn-sm btn-ghost h-8 min-h-8 px-2 text-xs" title="Manage production buildings">
+                            <SectionIcon name="buildings" className="size-4" />
+                            Manage
+                        </button>}
+                        <button type="button" className="btn btn-sm btn-outline h-8 min-h-8 px-2 text-xs"
+                            onClick={section.active ? handleDeactivate : handleActivate} disabled={!section.active && hasError}
+                            title={!section.active && hasError ? 'Cannot activate: inputs are insufficient' : undefined}>
+                            {section.active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button type="button" className="btn btn-sm btn-primary h-8 min-h-8 px-2 text-xs" onClick={handleEditProductionPlan}>Edit</button>
+                        <button type="button" className="btn btn-sm btn-ghost h-8 min-h-8 w-8 p-0 text-base-content/50 hover:text-error"
+                            aria-label={`Delete ${section.name}`} title="Delete production plan" onClick={handleDelete}>
+                            <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            Delete
                         </button>
                     </div>
-                    {(showBuildingWarning || showInputWarning || showMaterialWarning) && (
-                        <div className="flex flex-col items-end mt-1 space-y-1 text-right" onClick={(e) => e.stopPropagation()}>
-                            {showBuildingWarning && (
-                                <p className="text-xs text-warning font-medium">
-                                    Not enough production buildings in base. Use the &quot;manage buildings&quot; button.
-                                </p>
-                            )}
-                            {showMaterialWarning && (
-                                <p className="text-xs text-warning font-medium">
-                                    Missing materials for this plan.
-                                </p>
-                            )}
-                            {showInputWarning && sharedInputShortages.map((shortage) => (
-                                <p key={shortage.baseBuildingId} className="text-xs text-warning font-medium">
-                                    Not enough resources from input &quot;{shortage.inputName}&quot; ({shortage.itemName}):{' '}
-                                    {formatRatePerMinute(shortage.availablePerMinute)}/min available,{' '}
-                                    {formatRatePerMinute(shortage.requiredPerMinute)}/min required for all plans.
-                                </p>
-                            ))}
-                        </div>
-                    )}
                 </div>
-
-                {/* Collapsible Content */}
-                {!isCollapsed && (
-                    <ProductionFlowDiagram baseId={baseId} sectionId={sectionId} />
-                )}
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-base-content/65 tabular-nums sm:text-xs">
+                    <span className="inline-flex items-center gap-1" aria-label={`${stats.buildingCount} ${stats.buildingCount === 1 ? 'building' : 'buildings'}`} title="Buildings">
+                        <SectionIcon name="buildings" className="size-4" />
+                        {stats.buildingCount}
+                    </span>
+                    {stats.totalHeat > 0 && <span title="Heat">🔥 {stats.totalHeat}</span>}
+                    {stats.totalPowerConsumption > 0 && <span title="Power consumption">⚡ {stats.totalPowerConsumption} MW</span>}
+                    {corporationName && <span>{corporationName} Lv.{section.corporationLevel?.level}</span>}
+                    {hasLinkedOutputs && outputSummary && <span className={outputSummary.remainingRatePerMinute > 0 ? 'text-warning' : ''}
+                        title={`${formatRatePerMinute(outputSummary.remainingRatePerMinute)}/min remaining`}>
+                        Outputs {formatRatePerMinute(outputSummary.assignedRatePerMinute)}/min assigned
+                    </span>}
+                </div>
+            </header>
+            {warningLabels.length > 0 && <details className="border-b border-base-300 px-2 py-1.5 text-xs sm:px-3">
+                <summary className="cursor-pointer text-warning">Requirements need attention: {warningLabels.join(', ')}</summary>
+                <ul className="mt-2 space-y-1 pb-1 text-base-content/75">
+                    {showBuildingWarning && <li>Not enough production buildings in base. Use Manage to add them.</li>}
+                    {showMaterialWarning && <li>Missing materials for this plan.</li>}
+                    {sharedInputShortages.map(shortage => <li key={shortage.baseBuildingId}>
+                        Not enough resources from input &quot;{shortage.inputName}&quot; ({shortage.itemName}):{' '}
+                        {formatRatePerMinute(shortage.availablePerMinute)}/min available, {formatRatePerMinute(shortage.requiredPerMinute)}/min required for all plans.
+                    </li>)}
+                </ul>
+            </details>}
+            <div id={diagramId} hidden={isCollapsed}>
+                {!isCollapsed && <ProductionFlowDiagram baseId={baseId} sectionId={sectionId} name={section.name} targetItemId={section.selectedItemId} />}
             </div>
-
-            {/* Building Requirements Modal */}
             <BuildingRequirementsModal
                 isOpen={showRequirementsModal}
                 buildingRequirements={buildingRequirements}
@@ -297,6 +192,6 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                 sectionId={section.id}
                 onClose={() => setShowRequirementsModal(false)}
             />
-        </div>
+        </section>
     );
 };

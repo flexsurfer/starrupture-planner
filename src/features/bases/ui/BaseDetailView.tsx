@@ -33,54 +33,62 @@ export const BaseDetailView: React.FC = () => {
   return (
     <div className="h-full p-2 lg:p-3 flex flex-col">
       {/* Core Info and Stats - Fixed, not scrollable */}
-      <div className="mb-4 flex-shrink-0">
+      <div className="mb-2 flex-shrink-0">
         <BaseCoreInfo onRename={() => setShowRenameModal(true)} />
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
-        <div
-          role="tablist"
-          className="tabs tabs-bordered tabs-lg flex-shrink-0 mb-4 overflow-x-auto"
-          aria-label="Base sections"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'base'}
-            id="base-tab-overview"
-            aria-controls="base-panel-overview"
-            className={`tab text-xl font-bold flex items-center gap-2 ${activeTab === 'base' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('base')}
+        <div className="mb-2 flex shrink-0 items-center gap-1">
+          <div
+            role="tablist"
+            className="tabs tabs-bordered tabs-sm sm:tabs-md min-w-0 flex-1 flex-nowrap overflow-x-auto"
+            aria-label="Base sections"
           >
-            Production
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'plans'}
-            id="base-tab-plans"
-            aria-controls="base-panel-plans"
-            className={`tab text-xl font-bold flex items-center gap-2 ${activeTab === 'plans' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('plans')}
-          >
-            Plans
-            {plansCount > 0 && (
-              <span className="badge badge-sm badge-primary">{plansCount}</span>
-            )}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'buildings'}
-            id="base-tab-buildings"
-            aria-controls="base-panel-buildings"
-            className={`tab text-xl font-bold flex items-center gap-2 ${activeTab === 'buildings' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('buildings')}
-          >
-            Buildings
-            {buildingsCount > 0 && (
-              <span className="badge badge-sm badge-secondary">{buildingsCount}</span>
-            )}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'base'}
+              id="base-tab-overview"
+              aria-controls="base-panel-overview"
+              className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${activeTab === 'base' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('base')}
+            >
+              Production
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'plans'}
+              id="base-tab-plans"
+              aria-controls="base-panel-plans"
+              className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${activeTab === 'plans' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('plans')}
+            >
+              Plans
+              {plansCount > 0 && (
+                <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">{plansCount}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'buildings'}
+              id="base-tab-buildings"
+              aria-controls="base-panel-buildings"
+              className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${activeTab === 'buildings' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('buildings')}
+            >
+              Buildings
+              {buildingsCount > 0 && (
+                <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">{buildingsCount}</span>
+              )}
+            </button>
+          </div>
+          <button type="button"
+            className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"
+            aria-label="Add Plan" title="Add Plan"
+            onClick={() => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN])}>
+            <span aria-hidden="true">＋</span><span className="hidden sm:inline">Add Plan</span>
           </button>
         </div>
 

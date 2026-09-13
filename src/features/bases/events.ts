@@ -20,6 +20,7 @@ import {
     linkInputToOutput,
     unlinkInputsLinkedToOutput,
 } from './building-operations';
+import { selectAddedProductionPlanInputs } from '@/features/production-plan-modal/events';
 import { DEFAULT_BASE_CORE_LEVEL } from './core-stats';
 
 function getBaseById(bases: Base[], baseId: string): Base | undefined {
@@ -31,6 +32,10 @@ function createBaseId(): string {
 }
 
 export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regEvent(appIds.events.BASES_SET_DETAILS_EXPANDED, ({ draftState }, expanded) => {
+        draftState.basesDetailsExpanded = expanded;
+    });
+
     registrar.regEvent(appIds.events.BASES_CREATE_BASE, ({ draftState }, name) => {
         const baseId = createBaseId();
         draftState.basesList.push({
@@ -184,6 +189,7 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
                 ? linkedInputRef
                 : null;
 
+            const addedInputIds: string[] = [];
             for (let index = 0; index < normalizedCount; index += 1) {
                 const newBuilding = createBaseBuilding({
                     buildingTypeId,
@@ -201,6 +207,7 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
                 });
 
                 base.buildings.push(newBuilding);
+                if (sectionType === 'inputs') addedInputIds.push(newBuilding.id);
 
                 if (normalizedLinkedInputRef) {
                     const resolvedNewOutput = resolveOutputBuilding(newBuilding, base);
@@ -217,6 +224,7 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
                     );
                 }
             }
+            selectAddedProductionPlanInputs(draftState as AppState, baseId, addedInputIds);
         },
     );
 

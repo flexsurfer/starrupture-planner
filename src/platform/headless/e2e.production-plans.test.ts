@@ -165,10 +165,13 @@ describe('headless production planning E2E', () => {
 
         await app.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_NAME, '  Iron line  ']);
         await app.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, 'iron-plate']);
+        const autosavedPlan = base.value('selected')!.productions[0];
+        expect(autosavedPlan).toMatchObject({ name: 'Iron line', targetAmount: 60 });
         await app.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, 0]);
         expect(modal.value('valid')).toBe(false);
         await app.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SUBMIT]);
-        expect(base.value('selected')!.productions).toEqual([]);
+        // An incomplete edit preserves the last valid autosave.
+        expect(base.value('selected')!.productions).toEqual([autosavedPlan]);
 
         await app.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, 120]);
         await app.dispatch([

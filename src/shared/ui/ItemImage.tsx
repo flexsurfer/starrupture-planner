@@ -4,18 +4,20 @@ export interface ItemImageProps {
   itemId: string;
   item?: Item;
   className?: string;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'xsmall' | 'small' | 'medium' | 'large';
   showFallback?: boolean;
   style?: React.CSSProperties;
 }
 
 const sizeClasses = {
+  xsmall: 'w-6 h-6',
   small: 'w-10 h-10',
   medium: 'w-15 h-15', 
   large: 'w-30 h-30'
 };
 
 const sizePixels = {
+  xsmall: 24,
   small: 40,
   medium: 60,
   large: 120,
