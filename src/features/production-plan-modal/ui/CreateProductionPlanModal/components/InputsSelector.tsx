@@ -7,6 +7,7 @@ import { getItemCategoryColor } from '@/utils/itemColors';
 
 export const InputsSelector: React.FC = () => {
     const runtime = useRuntime();
+    const planning = useSubscription([appIds.subscriptions.BASES_MODE]) === 'planning';
     const scrollRef = useRef<HTMLDivElement>(null);
     const scrollId = useId();
     const scrollInputs = (direction: number) => {
@@ -29,7 +30,7 @@ export const InputsSelector: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                         <span className="text-xs">
-                            Add buildings to the Inputs section to provide materials for production
+                            {planning ? 'Use Add external item to supply resources from another plan or base.' : 'Add buildings to the Inputs section to provide materials for production'}
                         </span>
                         </div>
                     </div>
@@ -57,6 +58,7 @@ export const InputsSelector: React.FC = () => {
                                     <button
                                         type="button"
                                         aria-pressed={isSelected}
+                                        aria-label={planning ? `${isSelected ? 'Remove' : 'Use'} input ${inputItem.item.name} from ${linkLabel || inputItem.name}` : undefined}
                                         key={inputItem.baseBuildingId}
                                         onClick={() => handleInputToggle(inputItem.baseBuildingId)}
                                         className={`flex shrink-0 flex-col gap-1 border rounded-lg px-2.5 py-1.5 text-left cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-primary ${
@@ -80,13 +82,13 @@ export const InputsSelector: React.FC = () => {
                                             <span className="text-sm font-semibold tabular-nums whitespace-nowrap" style={{ color: getItemCategoryColor(inputItem.item.type) }}>{formatQuantity(inputItem.ratePerMinute)}<span className="font-normal text-xs">/min</span></span>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-base-content/45" title={inputItem.description}>
-                                            <BuildingImage
+                                            {!planning && <BuildingImage
                                                 buildingId={inputItem.building.id}
                                                 building={inputItem.building}
                                                 size="small"
                                                 className="!w-3.5 !h-3.5 opacity-60"
-                                            />
-                                            <span className="text-xs max-w-64 truncate">{inputItem.name || inputItem.building.name}</span>
+                                            />}
+                                            {!planning && <span className="text-xs max-w-64 truncate">{inputItem.name || inputItem.building.name}</span>}
                                             {inputItem.linkedOutput && (
                                                 <span
                                                     className={`badge badge-xs shrink-0 max-w-64 truncate ${hasLinkError ? 'badge-error' : 'badge-outline'}`}
@@ -95,6 +97,7 @@ export const InputsSelector: React.FC = () => {
                                                     {hasLinkError ? 'Link broken' : linkLabel}
                                                 </span>
                                             )}
+                                            {planning && <span className="text-xs">{isSelected ? '× Remove' : '+ Use input'}</span>}
                                         </div>
                                     </button>
                                 );

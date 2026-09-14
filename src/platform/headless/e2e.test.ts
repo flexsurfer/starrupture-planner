@@ -541,6 +541,7 @@ describe('headless application E2E', () => {
     it('manages bases, buildings, logistics, and energy groups', async () => {
         const scenario = await createSeededScenario();
         const bases = mountView(scenario, 'bases root', {
+            mode: [appIds.subscriptions.BASES_MODE],
             list: [appIds.subscriptions.BASES_LIST],
             selectedId: [appIds.subscriptions.BASES_SELECTED_BASE_ID],
             selectedTab: [appIds.subscriptions.BASES_SELECTED_DETAIL_TAB],
@@ -584,6 +585,14 @@ describe('headless application E2E', () => {
         expect(baseDetails.value('detailsExpanded')).toBe(true);
         await dispatch(scenario, [appIds.events.BASES_SET_DETAILS_EXPANDED, false]);
         expect(baseDetails.value('detailsExpanded')).toBe(false);
+        expect(bases.value('mode')).toBeNull();
+        const baseBeforeModeChange = baseDetails.value('selectedBase');
+        await dispatch(scenario, [appIds.events.BASES_SET_MODE, 'planning']);
+        expect(bases.value('mode')).toBe('planning');
+        expect(baseDetails.value('selectedBase')).toEqual(baseBeforeModeChange);
+        expect(bases.value('selectedTab')).toBe('buildings');
+        await dispatch(scenario, [appIds.events.BASES_SET_MODE, 'advanced']);
+        expect(bases.value('mode')).toBe('advanced');
         await dispatch(scenario, [appIds.events.BASES_SET_CORE_LEVEL, 1]);
 
         await dispatch(scenario, [

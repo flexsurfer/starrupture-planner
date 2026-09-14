@@ -16,6 +16,7 @@ import {
 import { getDefaultOutputCapacityPerMinute } from '@/utils/planOutputAllocations';
 import { SelectItemModal } from './SelectItemModal';
 import { LinkOutputModal } from '@/features/production-plan-modal/ui';
+import { AdvancedModeSwitch } from '../components/AdvancedModeSwitch';
 
 interface AddBuildingCardModalProps {
   isOpen: boolean;
@@ -443,10 +444,11 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <div role="dialog" aria-modal="true" aria-label="Select Building" className="modal-box max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         {/* Header - fixed */}
-        <div className="px-6 pt-6 pb-3 flex-shrink-0">
+        <div className="px-6 pt-6 pb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
           <h3 className="font-bold text-lg">Select Building</h3>
+          {sectionType === 'inputs' && <AdvancedModeSwitch />}
         </div>
 
         {/* Buildings grid - scrollable */}

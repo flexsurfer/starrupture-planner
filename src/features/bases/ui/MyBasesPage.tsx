@@ -8,14 +8,19 @@ import { MyBasesLogisticsView } from './MyBasesLogisticsView';
 import { CreateBaseModal } from './modals';
 import { ManageEnergyGroupsModal } from '@/features/energy-groups/ui';
 
+import { MyBasesSettings } from './components/MyBasesSettings';
+
 type MyBasesView = 'bases' | 'logistics';
 
 const MyBasesPage = () => {
   const runtime = useRuntime();
+  const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
   const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
   const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
   const [activeView, setActiveView] = useState<MyBasesView>('bases');
+
+  const visibleView = advanced ? activeView : 'bases';
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -60,7 +65,7 @@ const MyBasesPage = () => {
       {/* Header */}
       <div className="mb-2 flex shrink-0 flex-wrap items-center gap-2">
         <MyBasesStats />
-        <button
+        {advanced && <button
           type="button"
           className="btn btn-ghost btn-sm h-8 min-h-8 shrink-0 gap-1.5 px-2 text-xs whitespace-nowrap"
           onClick={() => setShowEnergyGroupsModal(true)}
@@ -75,7 +80,7 @@ const MyBasesPage = () => {
               {energyGroups.length}
             </span>
           )}
-        </button>
+        </button>}
       </div>
 
       <div className="mb-2 flex shrink-0 items-center gap-1">
@@ -87,10 +92,10 @@ const MyBasesPage = () => {
           <button
             type="button"
             role="tab"
-            aria-selected={activeView === 'bases'}
+            aria-selected={visibleView === 'bases'}
             id="my-bases-tab-bases"
             aria-controls="my-bases-panel-bases"
-            className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${activeView === 'bases' ? 'tab-active' : ''}`}
+            className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${visibleView === 'bases' ? 'tab-active' : ''}`}
             onClick={() => setActiveView('bases')}
           >
             Bases
@@ -98,18 +103,19 @@ const MyBasesPage = () => {
               <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">{bases.length}</span>
             )}
           </button>
-          <button
+          {advanced && <button
             type="button"
             role="tab"
-            aria-selected={activeView === 'logistics'}
+            aria-selected={visibleView === 'logistics'}
             id="my-bases-tab-logistics"
             aria-controls="my-bases-panel-logistics"
-            className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${activeView === 'logistics' ? 'tab-active' : ''}`}
+            className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${visibleView === 'logistics' ? 'tab-active' : ''}`}
             onClick={() => setActiveView('logistics')}
           >
             Logistics
-          </button>
+          </button>}
         </div>
+        <MyBasesSettings />
         <button
           type="button"
           className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"
@@ -124,7 +130,7 @@ const MyBasesPage = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {activeView === 'bases' && (
+        {visibleView === 'bases' && (
           <div
             id="my-bases-panel-bases"
             role="tabpanel"
@@ -141,7 +147,7 @@ const MyBasesPage = () => {
             )}
           </div>
         )}
-        {activeView === 'logistics' && (
+        {visibleView === 'logistics' && (
           <div
             id="my-bases-panel-logistics"
             role="tabpanel"

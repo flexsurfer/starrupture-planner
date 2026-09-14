@@ -19,6 +19,7 @@ import {
     getOutputBuilding,
     linkInputToOutput,
     unlinkInputsLinkedToOutput,
+    takeOverPlanningEndpoint,
 } from './building-operations';
 import { selectAddedProductionPlanInputs } from '@/features/production-plan-modal/events';
 import { DEFAULT_BASE_CORE_LEVEL } from './core-stats';
@@ -32,6 +33,10 @@ function createBaseId(): string {
 }
 
 export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regEvent(appIds.events.BASES_SET_MODE, ({ draftState }, mode) => {
+        draftState.basesMode = mode;
+    });
+
     registrar.regEvent(appIds.events.BASES_SET_DETAILS_EXPANDED, ({ draftState }, expanded) => {
         draftState.basesDetailsExpanded = expanded;
     });
@@ -213,6 +218,9 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
                     const resolvedNewOutput = resolveOutputBuilding(newBuilding, base);
                     unlinkInputsLinkedToOutput(draftState as AppState, baseId, newBuilding.id, normalizedLinkedInputRef);
                     linkInputToOutput(draftState as AppState, normalizedLinkedInputRef, baseId, newBuilding, resolvedNewOutput);
+                    const targetBase = getBaseById(draftState.basesList, normalizedLinkedInputRef.baseId);
+                    const targetInput = targetBase?.buildings.find(candidate => candidate.id === normalizedLinkedInputRef.buildingId);
+                    if (targetBase && targetInput) takeOverPlanningEndpoint(targetBase, targetInput);
                 }
 
                 if (sectionType === 'inputs' && normalizedLinkedOutput) {
@@ -257,7 +265,15 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
         if (!baseId) return;
 
         const base = getBaseById(draftState.basesList, baseId);
-        if (base) base.buildings = base.buildings.filter((building) => building.id !== buildingId);
+        if (!base) return;
+        const removed = base.buildings.find(building => building.id === buildingId);
+        base.buildings = base.buildings.filter((building) => building.id !== buildingId);
+        if (removed?.sectionType === 'inputs' && removed.planningOwnerPlanId) {
+            for (const plan of base.productions) {
+                plan.inputs = plan.inputs?.filter(input => input.id !== buildingId);
+            }
+            draftState.productionPlanModalState.selectedInputIds = draftState.productionPlanModalState.selectedInputIds.filter(id => id !== buildingId);
+        }
     });
 
     registrar.regEvent(
@@ -280,6 +296,7 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
             delete building.requestedRatePerMinute;
             delete building.capacityPerMinute;
             delete building.priority;
+            takeOverPlanningEndpoint(base!, building);
         },
     );
 
@@ -303,6 +320,7 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
             const resolvedSourceOutput = resolveOutputBuilding(sourceOutput, sourceBase);
             unlinkInputsLinkedToOutput(draftState as AppState, sourceBaseId, sourceOutputBuildingId, inputRef);
             linkInputToOutput(draftState as AppState, inputRef, sourceBaseId, sourceOutput, resolvedSourceOutput);
+            takeOverPlanningEndpoint(base, inputBuilding);
         },
     );
 
@@ -317,6 +335,7 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
 
             const sourceProductionId = payload?.sourceProductionId || null;
             if (!sourceProductionId) {
+                takeOverPlanningEndpoint(base, output);
                 delete output.sourceProductionId;
                 delete output.allocationMode;
                 delete output.requestedRatePerMinute;
@@ -327,6 +346,7 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
 
             const sourcePlan = base.productions.find((plan) => plan.id === sourceProductionId);
             if (!sourcePlan) return;
+            takeOverPlanningEndpoint(base, output);
 
             output.sourceProductionId = sourceProductionId;
             output.allocationMode = payload.allocationMode === 'fixed' ? 'fixed' : 'auto';

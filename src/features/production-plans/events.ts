@@ -8,7 +8,8 @@ import { buildActivePlanOccupancy } from '@/features/bases/active-plan-occupancy
 import { computeRequiredBuildings, getFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
 import { clearOutputPlanLinksForProduction } from '@/utils/planOutputAllocations';
 import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '@/constants/buildingIds';
-import { createBaseBuilding } from '@/features/bases/building-operations';
+import { createBaseBuilding, takeOverPlanningEndpoint } from '@/features/bases/building-operations';
+import { removeOwnedPlanningInput } from './planning-endpoints';
 
 function getBaseById(bases: Base[], baseId: string): Base | undefined {
     return bases.find((base) => base.id === baseId);
@@ -49,6 +50,17 @@ export const registerProductionPlansEvents: UkladModule<UkladRegistrar<AppContra
         const base = getBaseById(draftState.basesList, baseId);
         if (!base) return;
 
+        if (draftState.basesMode === 'planning') {
+            for (const input of [...base.buildings]) {
+                if (input.sectionType === 'inputs') removeOwnedPlanningInput(base, input.id, sectionId);
+            }
+            base.buildings = base.buildings.filter(building => building.sectionType !== 'outputs' || building.planningOwnerPlanId !== sectionId);
+        } else {
+            // Deleting in Advanced mode keeps physical buildings, with no dangling ownership.
+            for (const building of base.buildings) {
+                if (building.planningOwnerPlanId === sectionId) takeOverPlanningEndpoint(base, building);
+            }
+        }
         base.productions = base.productions.filter((plan) => plan.id !== sectionId);
         clearOutputPlanLinksForProduction(base, sectionId);
     });

@@ -2,6 +2,7 @@ import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { AddInputButton } from './AddInputButton';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import { AdvancedModeSwitch } from '@/features/bases/ui/components/AdvancedModeSwitch';
 
 export const ModalHeader: React.FC = () => {
     const runtime = useRuntime();
@@ -34,7 +35,10 @@ export const ModalHeader: React.FC = () => {
                 onChange={(event) => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_NAME, event.target.value])}
                 placeholder="Enter plan name"
             />
-            <AddInputButton />
+            <div className="flex items-center gap-2 sm:ml-auto">
+                <AdvancedModeSwitch />
+                <AddInputButton />
+            </div>
         </div>
     );
 };

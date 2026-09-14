@@ -21,6 +21,8 @@ import {
     unlinkInputsLinkedToOutput,
 } from '@/features/bases/building-operations';
 import { createProductionPlanModalFeatureState } from './state';
+import { PACKAGE_DISPATCHER_BUILDING_ID, PACKAGE_RECEIVER_BUILDING_ID } from '@/constants/buildingIds';
+import { canSelectPlanningInput, canUsePlanningOutput, removeOwnedPlanningInput } from '@/features/production-plans/planning-endpoints';
 
 function getBaseById(bases: Base[], baseId: string): Base | undefined {
     return bases.find((base) => base.id === baseId);
@@ -100,7 +102,10 @@ function saveProductionPlan(draftState: AppState): void {
         },
         draftState.buildingsList,
     );
-    const usedInputSnapshots = computeUsedInputSnapshots(flow, selectedInputBuildings).map((input) => ({ ...input }));
+    const usedInputSnapshots = (draftState.basesMode === 'planning'
+        ? base.buildings.filter(input => modal.selectedInputIds.includes(input.id) && input.sectionType === 'inputs')
+        : computeUsedInputSnapshots(flow, selectedInputBuildings)
+    ).map(input => ({ ...input }));
     const requiredBuildings = computeRequiredBuildings(flow);
 
     if (editSectionId) {
@@ -114,6 +119,12 @@ function saveProductionPlan(draftState: AppState): void {
         section.inputs = usedInputSnapshots;
         section.requiredBuildings = requiredBuildings;
         section.recipeSelections = { ...recipeSelections };
+        for (const output of base.buildings) {
+            if (output.sectionType === 'outputs' && output.planningOwnerPlanId === section.id) {
+                output.name = `${section.name} output`;
+                output.selectedItemId = section.selectedItemId;
+            }
+        }
         return;
     }
 
@@ -131,6 +142,12 @@ function saveProductionPlan(draftState: AppState): void {
     };
     base.productions.push(newSection);
     modal.editSectionId = newSection.id;
+    if (draftState.basesMode === 'planning' && draftState.buildingsList.some(building => building.id === PACKAGE_DISPATCHER_BUILDING_ID)) {
+        base.buildings.push({
+            ...createBaseBuilding({ buildingTypeId: PACKAGE_DISPATCHER_BUILDING_ID, sectionType: 'outputs', sourceProductionId: newSection.id, allocationMode: 'auto', name: `${newSection.name} output`, selectedItemId }),
+            planningOwnerPlanId: newSection.id,
+        });
+    }
 }
 
 /** Include newly created inputs in the open plan in the same state transaction. */
@@ -266,13 +283,21 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, ({ draftState }, baseBuildingId) => {
         const modalState = draftState.productionPlanModalState;
         const index = modalState.selectedInputIds.indexOf(baseBuildingId);
+        const base = modalState.baseId ? getBaseById(draftState.basesList, modalState.baseId) : undefined;
         if (index >= 0) {
             modalState.selectedInputIds.splice(index, 1);
+            if (draftState.basesMode === 'planning' && base && modalState.editSectionId) {
+                removeOwnedPlanningInput(base, baseBuildingId, modalState.editSectionId);
+            }
         } else {
+            const input = base?.buildings.find(input => input.id === baseBuildingId);
+            if (!input) return;
+            if (draftState.basesMode === 'planning' && base && !canSelectPlanningInput(
+                draftState.basesList, input, base.id, base.productions.find(plan => plan.id === modalState.editSectionId),
+            )) return;
             modalState.selectedInputIds.push(baseBuildingId);
         }
 
-        const base = modalState.baseId ? getBaseById(draftState.basesList, modalState.baseId) : undefined;
         const selectedInputBuildings = getSelectedFlowInputBuildings(base, modalState.selectedInputIds, draftState.basesList);
         modalState.recipeSelections = sanitizeRecipeSelectionsForInputItems(modalState.recipeSelections, selectedInputBuildings);
         applyMatchInputs(draftState as AppState);
@@ -292,6 +317,9 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
 
             const sourceOutput = getOutputBuilding(sourceBase, sourceOutputBuildingId);
             if (!sourceOutput) return;
+            const planning = draftState.basesMode === 'planning';
+            const targetPlan = targetBase.productions.find(plan => plan.id === modalState.editSectionId);
+            if (planning && (!modalState.isOpen || !modalState.name.trim() || !Number.isFinite(modalState.targetAmount) || modalState.targetAmount <= 0 || !targetPlan || !canUsePlanningOutput(draftState.basesList, sourceBase, sourceOutput, targetBaseId, targetPlan))) return;
 
             const resolvedSourceOutput = resolveOutputBuilding(sourceOutput, sourceBase);
             if (!resolvedSourceOutput.selectedItemId || !resolvedSourceOutput.ratePerMinute || resolvedSourceOutput.ratePerMinute <= 0) {
@@ -301,12 +329,12 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
             const targetBuilding = targetBuildingTypeId
                 ? draftState.buildingsList.find((building) => building.id === targetBuildingTypeId)
                 : undefined;
-            const inputBuildingTypeId = targetBuilding &&
+            const inputBuildingTypeId = planning ? PACKAGE_RECEIVER_BUILDING_ID : targetBuilding &&
                 isBuildingAvailableForSection(targetBuilding, 'inputs') &&
                 !isRawExtractor(targetBuilding)
                 ? targetBuilding.id
                 : getLinkedInputBuildingTypeId(draftState.buildingsList);
-            if (!inputBuildingTypeId) return;
+            if (!inputBuildingTypeId || !draftState.buildingsList.some(building => building.id === inputBuildingTypeId)) return;
 
             const existingLinkedInput = targetBase.buildings.find((building) =>
                 building.sectionType === 'inputs' &&
@@ -321,6 +349,7 @@ export const registerProductionPlanModalEvents: UkladModule<UkladRegistrar<AppCo
                 description,
             });
             if (!existingLinkedInput) targetBase.buildings.push(linkedInput);
+            if (planning && targetPlan) linkedInput.planningOwnerPlanId = targetPlan.id;
 
             const inputRef = { baseId: targetBaseId, buildingId: linkedInput.id };
             unlinkInputsLinkedToOutput(draftState as AppState, sourceBaseId, sourceOutputBuildingId, inputRef);

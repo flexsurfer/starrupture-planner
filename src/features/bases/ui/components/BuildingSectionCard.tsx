@@ -592,6 +592,9 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
         </div>
 
         {description && <p className="mt-2 text-xs leading-relaxed text-base-content/60 break-words">{description}</p>}
+        {baseBuilding?.planningOwnerPlanId && <p className="mt-2 text-xs text-base-content/55" title="Created for this plan in Planning mode. Editing this endpoint's configuration makes it manually managed.">
+          Managed by plan: {base?.productions.find(plan => plan.id === baseBuilding.planningOwnerPlanId)?.name || 'Unknown plan'}
+        </p>}
         {isInActivePlan && <p className="mt-2 text-xs leading-snug text-base-content/60 break-words">
           <span aria-hidden="true" className="mr-1.5 inline-block size-1.5 rounded-full bg-primary align-middle" />
           Active in {activePlanNames.join(', ')}

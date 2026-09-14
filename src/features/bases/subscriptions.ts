@@ -6,6 +6,7 @@ import { resolveBaseCardCollapsedSections } from '@/features/bases/card-sections
 import { registerBasesDerivedSubscriptions } from './derived-subscriptions';
 
 export const registerBasesSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regRootSub(appIds.subscriptions.BASES_MODE, stateKeys.basesMode);
     registrar.regRootSub(appIds.subscriptions.BASES_LIST, stateKeys.basesList);
     registrar.regRootSub(appIds.subscriptions.BASES_DETAILS_EXPANDED, stateKeys.basesDetailsExpanded);
     registrar.regRootSub(appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS, stateKeys.basesCardCollapsedSections);

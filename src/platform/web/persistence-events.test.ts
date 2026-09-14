@@ -33,6 +33,33 @@ function createRuntime(state = createState()) {
 }
 
 describe('base persistence', () => {
+    it.each(['planning', 'advanced'] as const)('remembers %s mode after reload without changing base data', async (mode) => {
+        const storage = memoryStorageAdapter();
+        const runtime = createRuntime();
+        persist(runtime, { storage, prefix: PERSIST_PREFIX, keys: PERSIST_KEYS }).hydrate();
+        const harness = createUkladTestHarness(runtime);
+        const before = harness.getState();
+        expect(before.basesMode).toBeNull();
+        harness.dispatchSync([appIds.events.BASES_SET_MODE, mode]);
+        await harness.flush();
+        expect(harness.getState()).toEqual({ ...before, basesMode: mode });
+        runtime.dispose();
+
+        const restored = createRuntime();
+        persist(restored, { storage, prefix: PERSIST_PREFIX, keys: PERSIST_KEYS }).hydrate();
+        expect(createUkladTestHarness(restored).getSubscriptionValue([appIds.subscriptions.BASES_MODE])).toBe(mode);
+        restored.dispose();
+    });
+
+    it.each([undefined, null, 'invalid', true, {}])('asks for a mode when the stored preference is missing or invalid: %s', (value) => {
+        const storage = memoryStorageAdapter();
+        if (value !== undefined) storage.setItem(`${PERSIST_PREFIX}/${stateKeys.basesMode}`, JSON.stringify({ v: 1, data: value }));
+        const runtime = createRuntime();
+        persist(runtime, { storage, prefix: PERSIST_PREFIX, keys: PERSIST_KEYS }).hydrate();
+        expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.BASES_MODE])).toBeNull();
+        runtime.dispose();
+    });
+
     it('restores the global collapsed details preference after reload', async () => {
         const storage = memoryStorageAdapter();
         const runtime = createRuntime();

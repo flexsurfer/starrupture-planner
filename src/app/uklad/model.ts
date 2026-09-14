@@ -125,6 +125,8 @@ export type BaseCardCollapsedSections = Partial<Record<BaseCardSectionKey, boole
 
 // Base-related types
 export interface BaseBuilding {
+    /** Endpoint managed by Planning mode; cleared when its configuration is edited manually. */
+    planningOwnerPlanId?: string;
     id: string;
     buildingTypeId: string; // References Building.id from buildings data
     sectionType: string; // Section where this building was added (e.g., 'inputs', 'production', 'outputs')
@@ -229,6 +231,7 @@ export interface AppState extends PlannerFeatureState {
     energyGroups: EnergyGroup[];
     basesCardCollapsedSections: Record<string, BaseCardCollapsedSections>;
     basesSelectedBaseId: string | null;
+    basesMode: import('@/features/bases/state').BasesMode | null;
     basesSelectedDetailTab: BaseDetailTab;
     basesDetailsExpanded: boolean;
     uiConfirmationDialog: ConfirmationDialog;

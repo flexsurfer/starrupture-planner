@@ -5,7 +5,6 @@ import {
     ModalHeader,
     InputsSelector,
     FormControls,
-    DeficitsAlert,
     DiagramSection,
 } from './components';
 
@@ -24,8 +23,6 @@ export const CreateProductionPlanModal: React.FC = () => {
 
             {/* Select Inputs section */}
             <InputsSelector />
-
-            <DeficitsAlert />
 
             {/* Controls section */}
             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col flex-1 min-h-0">

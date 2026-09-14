@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FlowNode, Item } from '@/features/planner/types';
+import type { FlowNode, Item, RawMaterialDeficit } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
 import { ItemImage, BuildingImage, RecipeTypeIcon } from '@/shared/ui';
 import { NodeRecipeButton } from './NodeRecipeButton';
@@ -10,6 +10,8 @@ interface NodeCardProps {
     outputColor: string;
     compactOnMobile?: boolean;
     onSelectRecipe?: (itemId: string, recipeKey: string) => void;
+    inputRequirement?: RawMaterialDeficit;
+    showMissingInput?: boolean;
 }
 
 export const NodeCard: React.FC<NodeCardProps> = ({
@@ -18,6 +20,8 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     outputColor,
     compactOnMobile = false,
     onSelectRecipe,
+    inputRequirement,
+    showMissingInput = false,
 }) => {
     const item = items.find(({ id }) => id === node.outputItem);
     const buildingCount = Math.ceil(node.buildingCount);
@@ -40,20 +44,22 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                     <div className={`min-w-0 flex-1 font-normal leading-tight break-words ${compactOnMobile ? 'text-xs sm:text-base' : 'text-base'}`}>
                         {getItemName(node.outputItem, items)}
                     </div>
-                    {item && <NodeRecipeButton item={item} node={node} onSelectRecipe={node.nodeType === 'input' ? undefined : onSelectRecipe} />}
+                    {item && !inputRequirement && <NodeRecipeButton item={item} node={node} onSelectRecipe={node.nodeType === 'input' ? undefined : onSelectRecipe} />}
                 </div>
                 <div className="relative flex items-center justify-center gap-1.5">
                     {node.recipeType && <RecipeTypeIcon recipeType={node.recipeType} className="absolute left-0 top-1/2 -translate-y-1/2 z-10" />}
                     <div className={`shrink-0 ${compactOnMobile ? 'max-sm:[&>div]:size-10 max-sm:[&_img]:size-10' : ''}`}>
                         <ItemImage itemId={node.outputItem} size="medium" />
                     </div>
-                    <div className={`min-w-0 font-semibold leading-tight break-words tabular-nums ${compactOnMobile ? 'text-lg sm:text-xl' : 'text-xl'}`} style={{ color: outputColor }} aria-label="Total output per minute">
-                        {usedRate.toFixed(1)}<span className="block text-xs font-normal">/min</span>
+                    <div className={`min-w-0 font-semibold leading-tight break-words tabular-nums ${compactOnMobile ? 'text-lg sm:text-xl' : 'text-xl'}`} style={{ color: outputColor }} aria-label={inputRequirement ? 'Required input per minute' : 'Total output per minute'}>
+                        {usedRate.toFixed(1)}<span className="block text-xs font-normal">/min{inputRequirement ? ' needed' : ''}</span>
                     </div>
                 </div>
             </div>
 
-            <div
+            {inputRequirement ? <div className={`mt-auto p-2 text-xs ${showMissingInput ? 'text-error' : 'text-base-content/60'}`}>
+                {showMissingInput ? inputRequirement.available > 0 ? 'Additional input needed' : 'Input not configured' : 'Required resource'}
+            </div> : <><div
                 className="mt-auto shrink-0"
                 role="meter"
                 aria-label="Resource capacity used"
@@ -84,7 +90,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                         ×{buildingCount}
                     </span>
                 </div>
-            </div>
+            </div></>}
         </div>
     );
 };

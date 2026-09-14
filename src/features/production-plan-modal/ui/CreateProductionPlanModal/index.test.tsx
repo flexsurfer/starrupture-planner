@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { memoryStorageAdapter, persist } from '@ukladjs/persist';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -16,7 +16,7 @@ afterEach(() => {
     runtimes.splice(0).forEach(runtime => runtime.dispose());
 });
 
-function setup() {
+function setup(planning = false) {
     const runtime = createAppRuntime();
     runtimes.push(runtime);
     runtime.registerModule(registerApplicationModules);
@@ -24,12 +24,15 @@ function setup() {
     harness.restoreState({
         ...harness.getState(),
         basesSelectedBaseId: 'base',
+        basesMode: planning ? 'planning' : null,
         itemsList: [
             { id: 'plate', name: 'Plate', type: 'processed' },
             { id: 'ore', name: 'Ore', type: 'raw' },
         ],
         itemsById: { plate: { id: 'plate', name: 'Plate', type: 'processed' }, ore: { id: 'ore', name: 'Ore', type: 'raw' } },
         buildingsList: [
+            { id: 'package_dispatcher', name: 'Rail output', type: 'logistics' },
+            { id: 'package_receiver', name: 'Rail input', type: 'logistics' },
             { id: 'storage', name: 'Storage', type: 'storage' },
             { id: 'smelter', name: 'Smelter', type: 'production', recipes: [
                 { output: { id: 'plate', amount_per_minute: 60 }, inputs: [{ id: 'ore', amount_per_minute: 60 }] },
@@ -37,6 +40,8 @@ function setup() {
         ],
         basesList: [{ id: 'base', name: 'Base', productions: [], buildings: [
             { id: 'input', buildingTypeId: 'storage', sectionType: 'inputs', selectedItemId: 'ore', ratePerMinute: 120 },
+        ] }, { id: 'source', name: 'Ore base', productions: [], buildings: [
+            { id: 'output', buildingTypeId: 'package_dispatcher', sectionType: 'outputs', selectedItemId: 'ore', ratePerMinute: 60, name: 'Ore output' },
         ] }],
     });
     const storage = memoryStorageAdapter();
@@ -65,6 +70,52 @@ it('autosaves creation and the last keystroke before Back, then restores after r
     runtimes.push(restored);
     persist(restored, { storage, keys: [stateKeys.basesList] }).hydrate();
     expect(createUkladTestHarness(restored).getState().basesList[0].productions).toMatchObject([{ id, name: 'My plates', targetAmount: 125 }]);
+});
+
+it('adds and removes an external item in Planning mode and keeps a broken link removable', async () => {
+    const { harness } = setup(true);
+    expect(screen.getByRole('button', { name: 'Add external item' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Production item'), { target: { value: 'plate' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add external item' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Add external item' }));
+    expect(await screen.findByRole('dialog', { name: 'Add external item' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Ore output.*Ore base/ }));
+    const remove = await screen.findByRole('button', { name: /Remove input Ore from Ore base/ });
+    expect(harness.getState().basesList[0].productions[0].inputs).toHaveLength(1);
+    await act(async () => {
+        harness.dispatchSync([appIds.events.BASES_DELETE_BASE, 'source']);
+    });
+    expect(screen.getByText('Link broken')).toBeInTheDocument();
+    fireEvent.click(remove);
+    await waitFor(() => expect(harness.getState().basesList[0].productions[0].inputs).toEqual([]));
+    expect(harness.getState().basesList[0].buildings.filter(building => building.buildingTypeId === 'package_receiver')).toEqual([]);
+    expect(screen.queryByRole('button', { name: /Remove input Ore/ })).not.toBeInTheDocument();
+});
+
+it('switches modes in the editor and both input dialogs while keeping the saved plan intact', async () => {
+    const { harness } = setup(true);
+    fireEvent.change(screen.getByLabelText('Production item'), { target: { value: 'plate' } });
+    await waitFor(() => expect(harness.getState().basesList[0].productions).toHaveLength(1));
+    const saved = harness.getState().basesList;
+    fireEvent.click(screen.getByRole('switch', { name: 'Advanced' }));
+    expect(await screen.findByRole('button', { name: 'Add input' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Match inputs' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('switch', { name: 'Advanced' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Add external item' }));
+    const externalDialog = await screen.findByRole('dialog', { name: 'Add external item' });
+    fireEvent.click(within(externalDialog).getByRole('switch', { name: 'Advanced' }));
+    const buildingDialog = await screen.findByRole('dialog', { name: 'Select Building' });
+    expect(harness.getState().basesMode).toBe('advanced');
+    expect(within(buildingDialog).getByRole('button', { name: /Storage/ })).toBeInTheDocument();
+    expect(within(buildingDialog).getByRole('switch', { name: 'Advanced' })).toBeChecked();
+    fireEvent.click(within(buildingDialog).getByRole('switch', { name: 'Advanced' }));
+    const restoredDialog = await screen.findByRole('dialog', { name: 'Add external item' });
+    expect(harness.getState().basesMode).toBe('planning');
+    expect(screen.queryByRole('dialog', { name: 'Select Building' })).not.toBeInTheDocument();
+    fireEvent.click(within(restoredDialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('switch', { name: 'Advanced' })).not.toBeChecked();
+    expect(harness.getState().basesList).toEqual(saved);
+    expect(screen.getByLabelText('Plan name')).toHaveValue('Plate Production');
 });
 
 it('autosaves input selection and matched amount to the same plan, preserving valid data during incomplete edits', async () => {

@@ -2,7 +2,7 @@ import type { Base, BaseBuilding, PlanRequiredBuilding } from '@/app/uklad/model
 import type { ProductionFlowResult } from '@/features/planner/types';
 import { resolveOutputBuilding } from './planOutputAllocations';
 
-export type LinkedOutputStatus = 'ok' | 'missing-base' | 'missing-output' | 'missing-plan' | 'unconfigured-output';
+export type LinkedOutputStatus = 'ok' | 'missing-base' | 'missing-output' | 'missing-plan' | 'unconfigured-output' | 'item-changed';
 
 export interface LinkedOutputResolution {
     status: LinkedOutputStatus;
@@ -34,7 +34,7 @@ function lookupBase(lookup: BaseLookup, baseId: string): Base | undefined {
 }
 
 export function resolveLinkedOutput(
-    input: Pick<BaseBuilding, 'linkedOutput'>,
+    input: Pick<BaseBuilding, 'linkedOutput' | 'planningOwnerPlanId'>,
     bases: BaseLookup
 ): LinkedOutputResolution {
     const reference = input.linkedOutput;
@@ -49,6 +49,9 @@ export function resolveLinkedOutput(
     }
 
     const resolvedSourceOutput = resolveOutputBuilding(sourceOutput, sourceBase);
+    if (input.planningOwnerPlanId && reference.itemIdSnapshot && resolvedSourceOutput.selectedItemId && reference.itemIdSnapshot !== resolvedSourceOutput.selectedItemId) {
+        return { status: 'item-changed', sourceBase, sourceOutput: resolvedSourceOutput };
+    }
     if (resolvedSourceOutput.outputResolutionStatus === 'missing-plan') {
         return { status: 'missing-plan', sourceBase, sourceOutput: resolvedSourceOutput };
     }

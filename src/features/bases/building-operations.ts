@@ -74,6 +74,11 @@ export function getOutputBuilding(base: Base, outputBuildingId: string): BaseBui
     );
 }
 
+/** Manual endpoint edits release Planning ownership without rewriting saved plan snapshots. */
+export function takeOverPlanningEndpoint(_base: Base, building: BaseBuilding): void {
+    delete building.planningOwnerPlanId;
+}
+
 export function unlinkInputsLinkedToOutput(
     draftState: AppState,
     sourceBaseId: string,
@@ -88,6 +93,7 @@ export function unlinkInputsLinkedToOutput(
             if (exceptInputRef?.baseId === base.id && exceptInputRef.buildingId === building.id) return;
 
             delete building.linkedOutput;
+            takeOverPlanningEndpoint(base, building);
         });
     });
 }

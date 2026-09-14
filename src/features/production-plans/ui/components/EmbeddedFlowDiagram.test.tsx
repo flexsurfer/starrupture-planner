@@ -10,6 +10,7 @@ import { ProductionPlanSection } from './ProductionPlanSection';
 
 const { fitView, dispatch } = vi.hoisted(() => ({ fitView: vi.fn(), dispatch: vi.fn() }));
 let diagramProps: ReactFlowProps;
+let basesMode = 'advanced';
 vi.mock('@xyflow/react', async (importOriginal) => ({
     ...await importOriginal<typeof import('@xyflow/react')>(),
     useReactFlow: () => ({ fitView }),
@@ -32,6 +33,8 @@ vi.mock('@/app/uklad/bindings', () => ({
         switch (id) {
             case appIds.subscriptions.UI_THEME: return 'dark';
             case appIds.subscriptions.ITEMS_LIST: return items;
+            case appIds.subscriptions.BUILDINGS_LIST: return buildings;
+            case appIds.subscriptions.BASES_MODE: return basesMode;
             case appIds.subscriptions.ITEMS_BY_ID_MAP: return Object.fromEntries(items.map(item => [item.id, item]));
             case appIds.subscriptions.BASES_LIST: return [];
             case appIds.subscriptions.PRODUCTION_PLAN_SECTION_FLOW_BY_ID: return productionFlow;
@@ -51,6 +54,7 @@ const items = [
     { id: 'plate', name: 'Plate', type: 'processed' },
     { id: 'water', name: 'Water', type: 'raw' },
 ];
+const buildings = [{ id: 'smelter', name: 'Smelter', recipes: [{ output: { id: 'plate', amount_per_minute: 60 }, inputs: [{ id: 'ore', amount_per_minute: 60 }] }] }];
 const productionFlow: ProductionFlowResult = {
     nodes: ['ore', 'plate', 'water'].map((outputItem, index) => ({
         nodeType: index === 1 ? 'production' : 'input',
@@ -64,6 +68,7 @@ const productionFlow: ProductionFlowResult = {
 };
 
 beforeEach(() => {
+    basesMode = 'advanced';
     HTMLDialogElement.prototype.showModal = function () { this.open = true; };
     HTMLDialogElement.prototype.close = function () { this.open = false; };
 });
@@ -149,4 +154,19 @@ it('omits pin controls when diagram interaction is disabled', () => {
     render(<EmbeddedFlowDiagram productionFlow={productionFlow} interactive={false} />);
     expect(screen.queryByRole('button', { name: 'Pin node to highlight connections' })).not.toBeInTheDocument();
     expect(diagramProps.nodesDraggable).toBe(false);
+});
+
+it('shows missing inputs connected to their consumers and only marks them red in Advanced mode', () => {
+    const flow: ProductionFlowResult = {
+        nodes: [productionFlow.nodes[1]], edges: [],
+        rawMaterialDeficits: [{ itemId: 'ore', required: 60, available: 0, missing: 60 }],
+    };
+    const { rerender } = render(<EmbeddedFlowDiagram productionFlow={flow} />);
+    expect(diagramProps.nodes).toHaveLength(2);
+    expect(diagramProps.nodes?.[1].style?.borderColor).toBe('var(--color-error)');
+    expect(diagramProps.edges).toEqual([expect.objectContaining({ source: 'node_1', target: 'node_0', data: { itemName: 'Ore', rateLabel: '60.0/min' } })]);
+    basesMode = 'planning';
+    rerender(<EmbeddedFlowDiagram productionFlow={flow} />);
+    expect(diagramProps.nodes).toHaveLength(2);
+    expect(diagramProps.nodes?.[1].style?.borderColor).not.toBe('var(--color-error)');
 });

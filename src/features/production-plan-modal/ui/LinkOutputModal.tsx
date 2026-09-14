@@ -3,9 +3,11 @@ import React, { useMemo, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { LinkableOutputItem } from '@/features/bases/types';
 import { BuildingImage, ItemImage } from '@/shared/ui';
+import { AdvancedModeSwitch } from '@/features/bases/ui/components/AdvancedModeSwitch';
 
 interface LinkOutputModalProps {
     isOpen: boolean;
+    showModeSwitch?: boolean;
     onClose: () => void;
     onSelect: (output: LinkableOutputItem) => void;
 }
@@ -17,7 +19,8 @@ function formatRate(value: number): string {
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
-export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClose, onSelect }) => {
+export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClose, onSelect, showModeSwitch = false }) => {
+    const planning = useSubscription([appIds.subscriptions.BASES_MODE]) === 'planning';
     const outputs = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS]) || EMPTY_LINKABLE_OUTPUTS;
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -52,10 +55,11 @@ export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClos
 
     return (
         <div className="modal modal-open">
-            <div className="modal-box max-w-3xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+            <div role="dialog" aria-modal="true" aria-label={planning ? 'Add external item' : 'Link Output'} className="modal-box max-w-3xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
                 <div className="px-6 pt-5 pb-3 border-b border-base-300">
-                    <div className="flex items-center justify-between gap-3">
-                        <h3 className="font-bold text-lg">Link Output</h3>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h3 className="mr-auto font-bold text-lg">{planning ? 'Add external item' : 'Link Output'}</h3>
+                        {showModeSwitch && <AdvancedModeSwitch />}
                         <button
                             type="button"
                             className="btn btn-sm btn-circle btn-ghost"
@@ -78,7 +82,7 @@ export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClos
                 <div className="flex-1 overflow-y-auto p-4">
                     {filteredOutputs.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-base-300 bg-base-200/40 px-4 py-5 text-sm text-base-content/65">
-                            No configured outputs found.
+                            {planning ? 'No available outputs found. Create a plan in another base, or configure a free output in Advanced mode.' : 'No configured outputs found.'}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

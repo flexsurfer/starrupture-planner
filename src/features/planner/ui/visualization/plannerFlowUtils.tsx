@@ -1,5 +1,5 @@
 import type { Node, Edge } from '@xyflow/react';
-import type { Item, FlowNode, FlowEdge } from '@/features/planner/types';
+import type { Item, FlowNode, FlowEdge, RawMaterialDeficit } from '@/features/planner/types';
 import { buildPlannerFlowGraph, type PlannerFlowDirection } from '@/features/planner/flow-graph';
 import { NodeCard } from './NodeCard';
 
@@ -10,6 +10,8 @@ export interface FlowDataGenerationParams {
     onSelectRecipe?: (itemId: string, recipeKey: string) => void;
     direction?: PlannerFlowDirection;
     targetItemId?: string;
+    inputRequirements?: ReadonlyMap<string, RawMaterialDeficit>;
+    showMissingInputs?: boolean;
 }
 
 export interface FlowData {
@@ -18,7 +20,7 @@ export interface FlowData {
 }
 
 /** Render embedded diagrams with the planner's default layout and edge styles. */
-export const generateReactFlowData = ({ flowNodes, flowEdges, items, onSelectRecipe, direction = 'LR', targetItemId }: FlowDataGenerationParams): FlowData => {
+export const generateReactFlowData = ({ flowNodes, flowEdges, items, onSelectRecipe, direction = 'LR', targetItemId, inputRequirements, showMissingInputs = false }: FlowDataGenerationParams): FlowData => {
     const graph = buildPlannerFlowGraph(flowNodes, flowEdges, items, [], direction);
     return {
         nodes: graph.nodes.map(({ flowNode, outputColor, ...node }) => ({
@@ -29,9 +31,13 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items, onSelectRec
                 ...(flowNode.nodeType !== 'launcher' && flowNode.outputItem === targetItemId && {
                     borderColor: 'var(--color-primary)',
                 }),
+                ...(showMissingInputs && inputRequirements?.has(flowNode.baseBuildingId ?? '') && {
+                    borderColor: 'var(--color-error)',
+                }),
             },
             data: {
-                label: <NodeCard node={flowNode} items={items} onSelectRecipe={onSelectRecipe} outputColor={outputColor} />,
+                label: <NodeCard node={flowNode} items={items} onSelectRecipe={onSelectRecipe} outputColor={outputColor}
+                    inputRequirement={inputRequirements?.get(flowNode.baseBuildingId ?? '')} showMissingInput={showMissingInputs} />,
             },
         })),
         edges: graph.edges,

@@ -35,6 +35,7 @@ const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, s
 
 export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ baseId, sectionId }) => {
     const runtime = useRuntime();
+    const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
     const diagramId = useId();
     const items = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -129,23 +130,23 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                             </svg>
                             <span className="shrink-0 [&>div]:size-7 [&_img]:size-7"><ItemImage itemId={section.selectedItemId} item={item} size="small" /></span>
                             <span className="min-w-0 text-sm font-semibold leading-snug break-words sm:text-base">{section.name}</span>
-                            <span className={`flex shrink-0 items-center gap-1 text-[11px] font-medium ${statusColor}`}>
+                            {advanced && <span className={`flex shrink-0 items-center gap-1 text-[11px] font-medium ${statusColor}`}>
                                 <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
                                 {section.active ? 'Active' : 'Inactive'}
-                            </span>
+                            </span>}
                         </button>
                     </h2>
                     <div className="flex flex-wrap items-center gap-1">
-                        {showManageButton && <button type="button" onClick={() => setShowRequirementsModal(true)}
+                        {advanced && showManageButton && <button type="button" onClick={() => setShowRequirementsModal(true)}
                             className="btn btn-sm btn-ghost h-8 min-h-8 px-2 text-xs" title="Manage production buildings">
                             <SectionIcon name="buildings" className="size-4" />
                             Manage
                         </button>}
-                        <button type="button" className="btn btn-sm btn-outline h-8 min-h-8 px-2 text-xs"
+                        {advanced && <button type="button" className="btn btn-sm btn-outline h-8 min-h-8 px-2 text-xs"
                             onClick={section.active ? handleDeactivate : handleActivate} disabled={!section.active && hasError}
                             title={!section.active && hasError ? 'Cannot activate: inputs are insufficient' : undefined}>
                             {section.active ? 'Deactivate' : 'Activate'}
-                        </button>
+                        </button>}
                         <button type="button" className="btn btn-sm btn-primary h-8 min-h-8 px-2 text-xs" onClick={handleEditProductionPlan}>Edit</button>
                         <button type="button" className="btn btn-sm btn-ghost h-8 min-h-8 w-8 p-0 text-base-content/50 hover:text-error"
                             aria-label={`Delete ${section.name}`} title="Delete production plan" onClick={handleDelete}>
@@ -163,13 +164,13 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                     {stats.totalHeat > 0 && <span title="Heat">🔥 {stats.totalHeat}</span>}
                     {stats.totalPowerConsumption > 0 && <span title="Power consumption">⚡ {stats.totalPowerConsumption} MW</span>}
                     {corporationName && <span>{corporationName} Lv.{section.corporationLevel?.level}</span>}
-                    {hasLinkedOutputs && outputSummary && <span className={outputSummary.remainingRatePerMinute > 0 ? 'text-warning' : ''}
+                    {advanced && hasLinkedOutputs && outputSummary && <span className={outputSummary.remainingRatePerMinute > 0 ? 'text-warning' : ''}
                         title={`${formatRatePerMinute(outputSummary.remainingRatePerMinute)}/min remaining`}>
                         Outputs {formatRatePerMinute(outputSummary.assignedRatePerMinute)}/min assigned
                     </span>}
                 </div>
             </header>
-            {warningLabels.length > 0 && <details className="border-b border-base-300 px-2 py-1.5 text-xs sm:px-3">
+            {advanced && warningLabels.length > 0 && <details className="border-b border-base-300 px-2 py-1.5 text-xs sm:px-3">
                 <summary className="cursor-pointer text-warning">Requirements need attention: {warningLabels.join(', ')}</summary>
                 <ul className="mt-2 space-y-1 pb-1 text-base-content/75">
                     {showBuildingWarning && <li>Not enough production buildings in base. Use Manage to add them.</li>}
@@ -184,7 +185,7 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                 {!isCollapsed && <ProductionFlowDiagram baseId={baseId} sectionId={sectionId} name={section.name} targetItemId={section.selectedItemId} />}
             </div>
             <BuildingRequirementsModal
-                isOpen={showRequirementsModal}
+                isOpen={advanced && showRequirementsModal}
                 buildingRequirements={buildingRequirements}
                 inputRequirements={inputRequirements}
                 allRequirementsSatisfied={allRequirementsSatisfied}

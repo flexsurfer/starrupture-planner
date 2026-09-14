@@ -45,7 +45,7 @@ function setup(selectedBase: Base = base, buildingData: Building[] = buildings, 
   runtimes.push(runtime);
   runtime.registerModule(registerApplicationModules);
   const harness = createUkladTestHarness(runtime);
-  harness.restoreState({ ...harness.getState(), itemsList: items, itemsById: Object.fromEntries(items.map(item => [item.id, item])), buildingsList: buildingData, basesSelectedBaseId: 'base',
+  harness.restoreState({ ...harness.getState(), basesMode: 'advanced', itemsList: items, itemsById: Object.fromEntries(items.map(item => [item.id, item])), buildingsList: buildingData, basesSelectedBaseId: 'base',
     basesList: [structuredClone(selectedBase)],
   });
   render(<UkladProvider runtime={runtime}>{fullDetail ? <BaseDetailView /> : <BaseOverviewView />}</UkladProvider>);
@@ -68,6 +68,18 @@ it('groups targets and shared ingredients like the planner while retaining inact
   expect(target.getByText('Target 30/min · rest used in plans')).toBeVisible();
 });
 
+it('marks an unconfigured table input red only in Advanced mode', async () => {
+  const withoutInputs = { ...structuredClone(base), buildings: base.buildings.filter(building => building.sectionType !== 'inputs') };
+  const harness = setup(withoutInputs);
+  expect(screen.getByRole('article', { name: 'Wolfram Ore input' })).toHaveClass('border-error');
+  await act(async () => {
+    harness.dispatchSync([appIds.events.BASES_SET_MODE, 'planning']);
+    await harness.flush();
+  });
+  expect(screen.getByRole('article', { name: 'Wolfram Ore input' })).not.toHaveClass('border-error');
+  expect(within(screen.getByRole('article', { name: 'Wolfram Ore input' })).getByText('60/min')).toBeVisible();
+});
+
 it('updates shortages when owned counts are changed and only saves typed counts explicitly', async () => {
   const harness = setup();
   const wire = within(screen.getByRole('article', { name: 'Wolfram Wire' }));
@@ -75,7 +87,7 @@ it('updates shortages when owned counts are changed and only saves typed counts 
   expect(wire.getByRole('meter', { name: 'Item coverage' })).toHaveAttribute('aria-valuenow', '0');
   fireEvent.click(wire.getByRole('button', { name: 'Increase Assembler owned count' }));
   await waitFor(() => expect(wire.getByRole('textbox', { name: 'Assembler owned count' })).toHaveValue('1'));
-  expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_PRODUCTION_TABLE]).missingBuildings).toBe(0);
+  await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_PRODUCTION_TABLE]).missingBuildings).toBe(0));
   expect(wire.getByRole('meter', { name: 'Item coverage' })).toHaveAttribute('aria-valuenow', '100');
   expect(wire.getByRole('meter', { name: 'Base coverage' })).toHaveAttribute('aria-valuenow', '100');
   fireEvent.change(wire.getByRole('textbox', { name: 'Assembler owned count' }), { target: { value: '3' } });

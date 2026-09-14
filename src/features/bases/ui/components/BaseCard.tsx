@@ -132,6 +132,7 @@ const formatRate = (value: number | undefined): string => {
 };
 
 const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logistics, outputItems }) => {
+  const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const planData = useSubscription([
     appIds.subscriptions.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
     baseId,
@@ -152,34 +153,34 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
           itemId={plan.selectedItemId}
           item={itemsMap?.[plan.selectedItemId]}
           size="small"
-          className={`h-9 w-9 shrink-0 ${plan.active ? '' : 'opacity-50'}`}
+          className={`h-9 w-9 shrink-0 ${!advanced || plan.active ? '' : 'opacity-50'}`}
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className={`min-w-0 flex-1 break-words text-sm font-semibold leading-snug ${plan.active ? 'text-base-content' : 'text-base-content/60'}`}>
+            <span className={`min-w-0 flex-1 break-words text-sm font-semibold leading-snug ${!advanced || plan.active ? 'text-base-content' : 'text-base-content/60'}`}>
               {itemName}
             </span>
-            <span className={`shrink-0 whitespace-nowrap text-right text-lg font-semibold leading-tight tabular-nums sm:text-xl ${plan.active ? '' : 'opacity-60'}`} style={{ color: outputColor }} title="Target production rate">
+            <span className={`shrink-0 whitespace-nowrap text-right text-lg font-semibold leading-tight tabular-nums sm:text-xl ${!advanced || plan.active ? '' : 'opacity-60'}`} style={{ color: outputColor }} title="Target production rate">
               {plan.targetAmount}<span className="ml-0.5 text-xs font-normal">/min</span>
             </span>
           </div>
           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
             <span className="min-w-0 truncate text-base-content/50" title={plan.name}>{plan.name}</span>
-            <span className={`inline-flex shrink-0 items-center gap-1 ${statusClass}`}>
+            {advanced && <span className={`inline-flex shrink-0 items-center gap-1 ${statusClass}`}>
               {(hasError || needsAttention) && (
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-3">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m12 3 10 18H2L12 3Zm0 6v5m0 3h.01" />
                 </svg>
               )}
               {statusLabel}
-            </span>
+            </span>}
             {corporationName && (
               <span className="text-base-content/50">{corporationName} Lv.{plan.corporationLevel?.level}</span>
             )}
           </div>
         </div>
       </div>
-      {(() => {
+      {advanced && (() => {
         const outputSummary = getPlanOutputAllocationSummary(base, plan.id);
         const outputs = outputSummary?.outputs || [];
         if (!outputSummary || outputs.length === 0) return null;
@@ -260,6 +261,7 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
 
 export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) => {
   const runtime = useRuntime();
+  const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
   const [addBuildingSection, setAddBuildingSection] = useState<BuildingSectionType | null>(null);
 
@@ -356,13 +358,13 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
             />
             <div className="min-w-0">
               <h3 className="truncate text-sm font-medium text-base-content/75" title={base.name}>{base.name}</h3>
-              <div className="mt-0.5 text-[11px] text-base-content/50">
+              {advanced && <div className="mt-0.5 text-[11px] text-base-content/50">
                 Lv.{coreLevel + 1} · {base.buildings.length} buildings
-              </div>
+              </div>}
             </div>
           </div>
 
-          <div className="space-y-1.5 text-[11px]">
+          {advanced && <div className="space-y-1.5 text-[11px]">
             <div>
               <div className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 ${isHeatOverCapacity ? 'text-error' : 'text-base-content/50'}`}>
                 <span>Heat{isHeatOverCapacity ? ' · Over capacity' : ''}</span>
@@ -396,7 +398,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
                 />
               </div>
             </div>
-          </div>
+          </div>}
 
           <div className="border-t border-base-content/5 pt-2">
             <SectionHeader
@@ -432,7 +434,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
             )}
           </div>
 
-          <div className="border-t border-base-content/5 pt-2">
+          {advanced && <><div className="border-t border-base-content/5 pt-2">
             <SectionHeader
               title="Outputs"
               count={outputItems.length}
@@ -628,6 +630,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
               )}
             </div>
           )}
+          </>}
           <div className="mt-auto flex items-center justify-between gap-2 border-t border-base-content/5 pt-3">
             <button
               type="button"
@@ -653,7 +656,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
           </div>
         </div>
       </div>
-      {addBuildingSection && (
+      {advanced && addBuildingSection && (
         <AddBuildingCardModal
           isOpen={showAddBuildingModal}
           sectionType={addBuildingSection}

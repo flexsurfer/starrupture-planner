@@ -120,6 +120,7 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.plannerTargetWarning]: AppState['plannerTargetWarning'];
         [stateKeys.pinnedRecipeSelections]: AppState['pinnedRecipeSelections'];
         [stateKeys.recipeAlternativePresets]: AppState['recipeAlternativePresets'];
+        [stateKeys.basesMode]: AppState['basesMode'];
         [stateKeys.basesList]: AppState['basesList'];
         [stateKeys.energyGroups]: AppState['energyGroups'];
         [stateKeys.basesCardCollapsedSections]: AppState['basesCardCollapsedSections'];
@@ -167,6 +168,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.BASES_OPEN_BASE]: [baseId: string, tab?: BaseDetailTab];
         [appIds.events.BASES_SET_SELECTED_BASE]: [baseId: string | null];
         [appIds.events.BASES_SET_DETAIL_TAB]: [tab: BaseDetailTab];
+        [appIds.events.BASES_SET_MODE]: [mode: NonNullable<AppState['basesMode']>];
         [appIds.events.BASES_SET_DETAILS_EXPANDED]: [expanded: boolean];
         [appIds.events.BASES_SET_CORE_LEVEL]: [level: number];
         [appIds.events.BASES_ADD_BUILDING]: [baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string];
@@ -259,6 +261,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS]: { params: []; result: AppState['basesCardCollapsedSections'] };
         [appIds.subscriptions.BASES_SELECTED_BASE_ID]: { params: []; result: AppState['basesSelectedBaseId'] };
         [appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]: { params: []; result: AppState['basesSelectedDetailTab'] };
+        [appIds.subscriptions.BASES_MODE]: { params: []; result: AppState['basesMode'] };
         [appIds.subscriptions.BASES_DETAILS_EXPANDED]: { params: []; result: boolean };
         [appIds.subscriptions.BASES_BY_ID_MAP]: { params: []; result: Record<string, AppState['basesList'][number]> };
         [appIds.subscriptions.BASES_SELECTED_BASE]: { params: []; result: AppState['basesList'][number] | null };

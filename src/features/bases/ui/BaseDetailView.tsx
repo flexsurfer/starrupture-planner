@@ -9,10 +9,14 @@ import { BasePlansView } from '@/features/production-plans/ui';
 import { CreateProductionPlanModal } from '@/features/production-plan-modal/ui';
 import type { BaseDetailTab } from '@/features/bases/types';
 
+import { MyBasesSettings } from './components/MyBasesSettings';
+
 export const BaseDetailView: React.FC = () => {
   const runtime = useRuntime();
   const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
-  const activeTab = useSubscription([appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]) || 'base';
+  const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
+  const selectedTab = useSubscription([appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]) || 'base';
+  const activeTab = !advanced && selectedTab === 'buildings' ? 'base' : selectedTab;
   const [showRenameModal, setShowRenameModal] = useState(false);
   const setActiveTab = (tab: BaseDetailTab) => {
     runtime.dispatch([appIds.events.BASES_SET_DETAIL_TAB, tab]);
@@ -69,7 +73,7 @@ export const BaseDetailView: React.FC = () => {
                 <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">{plansCount}</span>
               )}
             </button>
-            <button
+            {advanced && <button
               type="button"
               role="tab"
               aria-selected={activeTab === 'buildings'}
@@ -82,8 +86,9 @@ export const BaseDetailView: React.FC = () => {
               {buildingsCount > 0 && (
                 <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">{buildingsCount}</span>
               )}
-            </button>
+            </button>}
           </div>
+          <MyBasesSettings />
           <button type="button"
             className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"
             aria-label="Add Plan" title="Add Plan"

@@ -1,5 +1,5 @@
 import { appIds } from '@/app/uklad/catalog';
-import { useRuntime } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { BaseProductionTableCard, ProductionItemCoverage } from '@/features/bases/types';
 import { BuildingImage, ItemImage, RecipeTypeIcon, SectionIcon } from '@/shared/ui';
 import { NodeRecipeButton } from '@/features/planner/ui/visualization/NodeRecipeButton';
@@ -9,17 +9,18 @@ import { BuildingCountControl } from './BuildingCountControl';
 
 const PlanCoverage = ({ plans, color }: { plans: ProductionItemCoverage['planDemands']; color: string }) => {
   const runtime = useRuntime();
+  const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   if (!plans.length) return null;
   return <ul className="space-y-2 px-2 pb-2 text-left">
     {plans.map(plan => <li key={plan.planId} className="text-[10px] leading-snug sm:text-[11px]">
       <div className="flex items-center gap-1">
-        <p className="min-w-0 flex-1 break-words text-base-content/70" title={plan.status === 'active' ? 'Active plan' : plan.status === 'error' ? 'Plan needs attention' : 'Inactive plan'}>{plan.name}</p>
+        <p className="min-w-0 flex-1 break-words text-base-content/70" title={advanced ? plan.status === 'active' ? 'Active plan' : plan.status === 'error' ? 'Plan needs attention' : 'Inactive plan' : undefined}>{plan.name}</p>
         <button type="button" className="btn btn-xs h-6 min-h-6 shrink-0 rounded border border-base-content/25 bg-base-300 px-1 text-[10px] font-normal text-base-content/75 shadow-sm hover:border-base-content/40 hover:bg-base-content/15" aria-label={`Edit ${plan.name}`}
           onClick={() => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN, plan.planId])}>Edit</button>
       </div>
       <dl className="mt-0.5 grid grid-cols-2 gap-1 tabular-nums">
         <div className="min-w-0"><dt className="text-[10px] text-base-content/50">Required</dt><dd className="break-words" style={{ color }}>{formatQuantity(plan.amount)}/min</dd></div>
-        <div className="min-w-0 text-right"><dt className="text-[10px] text-base-content/50">Covered</dt><dd className="break-words" style={{ color }}>{formatQuantity(plan.covered)}/min</dd></div>
+        {advanced && <div className="min-w-0 text-right"><dt className="text-[10px] text-base-content/50">Covered</dt><dd className="break-words" style={{ color }}>{formatQuantity(plan.covered)}/min</dd></div>}
       </dl>
     </li>)}
   </ul>;
@@ -45,13 +46,15 @@ const CoverageBar = ({ label, required, covered, color, unit = '', description }
 
 export const BaseProductionCard = ({ card, baseId, target }: { card: BaseProductionTableCard; baseId: string; target: boolean }) => {
   const runtime = useRuntime();
+  const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const color = getItemCategoryColor(card.item.type);
   const coverage = card.kind === 'recipe' ? card.coverage : null;
   const balance = card.kind === 'input' ? card.balance : null;
   const rate = card.itemCoverage.required;
+  const missingInput = advanced && balance && balance.available <= 0 && rate > 0;
 
   return <article aria-label={`${card.item.name}${card.kind === 'input' ? ' input' : card.kind === 'recipe' && card.node.nodeType === 'launcher' ? ' delivery' : ''}`}
-    className={`relative flex h-full min-w-0 flex-col rounded-md border bg-base-200 text-center ${target ? 'border-primary' : 'border-base-300'}`}>
+    className={`relative flex h-full min-w-0 flex-col rounded-md border bg-base-200 text-center ${missingInput ? 'border-error' : target ? 'border-primary' : 'border-base-300'}`}>
     {card.kind === 'input' && <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded border border-teal-400/20 bg-base-200 px-1.5 text-[10px] leading-4 text-teal-300/70">Input</span>}
 
     <div className={`space-y-1 p-1.5 sm:space-y-2 sm:p-2 ${card.kind === 'input' ? 'pt-4 sm:pt-4' : ''}`}>
@@ -73,10 +76,10 @@ export const BaseProductionCard = ({ card, baseId, target }: { card: BaseProduct
 
     <PlanCoverage plans={card.itemCoverage.planDemands} color={color} />
     <div className="mt-auto">
-      <div className="px-2 pt-1 pb-1.5">
+      {advanced && <div className="px-2 pt-1 pb-1.5">
         <CoverageBar label="Item coverage" required={rate} covered={card.itemCoverage.covered} color={color} unit="/min"
           description={card.kind === 'input' ? 'Available input supply, shared between plans with active plans first.' : 'Output capacity from owned buildings, shared between plans with active plans first. Input supply is shown on its own cards.'} />
-      </div>
+      </div>}
       <div className="space-y-1.5 rounded-b bg-base-content/5 p-1.5 sm:p-2">
         {card.kind === 'recipe' ? <>
           <div className="flex items-center gap-1.5 text-left">
@@ -84,7 +87,7 @@ export const BaseProductionCard = ({ card, baseId, target }: { card: BaseProduct
             <span className="min-w-0 flex-1 break-words text-[10px] leading-tight text-base-content/60 sm:text-xs">{card.node.buildingName}</span>
             <span className="shrink-0 text-xs text-base-content/75 tabular-nums" title="Whole buildings needed for this recipe across plans">×{formatQuantity(card.requiredBuildings)}</span>
           </div>
-          {coverage ? <div className="space-y-1.5">
+          {advanced && (coverage ? <div className="space-y-1.5">
             <div className="flex flex-wrap justify-between gap-x-1 text-[10px] text-base-content/55">
               <span title="Shared count for this building type across all recipes in this base">Owned in base</span>
               {coverage.owned !== coverage.totalRequired && <span className={coverage.missing > 0 ? 'text-error' : ''}>
@@ -96,8 +99,8 @@ export const BaseProductionCard = ({ card, baseId, target }: { card: BaseProduct
             <CoverageBar label="Base coverage" required={coverage.totalRequired} covered={coverage.owned}
               description={`Owned ${coverage.building.name} buildings against requirements across all recipes.`} />
           </div> : <button type="button" className="btn btn-xs btn-ghost w-full text-[10px] font-normal text-base-content/65"
-            onClick={() => runtime.dispatch([appIds.events.BASES_SET_DETAIL_TAB, 'buildings'])}>Manage buildings</button>}
-        </> : balance ? <>
+            onClick={() => runtime.dispatch([appIds.events.BASES_SET_DETAIL_TAB, 'buildings'])}>Manage buildings</button>)}
+        </> : advanced ? balance ? <>
           <div className="flex flex-wrap items-baseline justify-between gap-1 text-[10px] text-base-content/60">
             <span>Base supply</span><span className="text-xs tabular-nums" style={{ color }}>{formatQuantity(balance.available)}/min</span>
           </div>
@@ -108,7 +111,7 @@ export const BaseProductionCard = ({ card, baseId, target }: { card: BaseProduct
             onClick={() => runtime.dispatch([appIds.events.BASES_SET_DETAIL_TAB, 'buildings'])}>
             <SectionIcon name="buildings" className="size-3" />Manage inputs
           </button>
-        </> : <p className="text-[11px] text-warning">Review plan setup</p>}
+        </> : <p className="text-[11px] text-warning">Review plan setup</p> : null}
       </div>
     </div>
   </article>;

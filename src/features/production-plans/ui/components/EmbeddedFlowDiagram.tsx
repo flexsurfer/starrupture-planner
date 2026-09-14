@@ -20,6 +20,7 @@ import type { PlannerFlowDirection } from '@/features/planner/flow-graph';
 import { generateReactFlowData } from '@/features/planner/ui/visualization';
 import { ProductionFlowEdge } from '@/features/planner/ui/visualization/ProductionFlowEdge';
 import { usePinnableNodeHighlight } from '@/features/planner/ui/visualization/usePinnableNodeHighlight';
+import { addDiagramInputRequirements } from '@/features/production-plans/diagram-inputs';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
@@ -55,6 +56,8 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     // State subscriptions for rendering
     const theme = useSubscription([appIds.subscriptions.UI_THEME]);
     const items = useSubscription([appIds.subscriptions.ITEMS_LIST]);
+    const buildings = useSubscription([appIds.subscriptions.BUILDINGS_LIST]);
+    const mode = useSubscription([appIds.subscriptions.BASES_MODE]);
 
     // Generate React Flow data from pre-computed production flow
     const reactFlowData = useMemo((): { nodes: Node[]; edges: Edge[] } => {
@@ -62,15 +65,18 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
             return { nodes: [], edges: [] };
         }
 
+        const diagram = addDiagramInputRequirements(productionFlow, buildings);
         return generateReactFlowData({
-            flowNodes: productionFlow.nodes,
-            flowEdges: productionFlow.edges,
+            flowNodes: diagram.nodes,
+            flowEdges: diagram.edges,
+            inputRequirements: diagram.requirements,
+            showMissingInputs: mode !== 'planning',
             items,
             onSelectRecipe,
             direction,
             targetItemId,
         });
-    }, [productionFlow, items, onSelectRecipe, direction, targetItemId]);
+    }, [productionFlow, items, buildings, mode, onSelectRecipe, direction, targetItemId]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);

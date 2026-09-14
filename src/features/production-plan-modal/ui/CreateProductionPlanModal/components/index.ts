@@ -6,5 +6,4 @@ export { ModalHeader } from './ModalHeader';
 export { InputsSelector } from './InputsSelector';
 export { FormControls } from './FormControls';
 export { RecipeAlternativesSelector } from './RecipeAlternativesSelector';
-export { DeficitsAlert } from './DeficitsAlert';
 export { DiagramSection } from './DiagramSection';

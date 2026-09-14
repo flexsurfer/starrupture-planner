@@ -9,6 +9,7 @@ interface BaseCoreInfoProps {
 
 export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
   const runtime = useRuntime();
+  const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const expanded = useSubscription([appIds.subscriptions.BASES_DETAILS_EXPANDED]);
   const detailStats = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_DETAIL_STATS]);
   const coreLevels = useSubscription([appIds.subscriptions.BASES_CORE_LEVELS]);
@@ -32,7 +33,7 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
   return (
     <div className="relative bg-base-200 rounded-lg p-2 pr-20 sm:p-3 sm:pr-20">
       <div className="absolute right-0 top-0 flex">
-        <button
+        {advanced && <button
           type="button"
           className={`relative grid size-8 cursor-pointer place-items-center rounded-bl-md border border-base-content/20 bg-base-200 transition-colors hover:bg-base-300 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${!expanded && (isHeatOverCapacity || isEnergyInsufficient) ? 'text-error' : 'text-base-content/65 hover:text-base-content'}`}
           aria-label={expanded ? 'Hide base details' : 'Show base details'}
@@ -43,7 +44,7 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4">
             {expanded ? <path d="M5 16h14" /> : <><rect x="5" y="9" width="10" height="10" /><path d="M9 9V5h10v10h-4" /></>}
           </svg>
-        </button>
+        </button>}
         <button
           type="button"
           className="relative -ml-px grid size-8 cursor-pointer place-items-center rounded-tr-lg border border-base-content/20 bg-base-200 text-base-content/65 transition-colors hover:bg-base-300 hover:text-base-content focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -60,7 +61,7 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
         {/* Header Section: Icon and Base Name */}
         <div className="flex items-start gap-2 sm:gap-3 w-full sm:w-auto sm:flex-1 min-w-0">
           {/* Core Icon */}
-          {expanded && <div className="flex-shrink-0">
+          {advanced && expanded && <div className="flex-shrink-0">
             <img
               src="/icons/buildings/base_core.webp"
               alt="Base Core"
@@ -81,7 +82,7 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
           <div className="flex-1 min-w-0">
             <div className="flex min-h-8 min-w-0 items-center gap-2">
               <h2 className="truncate text-base font-semibold sm:text-lg">{baseName}</h2>
-              {onRename && expanded && (
+              {onRename && (!advanced || expanded) && (
                 <button
                   type="button"
                   className="btn btn-xs btn-ghost shrink-0 text-base-content/55 hover:text-base-content"
@@ -91,7 +92,7 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
                 </button>
               )}
             </div>
-            {expanded && <><p className="hidden sm:block text-xs text-base-content/70 mt-1">
+            {advanced && expanded && <><p className="hidden sm:block text-xs text-base-content/70 mt-1">
               The Core defines the buildable area for this Base. Buildings can only be placed inside the Core area.
             </p>
             {/* Core Level Selector */}
@@ -114,7 +115,7 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
         </div>
 
         {/* Stats */}
-        {expanded && <div className="flex w-full flex-col gap-1 self-stretch sm:w-auto">
+        {advanced && expanded && <div className="flex w-full flex-col gap-1 self-stretch sm:w-auto">
         <div className="flex flex-wrap justify-between gap-3 sm:justify-start sm:gap-4">
           <div className="flex-shrink-0">
             <div className="text-xs text-base-content/70 mb-0.5">Buildings</div>

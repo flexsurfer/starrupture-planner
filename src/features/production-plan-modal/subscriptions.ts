@@ -1,7 +1,7 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { Base, BasesById, Building as DbBuilding, BuildingsByIdMap, Corporation, CreateProductionPlanModalState, Item } from '@/app/uklad/model';
+import type { BasesById, Building as DbBuilding, Corporation, CreateProductionPlanModalState, Item } from '@/app/uklad/model';
 import type { BaseInputItem, LinkableOutputItem } from '@/features/bases/types';
 import type { CorporationLevelInfo, ProductionFlowResult, RawMaterialDeficitWithName } from '@/features/planner/types';
 import { buildProductionFlow } from '@/features/planner/production-flow';
@@ -10,6 +10,7 @@ import { collectConfiguredSectionItems } from '@/features/bases/derived-subscrip
 import { isLogisticsExcludedOutputBuildingId } from '@/features/bases/building-section';
 import { getItemName } from '@/utils/itemUtils';
 import { getSelectedFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
+import { canSelectPlanningInput, canUsePlanningOutput } from '@/features/production-plans/planning-endpoints';
 
 const EMPTY_PRODUCTION_FLOW: ProductionFlowResult = { nodes: [], edges: [], rawMaterialDeficits: [] };
 const isLauncherEnabled = (corporationLevel: CreateProductionPlanModalState['selectedCorporationLevel']): boolean => corporationLevel !== null && corporationLevel !== undefined;
@@ -73,15 +74,24 @@ export const registerProductionPlanModalSubscriptions: UkladModule<UkladRegistra
         return levels;
     });
 
-    registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA, () => [[appIds.subscriptions.BASES_BY_ID_MAP], [appIds.subscriptions.BUILDINGS_BY_ID_MAP], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.BASES_LIST], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE]], ([basesById, buildingsById, itemsMap, allBases, modalState]: [BasesById, BuildingsByIdMap, Record<string, Item>, Base[], CreateProductionPlanModalState]) => {
+    registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA, () => [[appIds.subscriptions.BASES_BY_ID_MAP], [appIds.subscriptions.BUILDINGS_BY_ID_MAP], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.BASES_LIST], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE], [appIds.subscriptions.BASES_MODE]], ([basesById, buildingsById, itemsMap, allBases, modalState, mode]) => {
         if (!modalState.baseId || !basesById[modalState.baseId]) return { inputItems: [], selectedInputIds: [] };
-        const inputItems: BaseInputItem[] = collectConfiguredSectionItems(basesById[modalState.baseId], buildingsById, itemsMap, 'inputs', allBases).map((entry) => ({ baseBuildingId: entry.baseBuildingId, item: entry.item, ratePerMinute: entry.ratePerMinute, building: entry.building, name: entry.name, description: entry.description, linkedOutput: entry.linkedOutput }));
+        const base = basesById[modalState.baseId];
+        const targetPlan = base.productions.find(plan => plan.id === modalState.editSectionId);
+        const inputBase = mode === 'planning' ? { ...base, buildings: base.buildings.filter(input =>
+            modalState.selectedInputIds.includes(input.id) || canSelectPlanningInput(allBases, input, base.id, targetPlan)) } : base;
+        const inputItems: BaseInputItem[] = collectConfiguredSectionItems(inputBase, buildingsById, itemsMap, 'inputs', allBases).map((entry) => ({ baseBuildingId: entry.baseBuildingId, item: entry.item, ratePerMinute: entry.ratePerMinute, building: entry.building, name: entry.name, description: entry.description, linkedOutput: entry.linkedOutput }));
         return { inputItems, selectedInputIds: modalState.selectedInputIds || [] };
     });
 
-    registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS, () => [[appIds.subscriptions.BASES_LIST], [appIds.subscriptions.BUILDINGS_BY_ID_MAP], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE]], ([bases, buildingsById, itemsMap, modalState]: [Base[], BuildingsByIdMap, Record<string, Item>, CreateProductionPlanModalState]) => {
+    registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS, () => [[appIds.subscriptions.BASES_LIST], [appIds.subscriptions.BUILDINGS_BY_ID_MAP], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE], [appIds.subscriptions.BASES_MODE]], ([bases, buildingsById, itemsMap, modalState, mode]) => {
         const linkableOutputs: LinkableOutputItem[] = [];
+        const targetPlan = bases.find(base => base.id === modalState.baseId)?.productions.find(plan => plan.id === modalState.editSectionId);
         bases.forEach((base) => collectConfiguredSectionItems(base, buildingsById, itemsMap, 'outputs').forEach((entry) => {
+            if (mode === 'planning') {
+                const output = base.buildings.find(building => building.id === entry.baseBuildingId)!;
+                if (!targetPlan || !canUsePlanningOutput(bases, base, output, modalState.baseId!, targetPlan)) return;
+            }
             if (!isLogisticsExcludedOutputBuildingId(entry.building.id)) linkableOutputs.push({ baseId: base.id, baseName: base.name, isCurrentBase: base.id === modalState.baseId, baseBuildingId: entry.baseBuildingId, item: entry.item, ratePerMinute: entry.ratePerMinute, building: entry.building, name: entry.name, description: entry.description });
         }));
         return linkableOutputs.sort((left, right) => left.isCurrentBase !== right.isCurrentBase ? (left.isCurrentBase ? -1 : 1) : left.baseName.localeCompare(right.baseName) || left.item.name.localeCompare(right.item.name));

@@ -7,6 +7,7 @@ import { RecipeAlternativesSelector } from './RecipeAlternativesSelector';
 
 export const FormControls: React.FC = () => {
     const runtime = useRuntime();
+    const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
     const { currentSelectedItemId, currentTargetAmount, defaultSelectedCorporationLevel, matchInputs } =
         useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALUES]);
     const selectableItems = useSubscription([appIds.subscriptions.PLANNER_SELECTABLE_ITEMS]);
@@ -30,7 +31,8 @@ export const FormControls: React.FC = () => {
                         className="input-sm text-xs sm:text-sm"
                     />
                 </div>
-                <label className="label cursor-pointer gap-2 px-0">
+                {/* Keep the toggle reachable for existing plans whose target is locked to inputs. */}
+                {(advanced || matchInputs) && <label className="label cursor-pointer gap-2 px-0">
                     <input
                         type="checkbox"
                         className="checkbox checkbox-xs checkbox-primary"
@@ -38,7 +40,7 @@ export const FormControls: React.FC = () => {
                         onChange={(event) => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, event.target.checked])}
                     />
                     <span className="text-xs whitespace-nowrap">Match inputs</span>
-                </label>
+                </label>}
                 <CorporationLevelSelector
                     corporationLevels={corporationLevels}
                     selectedLevel={defaultSelectedCorporationLevel}

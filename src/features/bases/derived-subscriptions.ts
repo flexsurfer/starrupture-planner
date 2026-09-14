@@ -50,7 +50,8 @@ export function collectConfiguredSectionItems(base: Base, buildingsById: Buildin
         const ratePerMinute = resolvedBuilding.ratePerMinute ?? baseBuilding.linkedOutput?.ratePerMinuteSnapshot;
         const hasRate = typeof ratePerMinute === 'number' && Number.isFinite(ratePerMinute);
         const includeZeroRateOutput = sectionType === 'outputs' && !!baseBuilding.sourceProductionId && hasRate;
-        if (!itemId || (!(hasRate && ratePerMinute > 0) && !includeZeroRateOutput)) continue;
+        const includeZeroRateInput = sectionType === 'inputs' && !!baseBuilding.linkedOutput && hasRate;
+        if (!itemId || (!(hasRate && ratePerMinute > 0) && !includeZeroRateOutput && !includeZeroRateInput)) continue;
 
         const building = buildingsById[resolvedBuilding.buildingTypeId];
         if (!building) continue;

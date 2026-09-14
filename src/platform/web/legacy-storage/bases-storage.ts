@@ -98,6 +98,9 @@ export function normalizeBases(rawBases: unknown): Base[] {
         if (name !== undefined) normalized.name = name;
         if (description !== undefined) normalized.description = description;
         if (linkedOutput !== undefined) normalized.linkedOutput = linkedOutput;
+        if (typeof building.planningOwnerPlanId === 'string' && building.planningOwnerPlanId.trim()) {
+            normalized.planningOwnerPlanId = building.planningOwnerPlanId;
+        }
 
         if (typeof building.sourceProductionId === 'string' && building.sourceProductionId) {
             normalized.sourceProductionId = building.sourceProductionId;
