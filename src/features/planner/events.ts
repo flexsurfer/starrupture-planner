@@ -60,6 +60,10 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         draftState.plannerTabCreation = null;
         draftState.plannerTargetWarning = null;
     });
+    registrar.regEvent(appIds.events.PLANNER_RENAME_TAB, ({ draftState }, id, name) => {
+        const tab = draftState.plannerTabs.find(entry => entry.id === id);
+        if (tab && name.trim()) tab.name = name.trim();
+    });
     registrar.regEvent(appIds.events.PLANNER_SELECT_TAB, ({ draftState }, id) => {
         if (!draftState.plannerTabs.some(tab => tab.id === id)) return;
         draftState.plannerActiveTabId = id;

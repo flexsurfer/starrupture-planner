@@ -1,3 +1,4 @@
+import { ExportBaseButton } from '@/features/data-transfer/ui/ExportBaseButton';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -356,7 +357,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
               fetchPriority="low"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3 className="truncate text-sm font-medium text-base-content/75" title={base.name}>{base.name}</h3>
               {advanced && <div className="mt-0.5 text-[11px] text-base-content/50">
                 Lv.{coreLevel + 1} · {base.buildings.length} buildings
@@ -632,17 +633,20 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
           )}
           </>}
           <div className="mt-auto flex items-center justify-between gap-2 border-t border-base-content/5 pt-3">
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost h-8 min-h-8 w-8 p-0 text-base-content/55 hover:bg-error/10 hover:text-error"
-              aria-label={`Delete ${base.name}`}
-              title="Delete Base"
-              onClick={() => onDelete(base.id)}
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 6.75h15m-13.5 0 .75 13.5h10.5L18 6.75M9 6.75v-3h6v3M10 10.5v6M14 10.5v6" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost h-8 min-h-8 w-8 p-0 text-base-content/55 hover:bg-error/10 hover:text-error"
+                aria-label={`Delete ${base.name}`}
+                title="Delete Base"
+                onClick={() => onDelete(base.id)}
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 6.75h15m-13.5 0 .75 13.5h10.5L18 6.75M9 6.75v-3h6v3M10 10.5v6M14 10.5v6" />
+                </svg>
+              </button>
+              <ExportBaseButton baseId={base.id} name={base.name} iconOnly />
+            </div>
             <button
               type="button"
               className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"

@@ -11,7 +11,8 @@ import type { AppContracts } from '@/app/uklad/contracts';
 import type { AppVersionedGameData } from '@/app/uklad/model';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { DEFAULT_DATA_VERSION } from '@/features/app-shell/data-version';
-import { registerHeadlessApplication } from './register';
+import { registerHeadlessApplication, type HeadlessApplicationOptions } from './register';
+import { parseArchive, prepareArchiveImport, type PlannerArchive } from '@/features/data-transfer/archive';
 
 type AppScenario = UkladHeadlessScenario<AppContracts>;
 type AppEvent = Parameters<AppScenario['dispatch']>[0];
@@ -104,10 +105,10 @@ const exercisedEventIds = new Set<string>();
 const observedSubscriptionIds = new Set<string>();
 let runtimeSequence = 0;
 
-function createScenario(): AppScenario {
+function createScenario(options?: HeadlessApplicationOptions): AppScenario {
     runtimeSequence += 1;
     const runtime = createAppRuntime({ runtimeId: `headless-e2e-${runtimeSequence}` });
-    registerHeadlessApplication(runtime);
+    registerHeadlessApplication(runtime, options);
     const scenario = createUkladHeadlessScenario(runtime);
     scenarios.push(scenario);
     return scenario;
@@ -152,6 +153,54 @@ afterAll(() => {
 });
 
 describe('headless application E2E', () => {
+    it('exports selected work, previews imports, and adds new copies through the settings flow', async () => {
+        const exported: PlannerArchive[] = [];
+        const scenario = createScenario({ effects: {
+            onExport: archive => exported.push(archive),
+            createImportId: () => 'import-preview',
+        } });
+        const view = mountView(scenario, 'Global settings', {
+            bases: [appIds.subscriptions.BASES_LIST],
+            plans: [appIds.subscriptions.PLANNER_TABS],
+            preview: [appIds.subscriptions.DATA_TRANSFER_PREVIEW],
+            status: [appIds.subscriptions.DATA_TRANSFER_STATUS],
+        } as const);
+        await dispatch(scenario, [appIds.events.BASES_CREATE_BASE, 'Export base']);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'original', 'Export plan', 'single']);
+        await dispatch(scenario, [appIds.events.PLANNER_RENAME_TAB, 'original', '  Renamed plan  ']);
+        expect(view.value('plans')[0].name).toBe('Renamed plan');
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_EXPORT, { baseIds: null, planIds: null }]);
+        expect(exported).toHaveLength(1);
+        expect(exported[0].bases[0].name).toBe('Export base');
+        expect(exported[0].plans[0].name).toBe('Renamed plan');
+        const text = JSON.stringify(exported[0]);
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_PREVIEW_IMPORT, text]);
+        expect(view.value('preview')?.bases).toHaveLength(1);
+        expect(view.value('bases')).toHaveLength(1);
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_CANCEL_IMPORT]);
+        expect(view.value('preview')).toBeNull();
+        // A second file selection delivers a fresh, validated platform result.
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_IMPORT_READY, prepareArchiveImport(parseArchive(text), 'second-import')]);
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_CONFIRM_IMPORT]);
+        expect(view.value('bases')).toHaveLength(2);
+        expect(view.value('plans').map(plan => plan.name)).toEqual(['Renamed plan', 'Renamed plan Copy']);
+        expect(view.value('plans')[1].id).not.toBe('original');
+        expect(view.value('status')?.kind).toBe('success');
+        expect(view.value('preview')).toBeNull();
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_PREVIEW_IMPORT, text]);
+        const planId = view.value('preview')!.plans[0].id;
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_CONFIRM_IMPORT, { baseIds: [], planIds: [planId] }]);
+        expect(view.value('bases')).toHaveLength(2);
+        expect(view.value('plans')).toHaveLength(3);
+        expect(view.value('plans')[2].name).toBe('Renamed plan Copy');
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_SET_STATUS, null]);
+        expect(view.value('status')).toBeNull();
+        await dispatch(scenario, [appIds.events.DATA_TRANSFER_PREVIEW_IMPORT, '{broken']);
+        expect(view.value('status')?.kind).toBe('error');
+        expect(view.value('bases')).toHaveLength(2);
+        view.unmount();
+    });
+
     it('creates named tabs, isolates their settings, and deletes only the chosen tab', async () => {
         const scenario = await createSeededScenario();
         const view = mountView(scenario, 'planner documents', {

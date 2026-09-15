@@ -1,3 +1,5 @@
+import { TransferNotification } from '@/features/data-transfer/ui/TransferNotification';
+import { GlobalSettings, GlobalSettingsButton } from '@/features/data-transfer/ui/GlobalSettings';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ItemsPage } from '@/features/items/ui';
@@ -9,7 +11,6 @@ import {
   ConfirmationDialog,
   DiscordButton,
   GitHubButton,
-  ThemeToggle,
   VersionSelector,
 } from '@/features/app-shell/ui';
 import { useNavigationSync } from './navigation/useNavigationSync';
@@ -28,6 +29,7 @@ const tabs: { id: TabType; label: string; icon: SectionIconName }[] = [
 
 const TabLayout = () => {
   const runtime = useRuntime();
+  const [showSettings, setShowSettings] = useState(false);
   const activeTab = useSubscription([appIds.subscriptions.UI_ACTIVE_TAB]);
   const location = useLocation();
   const navigate = useNavigate();
@@ -167,9 +169,12 @@ const TabLayout = () => {
 
             {/* Desktop Controls */}
             <div ref={controlsRef} className="ml-auto flex w-max shrink-0 items-center justify-end gap-2 row-start-1 col-start-3">
+              <GlobalSettingsButton onClick={() => {
+                runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, null]);
+                setShowSettings(true);
+              }} />
               <DiscordButton className="btn btn-ghost btn-sm" />
               <GitHubButton className="btn btn-ghost btn-sm" />
-              <ThemeToggle />
             </div>
           </div>
 
@@ -194,9 +199,12 @@ const TabLayout = () => {
               <VersionSelector className="min-w-0 max-w-full" />
             </div>
             <div className="ml-auto flex shrink-0 items-center justify-end gap-1">
+              <GlobalSettingsButton onClick={() => {
+                runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, null]);
+                setShowSettings(true);
+              }} />
               <DiscordButton className="btn btn-ghost btn-sm btn-square" />
               <GitHubButton className="btn btn-ghost btn-sm btn-square" />
-              <ThemeToggle className="h-8 w-8" />
             </div>
           </div>
         </div>
@@ -232,6 +240,8 @@ const TabLayout = () => {
 
         {/* Global Modals */}
         <ConfirmationDialog />
+        {!showSettings && <TransferNotification />}
+        {showSettings && <GlobalSettings onClose={() => setShowSettings(false)} />}
       </div>
   );
 };

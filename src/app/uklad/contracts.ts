@@ -1,3 +1,4 @@
+import type { ArchiveSelection, PlannerArchive, TransferStatus } from '@/features/data-transfer/archive';
 import type { PlannerTab, PlannerMode, PlannerView } from '@/features/planner/state';
 import type { UkladContracts } from '@ukladjs/core/vanilla';
 import type { LinkedInputReference } from '@/features/bases/types';
@@ -100,6 +101,8 @@ type ProductionPlanModalInputSelectorData = {
  */
 export interface AppContracts extends UkladContracts {
     state: {
+        [stateKeys.dataTransferPreview]: PlannerArchive | null;
+        [stateKeys.dataTransferStatus]: TransferStatus | null;
         [stateKeys.appDataVersion]: AppState['appDataVersion'];
         [stateKeys.appDataVersions]: AppState['appDataVersions'];
         [stateKeys.appVersionedData]: AppState['appVersionedData'];
@@ -131,6 +134,13 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.productionPlanModalState]: AppState['productionPlanModalState'];
     };
     events: {
+        [appIds.events.DATA_TRANSFER_EXPORT]: [selection: ArchiveSelection];
+        [appIds.events.DATA_TRANSFER_PREVIEW_IMPORT]: [text: string];
+        [appIds.events.DATA_TRANSFER_IMPORT_READY]: [archive: PlannerArchive];
+        [appIds.events.DATA_TRANSFER_CANCEL_IMPORT]: [];
+        [appIds.events.DATA_TRANSFER_CONFIRM_IMPORT]: [selection?: ArchiveSelection];
+        [appIds.events.DATA_TRANSFER_SET_STATUS]: [status: TransferStatus | null];
+        [appIds.events.PLANNER_RENAME_TAB]: [id: string, name: string];
         [appIds.events.APP_INIT]: [];
         [appIds.events.APP_REQUEST_LOAD_GAME_DATA]: [version: DataVersion];
         [appIds.events.APP_GAME_DATA_LOAD_FAILED]: [];
@@ -202,10 +212,14 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PRODUCTION_PLAN_MODAL_SUBMIT]: [];
     };
     effects: {
+        [appIds.effects.downloadArchive]: PlannerArchive;
+        [appIds.effects.readArchive]: string;
         [appIds.effects.setTheme]: 'light' | 'dark';
         [appIds.effects.loadGameData]: DataVersion;
     };
     subscriptions: {
+        [appIds.subscriptions.DATA_TRANSFER_PREVIEW]: { params: []; result: PlannerArchive | null };
+        [appIds.subscriptions.DATA_TRANSFER_STATUS]: { params: []; result: TransferStatus | null };
         [appIds.subscriptions.APP_DATA_VERSION]: { params: []; result: DataVersion };
         [appIds.subscriptions.APP_DATA_VERSIONS]: { params: []; result: AppState['appDataVersions'] };
         [appIds.subscriptions.UI_THEME]: { params: []; result: AppState['uiTheme'] };

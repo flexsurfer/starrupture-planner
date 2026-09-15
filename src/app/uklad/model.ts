@@ -1,3 +1,4 @@
+import type { DataTransferState } from '@/features/data-transfer/archive';
 import type { PlannerFeatureState } from '@/features/planner/state';
 import type { DataVersion } from '@/features/app-shell/data-version';
 
@@ -210,7 +211,7 @@ export interface CreateProductionPlanModalState {
     matchInputs: boolean;
 }
 
-export interface AppState extends PlannerFeatureState {
+export interface AppState extends PlannerFeatureState, DataTransferState {
     appDataVersion: DataVersion;
     appDataVersions: { id: DataVersion; label: string }[];
     /** Populated as versions are fetched from `/game-data/{version}/`. */

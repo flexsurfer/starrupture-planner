@@ -1,3 +1,4 @@
+import { createDataTransferState } from '@/features/data-transfer/archive';
 import type { AppState } from '@/app/uklad/model';
 import { DATA_VERSIONS, DEFAULT_DATA_VERSION } from '@/features/app-shell/data-version';
 import { createItemsFeatureState } from '@/features/items/state';
@@ -9,6 +10,7 @@ import { createProductionPlanModalFeatureState } from '@/features/production-pla
 /** Creates state owned by exactly one Uklad runtime. */
 export function createAppState(): AppState {
     return {
+        ...createDataTransferState(),
         appDataVersion: DEFAULT_DATA_VERSION,
         appDataVersions: DATA_VERSIONS.map((version) => ({ ...version })),
         appVersionedData: {},

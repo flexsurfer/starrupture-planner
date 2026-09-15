@@ -1,3 +1,4 @@
+import { registerDataTransferModule } from '@/features/data-transfer/module';
 import type { UkladModule, UkladRegistrar, UkladRuntime } from '@ukladjs/core/vanilla';
 import { registerAppShellModule } from '@/features/app-shell/module';
 import { registerBasesModule } from '@/features/bases/module';
@@ -14,6 +15,7 @@ import type { AppContracts } from './contracts';
 /** Installs the feature modules shared by every application execution target. */
 export const registerApplicationModules: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registerAppShellModule(registrar);
+    registerDataTransferModule(registrar);
     registerCorporationsModule(registrar);
     registerBuildingsModule(registrar);
     registerItemsModule(registrar);

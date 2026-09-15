@@ -1,3 +1,4 @@
+import { PlanSettings } from './PlanSettings';
 import { PlannerTabs, PlannerTabCreation } from './PlannerTabs';
 import { appIds } from '@/app/uklad/catalog';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -49,7 +50,10 @@ const PlannerPageInner: React.FC = () => {
                             <div className="shrink-0"><PlannerStatsDisplay /></div>
                         </div>
                         {mode === 'single' && <PlannerCorporationLevelSelector className="max-w-full sm:max-w-md" />}
-                        <PlannerRecipeSelector />
+                        <div className="flex items-center gap-1.5">
+                            <PlannerRecipeSelector />
+                            <PlanSettings />
+                        </div>
                     </div>
                 </div>
 

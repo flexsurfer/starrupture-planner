@@ -1,3 +1,4 @@
+import { PlanSettings } from './PlanSettings';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { afterEach, expect, it } from 'vitest';
@@ -20,7 +21,7 @@ afterEach(() => {
 function TabScreen() {
     const active = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TAB]);
     return <>
-        {active && <PlannerTabs />}
+        {active && <><PlannerTabs /><PlanSettings /></>}
         {active?.mode === 'single' && <PlannerTargetInput key={active.id} />}
         <PlannerTabCreation empty={!active} />
         <ConfirmationDialog />
@@ -86,4 +87,30 @@ it('does not delete until confirmed, preserves an inactive tab on cancel, and sh
     fireEvent.click(await screen.findByRole('button', { name: 'Delete tab' }));
     await screen.findByRole('heading', { name: 'Create your first planner tab' });
     expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_TABS])).toEqual([]);
+});
+
+it('renames only the active plan in settings and exports that plan', async () => {
+    const harness = setup();
+    await act(async () => {
+        harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'one', 'One', 'single']);
+        harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'two', 'Two', 'multi']);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan settings' }));
+    await screen.findByRole('dialog', { name: 'Plan settings' });
+    fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: '   ' } });
+    expect(screen.getByRole('button', { name: 'Rename plan' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: '  Renamed  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Rename plan' }));
+    await screen.findByRole('tab', { name: 'Renamed' });
+    expect(screen.getByRole('tab', { name: 'One' })).toHaveAttribute('aria-selected', 'false');
+    expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_MODE])).toBe('multi');
+    const exports: import('@/features/data-transfer/archive').PlannerArchive[] = [];
+    runtimes[runtimes.length - 1].registerModule(registrar => {
+        registrar.regEffect(appIds.effects.downloadArchive, archive => { exports.push(archive); });
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan settings' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Export plan' }));
+    await waitFor(() => expect(exports).toHaveLength(1));
+    expect(exports[0].bases).toEqual([]);
+    expect(exports[0].plans).toEqual([harness.getState().plannerTabs[1]]);
 });

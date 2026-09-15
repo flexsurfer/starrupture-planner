@@ -4,6 +4,8 @@
  * Feature modules import these values; no feature owns a second ids file.
  */
 export const stateKeys = {
+    dataTransferPreview: 'dataTransferPreview',
+    dataTransferStatus: 'dataTransferStatus',
     appDataVersion: 'appDataVersion',
     appDataVersions: 'appDataVersions',
     appVersionedData: 'appVersionedData',
@@ -37,6 +39,13 @@ export const stateKeys = {
 
 export const appIds = {
     events: {
+        DATA_TRANSFER_EXPORT: 'data-transfer/export',
+        DATA_TRANSFER_PREVIEW_IMPORT: 'data-transfer/preview-import',
+        DATA_TRANSFER_IMPORT_READY: 'data-transfer/import-ready',
+        DATA_TRANSFER_CANCEL_IMPORT: 'data-transfer/cancel-import',
+        DATA_TRANSFER_CONFIRM_IMPORT: 'data-transfer/confirm-import',
+        DATA_TRANSFER_SET_STATUS: 'data-transfer/set-status',
+        PLANNER_RENAME_TAB: 'planner/rename-tab',
         APP_INIT: 'app/init', APP_REQUEST_LOAD_GAME_DATA: 'app/request-load-game-data', APP_GAME_DATA_LOAD_FAILED: 'app/game-data-load-failed', APP_SET_DATA_VERSION: 'app/set-data-version',
         UI_SET_THEME: 'ui/set-theme', UI_SET_ACTIVE_TAB: 'ui/set-active-tab', UI_SHOW_CONFIRMATION_DIALOG: 'ui/show-confirmation-dialog', UI_CLOSE_CONFIRMATION_DIALOG: 'ui/close-confirmation-dialog',
         ITEMS_SET_SELECTED_CATEGORY: 'items/set-selected-category', ITEMS_SET_SELECTED_BUILDING: 'items/set-selected-building', ITEMS_SET_SEARCH_TERM: 'items/set-search-term',
@@ -62,6 +71,8 @@ export const appIds = {
         PRODUCTION_PLAN_MODAL_OPEN: 'production-plan-modal/open', PRODUCTION_PLAN_MODAL_CLOSE: 'production-plan-modal/close', PRODUCTION_PLAN_MODAL_SET_NAME: 'production-plan-modal/set-name', PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM: 'production-plan-modal/set-selected-item', PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'production-plan-modal/set-target-amount', PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'production-plan-modal/set-selected-corporation-level', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'production-plan-modal/set-recipe-selection', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS: 'production-plan-modal/set-recipe-selections', PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'production-plan-modal/toggle-input', PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'production-plan-modal/link-output-input', PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'production-plan-modal/set-match-inputs', PRODUCTION_PLAN_MODAL_SUBMIT: 'production-plan-modal/submit',
     },
     subscriptions: {
+        DATA_TRANSFER_PREVIEW: 'data-transfer/preview',
+        DATA_TRANSFER_STATUS: 'data-transfer/status',
         ITEMS_RECIPES_BY_OUTPUT_ITEM_ID: 'items/recipes-by-output-item-id',
         APP_DATA_VERSION: 'app/data-version', APP_DATA_VERSIONS: 'app/data-versions', UI_THEME: 'ui/theme', UI_GAME_DATA_LOAD_PENDING: 'ui/game-data-load-pending', UI_ACTIVE_TAB: 'ui/active-tab', UI_CONFIRMATION_DIALOG: 'ui/confirmation-dialog',
         BUILDINGS_LIST: 'buildings/list', BUILDINGS_BY_ID_MAP: 'buildings/by-id-map', BUILDINGS_SORTED_PRODUCTION_LIST: 'buildings/sorted-production-list', CORPORATIONS_LIST: 'corporations/list', CORPORATIONS_STATS_SUMMARY: 'corporations/stats-summary', CORPORATIONS_LIST_WITH_STATS: 'corporations/list-with-stats',
@@ -90,5 +101,5 @@ export const appIds = {
         BASES_OVERVIEW_PLAN_ROWS: 'bases/overview-plan-rows', BASES_OVERVIEW_MATERIAL_BALANCE_ROWS: 'bases/overview-material-balance-rows', BASES_OVERVIEW_BUILDING_COVERAGE_ROWS: 'bases/overview-building-coverage-rows',
         BASES_PRODUCTION_TABLE: 'bases/production-table',
     },
-    effects: { setTheme: 'ui/set-theme-in-dom', loadGameData: 'app/load-game-data' },
+    effects: { downloadArchive: 'data-transfer/download-archive', readArchive: 'data-transfer/read-archive', setTheme: 'ui/set-theme-in-dom', loadGameData: 'app/load-game-data' },
 } as const;
