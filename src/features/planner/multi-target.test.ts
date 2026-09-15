@@ -4,7 +4,9 @@ import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerBuildingsModule } from '@/features/buildings/module';
 import { registerItemsModule } from '@/features/items/module';
+import { registerAppShellModule } from '@/features/app-shell/module';
 import { registerPlannerModule } from './module';
+import { createPlannerTab } from './state';
 import { buildMultiTargetProductionFlow, buildProductionFlow } from './production-flow';
 import { getMultiTargetWarning } from './target-conflicts';
 import { getFlowNodeId } from './flow-node';
@@ -23,6 +25,39 @@ const buildings: Building[] = [{
 }];
 
 describe('multi-target planner tabs', () => {
+    it.each(['a', 'missing'])('waits for game data before validating restored target %s', itemId => {
+        const runtime = createAppRuntime();
+        runtime.registerModule(registerAppShellModule);
+        runtime.registerModule(registerBuildingsModule);
+        runtime.registerModule(registerItemsModule);
+        runtime.registerModule(registerPlannerModule);
+        const harness = createUkladTestHarness(runtime);
+        harness.restoreState({
+            ...harness.getState(),
+            plannerTabs: [{
+                ...createPlannerTab('saved', 'Saved plan', 'multi'),
+                multiTargets: [{ itemId, amount: 10 }],
+            }],
+            plannerActiveTabId: 'saved',
+        });
+        try {
+            const warning = () => harness.getSubscriptionValue([appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING]);
+            expect(warning()).toBeNull();
+            harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'playtest', {
+                buildings, items: [], corporations: {},
+            }]);
+            if (itemId === 'missing') {
+                expect(warning()).toContain('missing has no usable production recipe');
+                expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_PRODUCTION_FLOW]).nodes).toEqual([]);
+            } else {
+                expect(warning()).toBeNull();
+                expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_PRODUCTION_FLOW]).nodes.length).toBeGreaterThan(0);
+            }
+        } finally {
+            runtime.dispose();
+        }
+    });
+
     it('shares production capacity and rounds combined building counts', () => {
         const flow = buildMultiTargetProductionFlow([{ itemId: 'a', amount: 10 }, { itemId: 'b', amount: 10 }], buildings);
         const plate = flow.nodes.filter((n): n is FlowNode => n.nodeType === 'production').filter(n => n.outputItem === 'plate');

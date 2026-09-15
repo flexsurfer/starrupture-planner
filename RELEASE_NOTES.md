@@ -1,3 +1,41 @@
+# Release Notes — 2026-09-15
+
+## What's New
+
+### 📱 Even Better on Mobile
+
+- Mobile support was already available, and this update makes it even better with refined layouts, spacing, and controls for smaller screens.
+- Improved readability and navigation across base management, production plans, catalog views, and the logistics map.
+
+### 📦 Import and Export Bases and Plans
+
+- Back up or share all your bases and planner tabs, or select just the ones you need, as a JSON file from **Global settings**.
+- Export an individual base directly from its card or detail view, and export a planner tab from **Plan settings**.
+- Preview an import and choose which bases and plans to add. Imported entries are added as copies, keeping your existing work intact.
+- Base exports include buildings, production plans, and energy groups. Imports warn when the file uses a different game-data version.
+
+### 🏗️ Planning and Advanced Base Modes
+
+- Choose **Planning mode** to focus on production plans and the buildings and resources they require.
+- Use **Advanced mode** to manage your in-game buildings, energy, transport, logistics, inputs, and outputs.
+- Switch modes anytime across all bases while keeping your plans and base configuration.
+- Review production requirements and material coverage in a combined production table, with expandable details and quick access to edit plans.
+
+### 🎯 More Flexible Multi-Target Planning
+
+- Plan an item alongside another target that consumes it. Production now accounts for both your requested final output and internal ingredient demand.
+- Dedicated target cards make these overlapping demands clear in the graph and table.
+- Recipe validation continues to catch circular dependencies while allowing targets to share ingredients or depend on one another.
+
+### 🧭 Interface and Logistics Improvements
+
+- Refined building and recipe browsing with expandable sections and more consistent item-category colors.
+- Streamlined base navigation, production-plan controls, and detail views.
+- Improved logistics-map spacing, layout, and view fitting for easier inspection of your base network.
+- Rename and export planner tabs from the new **Plan settings** dialog, and choose your theme in **Global settings**.
+
+---
+
 # Release Notes — 2026-09-10
 
 ## What's New

@@ -43,7 +43,9 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             [appIds.subscriptions.ITEMS_LIST],
         ],
         ([targets, buildings, selections, items]) =>
-            getMultiTargetWarning(targets.map(target => target.itemId), buildings, selections, items),
+            // Saved targets are restored before the game-data catalog loads.
+            buildings.length === 0 ? null
+                : getMultiTargetWarning(targets.map(target => target.itemId), buildings, selections, items),
     );
     registrar.regSub(
         appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS,
