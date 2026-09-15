@@ -1,4 +1,3 @@
-import dagre from 'dagre';
 import type { Node, Edge } from '@xyflow/react';
 import { Position as ReactFlowPosition } from '@xyflow/react';
 import type { BaseLogisticsViewModel } from '@/features/bases/types';
@@ -22,7 +21,8 @@ interface CanvasData {
 }
 
 const BASE_NODE_WIDTH = 260;
-const BASE_NODE_HEIGHT = 200;
+// Square cells leave room for expanded input/output summaries and link labels.
+const BASE_CELL_SIZE = 480;
 const GRID_NODE_WIDTH = 200;
 const GRID_NODE_HEIGHT = 140;
 
@@ -35,10 +35,6 @@ export function buildLogisticsCanvasData({
   const showLinks = activeLayers.has('links');
   const showEnergy = activeLayers.has('energy');
   const showBroken = activeLayers.has('broken');
-
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: 'LR', ranksep: 200, nodesep: 120 });
 
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -98,14 +94,10 @@ export function buildLogisticsCanvasData({
       position: { x: 0, y: 0 },
       data: nodeData as unknown as Record<string, unknown>,
     });
-    dagreGraph.setNode(nodeId, { width: BASE_NODE_WIDTH, height: BASE_NODE_HEIGHT });
   }
 
   // Build energy grid nodes — sum local generation/consumption per group.
-  // Grids are laid out manually (floating above their member bases) rather than
-  // through dagre, and each base gets a single net energy edge on dedicated
-  // top/bottom handles so energy never shares a point with item links.
-  const gridMembers = new Map<string, string[]>();
+  // Each base gets a single net energy edge on dedicated top/bottom handles.
   if (showEnergy) {
     const groupMap = new Map<string, { generation: number; consumption: number; baseCount: number }>();
     for (const model of models) {
@@ -141,12 +133,10 @@ export function buildLogisticsCanvasData({
       });
 
       // One net energy edge per base: producer -> grid (orange) or grid -> consumer (red).
-      const members: string[] = [];
       for (const model of models) {
         const stats = baseStats[model.baseId];
         if (stats?.energyGroupId !== groupId) continue;
         const baseNodeId = `base-${model.baseId}`;
-        members.push(baseNodeId);
 
         const net = (stats.localEnergyGeneration ?? 0) - (stats.energyConsumption ?? 0);
         if (net === 0) continue;
@@ -168,7 +158,6 @@ export function buildLogisticsCanvasData({
           data: { type: 'energy', baseId: model.baseId, groupId, groupName: group.name } as unknown as Record<string, unknown>,
         });
       }
-      gridMembers.set(nodeId, members);
     }
   }
 
@@ -223,7 +212,6 @@ export function buildLogisticsCanvasData({
               isBroken,
             } as unknown as Record<string, unknown>,
           });
-          dagreGraph.setEdge(sourceId, targetId);
         }
       }
     }
@@ -263,50 +251,34 @@ export function buildLogisticsCanvasData({
             itemName: input.itemName,
           } as unknown as Record<string, unknown>,
         });
-        dagreGraph.setEdge(sourceId, targetId);
       }
     }
   }
 
-  // Apply dagre layout (base nodes + item links only — grids are placed manually)
-  dagre.layout(dagreGraph);
-
-  // Position base nodes from dagre output
-  const basePositions = new Map<string, { x: number; y: number }>();
-  for (const node of nodes) {
-    if (node.type === 'energyGrid') continue;
-    const positioned = dagreGraph.node(node.id);
-    if (positioned) {
-      node.position = {
-        x: positioned.x - BASE_NODE_WIDTH / 2,
-        y: positioned.y - BASE_NODE_HEIGHT / 2,
-      };
-      node.sourcePosition = ReactFlowPosition.Right;
-      node.targetPosition = ReactFlowPosition.Left;
-      basePositions.set(node.id, node.position);
-    }
-  }
-
-  // Float each energy grid above the horizontal span of its member bases so its
-  // vertical energy edges stay clear of the horizontal item links.
-  const GRID_VERTICAL_GAP = 80;
-  for (const node of nodes) {
-    if (node.type !== 'energyGrid') continue;
-    const memberPositions = (gridMembers.get(node.id) || [])
-      .map((id) => basePositions.get(id))
-      .filter((p): p is { x: number; y: number } => !!p);
-    if (memberPositions.length === 0) {
-      node.position = { x: 0, y: 0 };
-      continue;
-    }
-    const avgCenterX =
-      memberPositions.reduce((sum, p) => sum + p.x + BASE_NODE_WIDTH / 2, 0) / memberPositions.length;
-    const minY = Math.min(...memberPositions.map((p) => p.y));
+  // Keep bases in model order so changing links or toggling energy does not
+  // reshuffle the cards. Fill a near-square grid from left to right.
+  const columns = Math.max(1, Math.ceil(Math.sqrt(models.length)));
+  const baseNodes = nodes.filter((node) => node.type === 'baseNetwork');
+  baseNodes.forEach((node, index) => {
     node.position = {
-      x: avgCenterX - GRID_NODE_WIDTH / 2,
-      y: minY - GRID_NODE_HEIGHT - GRID_VERTICAL_GAP,
+      x: (index % columns) * BASE_CELL_SIZE,
+      y: Math.floor(index / columns) * BASE_CELL_SIZE,
     };
-  }
+    node.sourcePosition = ReactFlowPosition.Right;
+    node.targetPosition = ReactFlowPosition.Left;
+  });
+
+  // Give energy grids their own rows above the bases. Shared member centers
+  // could otherwise place multiple grids on top of each other or on a base.
+  const gridNodes = nodes.filter((node) => node.type === 'energyGrid');
+  const gridRows = Math.ceil(gridNodes.length / columns);
+  const gridRowHeight = GRID_NODE_HEIGHT + 80;
+  gridNodes.forEach((node, index) => {
+    node.position = {
+      x: (index % columns) * BASE_CELL_SIZE + (BASE_NODE_WIDTH - GRID_NODE_WIDTH) / 2,
+      y: (Math.floor(index / columns) - gridRows) * gridRowHeight,
+    };
+  });
 
   return { nodes, edges };
 }

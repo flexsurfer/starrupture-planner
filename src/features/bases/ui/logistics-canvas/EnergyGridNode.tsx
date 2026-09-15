@@ -21,7 +21,7 @@ export const EnergyGridNode: React.FC<NodeProps> = memo(({ data }) => {
   const isDeficit = d.balance < 0;
 
   return (
-    <div className={`rounded-xl border-2 shadow-lg min-w-[180px] overflow-hidden ${
+    <div className={`rounded-xl border-2 shadow-lg w-[200px] overflow-hidden ${
       isDeficit ? 'border-error/60 bg-error/5' : 'border-warning/60 bg-warning/5'
     }`}>
       {/* Energy handles on the bottom — grid floats above its member bases */}

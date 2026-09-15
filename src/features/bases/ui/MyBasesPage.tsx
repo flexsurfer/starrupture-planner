@@ -62,7 +62,7 @@ const MyBasesPage = () => {
 
   // Render overview
   return (
-    <div className="h-full px-2 pb-2 lg:px-3 lg:pb-3 flex flex-col">
+    <div className={`h-full min-h-0 px-2 lg:px-3 flex flex-col ${visibleView === 'bases' ? 'pb-2 lg:pb-3' : ''}`}>
       <NavigationHeader title="My Bases" actions={<MyBasesSettings />} summary={<>
         <MyBasesStats />
         {advanced && <button
@@ -128,7 +128,7 @@ const MyBasesPage = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 min-h-0 ${visibleView === 'logistics' ? 'overflow-hidden' : 'overflow-auto'}`}>
         {visibleView === 'bases' && (
           <div
             id="my-bases-panel-bases"
@@ -149,6 +149,7 @@ const MyBasesPage = () => {
         {visibleView === 'logistics' && (
           <div
             id="my-bases-panel-logistics"
+            className="h-full min-h-0"
             role="tabpanel"
             aria-labelledby="my-bases-tab-logistics"
           >

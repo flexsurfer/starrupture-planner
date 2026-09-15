@@ -127,7 +127,7 @@ const LogisticsCanvasInner: React.FC = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (nodes.length > 0) fitView({ duration: 300, padding: 0.15 });
+      if (nodes.length > 0) fitView({ duration: 300, padding: 0.15, minZoom: 0.1 });
     }, 50);
     return () => clearTimeout(timer);
   }, [models.length, fitView, nodes.length]);
@@ -149,7 +149,7 @@ const LogisticsCanvasInner: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-full min-h-[500px]">
+    <div className="relative w-full h-full min-h-0">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -162,6 +162,8 @@ const LogisticsCanvasInner: React.FC = () => {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
+        minZoom={0.1}
+        fitViewOptions={{ minZoom: 0.1, padding: 0.15 }}
         nodesConnectable={false}
         attributionPosition="bottom-left"
       >
@@ -180,7 +182,7 @@ const LogisticsCanvasInner: React.FC = () => {
           </button>
         </Panel>
         <Background />
-        <Controls showInteractive={false} />
+        <Controls showInteractive={false} fitViewOptions={{ minZoom: 0.1, padding: 0.15 }} />
         <MiniMap
           nodeColor={(node) => {
             if (node.type === 'energyGrid') return '#f59e0b';

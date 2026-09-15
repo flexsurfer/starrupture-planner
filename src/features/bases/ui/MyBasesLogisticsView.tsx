@@ -18,10 +18,8 @@ export const MyBasesLogisticsView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
-      <div className="rounded-lg border border-base-300 bg-base-100 overflow-hidden" style={{ height: '70vh' }}>
-        <LogisticsCanvas />
-      </div>
+    <div className="h-full min-h-0 rounded-lg border border-base-300 bg-base-100 overflow-hidden">
+      <LogisticsCanvas />
     </div>
   );
 };

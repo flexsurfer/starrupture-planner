@@ -36,7 +36,7 @@ export const BaseNetworkNode: React.FC<NodeProps> = memo(({ data }) => {
   const d = data as unknown as BaseNetworkNodeData;
 
   return (
-    <div className="rounded-xl border-2 border-base-300 bg-base-100 shadow-lg min-w-[220px] max-w-[280px] overflow-hidden">
+    <div className="rounded-xl border-2 border-base-300 bg-base-100 shadow-lg w-[260px] overflow-hidden">
       {/* Item link handles (left = in, right = out) */}
       <Handle id="item-in" type="target" position={Position.Left} className="!w-3 !h-3 !bg-primary" />
       <Handle id="item-out" type="source" position={Position.Right} className="!w-3 !h-3 !bg-secondary" />
