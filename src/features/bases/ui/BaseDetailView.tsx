@@ -1,4 +1,3 @@
-import { ExportBaseButton } from '@/features/data-transfer/ui/ExportBaseButton';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -44,7 +43,7 @@ export const BaseDetailView: React.FC = () => {
         <NavigationHeader title={selectedBase.name}
           breadcrumbs={[{ label: 'My Bases', onClick: backToBases }, { label: selectedBase.name }]}
           back={{ label: 'Back to My Bases', onClick: backToBases }}
-          actions={<><ExportBaseButton baseId={selectedBase.id} name={selectedBase.name} /><MyBasesSettings /></>} />
+          actions={<MyBasesSettings />} />
         {/* Core Info and Stats - Fixed, not scrollable */}
         <div className="mb-2 flex-shrink-0">
           <BaseCoreInfo onRename={() => setShowRenameModal(true)} />
