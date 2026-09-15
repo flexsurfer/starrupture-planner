@@ -2,14 +2,15 @@ import { buildProductionStageLayout } from './production-stage-layout';
 import dagre from 'dagre';
 import { Position } from '@xyflow/react';
 import type { Edge, Node } from '@xyflow/react';
-import type { FlowEdge, FlowNode, Item } from '@/features/planner/types';
+import type { FlowEdge, PlannerFlowNode, Item } from '@/features/planner/types';
+import { getFlowNodeId, getTargetNodeIds } from './flow-node';
 import { getItemName } from '@/utils/itemUtils';
 import { getItemColor } from '@/utils/itemColors';
 
 export type PlannerFlowDirection = 'LR' | 'RL' | 'TB' | 'BT';
 
 export type PlannerFlowGraphNode = Omit<Node, 'data'> & {
-    flowNode: FlowNode;
+    flowNode: PlannerFlowNode;
     outputColor: string;
 };
 
@@ -23,7 +24,7 @@ export interface PlannerFlowGraph {
  * A pure, view-ready graph. React node labels are deliberately created in the
  * diagram component, so subscriptions do not import presentation components.
  */
-export function buildPlannerFlowGraph(flowNodes: FlowNode[], flowEdges: FlowEdge[], items: Item[], targetItemIds: string[] = [], direction: PlannerFlowDirection = 'LR', groupByStage = false): PlannerFlowGraph {
+export function buildPlannerFlowGraph(flowNodes: PlannerFlowNode[], flowEdges: FlowEdge[], items: Item[], targetItemIds: string[] = [], direction: PlannerFlowDirection = 'LR', groupByStage = false): PlannerFlowGraph {
     const graph = new dagre.graphlib.Graph();
     graph.setDefaultEdgeLabel(() => ({}));
     graph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 40 });
@@ -31,13 +32,11 @@ export function buildPlannerFlowGraph(flowNodes: FlowNode[], flowEdges: FlowEdge
     flowNodes.forEach((_, index) => {
         graph.setNode(`node_${index}`, { width: 160, height: 180 });
     });
+    const targetNodeIds = getTargetNodeIds(flowNodes, targetItemIds);
 
     const nodeIdByFlowKey = new Map<string, string>();
     flowNodes.forEach((node, index) => {
-        const key = node.nodeType === 'input' && node.baseBuildingId
-            ? `${node.buildingId}_${node.recipeIndex}_${node.outputItem}_${node.baseBuildingId}`
-            : `${node.buildingId}_${node.recipeIndex}_${node.outputItem}`;
-        nodeIdByFlowKey.set(key, `node_${index}`);
+        nodeIdByFlowKey.set(getFlowNodeId(node), `node_${index}`);
     });
 
     flowEdges.forEach((edge) => {
@@ -68,12 +67,13 @@ export function buildPlannerFlowGraph(flowNodes: FlowNode[], flowEdges: FlowEdge
         const position = vertical ? { x: canonical.y, y: stage * 0.8 } : { x: stage, y: canonical.y };
         return {
             id: `node_${index}`,
-            type: 'default',
+            type: flowNode.nodeType === 'target' ? 'output' : 'default',
             position,
             sourcePosition,
             targetPosition,
             flowNode,
             outputColor: getItemColor(flowNode.outputItem, items),
+            ...(targetNodeIds.has(getFlowNodeId(flowNode)) && { style: { borderColor: 'var(--color-primary)' } }),
         };
     });
 

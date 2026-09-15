@@ -3,21 +3,13 @@ import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import React, { useCallback } from 'react';
 import { EnergyGroupSelector } from '@/features/energy-groups/ui';
 
-interface BaseCoreInfoProps {
-  onRename?: () => void;
-}
-
-export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
+export const BaseCoreInfo: React.FC<{ onRename?: () => void }> = ({ onRename }) => {
   const runtime = useRuntime();
   const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const expanded = useSubscription([appIds.subscriptions.BASES_DETAILS_EXPANDED]);
   const detailStats = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_DETAIL_STATS]);
   const coreLevels = useSubscription([appIds.subscriptions.BASES_CORE_LEVELS]);
   const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
-
-  const onClose = useCallback(() => {
-    runtime.dispatch([appIds.events.BASES_SET_SELECTED_BASE, null]);
-  }, [runtime]);
 
   const onCoreLeveChange = useCallback((level: number) => {
     runtime.dispatch([appIds.events.BASES_SET_CORE_LEVEL, level]);
@@ -31,7 +23,7 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
   const { baseName, coreLevel, buildingCount, totalHeat, energyGeneration, energyConsumption, energyGridConsumption, baseCoreHeatCapacity, heatPercentage, energyPercentage, isHeatOverCapacity, isEnergyInsufficient, energyGroupId, energyGroupName } = detailStats;
 
   return (
-    <div className="relative bg-base-200 rounded-lg p-2 pr-20 sm:p-3 sm:pr-20">
+    <div className="relative bg-base-200 rounded-lg p-2 pr-12 sm:p-3 sm:pr-12">
       <div className="absolute right-0 top-0 flex">
         {advanced && <button
           type="button"
@@ -45,17 +37,7 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
             {expanded ? <path d="M5 16h14" /> : <><rect x="5" y="9" width="10" height="10" /><path d="M9 9V5h10v10h-4" /></>}
           </svg>
         </button>}
-        <button
-          type="button"
-          className="relative -ml-px grid size-8 cursor-pointer place-items-center rounded-tr-lg border border-base-content/20 bg-base-200 text-base-content/65 transition-colors hover:bg-base-300 hover:text-base-content focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          aria-label="Close base"
-          title="Close base"
-          onClick={onClose}
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4">
-            <path d="m6 6 12 12M6 18 18 6" />
-          </svg>
-        </button>
+
       </div>
       <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-3">
         {/* Header Section: Icon and Base Name */}
@@ -82,15 +64,9 @@ export const BaseCoreInfo: React.FC<BaseCoreInfoProps> = ({ onRename }) => {
           <div className="flex-1 min-w-0">
             <div className="flex min-h-8 min-w-0 items-center gap-2">
               <h2 className="truncate text-base font-semibold sm:text-lg">{baseName}</h2>
-              {onRename && (!advanced || expanded) && (
-                <button
-                  type="button"
-                  className="btn btn-xs btn-ghost shrink-0 text-base-content/55 hover:text-base-content"
-                  onClick={onRename}
-                >
-                  Rename
-                </button>
-              )}
+              {onRename && <button type="button" className="btn btn-xs btn-ghost shrink-0 text-base-content/55 hover:text-base-content" onClick={onRename}>
+                Rename
+              </button>}
             </div>
             {advanced && expanded && <><p className="hidden sm:block text-xs text-base-content/70 mt-1">
               The Core defines the buildable area for this Base. Buildings can only be placed inside the Core area.

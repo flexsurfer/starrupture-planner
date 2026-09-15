@@ -287,8 +287,8 @@ describe('headless catalog and planner E2E', () => {
         expect(view.value('corporationLevels')).toMatchObject([
             { corporationId: 'miners', level: 1, points: 2, cost: 50 },
         ]);
-        expect(view.value('flow').nodes.some(({ buildingId }) => (
-            buildingId === 'orbital_cargo_launcher'
+        expect(view.value('flow').nodes.some(node => (
+            node.nodeType === 'launcher' && node.buildingId === 'orbital_cargo_launcher'
         ))).toBe(true);
 
         await app.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);

@@ -9,6 +9,7 @@ import { CreateBaseModal } from './modals';
 import { ManageEnergyGroupsModal } from '@/features/energy-groups/ui';
 
 import { MyBasesSettings } from './components/MyBasesSettings';
+import { NavigationHeader } from '@/shared/ui/NavigationHeader';
 
 type MyBasesView = 'bases' | 'logistics';
 
@@ -61,27 +62,26 @@ const MyBasesPage = () => {
 
   // Render overview
   return (
-    <div className="h-full p-2 lg:p-3 flex flex-col">
-      {/* Header */}
-      <div className="mb-2 flex shrink-0 flex-wrap items-center gap-2">
+    <div className="h-full px-2 pb-2 lg:px-3 lg:pb-3 flex flex-col">
+      <NavigationHeader title="My Bases" actions={<MyBasesSettings />} summary={<>
         <MyBasesStats />
         {advanced && <button
           type="button"
           className="btn btn-ghost btn-sm h-8 min-h-8 shrink-0 gap-1.5 px-2 text-xs whitespace-nowrap"
           onClick={() => setShowEnergyGroupsModal(true)}
-          title="Manage Energy Grids"
+          title="Manage Grids"
         >
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
           </svg>
-          Energy Grids
+          Grids
           {energyGroups.length > 0 && (
             <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">
               {energyGroups.length}
             </span>
           )}
         </button>}
-      </div>
+      </>} />
 
       <div className="mb-2 flex shrink-0 items-center gap-1">
         <div
@@ -115,7 +115,6 @@ const MyBasesPage = () => {
             Logistics
           </button>}
         </div>
-        <MyBasesSettings />
         <button
           type="button"
           className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"

@@ -4,6 +4,7 @@ import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
 import { getItemColor } from '@/utils/itemColors';
 import { NodeCard } from './NodeCard';
+import { getFlowNodeId } from '@/features/planner/flow-node';
 
 export const PlannerProductionTable = () => {
     const runtime = useRuntime();
@@ -35,7 +36,7 @@ export const PlannerProductionTable = () => {
                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-4">
                                     {group.nodes.map(node => (
                                         <div
-                                            key={`${node.nodeType}:${node.buildingId}:${node.recipeIndex}:${node.outputItem}:${node.baseBuildingId ?? ''}`}
+                                            key={getFlowNodeId(node)}
                                             className={`relative flex h-full min-w-0 flex-col rounded-md border bg-base-200 ${group.type === 'target' ? 'border-primary' : 'border-base-300'}`}
                                         >
                                             <NodeCard compactOnMobile onSelectRecipe={onSelectRecipe} node={node} items={items} outputColor={getItemColor(node.outputItem, items)} />

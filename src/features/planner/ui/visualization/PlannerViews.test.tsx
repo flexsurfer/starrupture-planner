@@ -68,7 +68,7 @@ it('supports keyboard navigation between views', () => {
 
 it('pauses invalid multi-target views and resumes when repaired or switched to single mode', () => {
     planner.mode = 'multi';
-    planner.warning = 'Iron Plate is required to produce Steel Plate.';
+    planner.warning = 'Iron Plate has no usable production recipe in the current game data.';
     const { rerender } = render(<PlannerViews />);
     expect(screen.queryByLabelText('Graph viewport')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Table state')).not.toBeInTheDocument();

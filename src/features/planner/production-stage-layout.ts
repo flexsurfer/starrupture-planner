@@ -1,16 +1,17 @@
 import type { graphlib } from 'dagre';
-import type { FlowNode, Item } from './types';
+import type { PlannerFlowNode, Item } from './types';
+import { getFlowNodeId, getTargetNodeIds } from './flow-node';
 
 /** Override automatic ranks with production stages; an empty map retains Dagre's cycle layout. */
 export function buildProductionStageLayout(
     graph: graphlib.Graph,
-    flowNodes: FlowNode[],
+    flowNodes: PlannerFlowNode[],
     items: Item[],
     targetItemIds: string[],
 ): Map<number, { x: number; y: number }> {
     // Assign production stages, advancing consumers when a recipe needs another
     // item in the same category. Keep Dagre's vertical ordering within stages.
-    const targets = new Set(targetItemIds);
+    const targetNodeIds = getTargetNodeIds(flowNodes, targetItemIds);
     const itemTypes = new Map(items.map(item => [item.id, item.type]));
     const stages: number[] = flowNodes.map(node => itemTypes.get(node.outputItem) === 'raw' ? 0
         : itemTypes.get(node.outputItem) === 'processed' ? 1 : 2);
@@ -30,8 +31,7 @@ export function buildProductionStageLayout(
     const positions = new Map<number, { x: number; y: number }>();
     // Retain the existing layout for cyclic graphs instead of inventing an order.
     if (visited === flowNodes.length) {
-        const isTarget = (index: number) => flowNodes[index].nodeType === 'production'
-            && targets.has(flowNodes[index].outputItem);
+        const isTarget = (index: number) => targetNodeIds.has(getFlowNodeId(flowNodes[index]));
         const targetStage = Math.max(1, ...stages.filter((_, index) =>
             !isTarget(index) && flowNodes[index].nodeType !== 'launcher')) + 1;
         flowNodes.forEach((node, index) => {

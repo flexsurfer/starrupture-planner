@@ -125,13 +125,20 @@ export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ st
 
   return (
     <button
-      className={`btn btn-sm whitespace-nowrap ${buttonInfo.className} ${className ?? ''}`}
+      type="button"
+      aria-label={buttonInfo.desktop}
+      className={`btn btn-sm size-8 min-h-8 shrink-0 p-0 ${buttonInfo.className} ${className ?? ''}`}
       onClick={onShare}
       title={buttonInfo.title}
       disabled={bases.length === 0 || state === 'sharing'}
     >
-      <span className="hidden sm:inline">{buttonInfo.desktop}</span>
-      <span className="sm:hidden">{buttonInfo.mobile}</span>
+      {state === 'sharing' ? <span aria-hidden="true" className="loading loading-spinner loading-xs" /> :
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4">
+          {state === 'failed' ? <path strokeLinecap="round" d="m6 6 12 12M6 18 18 6" /> :
+            state !== 'idle' ? <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" /> :
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V3m-4 4 4-4 4 4M5 13v7h14v-7" />}
+        </svg>}
+      <span className="sr-only" role="status">{state !== 'idle' ? buttonInfo.title : ''}</span>
     </button>
   );
 };

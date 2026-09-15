@@ -9,6 +9,7 @@ import type {
     PlannerDetailedStatsItem,
 } from '@/features/planner/types';
 import { buildPlannerFlowGraph } from './flow-graph';
+import { getFlowNodeId, getTargetNodeIds } from './flow-node';
 import { buildRecipeOptionsForOutputItems, collectRecipeOutputItems } from './recipe-options';
 import { getMultiTargetWarning } from './target-conflicts';
 import { getItemName } from '@/utils/itemUtils';
@@ -170,10 +171,11 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             if (!selectedItem.length || productionFlow.nodes.length === 0) {
                 return { totalBuildings: 0, totalEnergy: 0, totalHotness: 0 };
             }
+            const buildingNodes = productionFlow.nodes.filter(node => node.nodeType !== 'target');
             return {
-                totalBuildings: productionFlow.nodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0),
-                totalEnergy: productionFlow.nodes.reduce((sum, node) => sum + node.totalPower, 0),
-                totalHotness: productionFlow.nodes.reduce((sum, node) => sum + node.totalHeat, 0),
+                totalBuildings: buildingNodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0),
+                totalEnergy: buildingNodes.reduce((sum, node) => sum + node.totalPower, 0),
+                totalHotness: buildingNodes.reduce((sum, node) => sum + node.totalHeat, 0),
             };
         },
     );
@@ -195,8 +197,10 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
                 };
             }
 
+            const buildingNodes = productionFlow.nodes.filter(node => node.nodeType !== 'target');
+            const targetNodeIds = getTargetNodeIds(productionFlow.nodes, selectedItemId);
             const buildingMap = new Map<string, PlannerBuildingStats>();
-            for (const node of productionFlow.nodes) {
+            for (const node of buildingNodes) {
                 const existing = buildingMap.get(node.buildingId);
                 if (existing) {
                     existing.count += Math.ceil(node.buildingCount);
@@ -214,14 +218,14 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             }
 
             const itemsByType = new Map<string, PlannerDetailedStatsItem[]>();
-            // Sum all consumers of shared ingredients. Terminal outputs have no
-            // outgoing edge, so use their production rate as a fallback.
+            // Include recipe consumption and separate target demand. Terminal target
+            // producers without delivery use their production rate as a fallback.
             const requiredRates = new Map<string, number>();
             for (const edge of productionFlow.edges) {
                 requiredRates.set(edge.itemId, (requiredRates.get(edge.itemId) ?? 0) + edge.amount);
             }
             const outputRates = new Map<string, number>();
-            for (const node of productionFlow.nodes) {
+            for (const node of buildingNodes) {
                 if (node.nodeType === 'launcher') continue;
                 outputRates.set(node.outputItem, (outputRates.get(node.outputItem) ?? 0)
                     + node.outputAmount * node.buildingCount);
@@ -257,15 +261,16 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
                     type,
                     nodes: productionFlow.nodes.filter(node => {
                         if (node.nodeType === 'launcher') return type === 'launcher';
-                        if (selectedItemId.includes(node.outputItem)) return type === 'target';
+                        if (targetNodeIds.has(getFlowNodeId(node))) return type === 'target';
                         return type === (items.find(item => item.id === node.outputItem)?.type || 'unknown');
                     }).sort((a, b) => getItemName(a.outputItem, items).localeCompare(getItemName(b.outputItem, items))
-                        || a.buildingName.localeCompare(b.buildingName) || a.recipeIndex - b.recipeIndex),
+                        || (a.nodeType !== 'target' && b.nodeType !== 'target'
+                            ? a.buildingName.localeCompare(b.buildingName) || a.recipeIndex - b.recipeIndex : 0)),
                 })).filter(group => group.nodes.length > 0),
                 buildingStats: Array.from(buildingMap.values()).sort((a, b) => b.count - a.count),
-                totalEnergy: productionFlow.nodes.reduce((sum, node) => sum + node.totalPower, 0),
-                totalHotness: productionFlow.nodes.reduce((sum, node) => sum + node.totalHeat, 0),
-                totalBuildings: productionFlow.nodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0),
+                totalEnergy: buildingNodes.reduce((sum, node) => sum + node.totalPower, 0),
+                totalHotness: buildingNodes.reduce((sum, node) => sum + node.totalHeat, 0),
+                totalBuildings: buildingNodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0),
                 itemsByType,
                 sortedTypes,
             };

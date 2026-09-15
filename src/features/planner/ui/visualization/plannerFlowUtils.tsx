@@ -31,13 +31,13 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items, onSelectRec
                 ...(flowNode.nodeType !== 'launcher' && flowNode.outputItem === targetItemId && {
                     borderColor: 'var(--color-primary)',
                 }),
-                ...(showMissingInputs && inputRequirements?.has(flowNode.baseBuildingId ?? '') && {
+                ...(flowNode.nodeType === 'input' && showMissingInputs && inputRequirements?.has(flowNode.baseBuildingId ?? '') && {
                     borderColor: 'var(--color-error)',
                 }),
             },
             data: {
                 label: <NodeCard node={flowNode} items={items} onSelectRecipe={onSelectRecipe} outputColor={outputColor}
-                    inputRequirement={inputRequirements?.get(flowNode.baseBuildingId ?? '')} showMissingInput={showMissingInputs} />,
+                    inputRequirement={flowNode.nodeType === 'input' ? inputRequirements?.get(flowNode.baseBuildingId ?? '') : undefined} showMissingInput={showMissingInputs} />,
             },
         })),
         edges: graph.edges,

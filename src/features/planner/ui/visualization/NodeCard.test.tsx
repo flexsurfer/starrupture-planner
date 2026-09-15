@@ -33,6 +33,19 @@ it('keeps the single-building count neutral', () => {
     expect(screen.getByTitle('1 buildings required')).not.toHaveClass('text-secondary');
 });
 
+it.each([false, true])('renders target demand without buildings, capacity, or recipes (compact: %s)', compactOnMobile => {
+    render(<NodeCard node={{ nodeType: 'target', outputItem: 'helium', amount: 15 }}
+        items={[{ id: 'helium', name: 'Pressurized Helium', type: 'processed' }]} outputColor="green" compactOnMobile={compactOnMobile} />);
+    expect(screen.getByText('Target')).toBeVisible();
+    expect(screen.getByText('Pressurized Helium')).toBeVisible();
+    expect(screen.getByLabelText('Target amount per minute')).toHaveTextContent('15.0/min');
+    expect(screen.getByText('Item image')).toBeVisible();
+    expect(screen.queryByLabelText('Total output per minute')).not.toBeInTheDocument();
+    expect(screen.queryByRole('meter')).not.toBeInTheDocument();
+    expect(screen.queryByText('Building image')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Recipes' })).not.toBeInTheDocument();
+});
+
 it.each([false, true])('renders an input requirement without a fake building or capacity meter (Advanced: %s)', (advanced) => {
     render(<NodeCard node={{ ...node, nodeType: 'input', outputAmount: 60, buildingCount: 1 }} items={[]} outputColor="green"
         inputRequirement={{ itemId: 'helium', required: 60, available: 0, missing: 60 }} showMissingInput={advanced} />);

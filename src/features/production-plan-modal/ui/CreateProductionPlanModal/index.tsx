@@ -17,8 +17,8 @@ export const CreateProductionPlanModal: React.FC = () => {
     }
 
     return (
-        <div className="fixed inset-x-0 bottom-0 top-20 lg:top-16 flex flex-col bg-base-100 z-50">
-            {/* Header with title and close button */}
+        <div className="flex min-h-0 flex-1 flex-col bg-base-100">
+            {/* Navigation and plan name */}
             <ModalHeader />
 
             {/* Select Inputs section */}

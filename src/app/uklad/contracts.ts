@@ -41,6 +41,7 @@ import type {
     PlannerDetailedStats,
     PlannerRecipeOptionsItem,
     ProductionFlowResult,
+    PlannerProductionFlowResult,
     RawMaterialDeficitWithName,
 } from '@/features/planner/types';
 import type { PlannerFlowGraph } from '@/features/planner/flow-graph';
@@ -251,7 +252,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]: { params: []; result: AppState['recipeAlternativePresets'] };
         [appIds.subscriptions.PLANNER_TARGET_AMOUNT]: { params: []; result: number };
         [appIds.subscriptions.PLANNER_AVAILABLE_CORPORATION_LEVELS]: { params: []; result: CorporationLevelInfo[] };
-        [appIds.subscriptions.PLANNER_PRODUCTION_FLOW]: { params: []; result: ProductionFlowResult };
+        [appIds.subscriptions.PLANNER_PRODUCTION_FLOW]: { params: []; result: PlannerProductionFlowResult };
         [appIds.subscriptions.PLANNER_RECIPE_OPTIONS]: { params: []; result: PlannerRecipeOptionsItem[] };
         [appIds.subscriptions.PLANNER_FLOW_GRAPH]: { params: []; result: PlannerFlowGraphResult };
         [appIds.subscriptions.PLANNER_STATS_SUMMARY]: { params: []; result: PlannerStatsSummary };

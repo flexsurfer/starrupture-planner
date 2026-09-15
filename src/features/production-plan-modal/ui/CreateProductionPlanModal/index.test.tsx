@@ -60,7 +60,7 @@ it('autosaves creation and the last keystroke before Back, then restores after r
     const id = harness.getState().basesList[0].productions[0].id;
     fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: 'My plates' } });
     fireEvent.change(screen.getByLabelText('Target items per minute'), { target: { value: '125' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Go back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Production' }));
     await waitFor(() => expect(screen.queryByLabelText('Plan name')).not.toBeInTheDocument());
     expect(harness.getState().basesList[0].productions).toMatchObject([{ id, name: 'My plates', targetAmount: 125 }]);
     expect(harness.getState().basesList[0].productions).toHaveLength(1);
@@ -129,13 +129,13 @@ it('autosaves input selection and matched amount to the same plan, preserving va
     const savedPlan = harness.getState().basesList[0].productions[0];
     expect(savedPlan).toMatchObject({ targetAmount: 120, inputs: [{ id: 'input' }], requiredBuildings: [{ buildingId: 'smelter', count: 2 }] });
     fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Go back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Production' }));
     await waitFor(() => expect(screen.queryByLabelText('Plan name')).not.toBeInTheDocument());
     expect(harness.getState().basesList[0].productions).toEqual([savedPlan]);
     await act(async () => { harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_OPEN, savedPlan.id]); });
     expect(screen.getByLabelText('Plan name')).toHaveValue('Plate Production');
     fireEvent.change(screen.getByLabelText('Target items per minute'), { target: { value: '90' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Go back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Production' }));
     await waitFor(() => expect(harness.getState().basesList[0].productions).toMatchObject([{ id: savedPlan.id, targetAmount: 90 }]));
 });
 

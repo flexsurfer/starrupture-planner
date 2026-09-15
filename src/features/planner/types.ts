@@ -57,14 +57,23 @@ export interface FlowNode {
     baseBuildingId?: string;
 }
 
+/** A requested final output, consumed without buildings, power, or capacity. */
+export interface TargetFlowNode {
+    nodeType: 'target';
+    /** Item consumed by this target. Shared with building nodes for item display. */
+    outputItem: string;
+    amount: number;
+}
+
+export type PlannerFlowNode = FlowNode | TargetFlowNode;
+
 /**
- * Internal representation of a material flow edge between buildings
- * This connects the output of one building to the input of another
+ * A material transfer from a producer to a building or target consumer.
  */
 export interface FlowEdge {
-    /** ID of the source building node */
+    /** ID of the source node */
     from: string;
-    /** ID of the destination building node */
+    /** ID of the destination node */
     to: string;
     /** ID of the item being transferred */
     itemId: string;
@@ -91,7 +100,7 @@ export interface PlannerDetailedStatsItem {
 
 /** Full planner detailed stats payload for the stats modal. */
 export interface PlannerDetailedStats {
-    productionGroups: { type: string; nodes: FlowNode[] }[];
+    productionGroups: { type: string; nodes: PlannerFlowNode[] }[];
     buildingStats: PlannerBuildingStats[];
     totalEnergy: number;
     totalHotness: number;
@@ -190,6 +199,10 @@ export interface ProductionFlowResult {
     edges: FlowEdge[];
     /** List of raw material deficits (when custom inputs don't fully satisfy demand) */
     rawMaterialDeficits?: RawMaterialDeficit[];
+}
+
+export interface PlannerProductionFlowResult extends Omit<ProductionFlowResult, 'nodes'> {
+    nodes: PlannerFlowNode[];
 }
 
 /** Re-export selection type used across planner and modal forms. */

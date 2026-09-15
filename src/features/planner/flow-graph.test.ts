@@ -58,6 +58,8 @@ describe('planner production stage layout', () => {
         const flow = buildMultiTargetProductionFlow([{ itemId: 'short', amount: 60 }, { itemId: 'long', amount: 60 }], buildings);
         const graph = buildPlannerFlowGraph(flow.nodes, flow.edges, items, ['short', 'long'], direction, true);
         const targetNodes = graph.nodes.filter(node => ['short', 'long'].includes(node.flowNode.outputItem));
+        expect(targetNodes.every(node => node.type === 'default')).toBe(true);
+        expect(targetNodes.every(node => node.style?.borderColor === 'var(--color-primary)')).toBe(true);
         expect(targetNodes[0].position[axis]).toBe(targetNodes[1].position[axis]);
         expect(graph.nodes.map(node => node.flowNode)).toEqual(flow.nodes);
         for (const node of graph.nodes) {
@@ -84,6 +86,33 @@ describe('planner production stage layout', () => {
             const source = automatic.nodes.find(node => node.id === edge.source)!;
             const target = automatic.nodes.find(node => node.id === edge.target)!;
             expect((target.position[axis] - source.position[axis]) * sign).toBeGreaterThan(0);
+        }
+    });
+
+    it.each(['LR', 'RL', 'TB', 'BT'] as const)('keeps nested producers before target endpoints in %s', direction => {
+        const targets = [{ itemId: 'plate', amount: 15 }, { itemId: 'part', amount: 30 }, { itemId: 'long', amount: 60 }];
+        const flow = buildMultiTargetProductionFlow(targets, buildings);
+        const axis = direction === 'LR' || direction === 'RL' ? 'x' : 'y';
+        const sign = direction === 'RL' || direction === 'BT' ? -1 : 1;
+        for (const groupByStage of [false, true]) {
+            const graph = buildPlannerFlowGraph(flow.nodes, flow.edges, items, targets.map(target => target.itemId), direction, groupByStage);
+            const specialTargets = graph.nodes.filter(node => node.flowNode.nodeType === 'target');
+            expect(specialTargets.map(node => node.flowNode.outputItem)).toEqual(['plate', 'part']);
+            expect(specialTargets.every(node => node.type === 'output')).toBe(true);
+            const terminalProducer = graph.nodes.find(node => node.flowNode.outputItem === 'long')!;
+            expect(terminalProducer.type).toBe('default');
+            const endpoints = [...specialTargets, terminalProducer];
+            expect(endpoints.every(node => node.style?.borderColor === 'var(--color-primary)')).toBe(true);
+            expect(graph.nodes.filter(node => node.flowNode.nodeType === 'production' && ['plate', 'part'].includes(node.flowNode.outputItem))
+                .every(node => !node.style?.borderColor)).toBe(true);
+            if (groupByStage) expect(new Set(endpoints.map(node => node.position[axis])).size).toBe(1);
+            expect(graph.edges).toHaveLength(flow.edges.length);
+            for (const edge of graph.edges) {
+                const source = graph.nodes.find(node => node.id === edge.source)!;
+                const target = graph.nodes.find(node => node.id === edge.target)!;
+                expect(source.flowNode.nodeType).not.toBe('target');
+                expect((target.position[axis] - source.position[axis]) * sign).toBeGreaterThan(0);
+            }
         }
     });
 

@@ -8,14 +8,7 @@ export const MyBasesStats = () => {
   const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
 
   return (
-    <div className="flex min-w-0 w-full flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-base-200 px-3 py-2 text-xs sm:w-auto sm:gap-x-6 sm:text-sm">
-      <div className="flex items-center gap-1.5 whitespace-nowrap" title="Bases">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4 shrink-0 text-base-content/60">
-          <path strokeLinecap="round" strokeLinejoin="round" d="m3 10 9-7 9 7M5 8.5V21h5v-7h4v7h5V8.5" />
-        </svg>
-        <span className="sr-only">Bases:</span>
-        <span className="font-semibold">{stats.totalBases}</span>
-      </div>
+    <div className="flex shrink-0 items-center gap-3 text-xs">
       {advanced && <div className="flex items-center gap-1.5 whitespace-nowrap" title="Buildings">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4 shrink-0 text-base-content/60">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V3h10v18m0-12h4v12M8 7h1m2 0h1M8 11h1m2 0h1M8 15h1m2 0h1M9 21v-3h2v3" />
@@ -30,14 +23,14 @@ export const MyBasesStats = () => {
         <span className="sr-only">Plans:</span>
         <span className="font-semibold">{stats.totalPlans}</span>
       </div>
-      {advanced && <><div className="flex min-w-[100px] flex-col gap-1 sm:min-w-[120px]" title="Heat / capacity">
-        <div className="flex items-center justify-between gap-2">
+      {advanced && <><div className="flex flex-col gap-0.5" title="Heat / capacity">
+        <div className="flex items-center gap-1">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={`size-4 shrink-0 ${stats.isHeatOverCapacity ? 'text-error' : 'text-base-content/60'}`}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c1 4-3 5-3 8-1-1-1.5-2-1.5-3.5C5 10 4 12 4 14a8 8 0 0 0 16 0c0-4-3-8-8-11Z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 12c0 3-3 3-3 6a3 3 0 0 0 6 0c0-2-1-4-3-6Z" />
           </svg>
           <span className="sr-only">Heat / capacity:</span>
-          <span className={`font-semibold text-xs sm:text-sm ${stats.isHeatOverCapacity ? 'text-error' : ''}`}>
+          <span className={`font-semibold text-xs whitespace-nowrap tabular-nums ${stats.isHeatOverCapacity ? 'text-error' : ''}`}>
             {stats.totalHeat.toLocaleString()}/{stats.totalHeatCapacity.toLocaleString()}
           </span>
         </div>
@@ -48,13 +41,13 @@ export const MyBasesStats = () => {
           ></div>
         </div>
       </div>
-      <div className="flex min-w-[100px] flex-col gap-1 sm:min-w-[120px]" title="Energy used / produced (MW)">
-        <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-0.5" title="Energy used / produced (MW)">
+        <div className="flex items-center gap-1">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={`size-4 shrink-0 ${stats.isEnergyInsufficient ? 'text-error' : 'text-base-content/60'}`}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
           </svg>
           <span className="sr-only">Energy used / produced (MW):</span>
-          <span className={`font-semibold text-xs sm:text-sm ${stats.isEnergyInsufficient ? 'text-error' : ''}`}>
+          <span className={`font-semibold text-xs whitespace-nowrap tabular-nums ${stats.isEnergyInsufficient ? 'text-error' : ''}`}>
             {stats.totalEnergyUsed.toLocaleString()}/{stats.totalEnergyProduced.toLocaleString()}
           </span>
         </div>

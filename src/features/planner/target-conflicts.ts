@@ -1,34 +1,6 @@
 import type { Building, Item } from './types';
 import { createRecipeResolver } from './production-flow';
 
-/** Structural check: independent of rates, rounding, or available external inputs. */
-export function findTargetConflict(
-    targetIds: string[],
-    buildings: Building[],
-    recipeSelections: Record<string, string>,
-): { target: string; ingredient: string } | null {
-    return findConflict(targetIds, createRecipeResolver(buildings, recipeSelections));
-}
-
-function findConflict(
-    targetIds: string[],
-    getRecipe: ReturnType<typeof createRecipeResolver>,
-): { target: string; ingredient: string } | null {
-    const targets = new Set(targetIds);
-    for (const target of targets) {
-        const visited = new Set<string>([target]);
-        const pending = [...(getRecipe(target)?.recipe.inputs ?? [])].map(input => input.id);
-        while (pending.length) {
-            const ingredient = pending.pop()!;
-            if (ingredient !== target && targets.has(ingredient)) return { target, ingredient };
-            if (visited.has(ingredient)) continue;
-            visited.add(ingredient);
-            pending.push(...(getRecipe(ingredient)?.recipe.inputs ?? []).map(input => input.id));
-        }
-    }
-    return null;
-}
-
 /** Validate against the current recipes, including fallback after a recipe is removed. */
 export function getMultiTargetWarning(
     targetIds: string[],
@@ -46,8 +18,25 @@ export function getMultiTargetWarning(
             return `${name(itemId)} has no usable production recipe in the current game data.`;
         }
     }
-    const conflict = findConflict(targetIds, getRecipe);
-    return conflict
-        ? `${name(conflict.ingredient)} is required to produce ${name(conflict.target)}. Targets cannot be ingredients of other targets.`
-        : null;
+    // A shared or targeted ingredient is valid. Only revisiting an item on the
+    // current dependency path is a cycle; completed branches can be reused.
+    const visiting = new Set<string>();
+    const visited = new Set<string>();
+    const visit = (itemId: string): string | null => {
+        if (visiting.has(itemId)) return `The selected recipes contain a circular production dependency involving ${name(itemId)}.`;
+        if (visited.has(itemId)) return null;
+        visiting.add(itemId);
+        for (const input of getRecipe(itemId)?.recipe.inputs ?? []) {
+            const warning = visit(input.id);
+            if (warning) return warning;
+        }
+        visiting.delete(itemId);
+        visited.add(itemId);
+        return null;
+    };
+    for (const itemId of targetIds) {
+        const warning = visit(itemId);
+        if (warning) return warning;
+    }
+    return null;
 }

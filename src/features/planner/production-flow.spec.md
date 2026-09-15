@@ -345,8 +345,33 @@ This mode has no corporation delivery, launcher, or external-input configuration
 Its targets and recipe selections are session state, independent of single-target
 planner selections; saved-plan storage is unchanged.
 
-The global planner validates structural dependencies before accepting target additions
-or recipe changes (including preset application). Duplicate targets and targets that
-are direct or transitive ingredients of another target are rejected with a visible
-warning. Shared non-target ingredients are allowed. Validation uses the same recipe
-resolver as calculation and is independent of production rates or floating tolerance.
+Only a target that is also an ingredient in another target's tree gets an extra
+`TargetFlowNode` with `nodeType: 'target'`, `outputItem`, and `amount`. Its identity
+is `target:<itemId>`. It consumes the requested amount through an incoming edge
+and has no outgoing edges, buildings, power, heat, or capacity. Independent targets
+keep their original production cards, including building details and capacity.
+
+The shared calculator is unchanged. The multi-target wrapper detects nested targets
+from existing consumer edges in the completed flow and appends their demand nodes
+and edges without recalculating production. Flows without overlapping targets are
+returned unchanged. The single-target result contains only building nodes.
+
+Targets may be direct or transitive ingredients of other targets. A target amount
+is final output in addition to internal recipe consumption. For example, requesting
+5 plates/min and 10 parts/min that each consume one plate requires 15 plates/min.
+One shared plate producer sends 5/min to the plate target and 10/min to the part
+producer. Removing the plate target removes only its 5/min demand.
+
+The graph and table use one rule to identify target endpoints: a separate demand
+node when present, otherwise the selected item's original producer. Grouped layout
+aligns these endpoints after intermediate production. Building totals exclude
+special target nodes. Item demand sums both recipe and target edges, using terminal
+production rates when no outgoing edge exists. Nodes are derived from existing tab
+state and need no persisted graph or new storage format. Recipe changes or target
+removal automatically remove any special nodes that are no longer needed.
+
+The global planner validates recipes before accepting additions or recipe changes
+(including preset application), and again when game data changes. Duplicate targets,
+unusable target recipes, and actual circular recipe dependencies produce warnings.
+Shared dependencies and dependencies on other targets are valid. Validation uses
+the same recipe resolver as calculation, including fallback when a selection expires.

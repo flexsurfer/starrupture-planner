@@ -1,11 +1,12 @@
 import React from 'react';
-import type { FlowNode, Item, RawMaterialDeficit } from '@/features/planner/types';
+import type { PlannerFlowNode, Item, RawMaterialDeficit } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
 import { ItemImage, BuildingImage, RecipeTypeIcon } from '@/shared/ui';
 import { NodeRecipeButton } from './NodeRecipeButton';
+import { TargetNodeCard } from './TargetNodeCard';
 
 interface NodeCardProps {
-    node: FlowNode;
+    node: PlannerFlowNode;
     items: Item[];
     outputColor: string;
     compactOnMobile?: boolean;
@@ -23,6 +24,9 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     inputRequirement,
     showMissingInput = false,
 }) => {
+    if (node.nodeType === 'target') {
+        return <TargetNodeCard node={node} items={items} outputColor={outputColor} compactOnMobile={compactOnMobile} />;
+    }
     const item = items.find(({ id }) => id === node.outputItem);
     const buildingCount = Math.ceil(node.buildingCount);
     const usedRate = node.outputAmount * node.buildingCount;

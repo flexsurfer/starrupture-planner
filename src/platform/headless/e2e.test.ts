@@ -212,7 +212,7 @@ describe('headless application E2E', () => {
         expect(view.value('active')).toBeNull();
     });
 
-    it('switches planner tabs, blocks overlapping targets, and removes targets', async () => {
+    it('switches planner tabs, fulfills overlapping targets, and removes target demand', async () => {
         const scenario = await createSeededScenario();
         const view = mountView(scenario, 'global multi-target planner', {
             groupByStage: [appIds.subscriptions.PLANNER_GROUP_BY_STAGE],
@@ -232,6 +232,7 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
         expect(view.value('activeIds')).toEqual(['iron-plate']);
         const originalFlow = view.value('flow');
+        expect(originalFlow.nodes.some(node => node.nodeType === 'target')).toBe(false);
         expect(view.value('groupByStage')).toBe(false);
         await dispatch(scenario, [appIds.events.PLANNER_SET_GROUP_BY_STAGE, false]);
         expect(view.value('groupByStage')).toBe(false);
@@ -244,31 +245,41 @@ describe('headless application E2E', () => {
         expect(view.value('flow')).toEqual(originalFlow);
 
         await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
-        expect(view.value('targets')).toHaveLength(1);
-        expect(view.value('warning')).toContain('Iron Plate is required to produce Steel Plate');
+        expect(view.value('targets')).toHaveLength(2);
+        expect(view.value('warning')).toBeNull();
+        expect(view.value('flow').nodes.filter(node => node.nodeType === 'target')).toEqual([
+            { nodeType: 'target', outputItem: 'iron-plate', amount: 60 },
+        ]);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
+        expect(view.value('warning')).toContain('already a target');
         await dispatch(scenario, [appIds.events.PLANNER_DISMISS_TARGET_WARNING]);
         expect(view.value('warning')).toBeNull();
-        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
-        expect(view.value('warning')).toContain('Iron Plate is required to produce Steel Plate');
 
         await dispatch(scenario, [appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'iron-plate', 120]);
-        expect(view.value('targets')).toEqual([{ itemId: 'iron-plate', amount: 120 }]);
-        expect(view.value('flow').nodes.find(node => node.outputItem === 'iron-plate')?.buildingCount).toBe(2);
+        expect(view.value('targets')).toEqual([{ itemId: 'iron-plate', amount: 120 }, { itemId: 'steel-plate', amount: 30 }]);
+        expect(view.value('flow').nodes.find(node => node.nodeType === 'production' && node.outputItem === 'iron-plate'))
+            .toMatchObject({ buildingCount: 3 });
         await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
         expect(view.value('multiRecipes')).toEqual({ 'iron-plate': 'smelter_mk2:0' });
         expect(view.value('singleRecipes')).toEqual({});
-        expect(view.value('flow').nodes.find(node => node.outputItem === 'iron-plate')?.buildingCount).toBe(1);
+        expect(view.value('flow').nodes.find(node => node.nodeType === 'production' && node.outputItem === 'iron-plate'))
+            .toMatchObject({ buildingCount: 1.5 });
         await dispatch(scenario, [appIds.events.PLANNER_SELECT_TAB, 'single']);
         expect(view.value('mode')).toBe('single');
         expect(view.value('activeIds')).toEqual(['steel-plate']);
         await dispatch(scenario, [appIds.events.PLANNER_SELECT_TAB, 'multi']);
         await dispatch(scenario, [appIds.events.PLANNER_REMOVE_TARGET, 'iron-plate']);
+        expect(view.value('flow').nodes.find(node => node.nodeType === 'production' && node.outputItem === 'iron-plate'))
+            .toMatchObject({ buildingCount: 0.5 });
+        expect(view.value('flow').nodes.filter(node => node.nodeType === 'target'))
+            .toEqual([]);
+        await dispatch(scenario, [appIds.events.PLANNER_REMOVE_TARGET, 'steel-plate']);
         expect(view.value('flow').nodes).toEqual([]);
         expect(view.value('warning')).toBeNull();
     });
 
     it.each(['earlyaccess', 'playtest'] as const)(
-        'revalidates multi-target plans when recipe data is replaced in %s',
+        'recalculates overlapping targets when recipe fallback introduces a dependency in %s',
         async (nextVersion) => {
             const scenario = createScenario();
             const independentData: AppVersionedGameData = structuredClone(TEST_GAME_DATA);
@@ -301,24 +312,26 @@ describe('headless application E2E', () => {
             const flow = view.value('flow');
             expect(view.value('warning')).toBeNull();
             expect(flow.nodes.length).toBeGreaterThan(0);
+            expect(flow.nodes.some(node => node.nodeType === 'target')).toBe(false);
 
             // Covers both a version switch and a refresh under the same version ID.
             await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, nextVersion, updatedData]);
-            expect(view.value('warning')).toContain('Iron Plate is required to produce Steel Plate');
+            expect(view.value('warning')).toBeNull();
             expect(view.value('targets')).toEqual(targets);
             expect(view.value('recipes')).toEqual({ 'steel-plate': 'assembler:steel-direct' });
-            expect(view.value('flow').nodes).toEqual([]);
-            expect(view.value('graph').nodes).toEqual([]);
-            expect(view.value('stats')).toEqual({ totalBuildings: 0, totalEnergy: 0, totalHotness: 0 });
+            expect(view.value('flow').nodes.find(node => node.nodeType === 'production' && node.outputItem === 'iron-plate'))
+                .toMatchObject({ outputAmount: 60, buildingCount: 3 });
+            expect(view.value('graph').nodes.filter(node => node.flowNode.nodeType === 'target')).toHaveLength(1);
+            expect(view.value('stats')).toEqual({ totalBuildings: 8, totalEnergy: 75, totalHotness: 35 });
             expect(view.value('options').find(option => option.itemId === 'steel-plate')?.options)
                 .toEqual(expect.arrayContaining([expect.objectContaining({ key: 'assembler:steel-replacement' })]));
             await dispatch(scenario, [appIds.events.PLANNER_DISMISS_TARGET_WARNING]);
-            expect(view.value('warning')).not.toBeNull();
+            expect(view.value('warning')).toBeNull();
             await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'single', 'Single plan', 'single']);
             await dispatch(scenario, [appIds.events.PLANNER_SELECT_TAB, 'multi']);
             expect(view.value('mode')).toBe('multi');
             expect(view.value('targets')).toEqual(targets);
-            expect(view.value('flow').nodes).toEqual([]);
+            expect(view.value('flow').nodes.length).toBeGreaterThan(0);
 
             await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', independentData]);
             expect(view.value('warning')).toBeNull();
@@ -330,6 +343,44 @@ describe('headless application E2E', () => {
             expect(view.value('flow')).toEqual(flow);
         },
     );
+
+    it('rejects cyclic recipe selections and pauses cycles introduced by data updates until repaired', async () => {
+        const scenario = createScenario();
+        const data: AppVersionedGameData = structuredClone(TEST_GAME_DATA);
+        data.buildings.find(building => building.id === 'smelter')!.recipes!.push({
+            id: 'loop', variant: 'alternative', output: { id: 'iron-plate', amount_per_minute: 60 },
+            inputs: [{ id: 'steel-plate', amount_per_minute: 30 }],
+        });
+        const view = mountView(scenario, 'cyclic production recipes', {
+            warning: [appIds.subscriptions.PLANNER_TARGET_WARNING],
+            dataWarning: [appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING],
+            recipes: [appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS],
+            flow: [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
+            stats: [appIds.subscriptions.PLANNER_STATS_SUMMARY],
+        } as const);
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', data]);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'multi', 'Multi plan', 'multi']);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
+        const validFlow = view.value('flow');
+        await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter:loop']);
+        expect(view.value('warning')).toContain('circular production dependency');
+        expect(view.value('recipes')).toEqual({});
+        expect(view.value('flow')).toEqual(validFlow);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTIONS, { 'iron-plate': 'smelter:loop' }]);
+        expect(view.value('recipes')).toEqual({});
+
+        const updated = structuredClone(data);
+        updated.buildings.find(building => building.id === 'smelter')!.recipes![0].inputs = [{ id: 'steel-plate', amount_per_minute: 30 }];
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', updated]);
+        expect(view.value('dataWarning')).toContain('circular production dependency');
+        expect(view.value('flow').nodes).toEqual([]);
+        expect(view.value('stats')).toEqual({ totalBuildings: 0, totalEnergy: 0, totalHotness: 0 });
+        await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
+        expect(view.value('dataWarning')).toBeNull();
+        expect(view.value('warning')).toBeNull();
+        expect(view.value('flow').nodes.filter(node => node.nodeType === 'target')).toHaveLength(1);
+    });
 
     it('pauses an unavailable target after a recipe update and allows its removal', async () => {
         const scenario = await createSeededScenario();

@@ -17,8 +17,11 @@ import type {
     FlowEdge,
     ProductionFlowParams,
     ProductionFlowResult,
+    PlannerProductionFlowResult,
+    TargetFlowNode,
     RawMaterialDeficit,
 } from './types';
+import { getFlowNodeId } from './flow-node';
 import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '@/constants/buildingIds';
 import { matchesRecipeSelectionKey } from '@/app/uklad/recipe-key';
 import { getRecipeDisplayType } from '@/features/buildings/recipe-utils';
@@ -179,8 +182,32 @@ export function buildMultiTargetProductionFlow(
     targets: ProductionTarget[],
     buildings: Building[],
     recipeSelections: Record<string, string> = {},
-): ProductionFlowResult {
-    return buildFlow({ targetItemId: '', recipeSelections }, buildings, targets);
+): PlannerProductionFlowResult {
+    const flow = buildFlow({ targetItemId: '', recipeSelections }, buildings, targets);
+    // An existing consumer edge identifies a target used in another target's tree.
+    // Add its final demand after calculation; independent targets keep the original flow.
+    const consumedItems = new Set(flow.edges.map(edge => edge.itemId));
+    const targetAmounts = new Map<string, number>();
+    for (const { itemId, amount } of targets) {
+        if (Number.isFinite(amount) && amount > 0) {
+            targetAmounts.set(itemId, (targetAmounts.get(itemId) ?? 0) + amount);
+        }
+    }
+    const targetNodes: TargetFlowNode[] = [];
+    const targetEdges: FlowEdge[] = [];
+    for (const producer of flow.nodes) {
+        const amount = targetAmounts.get(producer.outputItem);
+        if (!amount || !consumedItems.has(producer.outputItem)) continue;
+        // Raw targets are excluded by the calculator, even if another target uses them.
+        const recipe = buildings.find(building => building.id === producer.buildingId)?.recipes?.[producer.recipeIndex];
+        if (!recipe?.inputs.length) continue;
+        const target: TargetFlowNode = { nodeType: 'target', outputItem: producer.outputItem, amount };
+        targetNodes.push(target);
+        targetEdges.push({ from: getFlowNodeId(producer), to: getFlowNodeId(target), itemId: producer.outputItem, amount });
+    }
+    return targetNodes.length
+        ? { ...flow, nodes: [...flow.nodes, ...targetNodes], edges: [...flow.edges, ...targetEdges] }
+        : flow;
 }
 
 function buildFlow(params: ProductionFlowParams, buildings: Building[], targets: ProductionTarget[]): ProductionFlowResult {
