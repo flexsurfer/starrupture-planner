@@ -12,9 +12,15 @@ if (!token || !/^[a-f0-9]{32}$/i.test(token)) {
 
 const indexPath = new URL('dist/index.html', root)
 const html = readFileSync(indexPath, 'utf8')
+if (!html.includes('</head>')) {
+  throw new Error('Cannot inject Umami Analytics: dist/index.html is missing </head>.')
+}
 if (!html.includes('</body>')) {
   throw new Error('Cannot inject Cloudflare Web Analytics: dist/index.html is missing </body>.')
 }
 
 const beacon = `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='${JSON.stringify({ token })}'></script>`
-writeFileSync(indexPath, html.replace('</body>', `${beacon}\n  </body>`))
+const umami = '<script defer src="https://cloud.umami.is/script.js" data-website-id="d1fc1a9e-b004-4e43-9028-612d8846e929"></script>'
+writeFileSync(indexPath, html
+  .replace('</head>', `${umami}\n  </head>`)
+  .replace('</body>', `${beacon}\n  </body>`))
