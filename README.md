@@ -68,10 +68,24 @@ Rupture Planner is a **free, open-source production planning tool** designed for
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js** 18+ 
+- **Node.js** 22.18+ in the 22.x series, or 24.11+ (required by the project dependencies)
 - **npm** or **yarn**
 
-### Installation
+### Windows: double-click to start
+
+1. Install [Node.js](https://nodejs.org/) with npm included, using a version listed above.
+2. Clone the repository, or download its ZIP from GitHub and extract it completely.
+3. Double-click **`START.bat`** in the project folder.
+
+The launcher checks Node.js and npm, installs missing dependencies from `package-lock.json` on the first run (internet access required), then starts the server in a minimized **Rupture Planner** window and opens your default browser at `http://localhost:5173`.
+
+Keep that window running while using the planner. Restore it from the taskbar to see server output; close it to stop the server. Closing the browser alone does not stop it. Setup errors stay visible; if the browser does not open, restore the minimized window to check for a startup error.
+
+The launcher keeps port 5173 fixed so your browser-saved plans remain available at the same address. If the port is already in use, stop the existing server and try again. Plans saved on the hosted website are separate from local plans; use the planner's export/import settings to transfer them.
+
+After pulling or downloading an update, run `npm ci --include=dev` in the project folder if its dependencies changed.
+
+### Manual installation (all platforms)
 
 ```bash
 # Clone the repository
