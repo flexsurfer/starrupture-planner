@@ -1,0 +1,299 @@
+import type { DataTransferState } from "@/features/data-transfer/archive";
+import type { PlannerFeatureState } from "@/features/planner/state";
+import type { DataVersion } from "@/features/app-shell/data-version";
+import type { BaseLayoutFeatureState } from "@/features/base-layout/state";
+
+export interface RawCorporationData {
+  id: string;
+  description?: string;
+  levels: {
+    level: number;
+    xp?: number;
+    components: CorporationComponent[];
+    rewards: Reward[];
+  }[];
+}
+
+export interface RawCorporationsData {
+  [name: string]: RawCorporationData;
+}
+
+export type AppVersionedGameData = {
+  items: Item[];
+  buildings: Building[];
+  corporations: RawCorporationsData;
+};
+
+export interface Item {
+  id: string;
+  name: string;
+  type: string;
+}
+
+export interface RecipeInput {
+  id: string;
+  amount_per_minute: number;
+}
+
+export interface RecipeOutput {
+  id: string;
+  amount_per_minute: number;
+}
+
+export type RecipeVariant = "alternative";
+export type RecipeDisplayType = "standard" | "upgrade" | "alternative";
+
+export interface Recipe {
+  id?: string;
+  variant?: RecipeVariant;
+  output: RecipeOutput;
+  inputs: RecipeInput[];
+}
+
+export interface CoreLevel {
+  level: number;
+  heatCapacity: number;
+}
+
+export interface Building {
+  id: string;
+  name: string;
+  upgrade?: string; // Optional id of upgraded building variant (for example v.2)
+  type?: string;
+  power?: number;
+  heat?: number;
+  coreHeatCapacity?: number; // Used by base core amplifiers to increase base heat capacity
+  levels?: CoreLevel[]; // Used by base_core building to define heat capacity per level
+  recipes?: Recipe[];
+}
+
+/** Indexed buildings collection keyed by building id. */
+export type BuildingsByIdMap = Record<string, Building>;
+
+export interface Level {
+  level: number;
+  cost: number;
+}
+
+export interface CorporationComponent {
+  id: string;
+  points: number;
+  cost?: number | null;
+}
+
+export interface Reward {
+  name: string;
+}
+
+export interface CorporationLevel {
+  level: number;
+  xp?: number;
+  components: CorporationComponent[];
+  rewards: Reward[];
+}
+
+export interface Corporation {
+  id: string;
+  name: string;
+  description?: string;
+  levels: CorporationLevel[];
+}
+
+export type TabType =
+  "items" | "recipes" | "corporations" | "planner" | "mybases";
+export type BaseDetailTab =
+  "base" | "plans" | "buildings" | "balance" | "layout";
+
+export interface Tab {
+  id: TabType;
+  label: string;
+  icon: string;
+}
+
+/** Selected corporation level in planner and production plan forms. */
+export interface CorporationLevelSelection {
+  corporationId: string;
+  level: number;
+}
+
+export interface LinkedOutputReference {
+  baseId: string;
+  buildingId: string;
+  itemIdSnapshot?: string;
+  ratePerMinuteSnapshot?: number;
+}
+
+export type OutputAllocationMode = "auto" | "fixed";
+export type BaseCardSectionKey =
+  "productionPlans" | "outputs" | "inputs" | "defense";
+export type BaseCardCollapsedSections = Partial<
+  Record<BaseCardSectionKey, boolean>
+>;
+
+// Base-related types
+export interface BaseBuilding {
+  /** Endpoint managed by Planning mode; cleared when its configuration is edited manually. */
+  planningOwnerPlanId?: string;
+  id: string;
+  buildingTypeId: string; // References Building.id from buildings data
+  sectionType: string; // Section where this building was added (e.g., 'inputs', 'production', 'outputs')
+  selectedItemId?: string; // Selected item for input buildings
+  ratePerMinute?: number; // Rate per minute for the selected item
+  linkedOutput?: LinkedOutputReference; // Optional live link from this input to an output building
+  sourceProductionId?: string; // Optional plan-linked output source for outputs.
+  allocationMode?: OutputAllocationMode; // How a plan-linked output consumes plan production.
+  requestedRatePerMinute?: number; // Fixed requested output rate when allocationMode is fixed.
+  capacityPerMinute?: number; // Optional logistics endpoint capacity override.
+  priority?: number; // Lower values are filled first for plan-linked outputs.
+  name?: string; // Optional custom name for this building instance
+  description?: string; // Optional custom description for this building instance
+}
+
+/** A single building requirement entry stored on a production plan. */
+export interface PlanRequiredBuilding {
+  buildingId: string;
+  count: number;
+}
+
+export interface Production {
+  id: string;
+  name: string;
+  selectedItemId: string;
+  targetAmount: number;
+  active?: boolean;
+  corporationLevel?: CorporationLevelSelection | null;
+  recipeSelections?: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
+  inputs?: BaseBuilding[]; // Snapshot of BaseBuilding inputs (not linked to base)
+  status?: "active" | "inactive" | "error"; // Plan status: active when running, inactive when stopped, error when inputs insufficient
+  requiredBuildings?: PlanRequiredBuilding[]; // Aggregated building requirements, populated on save
+}
+
+export interface EnergyGroup {
+  id: string;
+  name: string;
+}
+
+/** A named, reusable set of per-output recipe alternative selections. */
+export interface RecipeAlternativePreset {
+  id: string;
+  name: string;
+  selections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
+}
+
+// Base Layout types
+export type RailTier = 1 | 2 | 3;
+export type LayoutBuildingType =
+  "production" | "receiver" | "storage" | "dispatcher";
+export type BuildingViewMode = "edit" | "summary";
+export type BaseLayoutPointerMode = "select" | "pan";
+export type DistributionMode = "first-served" | "shortest-path" | "equal";
+export type TransferMode = "physical" | "virtual";
+export type ItemPaletteMode =
+  "production_v1" | "production_v2" | "receiver" | "dispatcher";
+
+export interface BaseLayoutBuilding {
+  id: string;
+  x: number; // Grid X coordinate
+  y: number; // Grid Y coordinate
+  itemId: string; // Item being produced; used as the stable recipe identifier across data versions
+  buildingId: string; // References Building.id
+  recipeIndex: number; // Index of recipe in building.recipes array
+  count: number; // Number of building instances, acts as multiplier
+  buildingType?: LayoutBuildingType; // Defaults to "production" if not set
+  receiverOutputRate?: number; // Output rate for package receivers (default: 100 units/min)
+  dispatcherInputRate?: number; // Input rate for package dispatchers (default: 100 units/min)
+  mode?: BuildingViewMode; // Display mode for the building. Defaults to "edit" if not set
+  distributionMode?: DistributionMode; // How output is distributed across outgoing connections. Defaults to "first-served"
+  enabled?: boolean; // Whether the building is active. Defaults to true (undefined = enabled)
+}
+
+export interface BaseLayoutConnection {
+  id: string;
+  fromBuildingId: string; // References BaseLayoutBuilding.id
+  toBuildingId: string; // References BaseLayoutBuilding.id
+  itemId: string; // Item being transported
+  railTier: RailTier; // 1 = 120/min, 2 = 240/min, 3 = 480/min
+}
+
+export interface BaseLayout {
+  buildings: BaseLayoutBuilding[];
+  connections: BaseLayoutConnection[];
+  gridOffsetX: number; // Pan offset for viewport
+  gridOffsetY: number; // Pan offset for viewport
+  transferMode?: TransferMode; // Saved transfer mode for this base layout
+}
+
+export interface BaseLayoutBalance {
+  itemId: string;
+  totalProduction: number; // Sum of all production rates on layout
+  totalDemand: number; // Sum of all consumption rates on layout
+  surplus: number; // Positive when production > demand
+  deficit: number; // Positive when demand > production
+}
+
+export interface Base {
+  id: string;
+  name: string;
+  coreLevel?: number; // Zero-based Base Core level (0-7), displayed as 1-8
+  energyGroupId?: string; // References EnergyGroup.id for pooled energy grids
+  buildings: BaseBuilding[];
+  productions: Production[];
+  layout?: BaseLayout; // Optional graphical layout for production planning
+}
+
+/** Indexed bases collection keyed by base id. */
+export type BasesById = Record<string, Base>;
+
+export interface ConfirmationDialog {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  confirmButtonClass?: string;
+  onConfirm: () => void;
+  onCancel?: () => void;
+}
+
+export interface CreateProductionPlanModalState {
+  isOpen: boolean;
+  baseId: string | null;
+  editSectionId: string | null;
+  // Form state
+  name: string;
+  selectedItemId: string;
+  targetAmount: number;
+  selectedCorporationLevel: CorporationLevelSelection | null;
+  selectedInputIds: string[];
+  recipeSelections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
+  matchInputs: boolean;
+}
+
+export interface AppState
+  extends PlannerFeatureState, DataTransferState, BaseLayoutFeatureState {
+  appDataVersion: DataVersion;
+  appDataVersions: { id: DataVersion; label: string }[];
+  /** Populated as versions are fetched from `/game-data/{version}/`. */
+  appVersionedData: Partial<Record<DataVersion, AppVersionedGameData>>;
+  itemsList: Item[];
+  itemsById: Record<string, Item>;
+  itemsSelectedCategory: string;
+  itemsSelectedBuilding: string;
+  itemsSearchTerm: string;
+  itemsCategories: string[];
+  buildingsList: Building[];
+  corporationsList: Corporation[];
+  uiTheme: "light" | "dark";
+  /** True while a user-requested game-data fetch is in flight (not used for `APP_INIT` load). */
+  uiGameDataLoadPending: boolean;
+  uiActiveTab: TabType;
+  basesList: Base[];
+  energyGroups: EnergyGroup[];
+  basesCardCollapsedSections: Record<string, BaseCardCollapsedSections>;
+  basesSelectedBaseId: string | null;
+  basesMode: import("@/features/bases/state").BasesMode | null;
+  basesSelectedDetailTab: BaseDetailTab;
+  basesDetailsExpanded: boolean;
+  uiConfirmationDialog: ConfirmationDialog;
+  productionPlanModalState: CreateProductionPlanModalState;
+}

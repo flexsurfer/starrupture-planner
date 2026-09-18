@@ -1,0 +1,158 @@
+import type { Building } from "@/app/uklad/model";
+import {
+  DRONE_MERGER_3_TO_1_BUILDING_ID,
+  ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
+  ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
+  PACKAGE_DISPATCHER_BUILDING_ID,
+  PACKAGE_RECEIVER_BUILDING_ID,
+  TELEPORTER_BUILDING_ID,
+} from "@/constants/buildingIds";
+import type { BuildingSectionType } from "./types";
+
+// ============================================================================
+// Building Predicates
+// These are simple, reusable checks for specific building characteristics.
+// ============================================================================
+
+/** Buildings that extract raw resources via a recipe with no inputs */
+export const isRawExtractor = (b: Building) =>
+  b.type === "production" &&
+  (b.recipes || []).some((recipe) => recipe.inputs.length === 0);
+
+const LOGISTICS_EXCLUDED_OUTPUT_BUILDING_IDS = new Set<string>([
+  ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
+  ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
+]);
+
+export function isLogisticsExcludedOutputBuildingId(
+  buildingId: string,
+): boolean {
+  return LOGISTICS_EXCLUDED_OUTPUT_BUILDING_IDS.has(buildingId);
+}
+
+const isReceiver = (b: Building) => b.id === PACKAGE_RECEIVER_BUILDING_ID;
+const isDispatcher = (b: Building) =>
+  b.id === ORBITAL_CARGO_LAUNCHER_BUILDING_ID ||
+  b.id === ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID ||
+  b.id === PACKAGE_DISPATCHER_BUILDING_ID;
+const isDroneMerger = (b: Building) => b.id === DRONE_MERGER_3_TO_1_BUILDING_ID;
+const isTeleporter = (b: Building) => b.id === TELEPORTER_BUILDING_ID;
+
+// ============================================================================
+// Section Classification
+// Determines which buildings can be added to each section.
+// Storage can appear in both Production and Outputs sections.
+// ============================================================================
+
+/**
+ * Returns true if a building can be added to the given section.
+ * This is used when filtering available buildings in the "Add Building" modal.
+ */
+export function isBuildingAvailableForSection(
+  building: Building,
+  section: BuildingSectionType,
+): boolean {
+  switch (section) {
+    case "inputs":
+      // Extractors and receivers bring resources into the base
+      // Drone merger can be used for input
+      return (
+        isRawExtractor(building) ||
+        isReceiver(building) ||
+        isDroneMerger(building) ||
+        building.type === "storage"
+      );
+
+    case "energy":
+      // Generators produce power, amplifiers increase heat capacity
+      return building.type === "generator" || building.type === "temperature";
+
+    case "production":
+      // Production buildings (except extractors) and storage
+      return (
+        (building.type === "production" && !isRawExtractor(building)) ||
+        building.type === "storage"
+      );
+
+    case "outputs":
+      // Dispatchers send items out, storage can also be used for output staging
+      // Drone merger can be used for output
+      return (
+        isDispatcher(building) ||
+        building.type === "storage" ||
+        isDroneMerger(building)
+      );
+
+    case "infrastructure":
+      // Habitat, defense, and teleporter
+      return (
+        building.type === "habitat" ||
+        building.type === "defense" ||
+        isTeleporter(building)
+      );
+
+    default:
+      return false;
+  }
+}
+
+/**
+ * Returns all buildings that can be added to a specific section.
+ */
+export function getAvailableBuildingsForSection(
+  allBuildings: Building[],
+  sectionType: BuildingSectionType,
+): Building[] {
+  return allBuildings.filter((building) =>
+    isBuildingAvailableForSection(building, sectionType),
+  );
+}
+
+export function isBuildingCountAvailable(building: Building): boolean {
+  return (
+    isBuildingAvailableForSection(building, "energy") ||
+    isBuildingAvailableForSection(building, "production")
+  );
+}
+
+/**
+ * Determines the appropriate section type for a building based on its characteristics.
+ * This is the inverse of isBuildingAvailableForSection - given a building, determine its section.
+ *
+ * Iterates through section types in priority order and returns the first match.
+ * This reuses isBuildingAvailableForSection to maintain a single source of truth.
+ *
+ * Priority order:
+ * 1. 'inputs' - Extractors, receivers, and drone_merger_3_to_1
+ * 2. 'energy' - Generators and temperature
+ * 3. 'infrastructure' - Habitat, defense, and teleporter
+ * 4. 'production' - Production buildings (not extractors) and storage
+ * 5. 'outputs' - Dispatchers, storage, and drone_merger_3_to_1
+ *
+ * Note: Storage can be in both 'production' and 'outputs', but we default to 'production'
+ * by checking it earlier in the priority order.
+ * Note: drone_merger_3_to_1 can be in both 'inputs' and 'outputs', but we default to 'inputs'
+ * by checking it earlier in the priority order.
+ */
+export function getSectionTypeForBuilding(
+  building: Building,
+): BuildingSectionType {
+  // Section types in priority order
+  const sectionTypes: BuildingSectionType[] = [
+    "inputs",
+    "energy",
+    "infrastructure",
+    "production",
+    "outputs",
+  ];
+
+  // Return the first section type that matches the building
+  for (const sectionType of sectionTypes) {
+    if (isBuildingAvailableForSection(building, sectionType)) {
+      return sectionType;
+    }
+  }
+
+  // Default fallback (shouldn't happen with valid buildings)
+  return "production";
+}

@@ -1,30 +1,18 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { dispatch, enableTracing } from '@flexsurfer/reflex'
-import { EVENT_IDS } from './state/event-ids.ts'
+import { appIds } from "@/app/uklad/catalog";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { UkladProvider } from "@/app/uklad/bindings";
+import { runtime } from "@/platform/web/bootstrap";
 
-import './index.css'
-import './state/db.ts'
-import './state/events.ts'
-import './state/effects.ts'
-import './state/subs.ts'
+import "./index.css";
+import App from "./App.tsx";
 
-import App from './App.tsx'
+runtime.dispatch([appIds.events.APP_INIT]);
 
-// Enable Reflex tracing and devtools only in development
-if (import.meta.env.DEV) {
-  enableTracing()
-
-  // Import and enable devtools dynamically
-  import('@flexsurfer/reflex-devtools').then(({ enableDevtools }) => {
-    enableDevtools()
-  })
-}
-
-dispatch([EVENT_IDS.APP_INIT]);
-
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <UkladProvider runtime={runtime}>
+      <App />
+    </UkladProvider>
   </StrictMode>,
-)
+);

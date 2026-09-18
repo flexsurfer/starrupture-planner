@@ -1,8 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import RouteWrapper from './components/RouteWrapper'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { RouteWrapper } from "@/features/app-shell/ui";
 
 function App() {
-  const basename = import.meta.env.BASE_URL.replace(/\/+$/, '');
+  const basename = import.meta.env.BASE_URL.replace(/\/+$/, "");
 
   return (
     <BrowserRouter basename={basename}>
@@ -16,7 +16,7 @@ function App() {
         <Route path="*" element={<Navigate to="/items" replace />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

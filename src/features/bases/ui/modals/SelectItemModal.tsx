@@ -1,0 +1,182 @@
+import { appIds } from "@/app/uklad/catalog";
+import React, { useState } from "react";
+import { useSubscription } from "@/app/uklad/bindings";
+import type { Building as DbBuilding } from "@/app/uklad/model";
+import { ItemImage } from "@/shared/ui";
+import { isRawExtractor } from "@/features/bases/building-section";
+
+interface SelectItemModalProps {
+  isOpen: boolean;
+  building: DbBuilding;
+  currentItemId?: string;
+  currentRatePerMinute?: number;
+  onClose: () => void;
+  onConfirm: (itemId: string, ratePerMinute: number) => void;
+}
+
+const DEFAULT_RATE_PER_MINUTE = 0;
+
+export const SelectItemModal: React.FC<SelectItemModalProps> = ({
+  isOpen,
+  building,
+  currentItemId,
+  currentRatePerMinute,
+  onClose,
+  onConfirm,
+}) => {
+  const [selectedItemIdDraft, setSelectedItemIdDraft] = useState<string | null>(
+    null,
+  );
+  const [ratePerMinuteDraft, setRatePerMinuteDraft] = useState<string | null>(
+    null,
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const selectedItemId = selectedItemIdDraft ?? (currentItemId || "");
+  const ratePerMinute =
+    ratePerMinuteDraft ??
+    String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE);
+
+  // Get available items from subscription
+  const availableItems = useSubscription([
+    appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID,
+    building.id,
+  ]);
+
+  const filteredItems = searchQuery
+    ? availableItems.filter((item) =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : availableItems;
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const rateValue = Number(ratePerMinute);
+    if (selectedItemId && rateValue > 0) {
+      onConfirm(selectedItemId, rateValue);
+      setSelectedItemIdDraft(null);
+      setRatePerMinuteDraft(null);
+      setSearchQuery("");
+      onClose();
+    }
+  };
+
+  const handleCancel = () => {
+    setSelectedItemIdDraft(null);
+    setRatePerMinuteDraft(null);
+    setSearchQuery("");
+    onClose();
+  };
+
+  const handleItemSelect = (itemId: string) => {
+    setSelectedItemIdDraft(itemId);
+    // Set default rate from recipe only if current value is DEFAULT_RATE_PER_MINUTE
+    // This preserves user-entered values and currentRatePerMinute prop
+    if (building.recipes) {
+      const recipe = building.recipes.find((r) => r.output.id === itemId);
+      if (recipe && Number(ratePerMinute) === DEFAULT_RATE_PER_MINUTE) {
+        setRatePerMinuteDraft(String(recipe.output.amount_per_minute));
+      }
+    }
+  };
+
+  return (
+    <div className="modal modal-open">
+      <div className="modal-box max-w-3xl">
+        <h3 className="font-bold text-lg mb-4">
+          Select Item for {building.name}
+        </h3>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-control mb-4">
+            <div className="label flex flex-row justify-between items-center gap-2">
+              <span className="label-text">Item</span>
+              <input
+                type="text"
+                className="input input-bordered input-sm flex-1 max-w-xs"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSelectedItemIdDraft("");
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 min-h-72 max-h-72 overflow-y-auto p-2 rounded-lg bg-base-200/30">
+              {filteredItems.map((item) => {
+                const isSelected = selectedItemId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleItemSelect(item.id)}
+                    className={`btn btn-sm flex flex-col items-center gap-1 p-2 h-auto shadow-none ${
+                      isSelected
+                        ? "btn-primary border-transparent"
+                        : "btn-ghost border-transparent bg-base-100 hover:bg-base-200"
+                    }`}
+                  >
+                    <ItemImage
+                      itemId={item.id}
+                      item={item}
+                      size="small"
+                      className="w-8 h-8"
+                    />
+                    <span className="text-xs text-center line-clamp-2">
+                      {item.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="form-control mb-4">
+            <label className="label">
+              <span className="label-text">Rate per Minute</span>
+            </label>
+            <input
+              type="number"
+              className="input input-bordered w-full"
+              value={ratePerMinute}
+              onChange={(e) => setRatePerMinuteDraft(e.target.value)}
+              min="0.01"
+              step="0.01"
+              required
+            />
+            {isRawExtractor(building) && (
+              <p className="mt-1.5 text-xs text-base-content/50 leading-snug w-full min-w-0 whitespace-normal">
+                Output depends on node purity and extractor tier. Enter your
+                in-game value.
+              </p>
+            )}
+          </div>
+
+          <div className="modal-action">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleCancel}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={
+                !selectedItemId || !ratePerMinute || Number(ratePerMinute) <= 0
+              }
+            >
+              Confirm
+            </button>
+          </div>
+        </form>
+      </div>
+      <div className="modal-backdrop" onClick={handleCancel}></div>
+    </div>
+  );
+};
