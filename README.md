@@ -247,9 +247,9 @@ To add new items/buildings:
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+The project's source code is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-**TL;DR**: Free to use, modify, and share. Just give credit where it's due! 🙏
+**Game assets are excluded:** All files in `assets/icons/` and its subdirectories are excluded from the MIT License. These icons come from StarRupture and belong to their respective rights holders. This project grants no license to them. See [assets/icons/LICENSE](assets/icons/LICENSE) for the full notice.
 
 ---
 
