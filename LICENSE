@@ -1,6 +1,14 @@
+License scope
+-------------
+The MIT License below does not apply to any files in assets/icons/ or its
+subdirectories. Those files are third-party game assets; this project grants
+no license to them. See assets/icons/LICENSE for the applicable notice.
+
+-------------
+
 MIT License
 
-Copyright (c) 2025 flexsurfer
+Copyright (c) 2026 flexsurfer
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,11 +1,17 @@
 /// <reference types="vitest" />
 import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ command, mode }) => ({
   // Use /starrupture-planner/ only for GitHub Pages production build
   base: command === "build" && mode !== "azure" ? "/starrupture-planner/" : "/",
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
   plugins: [react(), tailwindcss()],
   publicDir: "assets",
   build: {
@@ -40,5 +46,22 @@ export default defineConfig(({ command, mode }) => ({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./test/setup.ts"],
+    coverage: {
+      provider: "v8",
+      include: [
+        "src/features/**/events.ts",
+        "src/features/**/subscriptions.ts",
+        "src/features/bases/derived-subscriptions.ts",
+        "src/platform/headless/effects.ts",
+      ],
+      reporter: ["text", "json-summary"],
+      reportsDirectory: "coverage/headless-e2e",
+      thresholds: {
+        statements: 99,
+        branches: 85,
+        functions: 98,
+        lines: 99,
+      },
+    },
   },
 }));

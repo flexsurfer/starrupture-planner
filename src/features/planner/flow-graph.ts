@@ -1,0 +1,132 @@
+import { buildProductionStageLayout } from "./production-stage-layout";
+import dagre from "dagre";
+import { Position } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
+import type { FlowEdge, PlannerFlowNode, Item } from "@/features/planner/types";
+import { getFlowNodeId, getTargetNodeIds } from "./flow-node";
+import { getItemName } from "@/utils/itemUtils";
+import { getItemColor } from "@/utils/itemColors";
+
+export type PlannerFlowDirection = "LR" | "RL" | "TB" | "BT";
+
+export type PlannerFlowGraphNode = Omit<Node, "data"> & {
+  flowNode: PlannerFlowNode;
+  outputColor: string;
+};
+
+export interface PlannerFlowGraph {
+  nodes: PlannerFlowGraphNode[];
+  edges: Edge[];
+  items: Item[];
+}
+
+/**
+ * A pure, view-ready graph. React node labels are deliberately created in the
+ * diagram component, so subscriptions do not import presentation components.
+ */
+export function buildPlannerFlowGraph(
+  flowNodes: PlannerFlowNode[],
+  flowEdges: FlowEdge[],
+  items: Item[],
+  targetItemIds: string[] = [],
+  direction: PlannerFlowDirection = "LR",
+  groupByStage = false,
+): PlannerFlowGraph {
+  const graph = new dagre.graphlib.Graph();
+  graph.setDefaultEdgeLabel(() => ({}));
+  graph.setGraph({ rankdir: "LR", ranksep: 150, nodesep: 40 });
+
+  flowNodes.forEach((_, index) => {
+    graph.setNode(`node_${index}`, { width: 160, height: 180 });
+  });
+  const targetNodeIds = getTargetNodeIds(flowNodes, targetItemIds);
+
+  const nodeIdByFlowKey = new Map<string, string>();
+  flowNodes.forEach((node, index) => {
+    nodeIdByFlowKey.set(getFlowNodeId(node), `node_${index}`);
+  });
+
+  flowEdges.forEach((edge) => {
+    const source = nodeIdByFlowKey.get(edge.from);
+    const target = nodeIdByFlowKey.get(edge.to);
+    if (source && target) graph.setEdge(source, target);
+  });
+
+  dagre.layout(graph);
+
+  const positions = groupByStage
+    ? buildProductionStageLayout(graph, flowNodes, items, targetItemIds)
+    : new Map<number, { x: number; y: number }>();
+
+  const canonicalPositions = flowNodes.map((_, index) => {
+    const position = graph.node(`node_${index}`);
+    return positions.get(index) ?? { x: position.x - 100, y: position.y - 100 };
+  });
+  const maxStage = Math.max(
+    0,
+    ...canonicalPositions.map((position) => position.x),
+  );
+  const vertical = direction === "TB" || direction === "BT";
+  const reverse = direction === "RL" || direction === "BT";
+  const sourcePosition = {
+    LR: Position.Right,
+    RL: Position.Left,
+    TB: Position.Bottom,
+    BT: Position.Top,
+  }[direction];
+  const targetPosition = {
+    LR: Position.Left,
+    RL: Position.Right,
+    TB: Position.Top,
+    BT: Position.Bottom,
+  }[direction];
+
+  const nodes: PlannerFlowGraphNode[] = flowNodes.map((flowNode, index) => {
+    const canonical = canonicalPositions[index];
+    const stage = reverse ? maxStage - canonical.x : canonical.x;
+    const position = vertical
+      ? { x: canonical.y, y: stage * 0.8 }
+      : { x: stage, y: canonical.y };
+    return {
+      id: `node_${index}`,
+      type: flowNode.nodeType === "target" ? "output" : "default",
+      position,
+      sourcePosition,
+      targetPosition,
+      flowNode,
+      outputColor: getItemColor(flowNode.outputItem, items),
+      ...(targetNodeIds.has(getFlowNodeId(flowNode)) && {
+        style: { borderColor: "var(--color-primary)" },
+      }),
+    };
+  });
+
+  const edgeIds = new Set<string>();
+  const edges: Edge[] = [];
+  flowEdges.forEach((edge) => {
+    const source = nodeIdByFlowKey.get(edge.from);
+    const target = nodeIdByFlowKey.get(edge.to);
+    if (!source || !target) return;
+
+    const id = `${source}-${target}-${edge.itemId}`;
+    if (edgeIds.has(id)) return;
+    edgeIds.add(id);
+    const color = getItemColor(edge.itemId, items);
+    edges.push({
+      id,
+      source,
+      target,
+      type: "production",
+      style: { stroke: color, strokeWidth: 1.5, strokeOpacity: 0.4 },
+      data: {
+        itemName: getItemName(edge.itemId, items),
+        rateLabel: `${edge.amount.toFixed(1)}/min`,
+      },
+      label: `${getItemName(edge.itemId, items)}
+${edge.amount.toFixed(1)}/min`,
+      labelStyle: { fontSize: 14, fontWeight: 400 },
+    });
+  });
+
+  return { nodes, edges, items };
+}

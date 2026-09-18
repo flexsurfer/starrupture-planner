@@ -1,0 +1,396 @@
+/**
+ * MyBases Type Definitions
+ *
+ * Central location for all shared types used across mybases components and subscriptions.
+ */
+
+import type {
+  BaseBuilding,
+  BaseDetailTab as DbBaseDetailTab,
+  Building,
+  Item,
+  Production,
+} from "@/app/uklad/model";
+import type { LinkedOutputStatus } from "../../utils/productionPlanInputs";
+import type { FlowNode } from "@/features/planner/types";
+
+/**
+ * Section types for categorizing buildings in a base.
+ */
+export type BuildingSectionType =
+  "inputs" | "energy" | "production" | "outputs" | "infrastructure";
+
+export type BaseDetailTab = DbBaseDetailTab;
+
+export interface LinkedInputReference {
+  baseId: string;
+  buildingId: string;
+}
+
+/**
+ * Request payload used when creating one or more base buildings from the UI.
+ */
+export interface AddBuildingRequest {
+  buildingTypeId: string;
+  count: number;
+  name?: string;
+  description?: string;
+  selectedItemId?: string;
+  ratePerMinute?: number;
+  linkedOutput?: BaseBuilding["linkedOutput"];
+  sourceProductionId?: string;
+  allocationMode?: BaseBuilding["allocationMode"];
+  requestedRatePerMinute?: number;
+  capacityPerMinute?: number;
+  priority?: number;
+  linkedInputRef?: LinkedInputReference;
+}
+
+/**
+ * Stats for a base's core information display.
+ * Used in both the detail view (BaseCoreInfo) and the card view (BaseCard).
+ */
+export interface BaseDetailStats {
+  baseName: string;
+  coreLevel: number;
+  buildingCount: number;
+  totalHeat: number;
+  energyGeneration: number;
+  energyConsumption: number;
+  localEnergyGeneration: number;
+  energyGridConsumption: number;
+  baseCoreHeatCapacity: number;
+  heatPercentage: number;
+  energyPercentage: number;
+  isHeatOverCapacity: boolean;
+  isEnergyInsufficient: boolean;
+  energyGroupId?: string;
+  energyGroupName?: string;
+}
+
+/**
+ * Enriched building entry for a building section.
+ * Combines the base building instance, building type info, and active plan names.
+ */
+export interface BuildingSectionBuilding {
+  id: string;
+  buildingTypeId: string;
+  sectionType: BuildingSectionType;
+  baseBuilding?: BaseBuilding;
+  building: Building;
+  count: number;
+  isGrouped: boolean;
+  activePlanNames: string[];
+}
+
+/**
+ * Stats for a building section within a base.
+ */
+export interface BuildingSectionStats {
+  buildingCount: number;
+  totalHeat: number;
+  totalPowerGeneration: number;
+  totalPowerConsumption: number;
+  hasGenerators: boolean;
+}
+
+/**
+ * Represents an input item configured on a base building.
+ */
+export interface BaseInputItem {
+  /** Unique ID of this building instance in the base */
+  baseBuildingId: string;
+  item: Item;
+  ratePerMinute: number;
+  building: Building;
+  name: string;
+  description: string;
+  linkedOutput?: {
+    status: LinkedOutputStatus;
+    baseId: string;
+    buildingId: string;
+    baseName: string;
+    outputName: string;
+  };
+}
+
+/**
+ * Represents an output item configured on a base building.
+ */
+export interface BaseOutputItem {
+  /** Unique ID of this building instance in the base */
+  baseBuildingId: string;
+  item: Item;
+  ratePerMinute: number;
+  building: Building;
+  name: string;
+  description: string;
+}
+
+/**
+ * Configured output that can be linked into a production plan as an input.
+ */
+export interface LinkableOutputItem extends BaseOutputItem {
+  baseId: string;
+  baseName: string;
+  isCurrentBase: boolean;
+}
+
+/**
+ * Represents a defense building in a base, with count for duplicates.
+ */
+export interface BaseDefenseBuilding {
+  building: Building;
+  count: number;
+}
+
+/**
+ * Top produced item for stats display and sharing.
+ */
+export interface TopProducedItem {
+  itemId: string;
+  itemName: string;
+  totalRatePerMinute: number;
+  levelXpCost: number;
+}
+
+/**
+ * Aggregated stats for all bases.
+ * Used in the MyBasesStats component and MY_BASES_STATS subscription.
+ */
+export interface MyBasesStats {
+  totalBases: number;
+  totalBuildings: number;
+  totalPlans: number;
+  totalHeat: number;
+  totalHeatCapacity: number;
+  totalEnergyUsed: number;
+  totalEnergyProduced: number;
+  heatPercentage: number;
+  energyPercentage: number;
+  isHeatOverCapacity: boolean;
+  isEnergyInsufficient: boolean;
+}
+
+/**
+ * Stats for a production plan section.
+ * Calculated from the production flow for the selected item.
+ */
+export interface ProductionPlanSectionStats {
+  buildingCount: number;
+  totalHeat: number;
+  totalPowerConsumption: number;
+}
+
+/**
+ * Represents a building requirement for a production plan section.
+ * Used to track which buildings are needed and whether they're available in the base.
+ */
+export interface BuildingRequirement {
+  buildingId: string;
+  buildingName: string;
+  required: number;
+  available: number;
+  isSatisfied: boolean;
+}
+
+/**
+ * Represents an input requirement for a production plan section.
+ * Used to track which input buildings are needed and whether they exist in the base.
+ */
+export interface InputRequirement {
+  baseBuildingId: string;
+  buildingId: string;
+  buildingName: string;
+  itemId: string;
+  itemName: string;
+  ratePerMinute: number;
+  isSatisfied: boolean;
+  linkedOutput?: {
+    status: LinkedOutputStatus;
+    baseName: string;
+    outputName: string;
+  };
+}
+
+/**
+ * Shared input shortage for a plan when evaluated alongside active plans.
+ */
+export interface SharedInputShortage {
+  baseBuildingId: string;
+  inputName: string;
+  itemId: string;
+  itemName: string;
+  requiredPerMinute: number;
+  availablePerMinute: number;
+  missingPerMinute: number;
+}
+
+/** Combined data model used by the ProductionPlanSection component subscription. */
+export interface ProductionPlanSectionViewModel {
+  selectedBaseId: string;
+  section: Production;
+  itemName: string;
+  corporationName: string | null;
+  stats: ProductionPlanSectionStats;
+  buildingRequirements: BuildingRequirement[];
+  inputRequirements: InputRequirement[];
+  sharedInputShortages: SharedInputShortage[];
+  hasRawMaterialShortage: boolean;
+  hasMaterialShortage: boolean;
+  allRequirementsSatisfied: boolean;
+  planStatus: string;
+  hasError: boolean;
+  showManageButton: boolean;
+}
+
+/** Lightweight requirements status payload used by plan badges/previews. */
+export interface ProductionPlanRequirementsStatus {
+  allRequirementsSatisfied: boolean;
+  planStatus: string;
+  hasError: boolean;
+  hasMaterialShortage: boolean;
+  itemName: string;
+  corporationName: string | null;
+}
+
+/**
+ * Overview-level plan summary used by BaseOverviewView and its child components.
+ */
+export interface PlanSummaryRow {
+  id: string;
+  name: string;
+  selectedItemId: string;
+  targetItem: Item | null;
+  itemName: string;
+  targetAmount: number;
+  status: "active" | "inactive" | "error";
+  requiredBuildingCount: number;
+  inputCount: number;
+  corporationLabel: string;
+}
+
+/** A plan's contribution to one material or building requirement. */
+export interface CoveragePlanDemand {
+  planId: string;
+  name: string;
+  status: PlanSummaryRow["status"];
+  targetItem: Item | null;
+  amount: number;
+}
+
+/**
+ * Per-item material balance across all plans in a base.
+ */
+export interface MaterialBalanceRow {
+  itemId: string;
+  item: Item;
+  perPlan: Record<string, number>;
+  planDemands: CoveragePlanDemand[];
+  totalRequired: number;
+  covered: number;
+  available: number;
+  missing: number;
+}
+
+/** Input connected to a logistics output. */
+export interface LogisticsInputLink {
+  baseId: string;
+  baseName: string;
+  baseBuildingId: string;
+  buildingTypeId: string;
+  buildingName: string;
+  name: string;
+  itemId?: string;
+  itemName?: string;
+  ratePerMinute?: number;
+  linkedOutputStatus?: LinkedOutputStatus;
+}
+
+/** Output row for the logistics tab. */
+export interface LogisticsOutput {
+  baseBuildingId: string;
+  buildingTypeId: string;
+  buildingName: string;
+  name: string;
+  itemId?: string;
+  itemName?: string;
+  ratePerMinute: number;
+  capacityPerMinute?: number;
+  availableCapacityPerMinute?: number;
+  linkedInputs: LogisticsInputLink[];
+}
+
+/** Input row on the selected base. */
+export interface LogisticsIncomingInput extends LogisticsInputLink {
+  sourceBaseId?: string;
+  sourceBaseName?: string;
+  sourceOutputBuildingId?: string;
+  sourceOutputName?: string;
+}
+
+/** Combined logistics view model for one selected base. */
+export interface BaseLogisticsViewModel {
+  baseId: string;
+  baseName: string;
+  outputs: LogisticsOutput[];
+  incomingInputs: LogisticsIncomingInput[];
+}
+
+/**
+ * Per-building-type coverage across all plans in a base.
+ */
+export interface BuildingCoverageRow {
+  buildingId: string;
+  building: Building;
+  perPlan: Record<string, number>;
+  planDemands: CoveragePlanDemand[];
+  totalRequired: number;
+  covered: number;
+  owned: number;
+  missing: number;
+}
+
+/** Local item capacity or input supply, allocated across plans without counting it twice. */
+export interface ProductionItemCoverage {
+  required: number;
+  covered: number;
+  planDemands: (CoveragePlanDemand & { covered: number })[];
+}
+
+/** Recipe totals keep each plan's whole-building requirement before aggregation. */
+export interface BaseProductionRecipeCard {
+  kind: "recipe";
+  id: string;
+  item: Item;
+  node: FlowNode;
+  rate: number;
+  targetRate: number;
+  requiredBuildings: number;
+  coverage: BuildingCoverageRow | null;
+  itemCoverage: ProductionItemCoverage;
+}
+
+export type BaseProductionTableCard =
+  | BaseProductionRecipeCard
+  | {
+      kind: "input";
+      id: string;
+      item: Item;
+      balance: MaterialBalanceRow;
+      itemCoverage: ProductionItemCoverage;
+    }
+  | {
+      kind: "unavailable";
+      id: string;
+      item: Item;
+      rate: number;
+      itemCoverage: ProductionItemCoverage;
+    };
+
+export interface BaseProductionTable {
+  groups: { type: string; cards: BaseProductionTableCard[] }[];
+  requiredBuildings: number;
+  missingBuildings: number;
+  missingMaterials: number;
+}

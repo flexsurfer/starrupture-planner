@@ -4,10 +4,9 @@
 
    <img src="./assets/logo_black_bg.webp" width="100" />
 
-
 **The Ultimate Production Planning Tool for Star Rupture**
 
-*Plan, optimize, and have fun with perfect resource management!* 🌌
+_Plan, optimize, and have fun with perfect resource management!_ 🌌
 
 [![Built with React](https://img.shields.io/badge/React-19.1.0-blue?logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -30,25 +29,28 @@ Rupture Planner is a **free, open-source production planning tool** designed for
 - 🔍 **Browse all items and recipes** with advanced filtering
 - 🌙 **Work in comfort** with beautiful light/dark themes
 
-*Built by gamers, for gamers - just for the fun of it!* 🎉
+_Built by gamers, for gamers - just for the fun of it!_ 🎉
 
 ---
 
 ## 🌟 Features
 
 ### 📦 **Smart Item Catalog**
+
 - Browse all game items with beautiful icons
 - Filter by type: Raw Materials, Processed, Components, Ammo
 - Color-coded categories for instant recognition
 - Responsive grid layout that adapts to your screen
 
 ### ⚗️ **Interactive Recipe Browser**
+
 - Collapsible building sections (closed by default for clean browsing)
 - Visual input/output relationships with item icons
 - Production rates clearly displayed for each recipe
 - Hover effects and smooth animations
 
 ### 🏭 **Advanced Production Planner**
+
 - **Interactive Flow Diagrams**: See your entire production chain at a glance
 - **Smart Auto-Layout**: Uses Dagre algorithm for optimal node positioning
 - **Visual Production Flow**: Item icons on edges show what flows where
@@ -58,6 +60,7 @@ Rupture Planner is a **free, open-source production planning tool** designed for
 - **Zoom & Pan**: Full navigation controls with minimap
 
 ### 🎨 **Beautiful User Experience**
+
 - Modern, responsive design with Tailwind CSS + DaisyUI
 - Smooth animations and transitions
 - Light/Dark theme toggle
@@ -68,10 +71,25 @@ Rupture Planner is a **free, open-source production planning tool** designed for
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js** 18+ 
+
+- **Node.js** 22.18+ in the 22.x series, or 24.11+ (required by the project dependencies)
 - **npm** or **yarn**
 
-### Installation
+### Windows: double-click to start
+
+1. Install [Node.js](https://nodejs.org/) with npm included, using a version listed above.
+2. Clone the repository, or download its ZIP from GitHub and extract it completely.
+3. Double-click **`START.bat`** in the project folder.
+
+The launcher checks Node.js and npm, installs missing dependencies from `package-lock.json` on the first run (internet access required), then starts the server in a minimized **Rupture Planner** window and opens your default browser at `http://localhost:5173`.
+
+Keep that window running while using the planner. Restore it from the taskbar to see server output; close it to stop the server. Closing the browser alone does not stop it. Setup errors stay visible; if the browser does not open, restore the minimized window to check for a startup error.
+
+The launcher keeps port 5173 fixed so your browser-saved plans remain available at the same address. If the port is already in use, stop the existing server and try again. Plans saved on the hosted website are separate from local plans; use the planner's export/import settings to transfer them.
+
+After pulling or downloading an update, run `npm ci --include=dev` in the project folder if its dependencies changed.
+
+### Manual installation (all platforms)
 
 ```bash
 # Clone the repository
@@ -103,17 +121,17 @@ npm run preview
 
 This project uses modern, cutting-edge technologies:
 
-| Technology | Purpose | Version |
-|------------|---------|---------|
-| **⚛️ React** | UI Framework | 19.1.0 |
-| **📘 TypeScript** | Type Safety | 5.8.3 |
-| **⚡ Vite** | Build Tool | 7.0.4 |
-| **🎨 Tailwind CSS** | Styling | 4.1.11 |
-| **🌸 DaisyUI** | UI Components | 5.0.50 |
-| **🔄 React Flow** | Interactive Diagrams | 12.8.2 |
-| **📊 Dagre** | Graph Layout | 0.8.5 |
-| **🔥 Reflex** | State Management | 0.1.12 |
-| **🧪 Vitest** | Testing | 3.2.4 |
+| Technology          | Purpose              | Version |
+| ------------------- | -------------------- | ------- |
+| **⚛️ React**        | UI Framework         | 19.1.0  |
+| **📘 TypeScript**   | Type Safety          | 5.8.3   |
+| **⚡ Vite**         | Build Tool           | 7.0.4   |
+| **🎨 Tailwind CSS** | Styling              | 4.1.11  |
+| **🌸 DaisyUI**      | UI Components        | 5.0.50  |
+| **🔄 React Flow**   | Interactive Diagrams | 12.8.2  |
+| **📊 Dagre**        | Graph Layout         | 0.8.5   |
+| **🔥 Reflex**       | State Management     | 0.1.12  |
+| **🧪 Vitest**       | Testing              | 3.2.4   |
 
 ---
 
@@ -141,22 +159,26 @@ starrupture-planner/
 ## 🎮 How to Use
 
 ### 1. **Browse Items** 📦
+
 - Click the **Items** tab to explore all game items
 - Use category filters to find what you need
 - Each item shows its type with color coding
 
 ### 2. **Explore Recipes** ⚗️
+
 - Visit the **Recipes** tab to see all production recipes
 - Click on any building header to expand/collapse its recipes
 - Visual flow shows inputs → building → outputs
 
 ### 3. **Plan Production** 🏭
+
 - Go to the **Planner** tab for advanced planning
 - Select any item from the dropdown
 - Set your target production rate
 - Watch the magic happen! ✨
 
 The planner will:
+
 - Calculate exact building counts needed
 - Show the complete supply chain
 - Display item flow rates between buildings
@@ -169,6 +191,7 @@ The planner will:
 We love contributors! Whether you're fixing bugs, adding features, or improving docs, every contribution makes Rupture Planner better.
 
 ### 🐛 Found a Bug?
+
 1. Check [existing issues](https://github.com/flexsurfer/starrupture-planner/issues)
 2. Create a new issue with:
    - Clear description
@@ -177,6 +200,7 @@ We love contributors! Whether you're fixing bugs, adding features, or improving 
    - Screenshots if applicable
 
 ### 💡 Have an Idea?
+
 1. Open an issue to discuss your idea
 2. We'll help you shape it into an actionable plan
 3. Fork, code, and submit a PR!
@@ -220,10 +244,12 @@ git push origin feature/awesome-feature
 ### 🎨 Adding New Game Data
 
 Game data lives in `src/data/`:
+
 - `items_catalog.json` - All game items
 - `buildings_and_recipes.json` - Buildings and their recipes
 
 To add new items/buildings:
+
 1. Update the JSON files
 2. Add corresponding icon images to `assets/icons/`
 3. Test in the app
@@ -233,9 +259,9 @@ To add new items/buildings:
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+The project's source code is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-**TL;DR**: Free to use, modify, and share. Just give credit where it's due! 🙏
+**Game assets are excluded:** All files in `assets/icons/` and its subdirectories are excluded from the MIT License. These icons come from StarRupture and belong to their respective rights holders. This project grants no license to them. See [assets/icons/LICENSE](assets/icons/LICENSE) for the full notice.
 
 ---
 
@@ -285,12 +311,12 @@ A: We'll update the data files to match. Community help is always welcome!
 
 **Made with ❤️ by gamers, for gamers**
 
-*May your production lines be efficient and your resources abundant!* 🌌
+_May your production lines be efficient and your resources abundant!_ 🌌
 
 ⭐ **Star this repo if it helped you!** ⭐
 
-[🐛 Report Bug](https://github.com/flexsurfer/starrupture-planner/issues) • 
-[💡 Request Feature](https://github.com/flexsurfer/starrupture-planner/issues) • 
+[🐛 Report Bug](https://github.com/flexsurfer/starrupture-planner/issues) •
+[💡 Request Feature](https://github.com/flexsurfer/starrupture-planner/issues) •
 [🤝 Contribute](https://github.com/flexsurfer/starrupture-planner/pulls)
 
 </div>

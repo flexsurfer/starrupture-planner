@@ -1,0 +1,46 @@
+import { useSubscription } from "@/app/uklad/bindings";
+import { appIds } from "@/app/uklad/catalog";
+import type { CorporationUsage } from "@/features/items/types";
+
+/**
+ * Custom hook for items data and utilities
+ * All computations are done in subscriptions, this hook just returns ready-to-use data
+ */
+export const useItemsData = () => {
+  const itemsTableData = useSubscription([
+    appIds.subscriptions.ITEMS_TABLE_ROWS,
+  ]);
+  const selectedCategory = useSubscription([
+    appIds.subscriptions.ITEMS_SELECTED_CATEGORY,
+  ]);
+  const categories = useSubscription([appIds.subscriptions.ITEMS_CATEGORIES]);
+  const helperMaps = useSubscription([
+    appIds.subscriptions.ITEMS_HELPER_LOOKUPS,
+  ]);
+
+  // Helper function to get corporation ID from corporation name
+  const getCorporationId = (corporationName: string): string => {
+    return helperMaps.corporationNameToId.get(corporationName) || "";
+  };
+
+  // Helper function to find which corporations reward a building
+  const findBuildingCorporationUsage = (
+    buildingName: string,
+  ): CorporationUsage[] => {
+    return helperMaps.buildingCorporationUsage.get(buildingName) || [];
+  };
+
+  return {
+    itemsTableData,
+    selectedCategory,
+    categories,
+    findBuildingCorporationUsage,
+    getCorporationId,
+  };
+};
+
+// Utility functions that don't need hooks
+export const getCategoryDisplayName = (category: string) => {
+  if (category === "all") return "All Items";
+  return category.charAt(0).toUpperCase() + category.slice(1);
+};

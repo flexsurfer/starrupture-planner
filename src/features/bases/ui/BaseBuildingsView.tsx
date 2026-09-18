@@ -1,0 +1,118 @@
+import { appIds } from "@/app/uklad/catalog";
+import React, { useCallback, useState } from "react";
+import { useRuntime, useSubscription } from "@/app/uklad/bindings";
+import type {
+  AddBuildingRequest,
+  BuildingSectionType,
+} from "@/features/bases/types";
+import { BuildingSection } from "./components";
+import { AddBuildingCardModal } from "./modals";
+
+export const BaseBuildingsView: React.FC = () => {
+  const runtime = useRuntime();
+  const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
+  const [addBuildingSection, setAddBuildingSection] =
+    useState<BuildingSectionType | null>(null);
+
+  const selectedBase = useSubscription([
+    appIds.subscriptions.BASES_SELECTED_BASE,
+  ]);
+
+  const handleAddBuilding = useCallback(
+    (request: AddBuildingRequest) => {
+      if (selectedBase && addBuildingSection) {
+        runtime.dispatch([
+          appIds.events.BASES_ADD_BUILDINGS,
+          selectedBase.id,
+          request.buildingTypeId,
+          addBuildingSection,
+          request.count,
+          request.name,
+          request.description,
+          request.selectedItemId ?? null,
+          request.ratePerMinute ?? null,
+          request.linkedOutput ?? null,
+          request.sourceProductionId ?? null,
+          request.allocationMode ?? null,
+          request.requestedRatePerMinute ?? null,
+          request.capacityPerMinute ?? null,
+          request.priority ?? null,
+          request.linkedInputRef ?? null,
+        ]);
+        setAddBuildingSection(null);
+      }
+    },
+    [runtime, selectedBase, addBuildingSection],
+  );
+
+  const handleOpenAddModal = useCallback((sectionType: BuildingSectionType) => {
+    setAddBuildingSection(sectionType);
+    setShowAddBuildingModal(true);
+  }, []);
+
+  const handleCloseAddModal = useCallback(() => {
+    setShowAddBuildingModal(false);
+    setAddBuildingSection(null);
+  }, []);
+
+  if (!selectedBase) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="space-y-3 sm:space-y-4">
+        <BuildingSection
+          title="Inputs"
+          description="Buildings that extract resources or receive packages from other bases."
+          baseId={selectedBase.id}
+          sectionType="inputs"
+          onAdd={() => handleOpenAddModal("inputs")}
+        />
+
+        <BuildingSection
+          title="Energy"
+          description="Generators that produce energy for your base, and amplifiers that increase core heat capacity."
+          baseId={selectedBase.id}
+          sectionType="energy"
+          onAdd={() => handleOpenAddModal("energy")}
+        />
+
+        <BuildingSection
+          title="Infrastructure"
+          description="Habitat buildings for population and defense structures."
+          baseId={selectedBase.id}
+          sectionType="infrastructure"
+          onAdd={() => handleOpenAddModal("infrastructure")}
+        />
+
+        <BuildingSection
+          title="Production"
+          description="Buildings that process materials and produce items."
+          baseId={selectedBase.id}
+          sectionType="production"
+          onAdd={() => handleOpenAddModal("production")}
+        />
+
+        <BuildingSection
+          title="Outputs"
+          description="Buildings that send items to other bases or launch cargo to orbit."
+          baseId={selectedBase.id}
+          sectionType="outputs"
+          onAdd={() => handleOpenAddModal("outputs")}
+        />
+      </div>
+
+      {/* Modal */}
+      {addBuildingSection && (
+        <AddBuildingCardModal
+          isOpen={showAddBuildingModal}
+          sectionType={addBuildingSection}
+          baseId={selectedBase.id}
+          onClose={handleCloseAddModal}
+          onAdd={handleAddBuilding}
+        />
+      )}
+    </>
+  );
+};
