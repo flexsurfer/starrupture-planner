@@ -64,10 +64,12 @@ Recursively satisfy target demand via `fulfillDemand()`:
 - Allocate external input sources to the current consumer (deterministic source order)
 - Produce the remaining amount internally when possible
 - Propagate recipe input demand from the produced remainder
-- Node aggregation happens inline: one produced node per item, building count accumulated
+- Node aggregation happens inline: one produced node per item, unrounded building count accumulated
 - Raw material accounting (`required` / `available`) is tracked during traversal
 
 ### Phase 3 – Finalize
+- Round each combined production building count once, then derive whole-building power and heat.
+  Rounding individual demand contributions must not accumulate errors that add an extra building.
 - **3a.** Derive input-node `buildingCount` from actual edge-emitted usage
 - **3b.** Convert consolidated flow map to final edge list
 - **3c.** Add orbital cargo launcher node and edge (if `includeLauncher`)

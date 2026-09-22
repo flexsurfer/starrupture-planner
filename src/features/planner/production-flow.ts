@@ -6,7 +6,7 @@
  * Algorithm (three phases):
  *   Phase 1 – Normalize: validate and normalize external input sources
  *   Phase 2 – Fulfill:   recursively satisfy target demand (external inputs first, then production)
- *   Phase 3 – Finalize:  derive input-node utilization, add launcher, compute raw deficits
+ *   Phase 3 – Finalize:  round capacity, derive input-node utilization, add launcher, compute raw deficits
  */
 
 import type {
@@ -397,10 +397,7 @@ function buildFlow(params: ProductionFlowParams, buildings: Building[], targets:
 
         const producerNode = getOrCreateProducedNode(itemId, info);
         const additionalBuildings = remaining / info.recipe.output.amount_per_minute;
-        producerNode.buildingCount = round(producerNode.buildingCount + additionalBuildings);
-        const ceilBuildings = Math.ceil(producerNode.buildingCount);
-        producerNode.totalPower = ceilBuildings * producerNode.powerPerBuilding;
-        producerNode.totalHeat = ceilBuildings * producerNode.heatPerBuilding;
+        producerNode.buildingCount += additionalBuildings;
 
         const producerId = nodeId(producerNode.buildingId, producerNode.recipeIndex, producerNode.outputItem);
         if (consumerId) {
@@ -420,6 +417,15 @@ function buildFlow(params: ProductionFlowParams, buildings: Building[], targets:
     }
 
     // ── Phase 3: Finalize ────────────────────────────────────────────────
+
+    // Round only after all demands are combined: rounding each 2/3 contribution
+    // separately can turn two buildings into 2.0000000001, which ceilings to three.
+    for (const producerNode of ctx.producedNodeByItem.values()) {
+        producerNode.buildingCount = round(producerNode.buildingCount);
+        const ceilBuildings = Math.ceil(producerNode.buildingCount);
+        producerNode.totalPower = ceilBuildings * producerNode.powerPerBuilding;
+        producerNode.totalHeat = ceilBuildings * producerNode.heatPerBuilding;
+    }
 
     // 3a. Derive input-node utilization from edge-driven used amounts.
     for (const [sourceId, inputNode] of ctx.inputNodeBySource.entries()) {
