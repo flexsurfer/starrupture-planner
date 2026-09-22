@@ -47,6 +47,43 @@ describe("recipeSelection", () => {
     expect(recipe?.inputs[0]?.id).toBe("bar_wolfram");
   });
 
+  it("keeps the selected recipe when multiple recipes share the same output", () => {
+    const building = {
+      id: "craftertier2",
+      name: "Fabricator v.2",
+      recipes: [
+        {
+          variant: "alternative" as const,
+          output: { id: "tube", amount_per_minute: 480 },
+          inputs: [
+            { id: "goethiteingot", amount_per_minute: 30 },
+            { id: "titanium_sheet", amount_per_minute: 90 },
+          ],
+        },
+        {
+          id: "tube_v2",
+          output: { id: "tube", amount_per_minute: 300 },
+          inputs: [
+            { id: "titanium_rod", amount_per_minute: 60 },
+            { id: "titanium_sheet", amount_per_minute: 60 },
+          ],
+        },
+      ],
+    };
+
+    const alternativeLayoutBuilding = { itemId: "tube", recipeIndex: 0 };
+    const v2LayoutBuilding = { itemId: "tube", recipeIndex: 1 };
+
+    expect(
+      resolveLayoutBuildingRecipe(alternativeLayoutBuilding, building)?.output
+        .amount_per_minute,
+    ).toBe(480);
+    expect(
+      resolveLayoutBuildingRecipe(v2LayoutBuilding, building)?.output
+        .amount_per_minute,
+    ).toBe(300);
+  });
+
   it("falls back to recipe index when output item lookup fails", () => {
     const building = {
       id: "fabricator",

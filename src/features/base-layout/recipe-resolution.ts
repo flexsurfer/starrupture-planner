@@ -39,16 +39,30 @@ export function resolveLayoutBuildingRecipeIndex(
   layoutBuilding: Pick<BaseLayoutBuilding, "itemId" | "recipeIndex">,
   building: Building | undefined,
 ): number {
+  if (!building?.recipes?.length) {
+    return -1;
+  }
+
+  // If the stored index still points at a recipe producing the right item,
+  // trust it — this is what disambiguates between multiple recipes that
+  // share the same output (e.g. recipe variants).
+  const storedRecipe =
+    layoutBuilding.recipeIndex >= 0 &&
+    layoutBuilding.recipeIndex < building.recipes.length
+      ? building.recipes[layoutBuilding.recipeIndex]
+      : undefined;
+  if (storedRecipe?.output.id === layoutBuilding.itemId) {
+    return layoutBuilding.recipeIndex;
+  }
+
+  // Otherwise the stored index is stale (e.g. game-data recipe order
+  // changed) — fall back to the first recipe producing the item.
   const outputRecipeIndex = findRecipeIndexByOutputItemId(
     building,
     layoutBuilding.itemId,
   );
   if (outputRecipeIndex >= 0) {
     return outputRecipeIndex;
-  }
-
-  if (!building?.recipes?.length) {
-    return -1;
   }
 
   if (
