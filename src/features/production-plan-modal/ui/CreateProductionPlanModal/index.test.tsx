@@ -99,6 +99,21 @@ it('keeps the input list across modes and building selection in Advanced mode', 
     expect(screen.getByLabelText('Plan name')).toHaveValue('Plate Production');
 });
 
+it('labels an Advanced-mode input as Stop using in Planning mode and keeps its building', async () => {
+    const { harness } = setup();
+    await act(async () => {
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, 'plate']);
+        harness.dispatchSync([appIds.events.BASES_ADD_BUILDINGS, 'base', 'storage', 'inputs', 1, 'Advanced ore', undefined, 'ore', 60]);
+        harness.dispatchSync([appIds.events.BASES_SET_MODE, 'planning']);
+    });
+    const stopUsing = screen.getByRole('button', { name: 'Stop using input Ore from Advanced ore' });
+    expect(within(stopUsing).getByText('× Stop using')).toBeInTheDocument();
+    fireEvent.click(stopUsing);
+    await waitFor(() => expect(harness.getState().basesList[0].productions[0].inputs).toEqual([]));
+    expect(harness.getState().basesList[0].buildings.some(building => building.name === 'Advanced ore')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Use input Ore from Advanced ore' })).toHaveAttribute('aria-pressed', 'false');
+});
+
 it('keeps a broken Planning input visible and removes its owned receiver', async () => {
     const { harness } = setup(true);
     await act(async () => {
@@ -118,6 +133,28 @@ it('keeps a broken Planning input visible and removes its owned receiver', async
     expect(harness.getState().productionPlanModalState.selectedInputIds).toEqual([]);
     expect(harness.getState().basesList[0].buildings.some(building => building.id === inputId)).toBe(false);
     expect(screen.queryByRole('button', { name: /Remove input Ore/ })).not.toBeInTheDocument();
+});
+
+it('labels a shared plan-owned input as Stop using because its building must remain', async () => {
+    const { harness } = setup(true);
+    await act(async () => {
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, 'plate']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT, 'source', 'output']);
+    });
+    const owner = harness.getState().basesList[0].productions[0];
+    const inputId = owner.inputs![0].id;
+    await act(async () => {
+        harness.dispatchSync([appIds.events.BASES_SET_MODE, 'advanced']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_OPEN]);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, 'plate']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, inputId]);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_OPEN, owner.id]);
+        harness.dispatchSync([appIds.events.BASES_SET_MODE, 'planning']);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Stop using input Ore from Ore base/ }));
+    await waitFor(() => expect(harness.getState().basesList[0].productions[0].inputs).toEqual([]));
+    expect(harness.getState().basesList[0].buildings.some(building => building.id === inputId)).toBe(true);
+    expect(harness.getState().basesList[0].productions[1].inputs).toMatchObject([{ id: inputId }]);
 });
 
 it('removes an unused Planning input and releases its reserved source output', async () => {
@@ -188,4 +225,59 @@ it('selects newly added inputs and autosaves the matched rate without selecting 
     });
     expect(harness.getState().productionPlanModalState.selectedInputIds).toEqual([]);
     expect(harness.getState().basesList[0].productions[0].targetAmount).toBe(90);
+});
+
+it.each([true, false])('manages all base inputs without leaving the editor (planning: %s)', async planning => {
+    const { harness, storage } = setup(planning);
+    await act(async () => {
+        harness.dispatchSync([appIds.events.BASES_ADD_BUILDINGS, 'base', 'storage', 'inputs', 1, 'Unconfigured input']);
+        harness.dispatchSync([appIds.events.BASES_ADD_BUILDINGS, 'source', 'storage', 'inputs', 1, 'Other base input']);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Manage inputs' }));
+    const dialog = screen.getByRole('dialog', { name: 'Manage inputs' });
+    expect(within(dialog).getByRole('button', { name: 'Remove Storage' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Remove Unconfigured input' })).toBeInTheDocument();
+    expect(within(dialog).queryByText('Other base input')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Ore output')).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Edit Ore item and rate' }));
+    fireEvent.change(within(dialog).getByRole('spinbutton'), { target: { value: '90' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(harness.getState().basesList[0].buildings.find(building => building.id === 'input')?.ratePerMinute).toBe(90));
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remove Unconfigured input' }));
+    await waitFor(() => expect(within(dialog).queryByText('Unconfigured input')).not.toBeInTheDocument());
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remove Storage' }));
+    expect(await within(dialog).findByText('No input buildings in this base.')).toBeInTheDocument();
+    expect(harness.getState().basesList[0].buildings).toEqual([]);
+    expect(harness.getState().basesList[1].buildings).toHaveLength(2);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+    expect(screen.queryByRole('dialog', { name: 'Manage inputs' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Plan name')).toBeInTheDocument();
+
+    await harness.flush();
+    const restored = createAppRuntime();
+    runtimes.push(restored);
+    persist(restored, { storage, keys: [stateKeys.basesList] }).hydrate();
+    expect(createUkladTestHarness(restored).getState().basesList[0].buildings).toEqual([]);
+});
+
+it('removes a broken plan-owned input from the manager and the saved plan', async () => {
+    const { harness } = setup(true);
+    await act(async () => {
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, 'plate']);
+        harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT, 'source', 'output']);
+        harness.dispatchSync([appIds.events.BASES_DELETE_BASE, 'source']);
+    });
+    const inputId = harness.getState().basesList[0].productions[0].inputs![0].id;
+    fireEvent.click(screen.getByRole('button', { name: 'Manage inputs' }));
+    const dialog = screen.getByRole('dialog', { name: 'Manage inputs' });
+    expect(within(dialog).getAllByText('Broken link').length).toBeGreaterThan(0);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remove Rail input' }));
+    await waitFor(() => expect(harness.getState().basesList[0].buildings.some(building => building.id === inputId)).toBe(false));
+    expect(harness.getState().basesList[0].productions[0].inputs).toEqual([]);
+    expect(harness.getState().productionPlanModalState.selectedInputIds).not.toContain(inputId);
+    expect(within(dialog).queryByText('Broken link')).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close manage inputs' }));
+    expect(screen.queryByRole('button', { name: /Remove input Ore/ })).not.toBeInTheDocument();
 });

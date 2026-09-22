@@ -50,6 +50,7 @@ export const InputsSelector: React.FC = () => {
                         <div ref={scrollRef} id={scrollId} role="region" aria-label="Production plan inputs" tabIndex={0} className="flex min-w-0 flex-1 flex-nowrap items-stretch gap-2 overflow-x-auto pb-1">
                             {inputItems.map((inputItem) => {
                                 const isSelected = selectedInputIds.includes(inputItem.baseBuildingId);
+                                const selectedAction = inputItem.removesBuildingOnDeselect ? 'Remove' : 'Stop using';
                                 const hasLinkError = !!inputItem.linkedOutput && inputItem.linkedOutput.status !== 'ok';
                                 const linkLabel = inputItem.linkedOutput
                                     ? `${inputItem.linkedOutput.baseName} / ${inputItem.linkedOutput.outputName}`
@@ -58,7 +59,7 @@ export const InputsSelector: React.FC = () => {
                                     <button
                                         type="button"
                                         aria-pressed={isSelected}
-                                        aria-label={planning ? `${isSelected ? 'Remove' : 'Use'} input ${inputItem.item.name} from ${linkLabel || inputItem.name}` : undefined}
+                                        aria-label={planning ? `${isSelected ? selectedAction : 'Use'} input ${inputItem.item.name} from ${linkLabel || inputItem.name}` : undefined}
                                         key={inputItem.baseBuildingId}
                                         onClick={() => handleInputToggle(inputItem.baseBuildingId)}
                                         className={`flex shrink-0 flex-col gap-1 border rounded-lg px-2.5 py-1.5 text-left cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-primary ${
@@ -97,7 +98,7 @@ export const InputsSelector: React.FC = () => {
                                                     {hasLinkError ? 'Link broken' : linkLabel}
                                                 </span>
                                             )}
-                                            {planning && <span className="text-xs">{isSelected ? '× Remove' : '+ Use input'}</span>}
+                                            {planning && <span className="text-xs">{isSelected ? `× ${selectedAction}` : '+ Use input'}</span>}
                                         </div>
                                     </button>
                                 );

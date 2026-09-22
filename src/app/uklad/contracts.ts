@@ -88,7 +88,7 @@ type ProductionPlanModalFormValues = {
 };
 
 type ProductionPlanModalInputSelectorData = {
-    inputItems: BaseInputItem[];
+    inputItems: (BaseInputItem & { removesBuildingOnDeselect: boolean })[];
     selectedInputIds: string[];
 };
 

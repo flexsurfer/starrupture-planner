@@ -2,7 +2,7 @@ import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { BasesById, Building as DbBuilding, Corporation, CreateProductionPlanModalState, Item } from '@/app/uklad/model';
-import type { BaseInputItem } from '@/features/bases/types';
+import type { BaseInputItem, LinkableOutputItem } from '@/features/bases/types';
 import type { CorporationLevelInfo, ProductionFlowResult, RawMaterialDeficitWithName } from '@/features/planner/types';
 import { buildProductionFlow } from '@/features/planner/production-flow';
 import { buildRecipeOptionsForOutputItems } from '@/features/planner/recipe-options';
@@ -79,7 +79,16 @@ export const registerProductionPlanModalSubscriptions: UkladModule<UkladRegistra
         const targetPlan = base.productions.find(plan => plan.id === modalState.editSectionId);
         const inputBase = mode === 'planning' ? { ...base, buildings: base.buildings.filter(input =>
             modalState.selectedInputIds.includes(input.id) || canSelectPlanningInput(allBases, input, base.id, targetPlan)) } : base;
-        const inputItems: BaseInputItem[] = collectConfiguredSectionItems(inputBase, buildingsById, itemsMap, 'inputs', allBases).map((entry) => ({ baseBuildingId: entry.baseBuildingId, item: entry.item, ratePerMinute: entry.ratePerMinute, building: entry.building, name: entry.name, description: entry.description, linkedOutput: entry.linkedOutput }));
+        const sharedInputIds = new Set(base.productions.filter(plan => plan.id !== modalState.editSectionId)
+            .flatMap(plan => (plan.inputs ?? []).map(input => input.id)));
+        const removableInputIds = new Set(base.buildings.filter(input => mode === 'planning' &&
+            !!modalState.editSectionId && input.planningOwnerPlanId === modalState.editSectionId && !sharedInputIds.has(input.id))
+            .map(input => input.id));
+        const inputItems = collectConfiguredSectionItems(inputBase, buildingsById, itemsMap, 'inputs', allBases).map((entry) => ({
+            baseBuildingId: entry.baseBuildingId, item: entry.item, ratePerMinute: entry.ratePerMinute,
+            building: entry.building, name: entry.name, description: entry.description, linkedOutput: entry.linkedOutput,
+            removesBuildingOnDeselect: removableInputIds.has(entry.baseBuildingId),
+        }));
         return { inputItems, selectedInputIds: modalState.selectedInputIds || [] };
     });
 

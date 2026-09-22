@@ -1,6 +1,7 @@
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { AddInputButton } from './AddInputButton';
+import { ManageInputsButton } from './ManageInputsButton';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { AdvancedModeSwitch } from '@/features/bases/ui/components/AdvancedModeSwitch';
 import { NavigationHeader } from '@/shared/ui/NavigationHeader';
@@ -48,7 +49,8 @@ export const ModalHeader: React.FC = () => {
                 placeholder="Enter plan name"
             />
             </div>
-            <div className="ml-auto shrink-0">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+                <ManageInputsButton />
                 <AddInputButton />
             </div>
             </div>
