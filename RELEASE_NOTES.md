@@ -1,3 +1,18 @@
+# Release Notes — 2026-09-23
+
+## What's New
+
+### 🌐 External Resource Inputs
+- Supply planner ingredients from outside the production chain by entering an available rate; production covers any remaining demand.
+- In Planning mode, add production-plan inputs by entering a rate or linking an available output from another base.
+- Review and remove external inputs from the planner, or switch them back to in-chain production.
+
+### 🏭 Easier Production Plan Input Management
+- Open **Manage inputs** from the production-plan editor to configure or remove input buildings without leaving the plan.
+- Stop using an input for a plan while keeping its building available to other plans. Inputs owned only by that plan are removed when no longer needed.
+
+---
+
 # Release Notes — 2026-09-15
 
 ## What's New
