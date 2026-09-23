@@ -13,6 +13,7 @@ import { getFlowNodeId, getTargetNodeIds } from './flow-node';
 import { buildRecipeOptionsForOutputItems, collectRecipeOutputItems } from './recipe-options';
 import { getMultiTargetWarning } from './target-conflicts';
 import { getItemName } from '@/utils/itemUtils';
+import { getPlannerInputBuildings } from './external-inputs';
 
 export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regRootSub(appIds.subscriptions.PLANNER_TABS, stateKeys.plannerTabs);
@@ -25,6 +26,8 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
     );
     registrar.regSub(appIds.subscriptions.PLANNER_ACTIVE_VIEW,
         () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.activeView ?? 'graph');
+    registrar.regSub(appIds.subscriptions.PLANNER_EXTERNAL_INPUTS,
+        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.externalInputs ?? {});
     registrar.regSub(appIds.subscriptions.PLANNER_GROUP_BY_STAGE,
         () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.groupByStage ?? false);
     registrar.regSub(appIds.subscriptions.PLANNER_FLOW_DIRECTION,
@@ -108,14 +111,16 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             [appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL],
             [appIds.subscriptions.PLANNER_RECIPE_SELECTIONS],
             [appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING],
+            [appIds.subscriptions.PLANNER_EXTERNAL_INPUTS],
         ],
-        ([mode, targets, selectedItem, targetAmount, buildings, selectedCorporationLevel, recipeSelections, multiTargetWarning], ..._params) => {
+        ([mode, targets, selectedItem, targetAmount, buildings, selectedCorporationLevel, recipeSelections, multiTargetWarning, externalInputs], ..._params) => {
             void _params;
+            const inputBuildings = getPlannerInputBuildings(externalInputs);
             if (mode === 'multi') {
                 // Depend on recipe data itself, so same-version updates are validated too.
                 return multiTargetWarning
                     ? { nodes: [], edges: [], rawMaterialDeficits: [] }
-                    : buildMultiTargetProductionFlow(targets, buildings, recipeSelections);
+                    : buildMultiTargetProductionFlow(targets, buildings, recipeSelections, inputBuildings);
             }
             if (!selectedItem) return { nodes: [], edges: [] };
             return buildProductionFlow(
@@ -124,6 +129,7 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
                     targetAmount: targetAmount > 0 ? targetAmount : 1,
                     includeLauncher: selectedCorporationLevel !== null,
                     recipeSelections,
+                    inputBuildings,
                 },
                 buildings,
             );
@@ -173,7 +179,7 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             if (!selectedItem.length || productionFlow.nodes.length === 0) {
                 return { totalBuildings: 0, totalEnergy: 0, totalHotness: 0 };
             }
-            const buildingNodes = productionFlow.nodes.filter(node => node.nodeType !== 'target');
+            const buildingNodes = productionFlow.nodes.filter(node => node.nodeType !== 'target').filter(node => node.nodeType !== 'input');
             return {
                 totalBuildings: buildingNodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0),
                 totalEnergy: buildingNodes.reduce((sum, node) => sum + node.totalPower, 0),
@@ -199,7 +205,8 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
                 };
             }
 
-            const buildingNodes = productionFlow.nodes.filter(node => node.nodeType !== 'target');
+            const resourceNodes = productionFlow.nodes.filter(node => node.nodeType !== 'target');
+            const buildingNodes = resourceNodes.filter(node => node.nodeType !== 'input');
             const targetNodeIds = getTargetNodeIds(productionFlow.nodes, selectedItemId);
             const buildingMap = new Map<string, PlannerBuildingStats>();
             for (const node of buildingNodes) {
@@ -227,7 +234,7 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
                 requiredRates.set(edge.itemId, (requiredRates.get(edge.itemId) ?? 0) + edge.amount);
             }
             const outputRates = new Map<string, number>();
-            for (const node of buildingNodes) {
+            for (const node of resourceNodes) {
                 if (node.nodeType === 'launcher') continue;
                 outputRates.set(node.outputItem, (outputRates.get(node.outputItem) ?? 0)
                     + node.outputAmount * node.buildingCount);

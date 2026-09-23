@@ -29,12 +29,14 @@ describe('saved planner tabs', () => {
         harness.dispatchSync([appIds.events.PLANNER_SET_FLOW_DIRECTION, 'TB']);
         harness.dispatchSync([appIds.events.PLANNER_SET_GROUP_BY_STAGE, true]);
         harness.dispatchSync([appIds.events.PLANNER_SET_ACTIVE_VIEW, 'table']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'iron-ore', 80]);
         harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'multi', 'Shared', 'multi']);
         harness.dispatchSync([appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
         harness.dispatchSync([appIds.events.PLANNER_ADD_TARGET, 'copper-wire']);
         harness.dispatchSync([appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'copper-wire', 75]);
         harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
         harness.dispatchSync([appIds.events.PLANNER_SET_FLOW_DIRECTION, 'RL']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'copper-ore', 100]);
         const expectedTabs = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_TABS]);
         await harness.flush();
         first.runtime.dispose();
@@ -69,6 +71,7 @@ describe('saved planner tabs', () => {
         const storage = memoryStorageAdapter({
             [`tabs-test/${stateKeys.plannerTabs}`]: JSON.stringify({ v: 1, data: [
                 { ...tab, targetAmount: -20, activeView: 'bad', flowDirection: 'bad',
+                    externalInputs: { 'iron-ore': 80, negative: -1, zero: 0, malformed: '20', missing: null },
                     multiTargets: [{ itemId: 'iron-plate', amount: 20 }, { itemId: 'iron-plate', amount: 30 }, { itemId: 'broken', amount: null }],
                     recipeSelections: { 'iron-plate': 'smelter:0', broken: 5 }, selectedCorporationLevel: { corporationId: 5, level: '1' } },
                 tab, { ...tab, id: 'blank', name: '  ' }, { ...tab, id: 'bad-mode', mode: 'other' }, null,
@@ -77,7 +80,7 @@ describe('saved planner tabs', () => {
         });
         const { runtime, harness } = createSavedRuntime(storage);
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_TABS])).toEqual([{
-            ...tab, name: 'Saved plan', multiTargets: [{ itemId: 'iron-plate', amount: 20 }], recipeSelections: { 'iron-plate': 'smelter:0' },
+            ...tab, name: 'Saved plan', externalInputs: { 'iron-ore': 80 }, multiTargets: [{ itemId: 'iron-plate', amount: 20 }], recipeSelections: { 'iron-plate': 'smelter:0' },
         }]);
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])?.id).toBe('valid');
         runtime.dispose();

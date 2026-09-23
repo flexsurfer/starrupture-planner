@@ -1,15 +1,32 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import type { Base, BaseBuilding, PlanRequiredBuilding } from '@/app/uklad/model';
+import type { AppState, Base, BaseBuilding, PlanRequiredBuilding, Production } from '@/app/uklad/model';
 import { buildProductionFlow } from '@/features/planner/production-flow';
-import { getSectionTypeForBuilding } from '@/features/bases/building-section';
+import { getSectionTypeForBuilding, isBuildingAvailableForSection } from '@/features/bases/building-section';
 import { buildActivePlanOccupancy } from '@/features/bases/active-plan-occupancy';
-import { computeRequiredBuildings, getFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
+import { computeRequiredBuildings, computeUsedInputSnapshots, getFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
 import { clearOutputPlanLinksForProduction } from '@/utils/planOutputAllocations';
 import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '@/constants/buildingIds';
 import { createBaseBuilding, takeOverPlanningEndpoint } from '@/features/bases/building-operations';
+import { linkProductionPlanInput } from './input-links';
 import { removeOwnedPlanningInput } from './planning-endpoints';
+import { selectAddedProductionPlanInputs } from '@/features/production-plan-modal/events';
+
+function recalculateInputRequirements(state: AppState, plan: Production): void {
+    const inputs = getFlowInputBuildings(plan.inputs ?? [], state.basesList);
+    plan.recipeSelections = sanitizeRecipeSelectionsForInputItems(plan.recipeSelections ?? {}, inputs);
+    const flow = buildProductionFlow({
+        targetItemId: plan.selectedItemId,
+        targetAmount: plan.targetAmount,
+        inputBuildings: inputs,
+        rawProductionDisabled: true,
+        includeLauncher: !!plan.corporationLevel,
+        recipeSelections: plan.recipeSelections,
+    }, state.buildingsList);
+    plan.requiredBuildings = computeRequiredBuildings(flow);
+    if (state.basesMode !== 'planning') plan.inputs = computeUsedInputSnapshots(flow, plan.inputs);
+}
 
 function getBaseById(bases: Base[], baseId: string): Base | undefined {
     return bases.find((base) => base.id === baseId);
@@ -30,6 +47,51 @@ function buildAvailableBuildingCountByType(base: Base, excludePlanId?: string | 
 }
 
 export const registerProductionPlansEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regEvent(appIds.events.PRODUCTION_PLAN_ADD_INPUT, ({ draftState }, baseId, planId, itemId, amount, buildingTypeId, name, description) => {
+        const base = getBaseById(draftState.basesList, baseId);
+        const plan = base?.productions.find(plan => plan.id === planId);
+        const building = draftState.buildingsList.find(building => building.id === buildingTypeId);
+        if (!base || !plan || !building || !isBuildingAvailableForSection(building, 'inputs')
+            || !draftState.itemsList.some(item => item.id === itemId) || plan.selectedItemId === itemId
+            || !Number.isFinite(amount) || amount <= 0) return;
+        const input = createBaseBuilding({ buildingTypeId, sectionType: 'inputs', selectedItemId: itemId, ratePerMinute: amount, name, description });
+        if (draftState.basesMode === 'planning') input.planningOwnerPlanId = planId;
+        base.buildings.push(input);
+        const modal = draftState.productionPlanModalState;
+        if (modal.isOpen && modal.baseId === baseId && modal.editSectionId === planId) {
+            selectAddedProductionPlanInputs(draftState, baseId, [input.id]);
+        } else {
+            plan.inputs ??= [];
+            plan.inputs.push({ ...input });
+            recalculateInputRequirements(draftState, plan);
+        }
+    });
+    registrar.regEvent(appIds.events.PRODUCTION_PLAN_LINK_OUTPUT_INPUT, ({ draftState }, baseId, planId, sourceBaseId, sourceOutputBuildingId, targetBuildingTypeId, name, description) => {
+        const base = getBaseById(draftState.basesList, baseId);
+        const plan = base?.productions.find(plan => plan.id === planId);
+        if (!base || !plan) return;
+        const input = linkProductionPlanInput(draftState, baseId, planId, sourceBaseId, sourceOutputBuildingId, targetBuildingTypeId, name, description);
+        if (!input) return;
+        const modal = draftState.productionPlanModalState;
+        if (modal.isOpen && modal.baseId === baseId && modal.editSectionId === planId) {
+            selectAddedProductionPlanInputs(draftState, baseId, [input.id]);
+        } else {
+            plan.inputs = [...(plan.inputs ?? []).filter(candidate => candidate.id !== input.id), { ...input }];
+            recalculateInputRequirements(draftState, plan);
+        }
+    });
+    registrar.regEvent(appIds.events.PRODUCTION_PLAN_REMOVE_INPUT, ({ draftState }, baseId, planId, inputId) => {
+        const base = getBaseById(draftState.basesList, baseId);
+        const plan = base?.productions.find(plan => plan.id === planId);
+        if (!base || !plan?.inputs?.some(input => input.id === inputId)) return;
+        const modal = draftState.productionPlanModalState;
+        if (modal.isOpen && modal.baseId === baseId && modal.editSectionId === planId) {
+            return [['dispatch', [appIds.events.PRODUCTION_PLAN_MODAL_TOGGLE_INPUT, inputId]]];
+        }
+        plan.inputs = plan.inputs.filter(input => input.id !== inputId);
+        if (draftState.basesMode === 'planning') removeOwnedPlanningInput(base, inputId, planId);
+        recalculateInputRequirements(draftState, plan);
+    });
     registrar.regEvent(appIds.events.PRODUCTION_PLAN_ACTIVATE_SECTION, ({ draftState }, baseId, sectionId) => {
         const section = getBaseById(draftState.basesList, baseId)?.productions.find((plan) => plan.id === sectionId);
         if (section) {

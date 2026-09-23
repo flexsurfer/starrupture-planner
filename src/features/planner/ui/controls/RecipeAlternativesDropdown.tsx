@@ -5,6 +5,7 @@ import type { Item, RecipeAlternativePreset } from '@/app/uklad/model';
 import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
 import { BuildingImage, RecipeTypeIcon } from '@/shared/ui';
 import { RecipePreview } from './RecipePreview';
+import { useDropdownViewportPosition } from '@/shared/ui/useDropdownViewportPosition';
 
 const EMPTY_ITEMS_BY_ID: Record<string, Item> = {};
 const EMPTY_PINNED_SELECTIONS: Record<string, string> = {};
@@ -50,6 +51,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     const [isOpen, setIsOpen] = useState(false);
     const [isLoadOpen, setIsLoadOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement | null>(null);
+    const panelRef = useDropdownViewportPosition(isOpen && options.length > 0, rootRef);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -146,7 +148,8 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
 
             {isOpen && (
                 <div
-                    className={`fixed inset-x-2 bottom-2 z-30 flex max-sm:max-h-[85dvh] flex-col sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-2 sm:w-[min(92vw,560px)] ${panelMaxHeightClass} rounded-md border border-base-300 bg-base-100 shadow-xl`}
+                    ref={panelRef}
+                    className={`fixed inset-x-2 bottom-2 z-30 flex max-sm:max-h-[85dvh] flex-col sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-[var(--dropdown-right,0px)] sm:mt-2 sm:w-[min(92vw,560px)] ${panelMaxHeightClass} rounded-md border border-base-300 bg-base-100 shadow-xl`}
                 >
                     <div
                         className="relative z-20 shrink-0 rounded-t-md border-b border-base-300 bg-base-100 px-3 py-2"

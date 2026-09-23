@@ -134,6 +134,11 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.productionPlanModalState]: AppState['productionPlanModalState'];
     };
     events: {
+        [appIds.events.PLANNER_SET_EXTERNAL_INPUT]: [itemId: string, amount: number];
+        [appIds.events.PLANNER_REMOVE_EXTERNAL_INPUT]: [itemId: string];
+        [appIds.events.PRODUCTION_PLAN_ADD_INPUT]: [baseId: string, planId: string, itemId: string, amount: number, buildingTypeId: string, name?: string, description?: string];
+        [appIds.events.PRODUCTION_PLAN_LINK_OUTPUT_INPUT]: [baseId: string, planId: string, sourceBaseId: string, sourceOutputBuildingId: string, targetBuildingTypeId?: string, name?: string, description?: string];
+        [appIds.events.PRODUCTION_PLAN_REMOVE_INPUT]: [baseId: string, planId: string, inputId: string];
         [appIds.events.DATA_TRANSFER_EXPORT]: [selection: ArchiveSelection];
         [appIds.events.DATA_TRANSFER_PREVIEW_IMPORT]: [text: string];
         [appIds.events.DATA_TRANSFER_IMPORT_READY]: [archive: PlannerArchive];
@@ -218,6 +223,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.effects.loadGameData]: DataVersion;
     };
     subscriptions: {
+        [appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS]: { params: [baseId: string | null, planId: string | null, itemId: string | null]; result: LinkableOutputItem[] };
+        [appIds.subscriptions.PLANNER_EXTERNAL_INPUTS]: { params: []; result: Record<string, number> };
         [appIds.subscriptions.DATA_TRANSFER_PREVIEW]: { params: []; result: PlannerArchive | null };
         [appIds.subscriptions.DATA_TRANSFER_STATUS]: { params: []; result: TransferStatus | null };
         [appIds.subscriptions.APP_DATA_VERSION]: { params: []; result: DataVersion };

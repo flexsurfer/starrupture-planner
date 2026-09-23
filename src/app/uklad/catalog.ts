@@ -39,6 +39,11 @@ export const stateKeys = {
 
 export const appIds = {
     events: {
+        PLANNER_SET_EXTERNAL_INPUT: 'planner/set-external-input',
+        PLANNER_REMOVE_EXTERNAL_INPUT: 'planner/remove-external-input',
+        PRODUCTION_PLAN_ADD_INPUT: 'production-plans/add-input',
+        PRODUCTION_PLAN_LINK_OUTPUT_INPUT: 'production-plans/link-output-input',
+        PRODUCTION_PLAN_REMOVE_INPUT: 'production-plans/remove-input',
         DATA_TRANSFER_EXPORT: 'data-transfer/export',
         DATA_TRANSFER_PREVIEW_IMPORT: 'data-transfer/preview-import',
         DATA_TRANSFER_IMPORT_READY: 'data-transfer/import-ready',
@@ -71,6 +76,8 @@ export const appIds = {
         PRODUCTION_PLAN_MODAL_OPEN: 'production-plan-modal/open', PRODUCTION_PLAN_MODAL_CLOSE: 'production-plan-modal/close', PRODUCTION_PLAN_MODAL_SET_NAME: 'production-plan-modal/set-name', PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM: 'production-plan-modal/set-selected-item', PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'production-plan-modal/set-target-amount', PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'production-plan-modal/set-selected-corporation-level', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'production-plan-modal/set-recipe-selection', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS: 'production-plan-modal/set-recipe-selections', PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'production-plan-modal/toggle-input', PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'production-plan-modal/link-output-input', PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'production-plan-modal/set-match-inputs', PRODUCTION_PLAN_MODAL_SUBMIT: 'production-plan-modal/submit',
     },
     subscriptions: {
+        PRODUCTION_PLAN_LINKABLE_OUTPUTS: 'production-plans/linkable-outputs',
+        PLANNER_EXTERNAL_INPUTS: 'planner/external-inputs',
         DATA_TRANSFER_PREVIEW: 'data-transfer/preview',
         DATA_TRANSFER_STATUS: 'data-transfer/status',
         ITEMS_RECIPES_BY_OUTPUT_ITEM_ID: 'items/recipes-by-output-item-id',

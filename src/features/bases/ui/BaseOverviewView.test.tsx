@@ -193,11 +193,15 @@ it('allocates scarce item capacity and input supply to active plans first withou
   });
 });
 
-it('keeps one Add Plan action on every base tab', async () => {
+it('keeps one Add Plan action on production and plans tabs and hides it on buildings', async () => {
   const harness = setup({ id: 'base', name: 'Outpost', buildings: [], productions: [] }, buildings, true);
   for (const tab of ['Production', 'Plans', 'Buildings']) {
     fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${tab}`) }));
     await waitFor(() => expect(screen.getByRole('tab', { name: new RegExp(`^${tab}`) })).toHaveAttribute('aria-selected', 'true'));
+    if (tab === 'Buildings') {
+      expect(screen.queryByRole('button', { name: 'Add Plan' })).not.toBeInTheDocument();
+      continue;
+    }
     expect(screen.getAllByRole('button', { name: 'Add Plan' })).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'Add Plan' }));
     await waitFor(() => expect(harness.getState().productionPlanModalState).toMatchObject({ isOpen: true, editSectionId: null }));

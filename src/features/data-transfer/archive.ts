@@ -182,6 +182,11 @@ export function parseArchive(text: string): PlannerArchive {
         corporation(plan.selectedCorporationLevel);
         check(positive(plan.targetAmount));
         recipes(plan.recipeSelections);
+        optional(plan, 'externalInputs', inputs => {
+            object(inputs);
+            for (const [itemId, amount] of Object.entries(inputs)) check(string(itemId) && positive(amount));
+        });
+        plan.externalInputs ??= {};
         check(typeof plan.groupByStage === 'boolean');
         check(typeof plan.flowDirection === 'string' && ['LR', 'RL', 'TB', 'BT'].includes(plan.flowDirection));
         check(plan.activeView === 'graph' || plan.activeView === 'table');

@@ -74,7 +74,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-3xl">
+      <div role="dialog" aria-modal="true" aria-label={`Select Item for ${building.name}`} className="modal-box max-w-3xl">
         <h3 className="font-bold text-lg mb-4">Select Item for {building.name}</h3>
         
         <form onSubmit={handleSubmit}>
@@ -100,6 +100,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
                   <button
                     key={item.id}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => handleItemSelect(item.id)}
                     className={`btn btn-sm flex flex-col items-center gap-1 p-2 h-auto shadow-none ${
                       isSelected ? 'btn-primary border-transparent' : 'btn-ghost border-transparent bg-base-100 hover:bg-base-200'
@@ -123,6 +124,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
               <span className="label-text">Rate per Minute</span>
             </label>
             <input
+              aria-label="Rate per Minute"
               type="number"
               className="input input-bordered w-full"
               value={ratePerMinute}

@@ -17,6 +17,7 @@ import { ProductionFlowEdge } from './ProductionFlowEdge';
 import { DiagramSettings } from './DiagramSettings';
 import { NodeCard } from './NodeCard';
 import { usePinnableNodeHighlight } from './usePinnableNodeHighlight';
+import { usePlannerInputActions } from './usePlannerInputActions';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
@@ -28,6 +29,7 @@ const edgeTypes = { production: ProductionFlowEdge };
  */
 export const PlannerFlowDiagram: React.FC = () => {
     const runtime = useRuntime();
+    const { renderInputDialog, onRevertInput } = usePlannerInputActions();
     const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
         runtime.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, itemId, recipeKey]);
     }, [runtime]);
@@ -46,9 +48,11 @@ export const PlannerFlowDiagram: React.FC = () => {
             padding: 0,
         },
         data: {
-            label: <NodeCard onSelectRecipe={onSelectRecipe} node={flowNode} items={flowGraph.items!} outputColor={outputColor} />,
+            label: <NodeCard onSelectRecipe={onSelectRecipe} node={flowNode} items={flowGraph.items!} outputColor={outputColor}
+                renderInputDialog={selectedItemId.includes(flowNode.outputItem) ? undefined : renderInputDialog}
+                onRevertInput={selectedItemId.includes(flowNode.outputItem) ? undefined : onRevertInput} />,
         },
-    })), [flowGraph, onSelectRecipe]);
+    })), [flowGraph, onSelectRecipe, renderInputDialog, onRevertInput, selectedItemId]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);

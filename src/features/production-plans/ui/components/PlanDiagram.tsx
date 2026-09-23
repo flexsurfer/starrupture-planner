@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { ProductionFlowResult } from '@/features/planner/types';
 import { EmbeddedFlowDiagram } from './EmbeddedFlowDiagram';
+import { usePlanInputActions } from '@/features/production-plan-modal/ui/usePlanInputActions';
 
 const portraitQuery = '(max-width: 639px)';
 const subscribeToWidth = (onChange: () => void) => {
@@ -10,7 +11,8 @@ const subscribeToWidth = (onChange: () => void) => {
 };
 const isNarrowScreen = () => window.matchMedia?.(portraitQuery).matches ?? false;
 
-export const PlanDiagram = ({ productionFlow, name, targetItemId }: { productionFlow: ProductionFlowResult; name: string; targetItemId: string }) => {
+export const PlanDiagram = ({ productionFlow, name, targetItemId, baseId, planId }: { productionFlow: ProductionFlowResult; name: string; targetItemId: string; baseId: string; planId: string }) => {
+    const inputActions = usePlanInputActions(baseId, planId);
     const [expanded, setExpanded] = useState(false);
     const dialog = useRef<HTMLDialogElement>(null);
     const titleId = useId();
@@ -30,7 +32,7 @@ export const PlanDiagram = ({ productionFlow, name, targetItemId }: { production
 
     return <>
         <div className="relative h-[clamp(320px,60dvh,720px)] overflow-hidden rounded-b-lg" role="region" aria-label={`${name} diagram`}>
-            {!expanded && <EmbeddedFlowDiagram targetItemId={targetItemId} productionFlow={productionFlow} className="size-full" zoomOnScroll={false} direction={direction} />}
+            {!expanded && <EmbeddedFlowDiagram targetItemId={targetItemId} productionFlow={productionFlow} className="size-full" zoomOnScroll={false} direction={direction} {...inputActions} inputDisabledReason="Open the full-screen diagram to edit inputs" />}
             <button type="button" className="btn btn-sm absolute top-2 right-2 z-10 h-8 min-h-8 gap-1.5 border-base-300 bg-base-200 px-2 text-xs"
                 aria-label={`Expand ${name} diagram`} aria-haspopup="dialog" onClick={() => setExpanded(true)}>
                 <svg aria-hidden="true" className="size-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M6 2H2v4m8-4h4v4M2 10v4h4m8-4v4h-4" /></svg>
@@ -43,7 +45,7 @@ export const PlanDiagram = ({ productionFlow, name, targetItemId }: { production
                 <h2 id={titleId} className="min-w-0 text-sm font-semibold break-words">{name}</h2>
                 <button type="button" className="btn btn-sm btn-ghost h-8 min-h-8 shrink-0 px-2 text-xs" onClick={() => setExpanded(false)}>Close diagram</button>
             </div>
-            {expanded && <EmbeddedFlowDiagram targetItemId={targetItemId} productionFlow={productionFlow} className="min-h-0 flex-1" direction={direction} />}
+            {expanded && <EmbeddedFlowDiagram targetItemId={targetItemId} productionFlow={productionFlow} className="min-h-0 flex-1" direction={direction} {...inputActions} />}
         </dialog>
     </>;
 };

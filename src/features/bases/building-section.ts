@@ -18,6 +18,12 @@ import type { BuildingSectionType } from './types';
 export const isRawExtractor = (b: Building) =>
   b.type === 'production' && (b.recipes || []).some((recipe) => recipe.inputs.length === 0);
 
+/** Default extractor for a resource, in the same order as the building selector. */
+export function getRawResourceBuilding(buildings: Building[], itemId: string): Building | undefined {
+  return buildings.find(building => isRawExtractor(building) &&
+    building.recipes?.some(recipe => recipe.output.id === itemId && recipe.inputs.length === 0));
+}
+
 const LOGISTICS_EXCLUDED_OUTPUT_BUILDING_IDS = new Set<string>([
   ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
   ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,

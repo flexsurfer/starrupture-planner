@@ -18,9 +18,8 @@ vi.mock('@xyflow/react', async (importOriginal) => ({
         diagramProps = props;
         return <>{props.nodes?.map(node => <div key={node.id} data-testid={node.id}>
             {node.data.label as ReactNode}
-        </div>)}</>;
+        </div>)}{props.children}</>;
     },
-    Background: () => null,
     Controls: () => null,
 }));
 vi.mock('@/features/planner/ui/visualization/NodeCard', () => ({
@@ -99,6 +98,21 @@ it('uses the new edge style and lets users pin connections in saved base plans',
     expect(diagramProps.nodes?.find(node => node.id === 'node_1')?.position).toEqual({ x: 250, y: 120 });
     fireEvent.click(screen.getAllByRole('button', { name: 'Pin node to highlight connections' })[0]);
     expect(screen.getByRole('button', { name: 'Unpin node' })).toBeInTheDocument();
+});
+
+it('keeps visible background patterns independent of collapsed diagrams', () => {
+    const { container } = render(<>
+        <div hidden><EmbeddedFlowDiagram productionFlow={productionFlow} /></div>
+        <EmbeddedFlowDiagram productionFlow={productionFlow} />
+    </>);
+    const backgrounds = container.querySelectorAll('[data-testid="rf__background"]');
+    expect(backgrounds).toHaveLength(2);
+    const ids = Array.from(backgrounds, background => background.querySelector('pattern')!.id);
+    expect(new Set(ids).size).toBe(2);
+    backgrounds.forEach((background, index) => {
+        expect(background.querySelector('rect')).toHaveAttribute('fill', `url(#${ids[index]})`);
+        expect(background.querySelector('pattern circle')).not.toBeNull();
+    });
 });
 
 it('expands the diagram and returns to the inline view after closing or native dismissal', () => {

@@ -5,9 +5,12 @@ import { getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
 import { getItemColor } from '@/utils/itemColors';
 import { NodeCard } from './NodeCard';
 import { getFlowNodeId } from '@/features/planner/flow-node';
+import { usePlannerInputActions } from './usePlannerInputActions';
 
 export const PlannerProductionTable = () => {
     const runtime = useRuntime();
+    const inputActions = usePlannerInputActions();
+    const targetIds = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]);
     const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
         runtime.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, itemId, recipeKey]);
     }, [runtime]);
@@ -39,7 +42,8 @@ export const PlannerProductionTable = () => {
                                             key={getFlowNodeId(node)}
                                             className={`relative flex h-full min-w-0 flex-col rounded-md border bg-base-200 ${group.type === 'target' ? 'border-primary' : 'border-base-300'}`}
                                         >
-                                            <NodeCard compactOnMobile onSelectRecipe={onSelectRecipe} node={node} items={items} outputColor={getItemColor(node.outputItem, items)} />
+                                            <NodeCard compactOnMobile onSelectRecipe={onSelectRecipe} node={node} items={items} outputColor={getItemColor(node.outputItem, items)}
+                                                {...inputActions} inputDisabledReason={targetIds.includes(node.outputItem) ? 'The final output must be produced by this plan' : undefined} />
                                         </div>
                                     ))}
                                 </div>

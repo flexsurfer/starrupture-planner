@@ -2,8 +2,9 @@ import type { Node, Edge } from '@xyflow/react';
 import type { Item, FlowNode, FlowEdge, RawMaterialDeficit } from '@/features/planner/types';
 import { buildPlannerFlowGraph, type PlannerFlowDirection } from '@/features/planner/flow-graph';
 import { NodeCard } from './NodeCard';
+import type { NodeInputActions } from './NodeInputButton';
 
-export interface FlowDataGenerationParams {
+export interface FlowDataGenerationParams extends NodeInputActions {
     flowNodes: FlowNode[];
     flowEdges: FlowEdge[];
     items: Item[];
@@ -20,7 +21,7 @@ export interface FlowData {
 }
 
 /** Render embedded diagrams with the planner's default layout and edge styles. */
-export const generateReactFlowData = ({ flowNodes, flowEdges, items, onSelectRecipe, direction = 'LR', targetItemId, inputRequirements, showMissingInputs = false }: FlowDataGenerationParams): FlowData => {
+export const generateReactFlowData = ({ flowNodes, flowEdges, items, onSelectRecipe, direction = 'LR', targetItemId, inputRequirements, showMissingInputs = false, renderInputDialog, onRevertInput, inputDisabledReason }: FlowDataGenerationParams): FlowData => {
     const graph = buildPlannerFlowGraph(flowNodes, flowEdges, items, [], direction);
     return {
         nodes: graph.nodes.map(({ flowNode, outputColor, ...node }) => ({
@@ -37,6 +38,9 @@ export const generateReactFlowData = ({ flowNodes, flowEdges, items, onSelectRec
             },
             data: {
                 label: <NodeCard node={flowNode} items={items} onSelectRecipe={onSelectRecipe} outputColor={outputColor}
+                    renderInputDialog={flowNode.outputItem === targetItemId ? undefined : renderInputDialog}
+                    onRevertInput={flowNode.outputItem === targetItemId ? undefined : onRevertInput}
+                    inputDisabledReason={inputDisabledReason}
                     inputRequirement={flowNode.nodeType === 'input' ? inputRequirements?.get(flowNode.baseBuildingId ?? '') : undefined} showMissingInput={showMissingInputs} />,
             },
         })),

@@ -6,6 +6,7 @@ import { registerBasesModule } from '@/features/bases/module';
 import { registerBuildingsModule } from '@/features/buildings/module';
 import { registerCorporationsModule } from '@/features/corporations/module';
 import { registerItemsModule } from '@/features/items/module';
+import { registerProductionPlansModule } from '@/features/production-plans/module';
 import { registerProductionPlanModalModule } from './module';
 
 describe('production-plan-modal Uklad module', () => {
@@ -15,6 +16,7 @@ describe('production-plan-modal Uklad module', () => {
         runtime.registerModule(registerCorporationsModule);
         runtime.registerModule(registerBuildingsModule);
         runtime.registerModule(registerItemsModule);
+        runtime.registerModule(registerProductionPlansModule);
         runtime.registerModule(registerProductionPlanModalModule);
         const harness = createUkladTestHarness(runtime);
         harness.restoreState({

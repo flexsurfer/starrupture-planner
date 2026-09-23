@@ -2,6 +2,11 @@ import type { Base, BaseBuilding, PlanRequiredBuilding } from '@/app/uklad/model
 import type { ProductionFlowResult } from '@/features/planner/types';
 import { resolveOutputBuilding } from './planOutputAllocations';
 
+export function computeUsedInputSnapshots(flow: ProductionFlowResult, inputBuildings: BaseBuilding[] = []): BaseBuilding[] {
+    const usedIds = new Set(flow.nodes.filter(node => node.nodeType === 'input').map(node => node.baseBuildingId));
+    return inputBuildings.filter(input => usedIds.has(input.id));
+}
+
 export type LinkedOutputStatus = 'ok' | 'missing-base' | 'missing-output' | 'missing-plan' | 'unconfigured-output' | 'item-changed';
 
 export interface LinkedOutputResolution {

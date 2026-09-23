@@ -4,7 +4,7 @@ import { useSubscription } from '@/app/uklad/bindings';
 import type { Building, Item } from '@/app/uklad/model';
 import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem, LinkedInputReference } from '@/features/bases/types';
 import { BuildingImage, ClippedSelect, ItemImage } from '@/shared/ui';
-import { isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
+import { getRawResourceBuilding, isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
 import { MAX_BULK_BUILDING_COUNT, sanitizeBulkBuildingCount } from '@/features/bases/building-counts';
 import {
   DRONE_MERGER_3_TO_1_BUILDING_ID,
@@ -16,15 +16,17 @@ import {
 import { getDefaultOutputCapacityPerMinute } from '@/utils/planOutputAllocations';
 import { SelectItemModal } from './SelectItemModal';
 import { LinkOutputModal } from '@/features/production-plan-modal/ui';
-import { AdvancedModeSwitch } from '../components/AdvancedModeSwitch';
 
 interface AddBuildingCardModalProps {
   isOpen: boolean;
   sectionType: BuildingSectionType;
   baseId?: string;
+  planId?: string;
   onClose: () => void;
   onAdd: (request: AddBuildingRequest) => void;
   requireItemConfiguration?: boolean;
+  initialItemId?: string;
+  initialRatePerMinute?: number;
 }
 
 type ConfigurationMode = 'manual' | 'linked' | 'plan';
@@ -157,9 +159,12 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   isOpen,
   sectionType,
   baseId,
+  planId,
   onClose,
   onAdd,
   requireItemConfiguration = false,
+  initialItemId,
+  initialRatePerMinute = 60,
 }) => {
   const buildings = useSubscription([appIds.subscriptions.BASES_AVAILABLE_BUILDINGS_FOR_SECTION, sectionType]);
   const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
@@ -168,7 +173,10 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const selectedBase = useSubscription(
     baseId ? [appIds.subscriptions.BASES_BASE_BY_ID, baseId] : [appIds.subscriptions.BASES_SELECTED_BASE]
   );
-  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
+  const initialBuilding = sectionType === 'inputs' && initialItemId
+    ? getRawResourceBuilding(buildings, initialItemId)
+    : undefined;
+  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(initialBuilding ?? null);
   const [customName, setCustomName] = useState('');
   const [customDescription, setCustomDescription] = useState('');
   const [count, setCount] = useState('1');
@@ -180,7 +188,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const [priority, setPriority] = useState('');
   const [selectedLinkedInputKey, setSelectedLinkedInputKey] = useState('');
   const [configurationMode, setConfigurationMode] = useState<ConfigurationMode>('manual');
-  const [showSelectItemModal, setShowSelectItemModal] = useState(false);
+  const [showSelectItemModal, setShowSelectItemModal] = useState(!!initialBuilding);
   const [showLinkOutputModal, setShowLinkOutputModal] = useState(false);
 
   const plans = selectedBase?.productions || [];
@@ -250,9 +258,12 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const selectedLinkedInputLabel = selectedLinkedInputTarget
     ? `${selectedLinkedInputTarget.baseName} / ${selectedLinkedInputTarget.name}`
     : 'No target';
+  const initialItem = initialItemId ? itemsById[initialItemId] : undefined;
+  const hideExtractors = sectionType === 'inputs' && !!initialItem && initialItem.type !== 'raw';
   const buildingGroups = useMemo(
-    () => groupBuildingsForSection(buildings, sectionType),
-    [buildings, sectionType]
+    () => groupBuildingsForSection(buildings, sectionType)
+      .filter(group => !hideExtractors || group.id !== 'extractors'),
+    [buildings, sectionType, hideExtractors]
   );
 
   if (!isOpen) {
@@ -448,7 +459,6 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
         {/* Header - fixed */}
         <div className="px-6 pt-6 pb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
           <h3 className="font-bold text-lg">Select Building</h3>
-          {sectionType === 'inputs' && <AdvancedModeSwitch />}
         </div>
 
         {/* Buildings grid - scrollable */}
@@ -478,6 +488,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                             ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
                             : 'border-base-300 bg-base-100 hover:border-primary/70 hover:bg-base-100/80'
                         }`}
+                        aria-pressed={isSelected}
                         onClick={() => handleBuildingClick(building)}
                         title={building.name}
                       >
@@ -818,8 +829,8 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
           key={selectedBuilding.id}
           isOpen={showSelectItemModal}
           building={selectedBuilding}
-          currentItemId={selectedItemId || undefined}
-          currentRatePerMinute={Number(ratePerMinute) > 0 ? Number(ratePerMinute) : undefined}
+          currentItemId={selectedItemId || (initialItemId && (!isRawExtractor(selectedBuilding) || selectedBuilding.recipes?.some(recipe => recipe.output.id === initialItemId)) ? initialItemId : undefined)}
+          currentRatePerMinute={Number(ratePerMinute) > 0 ? Number(ratePerMinute) : initialItemId ? initialRatePerMinute : undefined}
           onClose={() => setShowSelectItemModal(false)}
           onConfirm={(itemId, configuredRatePerMinute) => {
             handleItemConfigured(itemId, configuredRatePerMinute);
@@ -830,6 +841,9 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
       {selectedBuildingSupportsLinking && (
         <LinkOutputModal
           isOpen={showLinkOutputModal}
+          baseId={baseId}
+          planId={planId}
+          itemId={initialItemId}
           onClose={() => setShowLinkOutputModal(false)}
           onSelect={(output) => {
             handleLinkedOutputConfigured(output);

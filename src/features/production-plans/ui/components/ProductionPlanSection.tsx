@@ -30,7 +30,7 @@ const formatRatePerMinute = (value: number | undefined): string => {
 const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, sectionId, name, targetItemId }) => {
     const productionFlow = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, sectionId]) || EMPTY_PRODUCTION_FLOW;
 
-    return <PlanDiagram productionFlow={productionFlow} name={name} targetItemId={targetItemId} />;
+    return <PlanDiagram productionFlow={productionFlow} name={name} targetItemId={targetItemId} baseId={baseId} planId={sectionId} />;
 };
 
 export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ baseId, sectionId }) => {

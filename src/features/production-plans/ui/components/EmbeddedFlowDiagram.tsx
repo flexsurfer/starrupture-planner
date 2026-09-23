@@ -1,5 +1,5 @@
 import { appIds } from '@/app/uklad/catalog';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useId, useMemo } from 'react';
 import {
     ReactFlow,
     type Node,
@@ -21,12 +21,13 @@ import { generateReactFlowData } from '@/features/planner/ui/visualization';
 import { ProductionFlowEdge } from '@/features/planner/ui/visualization/ProductionFlowEdge';
 import { usePinnableNodeHighlight } from '@/features/planner/ui/visualization/usePinnableNodeHighlight';
 import { addDiagramInputRequirements } from '@/features/production-plans/diagram-inputs';
+import type { NodeInputActions } from '@/features/planner/ui/visualization/NodeInputButton';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
 const edgeTypes = { production: ProductionFlowEdge };
 
-interface EmbeddedFlowDiagramInnerProps {
+interface EmbeddedFlowDiagramInnerProps extends NodeInputActions {
     /** Pre-computed production flow result from a subscription */
     productionFlow: ProductionFlowResult;
     interactive?: boolean;
@@ -48,8 +49,12 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     direction = 'LR',
     targetItemId,
     onSelectRecipe,
+    renderInputDialog,
+    onRevertInput,
+    inputDisabledReason,
 }) => {
     const { fitView } = useReactFlow();
+    const backgroundId = useId();
     const width = useStore(state => state.width);
     const height = useStore(state => state.height);
 
@@ -75,8 +80,11 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
             onSelectRecipe,
             direction,
             targetItemId,
+            renderInputDialog: interactive ? renderInputDialog : undefined,
+            onRevertInput: interactive ? onRevertInput : undefined,
+            inputDisabledReason,
         });
-    }, [productionFlow, items, buildings, mode, onSelectRecipe, direction, targetItemId]);
+    }, [productionFlow, items, buildings, mode, onSelectRecipe, direction, targetItemId, renderInputDialog, onRevertInput, inputDisabledReason, interactive]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -138,14 +146,14 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
                 nodesConnectable={false}
                 elementsSelectable={interactive}
             >
-                <Background />
+                <Background id={backgroundId} />
                 {interactive && <Controls showInteractive={false} />}
             </ReactFlow>
         </div>
     );
 };
 
-interface EmbeddedFlowDiagramProps {
+interface EmbeddedFlowDiagramProps extends NodeInputActions {
     /** Pre-computed production flow result from a subscription */
     productionFlow: ProductionFlowResult;
     className?: string;
@@ -171,6 +179,9 @@ export const EmbeddedFlowDiagram: React.FC<EmbeddedFlowDiagramProps> = ({
     direction,
     targetItemId,
     onSelectRecipe,
+    renderInputDialog,
+    onRevertInput,
+    inputDisabledReason,
 }) => {
     return (
         <div className={`${className}`}>
@@ -183,6 +194,9 @@ export const EmbeddedFlowDiagram: React.FC<EmbeddedFlowDiagramProps> = ({
                     direction={direction}
                     targetItemId={targetItemId}
                     onSelectRecipe={onSelectRecipe}
+                    renderInputDialog={renderInputDialog}
+                    onRevertInput={onRevertInput}
+                    inputDisabledReason={inputDisabledReason}
                 />
             </ReactFlowProvider>
         </div>

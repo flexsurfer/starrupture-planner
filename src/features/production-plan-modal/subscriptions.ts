@@ -2,15 +2,14 @@ import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { BasesById, Building as DbBuilding, Corporation, CreateProductionPlanModalState, Item } from '@/app/uklad/model';
-import type { BaseInputItem, LinkableOutputItem } from '@/features/bases/types';
+import type { BaseInputItem } from '@/features/bases/types';
 import type { CorporationLevelInfo, ProductionFlowResult, RawMaterialDeficitWithName } from '@/features/planner/types';
 import { buildProductionFlow } from '@/features/planner/production-flow';
 import { buildRecipeOptionsForOutputItems } from '@/features/planner/recipe-options';
 import { collectConfiguredSectionItems } from '@/features/bases/derived-subscriptions';
-import { isLogisticsExcludedOutputBuildingId } from '@/features/bases/building-section';
 import { getItemName } from '@/utils/itemUtils';
 import { getSelectedFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
-import { canSelectPlanningInput, canUsePlanningOutput } from '@/features/production-plans/planning-endpoints';
+import { canSelectPlanningInput } from '@/features/production-plans/planning-endpoints';
 
 const EMPTY_PRODUCTION_FLOW: ProductionFlowResult = { nodes: [], edges: [], rawMaterialDeficits: [] };
 const isLauncherEnabled = (corporationLevel: CreateProductionPlanModalState['selectedCorporationLevel']): boolean => corporationLevel !== null && corporationLevel !== undefined;
@@ -84,18 +83,9 @@ export const registerProductionPlanModalSubscriptions: UkladModule<UkladRegistra
         return { inputItems, selectedInputIds: modalState.selectedInputIds || [] };
     });
 
-    registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS, () => [[appIds.subscriptions.BASES_LIST], [appIds.subscriptions.BUILDINGS_BY_ID_MAP], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE], [appIds.subscriptions.BASES_MODE]], ([bases, buildingsById, itemsMap, modalState, mode]) => {
-        const linkableOutputs: LinkableOutputItem[] = [];
-        const targetPlan = bases.find(base => base.id === modalState.baseId)?.productions.find(plan => plan.id === modalState.editSectionId);
-        bases.forEach((base) => collectConfiguredSectionItems(base, buildingsById, itemsMap, 'outputs').forEach((entry) => {
-            if (mode === 'planning') {
-                const output = base.buildings.find(building => building.id === entry.baseBuildingId)!;
-                if (!targetPlan || !canUsePlanningOutput(bases, base, output, modalState.baseId!, targetPlan)) return;
-            }
-            if (!isLogisticsExcludedOutputBuildingId(entry.building.id)) linkableOutputs.push({ baseId: base.id, baseName: base.name, isCurrentBase: base.id === modalState.baseId, baseBuildingId: entry.baseBuildingId, item: entry.item, ratePerMinute: entry.ratePerMinute, building: entry.building, name: entry.name, description: entry.description });
-        }));
-        return linkableOutputs.sort((left, right) => left.isCurrentBase !== right.isCurrentBase ? (left.isCurrentBase ? -1 : 1) : left.baseName.localeCompare(right.baseName) || left.item.name.localeCompare(right.item.name));
-    });
+    registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS,
+        () => [[appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS, null, null, null]],
+        ([outputs]) => outputs);
 
     registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID, () => [[appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE]], ([modalState]: [CreateProductionPlanModalState]) => modalState.selectedItemId);
     registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_RAW_MATERIAL_DEFICITS, () => [[appIds.subscriptions.PRODUCTION_PLAN_MODAL_FLOW], [appIds.subscriptions.ITEMS_LIST]], ([productionFlow, items]: [ProductionFlowResult, Item[]]): RawMaterialDeficitWithName[] => (productionFlow.rawMaterialDeficits || []).map((deficit) => ({ ...deficit, itemName: getItemName(deficit.itemId, items) })));

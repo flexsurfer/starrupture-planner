@@ -20,6 +20,7 @@ import type {
     PlannerProductionFlowResult,
     TargetFlowNode,
     RawMaterialDeficit,
+    InputBuildingSnapshot,
 } from './types';
 import { getFlowNodeId } from './flow-node';
 import { ORBITAL_CARGO_LAUNCHER_BUILDING_ID } from '@/constants/buildingIds';
@@ -182,8 +183,9 @@ export function buildMultiTargetProductionFlow(
     targets: ProductionTarget[],
     buildings: Building[],
     recipeSelections: Record<string, string> = {},
+    inputBuildings: InputBuildingSnapshot[] = [],
 ): PlannerProductionFlowResult {
-    const flow = buildFlow({ targetItemId: '', recipeSelections }, buildings, targets);
+    const flow = buildFlow({ targetItemId: '', recipeSelections, inputBuildings }, buildings, targets);
     // An existing consumer edge identifies a target used in another target's tree.
     // Add its final demand after calculation; independent targets keep the original flow.
     const consumedItems = new Set(flow.edges.map(edge => edge.itemId));

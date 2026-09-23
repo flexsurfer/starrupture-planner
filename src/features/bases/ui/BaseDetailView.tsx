@@ -96,12 +96,12 @@ export const BaseDetailView: React.FC = () => {
                 )}
               </button>}
             </div>
-            <button type="button"
+            {activeTab !== 'buildings' && <button type="button"
               className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"
               aria-label="Add Plan" title="Add Plan"
               onClick={() => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN])}>
               <span aria-hidden="true">＋</span><span className="hidden sm:inline">Add Plan</span>
-            </button>
+            </button>}
           </div>
 
           <div className="flex-1 overflow-auto min-h-0">

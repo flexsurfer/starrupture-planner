@@ -14,6 +14,7 @@ export interface PlannerTab {
     targetAmount: number;
     multiTargets: { itemId: string; amount: number }[];
     recipeSelections: Record<string, string>;
+    externalInputs: Record<string, number>;
     groupByStage: boolean;
     flowDirection: PlannerFlowDirection;
     activeView: PlannerView;
@@ -36,6 +37,7 @@ export function createPlannerTab(id: string, name: string, mode: PlannerMode, ac
         targetAmount: 60,
         multiTargets: [],
         recipeSelections: {},
+        externalInputs: {},
         groupByStage: false,
         flowDirection: 'LR',
     };

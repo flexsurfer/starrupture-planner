@@ -153,6 +153,69 @@ afterAll(() => {
 });
 
 describe('headless application E2E', () => {
+    it('converts ingredients to external resources and restores production in planner and base diagrams', async () => {
+        const scenario = await createSeededScenario();
+        const planner = mountView(scenario, 'Planner input controls', {
+            inputs: [appIds.subscriptions.PLANNER_EXTERNAL_INPUTS],
+            flow: [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
+            stats: [appIds.subscriptions.PLANNER_STATS_SUMMARY],
+        } as const);
+        await dispatchAll(scenario, [
+            [appIds.events.PLANNER_CREATE_TAB, 'inputs', 'External resources', 'single'],
+            [appIds.events.PLANNER_SET_SELECTED_ITEM, 'steel-plate'],
+            [appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'iron-plate', 60],
+        ]);
+        expect(planner.value('inputs')).toEqual({ 'iron-plate': 60 });
+        expect(planner.value('flow').nodes).toHaveLength(2);
+        expect(planner.value('stats').totalBuildings).toBe(1);
+        await dispatch(scenario, [appIds.events.PLANNER_REMOVE_EXTERNAL_INPUT, 'iron-plate']);
+        expect(planner.value('flow').nodes).toHaveLength(3);
+        expect(planner.value('inputs')).toEqual({});
+        planner.unmount();
+
+        const bases = mountView(scenario, 'Base plans', { base: [appIds.subscriptions.BASES_SELECTED_BASE] } as const);
+        await dispatchAll(scenario, [
+            [appIds.events.BASES_SET_MODE, 'planning'],
+            [appIds.events.BASES_CREATE_BASE, 'External resource base'],
+            [appIds.events.PRODUCTION_PLAN_MODAL_OPEN],
+            [appIds.events.PRODUCTION_PLAN_MODAL_SET_NAME, 'Steel'],
+            [appIds.events.PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM, 'steel-plate'],
+            [appIds.events.PRODUCTION_PLAN_MODAL_CLOSE],
+        ]);
+        const baseId = bases.value('base')!.id;
+        const planId = bases.value('base')!.productions[0].id;
+        const diagram = mountView(scenario, 'Saved plan diagram', {
+            flow: [appIds.subscriptions.PRODUCTION_PLAN_SECTION_FLOW_BY_ID, baseId, planId],
+        } as const);
+        const original = diagram.value('flow');
+        await dispatch(scenario, [appIds.events.PRODUCTION_PLAN_ADD_INPUT, baseId, planId, 'iron-plate', 60, 'package_receiver']);
+        expect(diagram.value('flow')?.nodes).toHaveLength(2);
+        expect(diagram.value('flow')?.rawMaterialDeficits).toEqual([]);
+        const input = bases.value('base')!.productions[0].inputs![0];
+        expect(input.planningOwnerPlanId).toBe(planId);
+        await dispatch(scenario, [appIds.events.PRODUCTION_PLAN_REMOVE_INPUT, baseId, planId, input.id]);
+        expect(bases.value('base')!.buildings.some(building => building.id === input.id)).toBe(false);
+        expect(diagram.value('flow')).toEqual(original);
+        await dispatch(scenario, [appIds.events.BASES_ADD_BUILDINGS, baseId, 'package_receiver', 'outputs', 1,
+            'Iron supply', undefined, 'iron-plate', 60]);
+        const targets = mountView(scenario, 'Card input targets', {
+            outputs: [appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS, baseId, planId, 'iron-plate'],
+        } as const);
+        expect(targets.value('outputs')).toHaveLength(1);
+        const output = targets.value('outputs')[0];
+        await dispatch(scenario, [appIds.events.PRODUCTION_PLAN_LINK_OUTPUT_INPUT, baseId, planId, output.baseId, output.baseBuildingId]);
+        expect(targets.value('outputs')).toEqual([]);
+        expect(diagram.value('flow')?.nodes).toHaveLength(2);
+        const linkedInput = bases.value('base')!.productions[0].inputs![0];
+        expect(linkedInput.linkedOutput).toMatchObject({ baseId, buildingId: output.baseBuildingId });
+        await dispatch(scenario, [appIds.events.PRODUCTION_PLAN_REMOVE_INPUT, baseId, planId, linkedInput.id]);
+        expect(targets.value('outputs')).toHaveLength(1);
+        expect(diagram.value('flow')).toEqual(original);
+        targets.unmount();
+        diagram.unmount();
+        bases.unmount();
+    });
+
     it('exports selected work, previews imports, and adds new copies through the settings flow', async () => {
         const exported: PlannerArchive[] = [];
         const scenario = createScenario({ effects: {

@@ -1,145 +1,58 @@
 import { appIds } from '@/app/uklad/catalog';
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { LinkableOutputItem } from '@/features/bases/types';
-import { BuildingImage, ItemImage } from '@/shared/ui';
+import { LinkOutputSelector } from './LinkOutputSelector';
 import { AdvancedModeSwitch } from '@/features/bases/ui/components/AdvancedModeSwitch';
 
 interface LinkOutputModalProps {
     isOpen: boolean;
     showModeSwitch?: boolean;
+    baseId?: string;
+    planId?: string;
+    itemId?: string;
+    title?: string;
     onClose: () => void;
     onSelect: (output: LinkableOutputItem) => void;
 }
 
 const EMPTY_LINKABLE_OUTPUTS: LinkableOutputItem[] = [];
 
-function formatRate(value: number): string {
-    const rounded = Math.round(value * 10) / 10;
-    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-}
-
-export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClose, onSelect, showModeSwitch = false }) => {
+export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClose, onSelect, showModeSwitch = false, baseId, planId, itemId, title }) => {
     const planning = useSubscription([appIds.subscriptions.BASES_MODE]) === 'planning';
-    const outputs = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS]) || EMPTY_LINKABLE_OUTPUTS;
-    const [searchQuery, setSearchQuery] = useState('');
-
-    const filteredOutputs = useMemo(() => {
-        const query = searchQuery.trim().toLowerCase();
-        if (!query) return outputs;
-
-        return outputs.filter((output) => {
-            const haystack = [
-                output.baseName,
-                output.name,
-                output.description,
-                output.item.name,
-                output.item.id,
-                output.building.name,
-            ].join(' ').toLowerCase();
-            return haystack.includes(query);
-        });
-    }, [outputs, searchQuery]);
-
+    const outputs = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS, baseId ?? null, planId ?? null, itemId ?? null]) || EMPTY_LINKABLE_OUTPUTS;
     if (!isOpen) return null;
-
-    const handleSelect = (output: LinkableOutputItem) => {
-        onSelect(output);
-        setSearchQuery('');
-    };
-
-    const handleClose = () => {
-        setSearchQuery('');
-        onClose();
-    };
 
     return (
         <div className="modal modal-open">
-            <div role="dialog" aria-modal="true" aria-label={planning ? 'Add external item' : 'Link Output'} className="modal-box max-w-3xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+            <div role="dialog" aria-modal="true" aria-label={title ?? (planning ? 'Add external item' : 'Link Output')} className="modal-box max-w-3xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
                 <div className="px-6 pt-5 pb-3 border-b border-base-300">
                     <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="mr-auto font-bold text-lg">{planning ? 'Add external item' : 'Link Output'}</h3>
+                        <h3 className="mr-auto font-bold text-lg">{title ?? (planning ? 'Add external item' : 'Link Output')}</h3>
                         {showModeSwitch && <AdvancedModeSwitch />}
                         <button
                             type="button"
                             className="btn btn-sm btn-circle btn-ghost"
-                            onClick={handleClose}
+                            onClick={onClose}
                             aria-label="Close modal"
                         >
                             ✕
                         </button>
                     </div>
-                    <input
-                        type="text"
-                        className="input input-bordered input-sm w-full mt-3"
-                        placeholder="Search outputs..."
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        autoFocus
-                    />
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4">
-                    {filteredOutputs.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-base-300 bg-base-200/40 px-4 py-5 text-sm text-base-content/65">
-                            {planning ? 'No available outputs found. Create a plan in another base, or configure a free output in Advanced mode.' : 'No configured outputs found.'}
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {filteredOutputs.map((output) => {
-                                const displayName = output.name || output.item.name;
-                                return (
-                                    <button
-                                        key={`${output.baseId}:${output.baseBuildingId}`}
-                                        type="button"
-                                        onClick={() => handleSelect(output)}
-                                        className="rounded-lg border border-base-300 bg-base-100 hover:border-primary hover:bg-primary/5 px-3 py-2 text-left transition-colors"
-                                        title={`${output.baseName}: ${output.item.name} - ${formatRate(output.ratePerMinute)}/min`}
-                                    >
-                                        <div className="flex items-start gap-3 min-w-0">
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                <BuildingImage
-                                                    buildingId={output.building.id}
-                                                    building={output.building}
-                                                    size="small"
-                                                    className="w-5 h-5"
-                                                />
-                                                <ItemImage
-                                                    itemId={output.item.id}
-                                                    item={output.item}
-                                                    size="small"
-                                                    className="w-5 h-5"
-                                                />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <span className="font-medium text-sm truncate">{displayName}</span>
-                                                    {output.isCurrentBase && (
-                                                        <span className="badge badge-xs badge-outline shrink-0">This base</span>
-                                                    )}
-                                                </div>
-                                                <div className="text-xs text-base-content/65 truncate">
-                                                    {output.baseName} / {output.building.name}
-                                                </div>
-                                                <div className="text-xs text-base-content/80 mt-1">
-                                                    {output.item.name} - {formatRate(output.ratePerMinute)}/min
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
+                    <LinkOutputSelector outputs={outputs} onSelect={onSelect}
+                        emptyMessage={planning ? 'No available outputs found. Create a plan in another base, or configure a free output in Advanced mode.' : 'No configured outputs found.'} />
                 </div>
 
                 <div className="px-6 py-3 border-t border-base-300 flex justify-end">
-                    <button type="button" className="btn btn-sm" onClick={handleClose}>
+                    <button type="button" className="btn btn-sm" onClick={onClose}>
                         Cancel
                     </button>
                 </div>
             </div>
-            <div className="modal-backdrop" onClick={handleClose}></div>
+            <div className="modal-backdrop" onClick={onClose}></div>
         </div>
     );
 };

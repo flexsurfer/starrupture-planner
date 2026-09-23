@@ -1,3 +1,4 @@
+import { PlannerExternalInputs } from './controls/PlannerExternalInputs';
 import { PlanSettings } from './PlanSettings';
 import { PlannerTabs, PlannerTabCreation } from './PlannerTabs';
 import { appIds } from '@/app/uklad/catalog';
@@ -52,6 +53,7 @@ const PlannerPageInner: React.FC = () => {
                         {mode === 'single' && <PlannerCorporationLevelSelector className="max-w-full sm:max-w-md" />}
                         <div className="flex items-center gap-1.5">
                             <PlannerRecipeSelector />
+                            <PlannerExternalInputs />
                             <PlanSettings />
                         </div>
                     </div>

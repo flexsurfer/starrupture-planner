@@ -2,10 +2,13 @@ import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { Base, BaseBuilding, Building as DbBuilding, BuildingsByIdMap, Corporation, CorporationLevelSelection, Item, Production } from '@/app/uklad/model';
-import type { BuildingRequirement, InputRequirement, ProductionPlanRequirementsStatus, ProductionPlanSectionStats, ProductionPlanSectionViewModel, SharedInputShortage } from '@/features/bases/types';
+import type { LinkableOutputItem, BuildingRequirement, InputRequirement, ProductionPlanRequirementsStatus, ProductionPlanSectionStats, ProductionPlanSectionViewModel, SharedInputShortage } from '@/features/bases/types';
 import type { ProductionFlowResult } from '@/features/planner/types';
 import { buildProductionFlow } from '@/features/planner/production-flow';
 import { buildActivePlanOccupancy } from '@/features/bases/active-plan-occupancy';
+import { collectConfiguredSectionItems } from '@/features/bases/derived-subscriptions';
+import { isLogisticsExcludedOutputBuildingId } from '@/features/bases/building-section';
+import { canUsePlanningOutput } from './planning-endpoints';
 import { calculateSharedInputShortages } from './shared-input-shortages';
 import { computeRequiredBuildings, getFlowInputBuildings, resolveInputBuilding, resolveLinkedOutput, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
 
@@ -14,6 +17,27 @@ const EMPTY_PRODUCTION_PLAN_SECTION_STATS: ProductionPlanSectionStats = { buildi
 const isLauncherEnabled = (corporationLevel?: CorporationLevelSelection | null): boolean => corporationLevel !== null && corporationLevel !== undefined;
 
 export const registerProductionPlansSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS,
+        () => [[appIds.subscriptions.BASES_LIST], [appIds.subscriptions.BUILDINGS_BY_ID_MAP], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE], [appIds.subscriptions.BASES_MODE]],
+        ([bases, buildingsById, itemsMap, modalState, mode], baseId, planId, itemId) => {
+            const targetBaseId = baseId ?? modalState.baseId;
+            const targetPlanId = planId ?? (targetBaseId === modalState.baseId ? modalState.editSectionId : null);
+            const targetPlan = bases.find(base => base.id === targetBaseId)?.productions.find(plan => plan.id === targetPlanId);
+            const outputs: LinkableOutputItem[] = [];
+            for (const base of bases) {
+                for (const entry of collectConfiguredSectionItems(base, buildingsById, itemsMap, 'outputs')) {
+                    if (itemId && entry.item.id !== itemId) continue;
+                    if (isLogisticsExcludedOutputBuildingId(entry.building.id)) continue;
+                    if (mode === 'planning') {
+                        const output = base.buildings.find(building => building.id === entry.baseBuildingId)!;
+                        if (!targetBaseId || !targetPlan || !canUsePlanningOutput(bases, base, output, targetBaseId, targetPlan)) continue;
+                    }
+                    outputs.push({ ...entry, baseId: base.id, baseName: base.name, isCurrentBase: base.id === targetBaseId });
+                }
+            }
+            return outputs.sort((left, right) => left.isCurrentBase !== right.isCurrentBase ? (left.isCurrentBase ? -1 : 1) : left.baseName.localeCompare(right.baseName) || left.item.name.localeCompare(right.item.name));
+        });
+
     registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_SECTION_IDS, () => [[appIds.subscriptions.BASES_SELECTED_BASE]], ([selectedBase], ..._params) => {
         void _params;
         return selectedBase ? selectedBase.productions.map((section) => section.id) : [];

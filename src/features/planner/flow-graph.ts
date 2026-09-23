@@ -73,6 +73,7 @@ export function buildPlannerFlowGraph(flowNodes: PlannerFlowNode[], flowEdges: F
             targetPosition,
             flowNode,
             outputColor: getItemColor(flowNode.outputItem, items),
+            ...(flowNode.nodeType === 'input' && { style: { borderColor: 'color-mix(in oklab, var(--color-teal-300) 70%, transparent)' } }),
             ...(targetNodeIds.has(getFlowNodeId(flowNode)) && { style: { borderColor: 'var(--color-primary)' } }),
         };
     });

@@ -35,11 +35,9 @@ export const BuildingSection: React.FC<BuildingSectionProps> = ({ title, descrip
         {stats.totalPowerConsumption > 0 && <span title="Power consumption">⚡ −{stats.totalPowerConsumption} MW</span>}
       </>}
       actions={
-        <button type="button" className="btn btn-sm btn-ghost h-8 min-h-8 gap-1 px-2 text-xs font-normal text-base-content/65"
+        <button type="button" className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"
           aria-label={`Add ${title.toLowerCase()} building`} onClick={onAdd}>
-          <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m7-7H5" />
-          </svg>
+          <span aria-hidden="true">＋</span>
           Add
         </button>
       }

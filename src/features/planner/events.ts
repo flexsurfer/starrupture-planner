@@ -30,6 +30,17 @@ function validateTargets(state: AppState, tab: PlannerTab, ids: string[], select
 }
 
 export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regEvent(appIds.events.PLANNER_SET_EXTERNAL_INPUT, ({ draftState }, itemId, amount) => {
+        const tab = getActivePlannerTab(draftState);
+        if (!tab || !draftState.itemsList.some(item => item.id === itemId) || !Number.isFinite(amount) || amount <= 0) return;
+        if (tab.mode === 'multi' ? tab.multiTargets.some(target => target.itemId === itemId) : tab.selectedItemId === itemId) return;
+        tab.externalInputs ??= {};
+        tab.externalInputs[itemId] = amount;
+    });
+    registrar.regEvent(appIds.events.PLANNER_REMOVE_EXTERNAL_INPUT, ({ draftState }, itemId) => {
+        const tab = getActivePlannerTab(draftState);
+        if (tab?.externalInputs) delete tab.externalInputs[itemId];
+    });
     registrar.regEvent(appIds.events.PLANNER_REQUEST_TAB_CREATION, ({ draftState }) => {
         draftState.plannerTabCreation = {};
     });

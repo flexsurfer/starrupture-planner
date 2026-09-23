@@ -2,9 +2,14 @@ import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { EmbeddedFlowDiagram } from '@/features/production-plans/ui';
+import { usePlanInputActions } from '../../usePlanInputActions';
 
 export const DiagramSection: React.FC = () => {
     const runtime = useRuntime();
+    const baseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
+    const selectedItemId = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID]);
+    const valid = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALIDITY]);
+    const inputActions = usePlanInputActions(baseId);
     const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
         runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, itemId, recipeKey]);
     }, [runtime]);
@@ -30,6 +35,9 @@ export const DiagramSection: React.FC = () => {
             <EmbeddedFlowDiagram
                 productionFlow={productionFlow}
                 onSelectRecipe={onSelectRecipe}
+                targetItemId={selectedItemId}
+                {...inputActions}
+                inputDisabledReason={valid ? undefined : 'Choose a production item and enter a plan name first'}
                 className="w-full h-full"
             />
         </div>

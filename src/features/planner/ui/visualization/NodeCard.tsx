@@ -4,8 +4,10 @@ import { getItemName } from '@/utils/itemUtils';
 import { ItemImage, BuildingImage, RecipeTypeIcon } from '@/shared/ui';
 import { NodeRecipeButton } from './NodeRecipeButton';
 import { TargetNodeCard } from './TargetNodeCard';
+import { NodeInputButton, type NodeInputActions } from './NodeInputButton';
+import { EXTERNAL_RESOURCE_BUILDING_ID } from '@/features/planner/external-inputs';
 
-interface NodeCardProps {
+interface NodeCardProps extends NodeInputActions {
     node: PlannerFlowNode;
     items: Item[];
     outputColor: string;
@@ -23,6 +25,9 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     onSelectRecipe,
     inputRequirement,
     showMissingInput = false,
+    renderInputDialog,
+    onRevertInput,
+    inputDisabledReason,
 }) => {
     if (node.nodeType === 'target') {
         return <TargetNodeCard node={node} items={items} outputColor={outputColor} compactOnMobile={compactOnMobile} />;
@@ -35,15 +40,14 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     const usagePercent = availableRate > 0 ? Math.min(100, Math.max(0, usedRate / availableRate * 100)) : 0;
     const usageLabel = `${Number(usagePercent.toFixed(1))}% used`;
     const usageDescription = `${usedRate.toFixed(1)} of ${availableRate.toFixed(1)}/min used`;
+    const external = node.nodeType === 'input' && !inputRequirement;
+    const inputButton = <NodeInputButton node={node} itemName={getItemName(node.outputItem, items)} isExternal={external}
+        renderInputDialog={renderInputDialog} onRevertInput={onRevertInput} inputDisabledReason={inputDisabledReason} />;
 
     return (
         <div className="flex h-full flex-col text-center">
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
-                {node.nodeType === 'input' && <div className="rounded border border-teal-400/20 bg-base-200 px-1.5 text-[10px] leading-4 text-teal-300/70">input</div>}
-            </div>
-
             {/* Item and final output are the primary information. */}
-            <div className={`${compactOnMobile ? 'p-1.5 space-y-1 sm:p-2 sm:space-y-2' : 'p-2 space-y-2'} ${node.nodeType === 'input' ? 'pt-4 sm:pt-4' : ''}`}>
+            <div className={compactOnMobile ? 'p-1.5 space-y-1 sm:p-2 sm:space-y-2' : 'p-2 space-y-2'}>
                 <div className="flex items-start justify-between gap-1.5">
                     <div className={`min-w-0 flex-1 font-normal leading-tight break-words ${compactOnMobile ? 'text-xs sm:text-base' : 'text-base'}`}>
                         {getItemName(node.outputItem, items)}
@@ -61,8 +65,9 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                 </div>
             </div>
 
-            {inputRequirement ? <div className={`mt-auto p-2 text-xs ${showMissingInput ? 'text-error' : 'text-base-content/60'}`}>
-                {showMissingInput ? inputRequirement.available > 0 ? 'Additional input needed' : 'Input not configured' : 'Required resource'}
+            {inputRequirement ? <div className={`mt-auto flex items-center justify-between gap-1 rounded-b bg-base-content/5 p-2 text-xs ${showMissingInput ? 'text-error' : 'text-base-content/60'}`}>
+                <span>{showMissingInput ? inputRequirement.available > 0 ? 'Additional input needed' : 'Input not configured' : 'Required resource'}</span>
+                {inputButton}
             </div> : <><div
                 className="mt-auto shrink-0"
                 role="meter"
@@ -84,15 +89,19 @@ export const NodeCard: React.FC<NodeCardProps> = ({
 
             {/* Building details stay secondary, below the item. */}
             <div className={`shrink-0 bg-base-content/5 rounded-b ${compactOnMobile ? 'p-1.5 sm:p-2' : 'p-2'}`}>
-                <div className={`mb-1 leading-tight text-base-content/60 break-words ${compactOnMobile ? 'text-[11px] sm:text-sm' : 'text-sm'}`}>{node.buildingName}</div>
+                <div className="mb-1 flex items-center justify-between gap-1">
+                    <div className={`min-w-0 leading-tight text-base-content/60 break-words ${external ? 'text-left' : ''} ${compactOnMobile ? 'text-[11px] sm:text-sm' : 'text-sm'}`}>{external ? 'External resource' : node.buildingName}</div>
+                    {inputButton}
+                </div>
                 <div className="flex items-center gap-1.5">
-                    <BuildingImage buildingId={node.buildingId} size="small" className={`!w-8 !h-8 shrink-0 ${compactOnMobile ? 'max-sm:!w-6 max-sm:!h-6' : ''}`} />
+                    {node.buildingId !== EXTERNAL_RESOURCE_BUILDING_ID && <BuildingImage buildingId={node.buildingId} size="small" className={`!w-8 !h-8 shrink-0 ${compactOnMobile ? 'max-sm:!w-6 max-sm:!h-6' : ''}`} />}
                     <div className="min-w-0 flex-1 text-left text-[10px] leading-tight break-words space-y-0.5">
+                        {external && node.buildingId !== EXTERNAL_RESOURCE_BUILDING_ID && <div className="text-base-content/55">{node.buildingName}</div>}
                         <div className={`${compactOnMobile ? 'text-[10px] sm:text-xs' : 'text-xs'} text-base-content/55`}>{node.outputAmount.toFixed(1)}/min</div>
                     </div>
-                    <span className={`shrink-0 rounded border py-0.5 font-semibold ${compactOnMobile ? 'px-1 text-xs sm:px-1.5 sm:text-sm' : 'px-1.5 text-sm'} ${buildingCount > 1 ? 'border-secondary/40 bg-secondary/15 text-secondary' : 'border-base-content/15 text-base-content/75'}`} title={`${buildingCount} buildings required`}>
+                    {!external && <span className={`shrink-0 rounded border py-0.5 font-semibold ${compactOnMobile ? 'px-1 text-xs sm:px-1.5 sm:text-sm' : 'px-1.5 text-sm'} ${buildingCount > 1 ? 'border-secondary/40 bg-secondary/15 text-secondary' : 'border-base-content/15 text-base-content/75'}`} title={`${buildingCount} buildings required`}>
                         ×{buildingCount}
-                    </span>
+                    </span>}
                 </div>
             </div></>}
         </div>
