@@ -2,7 +2,6 @@ import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { BasesById, Building as DbBuilding, Corporation, CreateProductionPlanModalState, Item } from '@/app/uklad/model';
-import type { BaseInputItem, LinkableOutputItem } from '@/features/bases/types';
 import type { CorporationLevelInfo, ProductionFlowResult, RawMaterialDeficitWithName } from '@/features/planner/types';
 import { buildProductionFlow } from '@/features/planner/production-flow';
 import { buildRecipeOptionsForOutputItems } from '@/features/planner/recipe-options';
