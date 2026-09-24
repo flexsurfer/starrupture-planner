@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React, { useState } from 'react';
 import type { CorporationLevelInfo } from '@/features/planner/types';
 import type { CorporationLevelSelection } from '@/app/uklad/model';
@@ -32,6 +33,7 @@ export const CorporationLevelSelector: React.FC<CorporationLevelSelectorProps> =
     targetAmount = 60,
     className = ''
 }) => {
+    const { t } = useTranslation();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     if (corporationLevels.length === 0) {
@@ -77,13 +79,13 @@ export const CorporationLevelSelector: React.FC<CorporationLevelSelectorProps> =
                         {itemsNeeded > 0 && (
                             <>
                                 <span className="text-xs text-base-content/40">|</span>
-                                <span className="text-xs text-purple-500 font-semibold">{itemsNeeded} items</span>
-                                <span className="text-xs text-yellow-500 font-semibold">{launchTime.toFixed(1)}min</span>
+                                <span className="text-xs text-purple-500 font-semibold">{t("{count} items", { count: itemsNeeded })}</span>
+                                <span className="text-xs text-yellow-500 font-semibold">{t("{launchTime}min", { launchTime: launchTime.toFixed(1) })}</span>
                             </>
                         )}
                     </>
                 ) : (
-                    <span className="text-xs text-base-content/60">Select corporation...</span>
+                    <span className="text-xs text-base-content/60">{t("Select corporation...")}</span>
                 )}
                 <svg 
                     className={`w-4 h-4 ml-auto transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
@@ -113,7 +115,7 @@ export const CorporationLevelSelector: React.FC<CorporationLevelSelectorProps> =
                                         setIsDropdownOpen(false);
                                     }}
                                 >
-                                    <span className="text-base-content/60">None</span>
+                                    <span className="text-base-content/60">{t("None")}</span>
                                 </button>
                             </li>
                             {corporationLevels.map((levelInfo) => {
@@ -146,7 +148,7 @@ export const CorporationLevelSelector: React.FC<CorporationLevelSelectorProps> =
                                                     target.style.display = 'none';
                                                 }}
                                             />
-                                            <span>{levelInfo.corporationName} - Level {levelInfo.level}</span>
+                                            <span>{t("{corporationName} - Level {level}", { corporationName: levelInfo.corporationName, level: levelInfo.level })}</span>
                                         </button>
                                     </li>
                                 );

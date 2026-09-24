@@ -1,3 +1,4 @@
+import { useTranslation, type MessageKey } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useMemo, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -63,11 +64,11 @@ type BuildingGroupId =
 
 interface BuildingGroup {
   id: BuildingGroupId;
-  label: string;
+  label: MessageKey;
   buildings: Building[];
 }
 
-const BUILDING_GROUP_LABELS: Record<BuildingGroupId, string> = {
+const BUILDING_GROUP_LABELS: Record<BuildingGroupId, MessageKey> = {
   extractors: 'Extractors',
   launchers: 'Launchers',
   transport: 'Transport',
@@ -166,6 +167,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   initialItemId,
   initialRatePerMinute = 60,
 }) => {
+    const { t } = useTranslation();
   const buildings = useSubscription([appIds.subscriptions.BASES_AVAILABLE_BUILDINGS_FOR_SECTION, sectionType]);
   const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const buildingsById = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
@@ -226,7 +228,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
           ? buildingsById[linkedOutput.buildingTypeId]
           : undefined;
         const linkedOutputLabel = input.linkedOutput
-          ? `${linkedBase?.name || 'Missing base'} / ${linkedOutput?.name || linkedOutputBuilding?.name || input.linkedOutput.buildingId}`
+          ? `${linkedBase?.name || t("Missing base")} / ${linkedOutput?.name || linkedOutputBuilding?.name || input.linkedOutput.buildingId}`
           : undefined;
 
         targets.push({
@@ -250,14 +252,14 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
       if (baseDelta !== 0) return baseDelta;
       return left.name.localeCompare(right.name);
     });
-  }, [subscribedBases, buildingsById, itemsById, selectedBase?.id]);
+  }, [subscribedBases, buildingsById, itemsById, selectedBase?.id, t]);
   const selectedLinkedInputTarget = selectedLinkedInputKey
     ? linkableInputTargets.find((target) => target.key === selectedLinkedInputKey) || null
     : null;
-  const selectedPlanLabel = selectedPlan?.name || 'Select plan';
+  const selectedPlanLabel = selectedPlan?.name || t("Select plan");
   const selectedLinkedInputLabel = selectedLinkedInputTarget
     ? `${selectedLinkedInputTarget.baseName} / ${selectedLinkedInputTarget.name}`
-    : 'No target';
+    : t("No target");
   const initialItem = initialItemId ? itemsById[initialItemId] : undefined;
   const hideExtractors = sectionType === 'inputs' && !!initialItem && initialItem.type !== 'raw';
   const buildingGroups = useMemo(
@@ -371,22 +373,22 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const allConfigurationModeOptions: ConfigurationModeOption[] = [
     {
       mode: 'manual',
-      label: 'Manual',
-      detail: 'Item + rate',
+      label: t("Manual"),
+      detail: t("Item + rate"),
       isAvailable: selectedBuildingSupportsLinking || selectedBuildingSupportsPlanLinking,
       onSelect: resetItemAndLinkState,
     },
     {
       mode: 'linked',
-      label: 'Linked output',
-      detail: 'Existing output',
+      label: t("Linked output"),
+      detail: t("Existing output"),
       isAvailable: selectedBuildingSupportsLinking,
       onSelect: handleLinkedModeClick,
     },
     {
       mode: 'plan',
-      label: 'Plan',
-      detail: 'Production plan',
+      label: t("Plan"),
+      detail: t("Production plan"),
       isAvailable: selectedBuildingSupportsPlanLinking,
       onSelect: handlePlanModeClick,
     },
@@ -455,10 +457,10 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
 
   return (
     <div className="modal modal-open">
-      <div role="dialog" aria-modal="true" aria-label="Select Building" className="modal-box max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <div role="dialog" aria-modal="true" aria-label={t("Select Building")} className="modal-box max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         {/* Header - fixed */}
         <div className="px-6 pt-6 pb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
-          <h3 className="font-bold text-lg">Select Building</h3>
+          <h3 className="font-bold text-lg">{t("Select Building")}</h3>
         </div>
 
         {/* Buildings grid - scrollable */}
@@ -468,7 +470,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
               <section key={group.id} className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h4 className="text-[11px] font-semibold uppercase tracking-wide text-base-content/55">
-                    {group.label}
+                    {t(group.label)}
                   </h4>
                   <span className="rounded border border-base-300/70 px-1.5 py-0.5 font-mono text-[10px] text-base-content/45">
                     {group.buildings.length}
@@ -530,7 +532,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
             <div className="flex gap-3 mb-4">
               <div className="form-control w-28">
                 <label className="label py-1">
-                  <span className="label-text text-xs">Count</span>
+                  <span className="label-text text-xs">{t("Count")}</span>
                 </label>
                 <input
                   type="text"
@@ -552,16 +554,13 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
             <div className="mb-4 rounded-lg border border-base-300 bg-base-200/30 p-4">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-sm font-semibold">
-                    Item configuration {!mustConfigureItem && <span className="text-base-content/50">(optional)</span>}
+                  <div className="text-sm font-semibold">{t("Item configuration ")}{!mustConfigureItem && <span className="text-base-content/50">{t("(optional)")}</span>}
                   </div>
                 </div>
 
                 {configurationModeOptions.length > 1 && (
                   <div>
-                    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
-                      Source mode
-                    </div>
+                    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Source mode")}</div>
                     <div className="grid gap-2 sm:grid-cols-3">
                       {configurationModeOptions.map((option) => {
                         const isActive = configurationMode === option.mode;
@@ -596,21 +595,17 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                   {configurationMode === 'linked' && selectedBuildingSupportsLinking ? (
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                       <div className="min-w-0">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
-                          Source output
-                        </div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Source output")}</div>
                         <div className="mt-1 flex min-h-10 min-w-0 items-center rounded-md border border-base-300 bg-base-200/45 px-3">
                           {selectedLinkedOutput ? (
                             <div className="min-w-0 text-xs">
                               <div className="truncate font-medium text-base-content/85">
                                 {selectedLinkedOutput.baseName} / {selectedLinkedOutput.item.name}
                               </div>
-                              <div className="font-mono text-[11px] text-base-content/55">
-                                {selectedLinkedOutput.ratePerMinute}/min
-                              </div>
+                              <div className="font-mono text-[11px] text-base-content/55">{t("{ratePerMinute}/min", { ratePerMinute: selectedLinkedOutput.ratePerMinute })}</div>
                             </div>
                           ) : (
-                            <span className="text-xs text-base-content/50">No linked output</span>
+                            <span className="text-xs text-base-content/50">{t("No linked output")}</span>
                           )}
                         </div>
                       </div>
@@ -619,16 +614,14 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                         className={`btn btn-sm min-w-36 ${selectedLinkedOutput ? 'btn-outline' : 'btn-primary'}`}
                         onClick={() => setShowLinkOutputModal(true)}
                       >
-                        {selectedLinkedOutput ? 'Change output' : 'Link output'}
+                        {selectedLinkedOutput ? t("Change output") : t("Link output")}
                       </button>
                     </div>
                   ) : configurationMode === 'plan' && selectedBuildingSupportsPlanLinking ? (
                     <div className="space-y-3">
                       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_9rem_7rem] md:items-end">
                         <label className="form-control min-w-0">
-                          <span className="label-text mb-1 text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
-                            Source plan
-                          </span>
+                          <span className="label-text mb-1 text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Source plan")}</span>
                           <div className="flex min-w-0">
                             <ClippedSelect
                               size="sm"
@@ -637,7 +630,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                               displayValue={selectedPlanLabel}
                               title={selectedPlanLabel}
                             >
-                              <option className="text-base-content bg-base-100" value="">Select plan</option>
+                              <option className="text-base-content bg-base-100" value="">{t("Select plan")}</option>
                               {plans.map((plan) => (
                                 <option className="text-base-content bg-base-100" key={plan.id} value={plan.id}>
                                   {plan.name}
@@ -649,22 +642,18 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                         {selectedPlan && (
                           <>
                             <label className="form-control">
-                              <span className="label-text mb-1 text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
-                                Capacity/min
-                              </span>
+                              <span className="label-text mb-1 text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Capacity/min")}</span>
                               <input
                                 type="number"
                                 min={1}
                                 className="input input-bordered input-sm h-8"
                                 value={capacityPerMinute}
                                 onChange={(event) => setCapacityPerMinute(event.target.value)}
-                                placeholder="Auto"
+                                placeholder={t("Auto")}
                               />
                             </label>
                             <label className="form-control">
-                              <span className="label-text mb-1 text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
-                                Priority
-                              </span>
+                              <span className="label-text mb-1 text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Priority")}</span>
                               <input
                                 type="number"
                                 min={0}
@@ -691,9 +680,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                       <div className="min-w-0">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
-                          Material
-                        </div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Material")}</div>
                         <div className="mt-1 flex min-h-10 min-w-0 items-center gap-2 rounded-md border border-base-300 bg-base-200/45 px-3">
                           {selectedItem ? (
                             <>
@@ -706,12 +693,10 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                               <span className="min-w-0 flex-1 truncate text-xs font-medium text-base-content/85">
                                 {selectedItem.name}
                               </span>
-                              <span className="shrink-0 font-mono text-[11px] text-base-content/55">
-                                {ratePerMinute}/min
-                              </span>
+                              <span className="shrink-0 font-mono text-[11px] text-base-content/55">{t("{ratePerMinute}/min", { ratePerMinute: ratePerMinute })}</span>
                             </>
                           ) : (
-                            <span className="text-xs text-base-content/50">No material configured</span>
+                            <span className="text-xs text-base-content/50">{t("No material configured")}</span>
                           )}
                         </div>
                       </div>
@@ -720,7 +705,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                         className={`btn btn-sm h-10 min-h-10 min-w-36 self-end ${selectedItem ? 'btn-outline' : 'btn-primary'}`}
                         onClick={() => setShowSelectItemModal(true)}
                       >
-                        {selectedItem ? 'Change material' : 'Select material'}
+                        {selectedItem ? t("Change material") : t("Select material")}
                       </button>
                     </div>
                   )}
@@ -729,9 +714,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                 {selectedBuildingSupportsInputTargets && (
                   <div className="rounded-md border border-base-300/70 bg-base-100/70 p-3">
                     <div className="grid gap-2 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:items-center">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
-                        Target
-                      </span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Target")}</span>
                       <div className="flex min-w-0">
                         <ClippedSelect
                           size="sm"
@@ -740,14 +723,14 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                           displayValue={selectedLinkedInputLabel}
                           title={selectedLinkedInputTarget
                             ? `${selectedLinkedInputTarget.baseName} / ${selectedLinkedInputTarget.name}`
-                            : 'No target'}
+                            : t("No target")}
                         >
-                          <option className="text-base-content bg-base-100" value="">No target</option>
+                          <option className="text-base-content bg-base-100" value="">{t("No target")}</option>
                           {linkableInputTargets.map((target) => (
                             <option className="text-base-content bg-base-100" key={target.key} value={target.key}>
                               {target.baseName} / {target.name}
                               {target.item ? ` · ${target.item.name}` : ''}
-                              {target.linkedOutputLabel ? ` · linked to ${target.linkedOutputLabel}` : ''}
+                              {target.linkedOutputLabel ? t(" · linked to {linkedOutputLabel}", { linkedOutputLabel: target.linkedOutputLabel }) : ''}
                             </option>
                           ))}
                         </ClippedSelect>
@@ -757,9 +740,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                 )}
 
                 {isRawExtractor(selectedBuilding) && (
-                  <p className="text-xs text-base-content/55">
-                    Output depends on node purity and extractor tier. Enter your in-game value.
-                  </p>
+                  <p className="text-xs text-base-content/55">{t("Output depends on node purity and extractor tier. Enter your in-game value.")}</p>
                 )}
               </div>
             </div>
@@ -769,24 +750,24 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
           <div className="flex gap-3 mb-4">
             <div className="form-control flex-1">
               <label className="label py-1">
-                <span className="label-text text-xs">Name <span className="text-base-content/50">(optional, applies to all)</span></span>
+                <span className="label-text text-xs">{t("Name ")}<span className="text-base-content/50">{t("(optional, applies to all)")}</span></span>
               </label>
               <input
                 type="text"
                 className="input input-bordered input-sm w-full"
-                placeholder={selectedBuilding?.name ?? 'Custom name'}
+                placeholder={selectedBuilding?.name ?? t("Custom name")}
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
               />
             </div>
             <div className="form-control flex-1">
               <label className="label py-1">
-                <span className="label-text text-xs">Description <span className="text-base-content/50">(optional)</span></span>
+                <span className="label-text text-xs">{t("Description ")}<span className="text-base-content/50">{t("(optional)")}</span></span>
               </label>
               <input
                 type="text"
                 className="input input-bordered input-sm w-full"
-                placeholder="Add a note..."
+                placeholder={t("Add a note...")}
                 value={customDescription}
                 onChange={(e) => setCustomDescription(e.target.value)}
               />
@@ -799,9 +780,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
               type="button"
               className="btn btn-ghost btn-sm"
               onClick={resetAndClose}
-            >
-              Cancel
-            </button>
+            >{t("Cancel")}</button>
             <button
               type="button"
               className="btn btn-primary btn-sm"
@@ -817,9 +796,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                 )
               }
               onClick={handleConfirm}
-            >
-              Add
-            </button>
+            >{t("Add")}</button>
           </div>
         </div>
       </div>

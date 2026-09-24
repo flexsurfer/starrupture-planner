@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import type { CorporationUsage } from '@/features/items/types';
 
 interface CorporationUsageBadgeProps {
@@ -6,12 +7,13 @@ interface CorporationUsageBadgeProps {
 }
 
 export const CorporationUsageBadge = ({ usage, corporationId }: CorporationUsageBadgeProps) => {
+    const { t } = useTranslation();
   const webpImagePath = `./icons/corporations/${corporationId}.webp`;
   
   return (
     <div 
       className="flex items-center gap-1 badge badge-sm badge-ghost px-1"
-      title={`${usage.corporation} - Level ${usage.level}`}
+      title={t("{corporation} - Level {level}", { corporation: usage.corporation, level: usage.level })}
     >
       <img
         key={corporationId}

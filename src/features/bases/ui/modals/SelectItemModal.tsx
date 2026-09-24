@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -24,6 +25,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+    const { t } = useTranslation();
   const [selectedItemIdDraft, setSelectedItemIdDraft] = useState<string | null>(null);
   const [ratePerMinuteDraft, setRatePerMinuteDraft] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,17 +76,17 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
 
   return (
     <div className="modal modal-open">
-      <div role="dialog" aria-modal="true" aria-label={`Select Item for ${building.name}`} className="modal-box max-w-3xl">
-        <h3 className="font-bold text-lg mb-4">Select Item for {building.name}</h3>
+      <div role="dialog" aria-modal="true" aria-label={t("Select Item for {name}", { name: building.name })} className="modal-box max-w-3xl">
+        <h3 className="font-bold text-lg mb-4">{t("Select Item for {name}", { name: building.name })}</h3>
         
         <form onSubmit={handleSubmit}>
           <div className="form-control mb-4">
             <div className="label flex flex-row justify-between items-center gap-2">
-              <span className="label-text">Item</span>
+              <span className="label-text">{t("Item")}</span>
               <input
                 type="text"
                 className="input input-bordered input-sm flex-1 max-w-xs"
-                placeholder="Search items..."
+                placeholder={t("Search items...")}
                 value={searchQuery}
                 onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -121,10 +123,10 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
 
           <div className="form-control mb-4">
             <label className="label">
-              <span className="label-text">Rate per Minute</span>
+              <span className="label-text">{t("Rate per Minute")}</span>
             </label>
             <input
-              aria-label="Rate per Minute"
+              aria-label={t("Rate per Minute")}
               type="number"
               className="input input-bordered w-full"
               value={ratePerMinute}
@@ -134,9 +136,7 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
               required
             />
             {isRawExtractor(building) && (
-              <p className="mt-1.5 text-xs text-base-content/50 leading-snug w-full min-w-0 whitespace-normal">
-                Output depends on node purity and extractor tier. Enter your in-game value.
-              </p>
+              <p className="mt-1.5 text-xs text-base-content/50 leading-snug w-full min-w-0 whitespace-normal">{t("Output depends on node purity and extractor tier. Enter your in-game value.")}</p>
             )}
           </div>
 
@@ -145,16 +145,12 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
               type="button"
               className="btn btn-ghost"
               onClick={handleCancel}
-            >
-              Cancel
-            </button>
+            >{t("Cancel")}</button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={!selectedItemId || !ratePerMinute || Number(ratePerMinute) <= 0}
-            >
-              Confirm
-            </button>
+            >{t("Confirm")}</button>
           </div>
         </form>
       </div>

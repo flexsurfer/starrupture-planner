@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { ExpandableSection } from '@/shared/ui';
 import { CorporationIcon } from './CorporationIcon';
 import { LevelCard } from './LevelCard';
@@ -12,6 +13,7 @@ type CorporationCardProps = {
 };
 
 export const CorporationCard = ({ corporation, isCollapsed, onToggle, itemsMap }: CorporationCardProps) => {
+  const { locale } = useTranslation();
   const { totalLevels, totalComponents, totalCost } = corporation.stats;
   const totalRewards = corporation.levels.reduce((sum, level) => sum + level.rewards.length, 0);
 
@@ -25,7 +27,7 @@ export const CorporationCard = ({ corporation, isCollapsed, onToggle, itemsMap }
         <span>{totalLevels} {totalLevels === 1 ? 'level' : 'levels'}</span>
         <span>{totalComponents} {totalComponents === 1 ? 'component' : 'components'}</span>
         {totalRewards > 0 && <span>{totalRewards} {totalRewards === 1 ? 'reward' : 'rewards'}</span>}
-        {totalCost > 0 && <span className="text-info">{totalCost.toLocaleString()} G</span>}
+        {totalCost > 0 && <span className="text-info">{totalCost.toLocaleString(locale)} G</span>}
       </>}
     >
       {corporation.description && <p className="mb-3 text-xs leading-relaxed text-base-content/65 sm:text-sm">{corporation.description}</p>}

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import { ItemRow } from "./ItemRow";
@@ -18,12 +19,13 @@ export const ItemsTable = ({
   getCorporationId,
   openRecipeModal 
 }: ItemsTableProps) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
 
   if (itemsTableData.length === 0) {
     return (
       <div className="text-center py-8">
-        <div className="text-base-content/60">No items found in this category</div>
+        <div className="text-base-content/60">{t("No items found in this category")}</div>
       </div>
     );
   }
@@ -48,7 +50,7 @@ export const ItemsTable = ({
 
         {/* Production Info */}
         <div className="mb-2 flex flex-row gap-1 items-start">
-          <div className="text-xs text-base-content/70">Production:</div>
+          <div className="text-xs text-base-content/70">{t("Production:")}</div>
           {hasProductions ? (
             <div className="flex flex-wrap gap-1">
               {producingBuildings.map((buildingName) => (
@@ -58,14 +60,14 @@ export const ItemsTable = ({
               ))}
             </div>
           ) : (
-            <div className="text-xs font-medium text-base-content/60">Raw Material</div>
+            <div className="text-xs font-medium text-base-content/60">{t("Raw Material")}</div>
           )}
         </div>
 
         {/* Corporations */}
         {corporationUsage.length > 0 && (
           <div className="mb-2 flex flex-row gap-1">
-            <div className="text-xs text-base-content/70 mb-1">Corporations:</div>
+            <div className="text-xs text-base-content/70 mb-1">{t("Corporations:")}</div>
             <div className="flex flex-wrap gap-1">
               {corporationUsage.map((usage, index) => {
                 const corporationId = getCorporationId(usage.corporation);
@@ -87,9 +89,7 @@ export const ItemsTable = ({
             <button
               className="btn btn-sm btn-outline flex-1"
               onClick={() => openRecipeModal(item)}
-            >
-              Recipe
-            </button>
+            >{t("Recipe")}</button>
           )}
           {item.type !== 'raw' && (
             <button
@@ -97,9 +97,7 @@ export const ItemsTable = ({
               onClick={() => {
                 runtime.dispatch([appIds.events.PLANNER_OPEN_ITEM, item.id]);
               }}
-            >
-              Planner
-            </button>
+            >{t("Planner")}</button>
           )}
         </div>
       </div>
@@ -113,11 +111,11 @@ export const ItemsTable = ({
         <table className="table table-zebra table-compact w-full">
           <thead className="sticky top-0 bg-base-100 z-10">
             <tr>
-              <th className="py-2">Item</th>
-              <th className="py-2">Category</th>
-              <th className="py-2">Production</th>
-              <th className="py-2">Actions</th>
-              <th className="py-2">Corporations</th>
+              <th className="py-2">{t("Item")}</th>
+              <th className="py-2">{t("Category")}</th>
+              <th className="py-2">{t("Production")}</th>
+              <th className="py-2">{t("Actions")}</th>
+              <th className="py-2">{t("Corporations")}</th>
             </tr>
           </thead>
           <tbody>

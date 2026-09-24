@@ -1,9 +1,11 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import React, { useCallback } from 'react';
 import { EnergyGroupSelector } from '@/features/energy-groups/ui';
 
 export const BaseCoreInfo: React.FC<{ onRename?: () => void }> = ({ onRename }) => {
+    const { t , locale } = useTranslation();
   const runtime = useRuntime();
   const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const expanded = useSubscription([appIds.subscriptions.BASES_DETAILS_EXPANDED]);
@@ -28,8 +30,8 @@ export const BaseCoreInfo: React.FC<{ onRename?: () => void }> = ({ onRename }) 
         {advanced && <button
           type="button"
           className={`relative grid size-8 cursor-pointer place-items-center rounded-bl-md border border-base-content/20 bg-base-200 transition-colors hover:bg-base-300 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${!expanded && (isHeatOverCapacity || isEnergyInsufficient) ? 'text-error' : 'text-base-content/65 hover:text-base-content'}`}
-          aria-label={expanded ? 'Hide base details' : 'Show base details'}
-          title={expanded ? 'Hide base details' : isHeatOverCapacity || isEnergyInsufficient ? 'Show base details — heat or energy needs attention' : 'Show base details'}
+          aria-label={expanded ? t("Hide base details") : t("Show base details")}
+          title={expanded ? t("Hide base details") : isHeatOverCapacity || isEnergyInsufficient ? t("Show base details — heat or energy needs attention") : t("Show base details")}
           aria-expanded={expanded}
           onClick={() => runtime.dispatch([appIds.events.BASES_SET_DETAILS_EXPANDED, !expanded])}
         >
@@ -64,23 +66,19 @@ export const BaseCoreInfo: React.FC<{ onRename?: () => void }> = ({ onRename }) 
           <div className="flex-1 min-w-0">
             <div className="flex min-h-8 min-w-0 items-center gap-2">
               <h2 className="truncate text-base font-semibold sm:text-lg">{baseName}</h2>
-              {onRename && <button type="button" className="btn btn-xs btn-ghost shrink-0 text-base-content/55 hover:text-base-content" onClick={onRename}>
-                Rename
-              </button>}
+              {onRename && <button type="button" className="btn btn-xs btn-ghost shrink-0 text-base-content/55 hover:text-base-content" onClick={onRename}>{t("Rename")}</button>}
             </div>
-            {advanced && expanded && <><p className="hidden sm:block text-xs text-base-content/70 mt-1">
-              The Core defines the buildable area for this Base. Buildings can only be placed inside the Core area.
-            </p>
+            {advanced && expanded && <><p className="hidden sm:block text-xs text-base-content/70 mt-1">{t("The Core defines the buildable area for this Base. Buildings can only be placed inside the Core area.")}</p>
             {/* Core Level Selector */}
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <span className="text-xs text-base-content/70 whitespace-nowrap">Core Level:</span>
+              <span className="text-xs text-base-content/70 whitespace-nowrap">{t("Core Level:")}</span>
               <div className="join">
                 {coreLevels.map(({ level, heatCapacity }) => (
                   <button
                     key={level}
                     className={`join-item btn btn-xs ${coreLevel === level ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => onCoreLeveChange(level)}
-                    title={`Level ${level + 1} — Heat Capacity: ${heatCapacity.toLocaleString()}`}
+                    title={t("Level {value} — Heat Capacity: {heatCapacity}", { value: level + 1, heatCapacity: heatCapacity.toLocaleString(locale) })}
                   >
                     {level + 1}
                   </button>
@@ -94,11 +92,11 @@ export const BaseCoreInfo: React.FC<{ onRename?: () => void }> = ({ onRename }) 
         {advanced && expanded && <div className="flex w-full flex-col gap-1 self-stretch sm:w-auto">
         <div className="flex flex-wrap justify-between gap-3 sm:justify-start sm:gap-4">
           <div className="flex-shrink-0">
-            <div className="text-xs text-base-content/70 mb-0.5">Buildings</div>
+            <div className="text-xs text-base-content/70 mb-0.5">{t("Buildings")}</div>
             <div className="text-base font-bold">{buildingCount}</div>
           </div>
           <div className="flex-shrink-0 min-w-[80px]">
-            <div className={`text-xs mb-0.5 ${isHeatOverCapacity ? 'text-error' : 'text-base-content/70'}`}>Heat</div>
+            <div className={`text-xs mb-0.5 ${isHeatOverCapacity ? 'text-error' : 'text-base-content/70'}`}>{t("Heat")}</div>
             <div className={`text-sm sm:text-base font-bold ${isHeatOverCapacity ? 'text-error' : ''}`}>{totalHeat} / {baseCoreHeatCapacity}</div>
             <div className="w-full bg-base-300 rounded-full h-1 mt-0.5">
               <div
@@ -108,9 +106,7 @@ export const BaseCoreInfo: React.FC<{ onRename?: () => void }> = ({ onRename }) 
             </div>
           </div>
           <div className="flex-shrink-0 min-w-[100px]">
-            <div className={`text-xs mb-0.5 flex items-center gap-1 ${isEnergyInsufficient ? 'text-error' : 'text-base-content/70'}`}>
-              Energy{energyGroupName ? ` [${energyGroupName}]` : ''}
-              {selectedBase && <EnergyGroupSelector baseId={selectedBase.id} currentGroupId={energyGroupId} variant="text" />}
+            <div className={`text-xs mb-0.5 flex items-center gap-1 ${isEnergyInsufficient ? 'text-error' : 'text-base-content/70'}`}>{t("Energy{value}", { value: energyGroupName ? ` [${energyGroupName}]` : '' })}{selectedBase && <EnergyGroupSelector baseId={selectedBase.id} currentGroupId={energyGroupId} variant="text" />}
             </div>
             <div className={`text-sm sm:text-base font-bold ${isEnergyInsufficient ? 'text-error' : ''}`}>
               {energyConsumption}

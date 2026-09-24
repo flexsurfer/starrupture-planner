@@ -1,3 +1,5 @@
+import { message } from '@/shared/i18n/core';
+import { DEFAULT_LOCALE, normalizeLocale } from '@/shared/i18n/locales';
 import { createDataTransferState } from '@/features/data-transfer/archive';
 import type { AppState } from '@/app/uklad/model';
 import { DATA_VERSIONS, DEFAULT_DATA_VERSION } from '@/features/app-shell/data-version';
@@ -8,7 +10,7 @@ import { createEnergyGroupsFeatureState } from '@/features/energy-groups/state';
 import { createProductionPlanModalFeatureState } from '@/features/production-plan-modal/state';
 
 /** Creates state owned by exactly one Uklad runtime. */
-export function createAppState(): AppState {
+export function createAppState(initialLocale: string = DEFAULT_LOCALE): AppState {
     return {
         ...createDataTransferState(),
         appDataVersion: DEFAULT_DATA_VERSION,
@@ -20,6 +22,7 @@ export function createAppState(): AppState {
         itemsCategories: [],
         buildingsList: [],
         corporationsList: [],
+        uiLocale: normalizeLocale(initialLocale),
         uiTheme: 'dark',
         uiGameDataLoadPending: false,
         uiActiveTab: 'items',
@@ -27,8 +30,8 @@ export function createAppState(): AppState {
             isOpen: false,
             title: '',
             message: '',
-            confirmLabel: 'Confirm',
-            cancelLabel: 'Cancel',
+            confirmLabel: message('Confirm'),
+            cancelLabel: message('Cancel'),
             confirmButtonClass: 'btn-primary',
             onConfirm: () => {},
             onCancel: undefined,

@@ -1,8 +1,10 @@
+import { useTranslation, translateText } from '@/shared/i18n';
 import React from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 export const ConfirmationDialog: React.FC = () => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const dialog = useSubscription([appIds.subscriptions.UI_CONFIRMATION_DIALOG]);
 
@@ -31,22 +33,22 @@ export const ConfirmationDialog: React.FC = () => {
   return (
     <div className="modal modal-open" onClick={handleBackdropClick}>
       <div className="modal-box">
-        <h3 className="font-bold text-lg mb-4">{dialog.title}</h3>
+        <h3 className="font-bold text-lg mb-4">{translateText(t, dialog.title)}</h3>
         
-        <p className="mb-6">{dialog.message}</p>
+        <p className="mb-6">{translateText(t, dialog.message)}</p>
 
         <div className="modal-action">
           <button
             className="btn btn-ghost"
             onClick={handleCancel}
           >
-            {dialog.cancelLabel || 'Cancel'}
+            {translateText(t, dialog.cancelLabel ?? '') || t("Cancel")}
           </button>
           <button
             className={`btn ${dialog.confirmButtonClass || 'btn-primary'}`}
             onClick={handleConfirm}
           >
-            {dialog.confirmLabel || 'Confirm'}
+            {translateText(t, dialog.confirmLabel ?? '') || t("Confirm")}
           </button>
         </div>
       </div>

@@ -1,11 +1,12 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useId, useRef } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { ItemImage, BuildingImage } from '@/shared/ui';
-import { formatQuantity } from '@/utils/formatQuantity';
 import { getItemCategoryColor } from '@/utils/itemColors';
 
 export const InputsSelector: React.FC = () => {
+    const { t, formatNumber: formatQuantity } = useTranslation();
     const runtime = useRuntime();
     const planning = useSubscription([appIds.subscriptions.BASES_MODE]) === 'planning';
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -30,7 +31,7 @@ export const InputsSelector: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                         <span className="text-xs">
-                            {planning ? 'Use a resource card in the diagram to add an input.' : 'Add buildings to the Inputs section to provide materials for production'}
+                            {planning ? t("Use a resource card in the diagram to add an input.") : t("Add buildings to the Inputs section to provide materials for production")}
                         </span>
                         </div>
                     </div>
@@ -38,7 +39,7 @@ export const InputsSelector: React.FC = () => {
                     <div className="flex min-w-0 items-center gap-2">
                         <button
                             type="button"
-                            aria-label="Scroll inputs left"
+                            aria-label={t("Scroll inputs left")}
                             aria-controls={scrollId}
                             className="btn btn-sm btn-ghost btn-square shrink-0 border-base-300"
                             onClick={() => scrollInputs(-1)}
@@ -47,19 +48,19 @@ export const InputsSelector: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m15 18-6-6 6-6" />
                             </svg>
                         </button>
-                        <div ref={scrollRef} id={scrollId} role="region" aria-label="Production plan inputs" tabIndex={0} className="flex min-w-0 flex-1 flex-nowrap items-stretch gap-2 overflow-x-auto pb-1">
+                        <div ref={scrollRef} id={scrollId} role="region" aria-label={t("Production plan inputs")} tabIndex={0} className="flex min-w-0 flex-1 flex-nowrap items-stretch gap-2 overflow-x-auto pb-1">
                             {inputItems.map((inputItem) => {
                                 const isSelected = selectedInputIds.includes(inputItem.baseBuildingId);
-                                const selectedAction = inputItem.removesBuildingOnDeselect ? 'Remove' : 'Stop using';
+                                const selectedAction = inputItem.removesBuildingOnDeselect ? t("Remove") : t("Stop using");
                                 const hasLinkError = !!inputItem.linkedOutput && inputItem.linkedOutput.status !== 'ok';
                                 const linkLabel = inputItem.linkedOutput
-                                    ? `${inputItem.linkedOutput.baseName} / ${inputItem.linkedOutput.outputName}`
+                                    ? `${(inputItem.linkedOutput.baseName || t("Missing base"))} / ${inputItem.linkedOutput.outputName}`
                                     : '';
                                 return (
                                     <button
                                         type="button"
                                         aria-pressed={isSelected}
-                                        aria-label={planning ? `${isSelected ? selectedAction : 'Use'} input ${inputItem.item.name} from ${linkLabel || inputItem.name}` : undefined}
+                                        aria-label={planning ? t(isSelected ? (inputItem.removesBuildingOnDeselect ? "Remove input {name} from {source}" : "Stop using input {name} from {source}") : "Use input {name} from {source}", { name: inputItem.item.name, source: linkLabel || inputItem.name }) : undefined}
                                         key={inputItem.baseBuildingId}
                                         onClick={() => handleInputToggle(inputItem.baseBuildingId)}
                                         className={`flex shrink-0 flex-col gap-1 border rounded-lg px-2.5 py-1.5 text-left cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-primary ${
@@ -70,8 +71,8 @@ export const InputsSelector: React.FC = () => {
                                                 : 'border-base-300 hover:bg-base-300/50'
                                         }`}
                                         title={inputItem.linkedOutput
-                                            ? `${linkLabel} - ${inputItem.item.name} - ${inputItem.ratePerMinute}/min`
-                                            : `${inputItem.building.name}: ${inputItem.item.name} - ${inputItem.ratePerMinute}/min`}
+                                            ? t("{source} - {name} - {rate}/min", { source: linkLabel, name: inputItem.item.name, rate: inputItem.ratePerMinute })
+                                            : t("{source}: {name} - {rate}/min", { source: inputItem.building.name, name: inputItem.item.name, rate: inputItem.ratePerMinute })}
                                     >
                                         <div className="flex items-center gap-2">
                                             <ItemImage
@@ -80,7 +81,7 @@ export const InputsSelector: React.FC = () => {
                                                 size="xsmall"
                                             />
                                             <span className="text-sm font-medium whitespace-nowrap">{inputItem.item.name}</span>
-                                            <span className="text-sm font-semibold tabular-nums whitespace-nowrap" style={{ color: getItemCategoryColor(inputItem.item.type) }}>{formatQuantity(inputItem.ratePerMinute)}<span className="font-normal text-xs">/min</span></span>
+                                            <span className="text-sm font-semibold tabular-nums whitespace-nowrap" style={{ color: getItemCategoryColor(inputItem.item.type) }}>{formatQuantity(inputItem.ratePerMinute)}<span className="font-normal text-xs">{t("/min")}</span></span>
                                         </div>
                                         <div className="flex items-center gap-1.5 text-base-content/45" title={inputItem.description}>
                                             {!planning && <BuildingImage
@@ -95,10 +96,10 @@ export const InputsSelector: React.FC = () => {
                                                     className={`badge badge-xs shrink-0 max-w-64 truncate ${hasLinkError ? 'badge-error' : 'badge-outline'}`}
                                                     title={linkLabel}
                                                 >
-                                                    {hasLinkError ? 'Link broken' : linkLabel}
+                                                    {hasLinkError ? t("Link broken") : linkLabel}
                                                 </span>
                                             )}
-                                            {planning && <span className="text-xs">{isSelected ? `× ${selectedAction}` : '+ Use input'}</span>}
+                                            {planning && <span className="text-xs">{isSelected ? `× ${selectedAction}` : t("+ Use input")}</span>}
                                         </div>
                                     </button>
                                 );
@@ -106,7 +107,7 @@ export const InputsSelector: React.FC = () => {
                         </div>
                         <button
                             type="button"
-                            aria-label="Scroll inputs right"
+                            aria-label={t("Scroll inputs right")}
                             aria-controls={scrollId}
                             className="btn btn-sm btn-ghost btn-square shrink-0 border-base-300"
                             onClick={() => scrollInputs(1)}

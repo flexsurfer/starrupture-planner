@@ -71,7 +71,7 @@ export function collectConfiguredSectionItems(base: Base, buildingsById: Buildin
                 status: linkedResolution?.status || 'missing-output',
                 baseId: baseBuilding.linkedOutput.baseId,
                 buildingId: baseBuilding.linkedOutput.buildingId,
-                baseName: linkedResolution?.sourceBase?.name || 'Missing base',
+                baseName: linkedResolution?.sourceBase?.name || '',
                 outputName: linkedResolution?.sourceOutput?.name || sourceBuilding?.name || baseBuilding.linkedOutput.buildingId,
             } : undefined,
         });

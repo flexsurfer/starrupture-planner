@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React, { useCallback, useMemo, useState } from 'react';
 import { MAX_BULK_BUILDING_COUNT, sanitizeBuildingCount } from '@/features/bases/building-counts';
 
@@ -20,6 +21,7 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
   compact = false,
   cardLayout = false,
 }) => {
+    const { t } = useTranslation();
   const [draftOverride, setDraftOverride] = useState<string | null>(null);
   const [pendingCommittedValue, setPendingCommittedValue] = useState<number | null>(null);
   const [previousValue, setPreviousValue] = useState(value);
@@ -100,7 +102,7 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
           adjustValue(-1);
         }}
         disabled={currentControlValue <= min}
-        aria-label={`Decrease ${ariaLabel}`}
+        aria-label={t("Decrease {ariaLabel}", { ariaLabel: ariaLabel })}
       >
         -
       </button>
@@ -129,7 +131,7 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
           adjustValue(1);
         }}
         disabled={currentControlValue >= max}
-        aria-label={`Increase ${ariaLabel}`}
+        aria-label={t("Increase {ariaLabel}", { ariaLabel: ariaLabel })}
       >
         +
       </button>
@@ -137,7 +139,7 @@ export const BuildingCountControl: React.FC<BuildingCountControlProps> = ({
         type="button"
         className={`btn btn-primary px-0 ${saveClass}`}
         onClick={commitDraftValue}
-        aria-label={`Save ${ariaLabel}`}
+        aria-label={t("Save {ariaLabel}", { ariaLabel: ariaLabel })}
         tabIndex={canSave ? 0 : -1}
       >
         <svg

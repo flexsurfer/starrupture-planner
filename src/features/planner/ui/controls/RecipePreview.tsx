@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import type { Item, Recipe } from '@/app/uklad/model';
 import type { PlannerRecipeOption } from '@/features/planner/types';
 import { ItemImage } from '@/shared/ui';
@@ -13,11 +14,9 @@ const formatRate = (rate: number): string => (
     Number.isInteger(rate) ? String(rate) : rate.toFixed(1)
 );
 
-const RecipeIngredient = ({ itemId, amount, item }: RecipeIngredientProps) => (
+const RecipeIngredient = ({ itemId, amount, item }: RecipeIngredientProps) => { const { t } = useTranslation(); return (
     <div className="flex w-12 shrink-0 flex-col items-center gap-0.5">
-        <span className="badge badge-xs text-[9px]" style={getItemCategoryStyle(item?.type)}>
-            {formatRate(amount)}/min
-        </span>
+        <span className="badge badge-xs text-[9px]" style={getItemCategoryStyle(item?.type)}>{t("{value}/min", { value: formatRate(amount) })}</span>
         <ItemImage
             itemId={itemId}
             item={item}
@@ -28,7 +27,7 @@ const RecipeIngredient = ({ itemId, amount, item }: RecipeIngredientProps) => (
             {item?.name || itemId}
         </span>
     </div>
-);
+); };
 
 interface RecipePreviewProps {
     option: PlannerRecipeOption;
@@ -37,11 +36,12 @@ interface RecipePreviewProps {
 
 /** Inline inputs and output for the selected alternative. */
 export const RecipePreview = ({ option, itemsById }: RecipePreviewProps) => {
+    const { t } = useTranslation();
     const recipe: Recipe = option.recipe;
 
     return (
         <div
-            aria-label="Selected recipe"
+            aria-label={t("Selected recipe")}
             className="min-w-0"
         >
             <div className="flex items-end gap-1.5">
@@ -62,7 +62,7 @@ export const RecipePreview = ({ option, itemsById }: RecipePreviewProps) => {
                             />
                         ))
                     ) : (
-                        <span className="py-3 text-[10px] italic text-base-content/60">No inputs</span>
+                        <span className="py-3 text-[10px] italic text-base-content/60">{t("No inputs")}</span>
                     )}
                 </div>
             </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import type { ReactNode } from 'react';
 
 interface NavigationHeaderProps {
@@ -9,7 +10,7 @@ interface NavigationHeaderProps {
   children?: ReactNode;
 }
 
-export const NavigationHeader = ({ title, breadcrumbs, back, actions, summary, children }: NavigationHeaderProps) => (
+export const NavigationHeader = ({ title, breadcrumbs, back, actions, summary, children }: NavigationHeaderProps) => { const { t } = useTranslation(); return (
   <header className="mb-1 shrink-0 border-b border-base-300 px-1">
     <h1 className="sr-only">{title}</h1>
     <div className="flex min-h-8 min-w-0 items-center gap-1">
@@ -19,7 +20,7 @@ export const NavigationHeader = ({ title, breadcrumbs, back, actions, summary, c
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5m6-6-6 6 6 6" />
         </svg>
       </button>}
-      <nav aria-label="Breadcrumb" className={summary ? "shrink-0" : "min-w-0 flex-1 overflow-x-auto"}>
+      <nav aria-label={t("Breadcrumb")} className={summary ? "shrink-0" : "min-w-0 flex-1 overflow-x-auto"}>
         <ol className="flex min-h-8 w-max items-center gap-x-1 whitespace-nowrap text-xs text-base-content/60">
           {(breadcrumbs ?? [{ label: title }]).map((crumb, index) => <li key={index} className="flex items-center gap-1">
             {index > 0 && <span aria-hidden="true" className="px-1 text-base-content/30">/</span>}
@@ -35,4 +36,4 @@ export const NavigationHeader = ({ title, breadcrumbs, back, actions, summary, c
     </div>
     {children && <div className="mt-1 pb-1">{children}</div>}
   </header>
-);
+); };

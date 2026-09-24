@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import type { BuildingRequirement, InputRequirement } from '@/features/bases/types';
@@ -23,6 +24,7 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
     sectionId,
     onClose,
 }) => {
+    const { t } = useTranslation();
     const runtime = useRuntime();
     const buildings = useSubscription([appIds.subscriptions.BUILDINGS_LIST]);
 
@@ -48,12 +50,12 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
         >
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-lg">Manage Buildings</h3>
+                    <h3 className="font-bold text-lg">{t("Manage Buildings")}</h3>
                     <button
                         type="button"
                         className="btn btn-sm btn-circle btn-ghost"
                         onClick={onClose}
-                        aria-label="Close modal"
+                        aria-label={t("Close modal")}
                     >
                         ✕
                     </button>
@@ -62,7 +64,7 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                 {/* Inputs Section */}
                 {inputRequirements.length > 0 && (
                     <div className="mb-6">
-                        <h4 className="text-sm font-semibold mb-2 text-base-content/70">Inputs</h4>
+                        <h4 className="text-sm font-semibold mb-2 text-base-content/70">{t("Inputs")}</h4>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
                             {inputRequirements.map((req) => {
                                 const building = buildings.find(b => b.id === req.buildingId);
@@ -89,14 +91,14 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                                                 className="w-4 h-4 flex-shrink-0"
                                             />
                                             <div className="min-w-0 flex-1">
-                                                <div className="truncate">{req.itemName}</div>
+                                                <div className="truncate">{req.itemName || t("Unknown input")}</div>
                                                 {req.linkedOutput && (
                                                     <div className="text-[11px] text-base-content/60 truncate">
-                                                        {req.linkedOutput.baseName} / {req.linkedOutput.outputName}
+                                                        {(req.linkedOutput.baseName || t("Missing base"))} / {req.linkedOutput.outputName}
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="text-xs text-base-content/60 flex-shrink-0">{req.ratePerMinute}/min</span>
+                                            <span className="text-xs text-base-content/60 flex-shrink-0">{t("{ratePerMinute}/min", { ratePerMinute: req.ratePerMinute })}</span>
                                         </div>
                                         <div className="flex items-center gap-2 ml-2">
                                             <span className={`badge badge-sm ${req.isSatisfied ? 'badge-success' : 'badge-error'}`}>
@@ -112,10 +114,10 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
 
                 {/* Production Buildings Section */}
                 <div>
-                    <h4 className="text-sm font-semibold mb-2 text-base-content/70">Production Buildings</h4>
+                    <h4 className="text-sm font-semibold mb-2 text-base-content/70">{t("Production Buildings")}</h4>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                         {buildingRequirements.length === 0 ? (
-                            <p className="text-sm text-base-content/60">No building requirements</p>
+                            <p className="text-sm text-base-content/60">{t("No building requirements")}</p>
                         ) : (
                             buildingRequirements.map((req) => (
                                 <div
@@ -144,12 +146,8 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                                 <button
                                     className="btn btn-primary btn-sm w-full mb-2"
                                     onClick={handleAddMissing}
-                                >
-                                    Add Missing Production Buildings
-                                </button>
-                                <p className="text-xs text-base-content/60 text-center">
-                                    Note: Input buildings must be added manually in the Buildings tab
-                                </p>
+                                >{t("Add Missing Production Buildings")}</button>
+                                <p className="text-xs text-base-content/60 text-center">{t("Note: Input buildings must be added manually in the Buildings tab")}</p>
                             </>
                         )}
                     </div>
@@ -158,9 +156,7 @@ export const BuildingRequirementsModal: React.FC<BuildingRequirementsModalProps>
                     <button
                         className="btn btn-sm"
                         onClick={onClose}
-                    >
-                        Close
-                    </button>
+                    >{t("Close")}</button>
                 </div>
             </div>
         </div>

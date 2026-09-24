@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React, { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 
@@ -17,6 +18,7 @@ function formatMW(value: number): string {
 }
 
 export const EnergyGridNode: React.FC<NodeProps> = memo(({ data }) => {
+    const { t } = useTranslation();
   const d = data as unknown as EnergyGridNodeData;
   const isDeficit = d.balance < 0;
 
@@ -34,21 +36,21 @@ export const EnergyGridNode: React.FC<NodeProps> = memo(({ data }) => {
           <span className="text-lg">⚡</span>
           <span className="font-bold text-sm truncate">{d.groupName}</span>
         </div>
-        <div className="text-xs text-base-content/60">{d.baseCount} bases</div>
+        <div className="text-xs text-base-content/60">{t("{count} bases", { count: d.baseCount })}</div>
       </div>
 
       {/* Stats */}
       <div className="px-3 py-2 space-y-1 text-xs">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-base-content/70">Generated</span>
+          <span className="text-base-content/70">{t("Generated")}</span>
           <span className="font-mono font-medium text-success">+{formatMW(d.totalGeneration)} MW</span>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-base-content/70">Consumed</span>
+          <span className="text-base-content/70">{t("Consumed")}</span>
           <span className="font-mono font-medium text-error">-{formatMW(d.totalConsumption)} MW</span>
         </div>
         <div className="flex items-center justify-between gap-2 pt-1 border-t border-warning/30">
-          <span className="font-medium">Balance</span>
+          <span className="font-medium">{t("Balance")}</span>
           <span className={`font-mono font-bold ${isDeficit ? 'text-error' : 'text-success'}`}>
             {d.balance >= 0 ? '+' : ''}{formatMW(d.balance)} MW
           </span>

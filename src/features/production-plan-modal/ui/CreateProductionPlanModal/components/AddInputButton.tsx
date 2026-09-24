@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -5,6 +6,7 @@ import type { AddBuildingRequest } from '@/features/bases/types';
 import { AddBuildingCardModal } from '@/features/bases/ui/modals';
 
 export const AddInputButton: React.FC = () => {
+    const { t } = useTranslation();
     const runtime = useRuntime();
     const planning = useSubscription([appIds.subscriptions.BASES_MODE]) === 'planning';
     const selectedBaseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
@@ -49,8 +51,7 @@ export const AddInputButton: React.FC = () => {
             className="btn btn-sm btn-primary btn-outline h-8 min-h-8 shrink-0 gap-1 px-2 text-xs"
             onClick={() => setShowAddInputModal(true)}
         >
-            <span aria-hidden="true">+</span>Add input
-        </button>
+            <span aria-hidden="true">+</span>{t("Add input")}</button>
         {showAddInputModal && (
             <AddBuildingCardModal
                 isOpen={showAddInputModal}

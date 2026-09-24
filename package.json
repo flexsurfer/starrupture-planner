@@ -30,7 +30,8 @@
     "test:e2e:headless": "vitest run src/platform/headless/e2e",
     "test:e2e:headless:coverage": "vitest run src/platform/headless/e2e --coverage",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:i18n": "vitest run src/shared/i18n"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",

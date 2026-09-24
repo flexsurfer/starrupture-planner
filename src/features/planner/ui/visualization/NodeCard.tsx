@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React from 'react';
 import type { PlannerFlowNode, Item, RawMaterialDeficit } from '@/features/planner/types';
 import { getItemName } from '@/utils/itemUtils';
@@ -29,6 +30,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     onRevertInput,
     inputDisabledReason,
 }) => {
+    const { t } = useTranslation();
     if (node.nodeType === 'target') {
         return <TargetNodeCard node={node} items={items} outputColor={outputColor} compactOnMobile={compactOnMobile} />;
     }
@@ -38,8 +40,8 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     // Input nodes expose their source's available rate; production uses whole buildings.
     const availableRate = node.outputAmount * (node.nodeType === 'input' ? 1 : buildingCount);
     const usagePercent = availableRate > 0 ? Math.min(100, Math.max(0, usedRate / availableRate * 100)) : 0;
-    const usageLabel = `${Number(usagePercent.toFixed(1))}% used`;
-    const usageDescription = `${usedRate.toFixed(1)} of ${availableRate.toFixed(1)}/min used`;
+    const usageLabel = t("{percent}% used", { percent: Number(usagePercent.toFixed(1)) });
+    const usageDescription = t("{used} of {available}/min used", { used: usedRate.toFixed(1), available: availableRate.toFixed(1) });
     const external = node.nodeType === 'input' && !inputRequirement;
     const inputButton = <NodeInputButton node={node} itemName={getItemName(node.outputItem, items)} isExternal={external}
         renderInputDialog={renderInputDialog} onRevertInput={onRevertInput} inputDisabledReason={inputDisabledReason} />;
@@ -59,19 +61,19 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                     <div className={`shrink-0 ${compactOnMobile ? 'max-sm:[&>div]:size-10 max-sm:[&_img]:size-10' : ''}`}>
                         <ItemImage itemId={node.outputItem} size="medium" />
                     </div>
-                    <div className={`min-w-0 font-semibold leading-tight break-words tabular-nums ${compactOnMobile ? 'text-lg sm:text-xl' : 'text-xl'}`} style={{ color: outputColor }} aria-label={inputRequirement ? 'Required input per minute' : 'Total output per minute'}>
-                        {usedRate.toFixed(1)}<span className="block text-xs font-normal">/min{inputRequirement ? ' needed' : ''}</span>
+                    <div className={`min-w-0 font-semibold leading-tight break-words tabular-nums ${compactOnMobile ? 'text-lg sm:text-xl' : 'text-xl'}`} style={{ color: outputColor }} aria-label={inputRequirement ? t("Required input per minute") : t("Total output per minute")}>
+                        {usedRate.toFixed(1)}<span className="block text-xs font-normal">{inputRequirement ? t("/min needed") : t("/min")}</span>
                     </div>
                 </div>
             </div>
 
             {inputRequirement ? <div className={`mt-auto flex items-center justify-between gap-1 rounded-b bg-base-content/5 p-2 text-xs ${showMissingInput ? 'text-error' : 'text-base-content/60'}`}>
-                <span>{showMissingInput ? inputRequirement.available > 0 ? 'Additional input needed' : 'Input not configured' : 'Required resource'}</span>
+                <span>{showMissingInput ? inputRequirement.available > 0 ? t("Additional input needed") : t("Input not configured") : t("Required resource")}</span>
                 {inputButton}
             </div> : <><div
                 className="mt-auto shrink-0"
                 role="meter"
-                aria-label="Resource capacity used"
+                aria-label={t("Resource capacity used")}
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={usagePercent}
@@ -79,7 +81,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                 title={usageDescription}
             >
                 <div className="flex items-center justify-between gap-1 px-2 pb-1 text-[10px] leading-tight text-base-content/60 tabular-nums">
-                    <span>Capacity</span>
+                    <span>{t("Capacity")}</span>
                     <span>{usageLabel}</span>
                 </div>
                 <div className="h-1 w-full overflow-hidden bg-base-content/10">
@@ -90,16 +92,16 @@ export const NodeCard: React.FC<NodeCardProps> = ({
             {/* Building details stay secondary, below the item. */}
             <div className={`shrink-0 bg-base-content/5 rounded-b ${compactOnMobile ? 'p-1.5 sm:p-2' : 'p-2'}`}>
                 <div className="mb-1 flex items-center justify-between gap-1">
-                    <div className={`min-w-0 leading-tight text-base-content/60 break-words ${external ? 'text-left' : ''} ${compactOnMobile ? 'text-[11px] sm:text-sm' : 'text-sm'}`}>{external ? 'External resource' : node.buildingName}</div>
+                    <div className={`min-w-0 leading-tight text-base-content/60 break-words ${external ? 'text-left' : ''} ${compactOnMobile ? 'text-[11px] sm:text-sm' : 'text-sm'}`}>{external ? t("External resource") : node.buildingName}</div>
                     {inputButton}
                 </div>
                 <div className="flex items-center gap-1.5">
                     {node.buildingId !== EXTERNAL_RESOURCE_BUILDING_ID && <BuildingImage buildingId={node.buildingId} size="small" className={`!w-8 !h-8 shrink-0 ${compactOnMobile ? 'max-sm:!w-6 max-sm:!h-6' : ''}`} />}
                     <div className="min-w-0 flex-1 text-left text-[10px] leading-tight break-words space-y-0.5">
                         {external && node.buildingId !== EXTERNAL_RESOURCE_BUILDING_ID && <div className="text-base-content/55">{node.buildingName}</div>}
-                        <div className={`${compactOnMobile ? 'text-[10px] sm:text-xs' : 'text-xs'} text-base-content/55`}>{node.outputAmount.toFixed(1)}/min</div>
+                        <div className={`${compactOnMobile ? 'text-[10px] sm:text-xs' : 'text-xs'} text-base-content/55`}>{t("{value}/min", { value: node.outputAmount.toFixed(1) })}</div>
                     </div>
-                    {!external && <span className={`shrink-0 rounded border py-0.5 font-semibold ${compactOnMobile ? 'px-1 text-xs sm:px-1.5 sm:text-sm' : 'px-1.5 text-sm'} ${buildingCount > 1 ? 'border-secondary/40 bg-secondary/15 text-secondary' : 'border-base-content/15 text-base-content/75'}`} title={`${buildingCount} buildings required`}>
+                    {!external && <span className={`shrink-0 rounded border py-0.5 font-semibold ${compactOnMobile ? 'px-1 text-xs sm:px-1.5 sm:text-sm' : 'px-1.5 text-sm'} ${buildingCount > 1 ? 'border-secondary/40 bg-secondary/15 text-secondary' : 'border-base-content/15 text-base-content/75'}`} title={t("{count} buildings required", { count: buildingCount })}>
                         ×{buildingCount}
                     </span>}
                 </div>

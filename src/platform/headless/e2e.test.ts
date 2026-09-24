@@ -1,3 +1,4 @@
+import { createTranslator, translateText } from '@/shared/i18n/core';
 // @vitest-environment node
 
 import {
@@ -363,7 +364,7 @@ describe('headless application E2E', () => {
             { nodeType: 'target', outputItem: 'iron-plate', amount: 60 },
         ]);
         await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'steel-plate']);
-        expect(view.value('warning')).toContain('already a target');
+        expect(translateText(createTranslator('en'), view.value('warning') ?? '')).toContain('already a target');
         await dispatch(scenario, [appIds.events.PLANNER_DISMISS_TARGET_WARNING]);
         expect(view.value('warning')).toBeNull();
 
@@ -476,7 +477,7 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'iron-plate']);
         const validFlow = view.value('flow');
         await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter:loop']);
-        expect(view.value('warning')).toContain('circular production dependency');
+        expect(translateText(createTranslator('en'), view.value('warning') ?? '')).toContain('circular production dependency');
         expect(view.value('recipes')).toEqual({});
         expect(view.value('flow')).toEqual(validFlow);
         await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTIONS, { 'iron-plate': 'smelter:loop' }]);
@@ -485,7 +486,7 @@ describe('headless application E2E', () => {
         const updated = structuredClone(data);
         updated.buildings.find(building => building.id === 'smelter')!.recipes![0].inputs = [{ id: 'steel-plate', amount_per_minute: 30 }];
         await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', updated]);
-        expect(view.value('dataWarning')).toContain('circular production dependency');
+        expect(translateText(createTranslator('en'), view.value('dataWarning') ?? '')).toContain('circular production dependency');
         expect(view.value('flow').nodes).toEqual([]);
         expect(view.value('stats')).toEqual({ totalBuildings: 0, totalEnergy: 0, totalHotness: 0 });
         await dispatch(scenario, [appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
@@ -506,7 +507,7 @@ describe('headless application E2E', () => {
         const updatedData: AppVersionedGameData = structuredClone(TEST_GAME_DATA);
         updatedData.buildings = updatedData.buildings.filter(building => building.id !== 'assembler');
         await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', updatedData]);
-        expect(view.value('warning')).toContain('Steel Plate has no usable production recipe');
+        expect(translateText(createTranslator('en'), view.value('warning') ?? '')).toContain('Steel Plate has no usable production recipe');
         expect(view.value('targets')).toEqual([{ itemId: 'steel-plate', amount: 30 }]);
         expect(view.value('flow').nodes).toEqual([]);
         await dispatch(scenario, [appIds.events.PLANNER_REMOVE_TARGET, 'steel-plate']);
@@ -522,6 +523,7 @@ describe('headless application E2E', () => {
             version: [appIds.subscriptions.APP_DATA_VERSION],
             versions: [appIds.subscriptions.APP_DATA_VERSIONS],
             theme: [appIds.subscriptions.UI_THEME],
+            locale: [appIds.subscriptions.UI_LOCALE],
             pending: [appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING],
             activeTab: [appIds.subscriptions.UI_ACTIVE_TAB],
             confirmation: [appIds.subscriptions.UI_CONFIRMATION_DIALOG],
@@ -537,6 +539,8 @@ describe('headless application E2E', () => {
         expect(shell.value('version')).toBe(DEFAULT_DATA_VERSION);
         expect(shell.value('versions')).toHaveLength(5);
 
+        await dispatch(scenario, [appIds.events.UI_SET_LOCALE, 'unknown-locale']);
+        expect(shell.value('locale')).toBe('en');
         await dispatch(scenario, [appIds.events.UI_SET_THEME, 'light']);
         await dispatch(scenario, [appIds.events.UI_SET_ACTIVE_TAB, 'corporations']);
         expect(shell.current()).toMatchObject({ theme: 'light', activeTab: 'corporations' });

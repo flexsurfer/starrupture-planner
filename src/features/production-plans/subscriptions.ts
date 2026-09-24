@@ -155,13 +155,13 @@ export const registerProductionPlansSubscriptions: UkladModule<UkladRegistrar<Ap
                 itemName: item?.name || inputBuilding.selectedItemId || '',
                 ratePerMinute,
                 isSatisfied,
-                linkedOutput: inputBuilding.linkedOutput ? { status: linkedOutputStatus || 'missing-output', baseName: linkedOutputResolution?.sourceBase?.name || 'Missing base', outputName: linkedOutputResolution?.sourceOutput?.name || linkedOutputSourceBuilding?.name || inputBuilding.linkedOutput.buildingId } : undefined,
+                linkedOutput: inputBuilding.linkedOutput ? { status: linkedOutputStatus || 'missing-output', baseName: linkedOutputResolution?.sourceBase?.name || '', outputName: linkedOutputResolution?.sourceOutput?.name || linkedOutputSourceBuilding?.name || inputBuilding.linkedOutput.buildingId } : undefined,
             });
         });
         const sharedInputShortages: SharedInputShortage[] = calculateSharedInputShortages(base, section.id, buildings, allBases).map((shortage) => {
             const matchingBaseInput = baseInputBuildingsById.get(shortage.baseBuildingId);
             const itemId = shortage.itemId || matchingBaseInput?.selectedItemId || '';
-            return { ...shortage, inputName: (matchingBaseInput?.name || '').trim() || (itemId ? itemsMap[itemId]?.name || itemId : 'Unknown input'), itemId, itemName: itemId ? itemsMap[itemId]?.name || itemId : 'Unknown input' };
+            return { ...shortage, inputName: (matchingBaseInput?.name || '').trim() || (itemId ? itemsMap[itemId]?.name || itemId : ''), itemId, itemName: itemId ? itemsMap[itemId]?.name || itemId : '' };
         });
         const hasRawMaterialShortage = (productionFlow.rawMaterialDeficits || []).length > 0;
         const hasMaterialShortage = sharedInputShortages.length > 0 || hasRawMaterialShortage;

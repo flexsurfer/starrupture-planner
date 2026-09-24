@@ -1,3 +1,4 @@
+import { normalizeLocale } from '@/shared/i18n/locales';
 import type { PersistKey } from '@ukladjs/persist';
 import type { AppState } from '@/app/uklad/model';
 import { stateKeys } from '@/app/uklad/catalog';
@@ -8,6 +9,7 @@ import { normalizeRecipePresets } from './legacy-storage/recipe-presets-storage'
 
 /** Durable roots and their boundary validation for Uklad persistence. */
 export const PERSIST_KEYS = [
+    { key: stateKeys.uiLocale, deserialize: normalizeLocale },
     { key: stateKeys.basesMode, deserialize: (value: unknown) => value === 'planning' || value === 'advanced' ? value : null },
     { key: stateKeys.basesDetailsExpanded, deserialize: (value: unknown) => typeof value === 'boolean' ? value : true },
     { key: stateKeys.plannerTabs, deserialize: normalizePlannerTabs },

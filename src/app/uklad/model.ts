@@ -1,3 +1,4 @@
+import type { UiText } from '@/shared/i18n/core';
 import type { DataTransferState } from '@/features/data-transfer/archive';
 import type { PlannerFeatureState } from '@/features/planner/state';
 import type { DataVersion } from '@/features/app-shell/data-version';
@@ -188,10 +189,10 @@ export type BasesById = Record<string, Base>;
 
 export interface ConfirmationDialog {
     isOpen: boolean;
-    title: string;
-    message: string;
-    confirmLabel?: string;
-    cancelLabel?: string;
+    title: UiText;
+    message: UiText;
+    confirmLabel?: UiText;
+    cancelLabel?: UiText;
     confirmButtonClass?: string;
     onConfirm: () => void;
     onCancel?: () => void;
@@ -224,6 +225,7 @@ export interface AppState extends PlannerFeatureState, DataTransferState {
     itemsCategories: string[];
     buildingsList: Building[];
     corporationsList: Corporation[];
+    uiLocale: string;
     uiTheme: 'light' | 'dark';
     /** True while a user-requested game-data fetch is in flight (not used for `APP_INIT` load). */
     uiGameDataLoadPending: boolean;

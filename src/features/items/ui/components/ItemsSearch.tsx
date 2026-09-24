@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useRuntime, useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 
@@ -6,6 +7,7 @@ interface ItemsSearchProps {
 }
 
 export const ItemsSearch = ({ className = "" }: ItemsSearchProps) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const searchTerm = useSubscription([appIds.subscriptions.ITEMS_SEARCH_TERM]);
 
@@ -17,7 +19,7 @@ export const ItemsSearch = ({ className = "" }: ItemsSearchProps) => {
     <div className={`form-control ${className}`}>
       <input
         type="text"
-        placeholder="Search items..."
+        placeholder={t("Search items...")}
         className="input input-sm input-bordered w-full"
         value={searchTerm || ''}
         onChange={handleSearchChange}

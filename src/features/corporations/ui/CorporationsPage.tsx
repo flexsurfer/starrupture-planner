@@ -1,8 +1,10 @@
+import { useTranslation } from '@/shared/i18n';
 import { CorporationCard } from './CorporationCard';
 import { CorporationsStats } from './CorporationsStats';
 import { useCorporations, useCorporationCollapse } from './useCorporations';
 
 const CorporationsPage = () => {
+    const { t } = useTranslation();
   const { corporationsWithStats, itemsMap } = useCorporations();
   const { collapsedCorporations, toggleCorporation } = useCorporationCollapse(corporationsWithStats);
 
@@ -11,7 +13,7 @@ const CorporationsPage = () => {
       <div className="flex flex-col gap-3">
         {/* Header section - responsive */}
         <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h1 className="text-lg font-bold sm:text-xl">Corporations</h1>
+          <h1 className="text-lg font-bold sm:text-xl">{t("Corporations")}</h1>
           <CorporationsStats />
         </header>
 
@@ -30,7 +32,7 @@ const CorporationsPage = () => {
 
         {corporationsWithStats.length === 0 && (
           <div className="text-center py-8">
-            <div className="text-base-content/60">No corporations data available</div>
+            <div className="text-base-content/60">{t("No corporations data available")}</div>
           </div>
         )}
       </div>

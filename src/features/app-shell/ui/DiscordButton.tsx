@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 interface DiscordButtonProps {
   href?: string;
   className?: string;
@@ -7,13 +8,14 @@ const DiscordButton = ({
   href = "https://discord.gg/P62bkGbC6F",
   className = "btn btn-ghost btn-sm"
 }: DiscordButtonProps) => {
+    const { t } = useTranslation();
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
       className={className}
-      title="Join Discord"
+      title={t("Join Discord")}
     >
       <svg
         className="w-5 h-5"

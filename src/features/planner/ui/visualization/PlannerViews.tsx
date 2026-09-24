@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useId, type ReactNode } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -7,6 +8,7 @@ import { PlannerProductionTable } from './PlannerProductionTable';
 const VIEWS = ['graph', 'table'] as const;
 
 export const PlannerViews = ({ renderHeader }: { renderHeader?: () => ReactNode }) => {
+    const { t } = useTranslation();
     const mode = useSubscription([appIds.subscriptions.PLANNER_MODE]);
     const warning = useSubscription([appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING]);
     const calculationPaused = mode === 'multi' && warning !== null;
@@ -16,7 +18,7 @@ export const PlannerViews = ({ renderHeader }: { renderHeader?: () => ReactNode 
     const id = useId();
 
     const viewControl = (
-            <div role="tablist" aria-label="Planner views" className="join inline-flex w-fit shrink-0 rounded-md border border-base-300 bg-base-100">
+            <div role="tablist" aria-label={t("Planner views")} className="join inline-flex w-fit shrink-0 rounded-md border border-base-300 bg-base-100">
                 {VIEWS.map((view, index) => (
                     <button
                         key={view}
@@ -36,7 +38,7 @@ export const PlannerViews = ({ renderHeader }: { renderHeader?: () => ReactNode 
                             event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
                         }}
                     >
-                        {view === 'graph' ? 'Graph' : 'Table'}
+                        {view === 'graph' ? t("Graph") : t("Table")}
                     </button>
                 ))}
             </div>
@@ -58,9 +60,7 @@ export const PlannerViews = ({ renderHeader }: { renderHeader?: () => ReactNode 
                         inert={activeView !== view}
                         className={`absolute inset-0 bg-base-100 ${view === 'table' ? 'pt-14' : ''} ${activeView === view ? 'visible opacity-100 z-10' : 'invisible opacity-0 z-0 pointer-events-none'}`}
                     >
-                        {calculationPaused ? <div className="flex h-full items-center justify-center p-4 text-base-content/70">
-                            Resolve the target warning to calculate production.
-                        </div> : view === 'graph' ? <PlannerFlowDiagram /> : <PlannerProductionTable />}
+                        {calculationPaused ? <div className="flex h-full items-center justify-center p-4 text-base-content/70">{t("Resolve the target warning to calculate production.")}</div> : view === 'graph' ? <PlannerFlowDiagram /> : <PlannerProductionTable />}
                     </div>
                 ))}
             </div>

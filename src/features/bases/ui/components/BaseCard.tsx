@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { ExportBaseButton } from '@/features/data-transfer/ui/ExportBaseButton';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
@@ -53,6 +54,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   isCollapsed = false,
   onToggle,
 }) => {
+    const { t } = useTranslation();
   const titleContent = (
     <>
       {isCollapsible && (
@@ -99,8 +101,8 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
           <button
             type="button"
             className="btn btn-ghost h-8 min-h-8 w-8 p-0 text-base-content/45 hover:text-base-content"
-            aria-label={`Manage ${title}`}
-            title={`Manage ${title}`}
+            aria-label={t("Manage {title}", { title: title })}
+            title={t("Manage {title}", { title: title })}
             onClick={onManage}
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-3.5">
@@ -133,6 +135,7 @@ const formatRate = (value: number | undefined): string => {
 };
 
 const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logistics, outputItems }) => {
+    const { t } = useTranslation();
   const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const planData = useSubscription([
     appIds.subscriptions.PRODUCTION_PLAN_SECTION_REQUIREMENTS_STATUS_BY_ID,
@@ -144,7 +147,7 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
   const outputColor = getItemCategoryColor(itemsMap[plan.selectedItemId]?.type);
 
   const needsAttention = plan.active && (!allRequirementsSatisfied || hasMaterialShortage);
-  const statusLabel = hasError ? 'Error' : !plan.active ? 'Inactive' : needsAttention ? 'Needs attention' : 'Active';
+  const statusLabel = hasError ? t("Error") : !plan.active ? t("Inactive") : needsAttention ? t("Needs attention") : t("Active");
   const statusClass = hasError ? 'text-error' : needsAttention ? 'text-warning' : 'text-base-content/50';
 
   return (
@@ -161,8 +164,8 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
             <span className={`min-w-0 flex-1 break-words text-sm font-semibold leading-snug ${!advanced || plan.active ? 'text-base-content' : 'text-base-content/60'}`}>
               {itemName}
             </span>
-            <span className={`shrink-0 whitespace-nowrap text-right text-lg font-semibold leading-tight tabular-nums sm:text-xl ${!advanced || plan.active ? '' : 'opacity-60'}`} style={{ color: outputColor }} title="Target production rate">
-              {plan.targetAmount}<span className="ml-0.5 text-xs font-normal">/min</span>
+            <span className={`shrink-0 whitespace-nowrap text-right text-lg font-semibold leading-tight tabular-nums sm:text-xl ${!advanced || plan.active ? '' : 'opacity-60'}`} style={{ color: outputColor }} title={t("Target production rate")}>
+              {plan.targetAmount}<span className="ml-0.5 text-xs font-normal">{t("/min")}</span>
             </span>
           </div>
           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
@@ -176,7 +179,7 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
               {statusLabel}
             </span>}
             {corporationName && (
-              <span className="text-base-content/50">{corporationName} Lv.{plan.corporationLevel?.level}</span>
+              <span className="text-base-content/50">{t("{corporationName} Lv.{level}", { corporationName: corporationName, level: plan.corporationLevel?.level ?? '' })}</span>
             )}
           </div>
         </div>
@@ -189,14 +192,14 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
         return (
           <details className="mt-2 text-[11px] text-base-content/50">
             <summary className="cursor-pointer rounded py-1 hover:text-base-content/75 focus-visible:outline-2 focus-visible:outline-primary">
-              <span>Outputs · {formatRate(outputSummary.assignedRatePerMinute)}/min assigned</span>
+              <span>{t("Outputs · {value}/min assigned", { value: formatRate(outputSummary.assignedRatePerMinute) })}</span>
               {outputSummary.remainingRatePerMinute > 0 && (
-                <span> · {formatRate(outputSummary.remainingRatePerMinute)}/min left</span>
+                <span>{t(" · {value}/min left", { value: formatRate(outputSummary.remainingRatePerMinute) })}</span>
               )}
               {outputs.some((output) => output.isOverCapacity || output.isUnderSupplied) && (
-                <span className="text-warning"> · Limited</span>
+                <span className="text-warning">{t(" · Limited")}</span>
               )}
-              <span className="sr-only">. Show output allocation details</span>
+              <span className="sr-only">{t(". Show output allocation details")}</span>
             </summary>
             <div className="mt-1 space-y-1 border-l border-base-content/10 pl-2">
               {outputs.slice(0, 3).map((output) => {
@@ -206,7 +209,7 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
                 const targetLabel = linkedInputs.length === 1
                     ? linkedInputs[0].baseName
                     : linkedInputs.length > 1
-                      ? `${linkedInputs.length} targets`
+                      ? t("{count} targets", { count: linkedInputs.length })
                       : '';
                 const hasWarning = output.isOverCapacity || output.isUnderSupplied;
                 const outputName = output.name || outputItem?.building.name || output.buildingTypeId;
@@ -232,25 +235,21 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
                           className={`truncate text-[10px] ${hasWarning ? 'text-warning' : 'text-base-content/50'}`}
                           title={linkedInputs.map((entry) => entry.baseName).join(', ')}
                         >
-                          {hasWarning ? 'limited by source/capacity' : `to ${targetLabel}`}
+                          {hasWarning ? t("limited by source/capacity") : t("to {target}", { target: targetLabel })}
                         </div>
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      <span className="text-[11px] font-medium tabular-nums" style={{ color: outputColor }}>
-                        {formatRate(output.effectiveRatePerMinute)}/min
-                      </span>
+                      <span className="text-[11px] font-medium tabular-nums" style={{ color: outputColor }}>{t("{value}/min", { value: formatRate(output.effectiveRatePerMinute) })}</span>
                       {hasCapacity && (
-                        <span className="font-mono text-[10px] text-base-content/50">
-                          cap {formatRate(output.capacityPerMinuteResolved)}/min
-                        </span>
+                        <span className="font-mono text-[10px] text-base-content/50">{t("cap {value}/min", { value: formatRate(output.capacityPerMinuteResolved) })}</span>
                       )}
                     </div>
                   </div>
                 );
               })}
               {outputs.length > 3 && (
-                <div className="text-[11px] text-base-content/45">+{outputs.length - 3} more outputs</div>
+                <div className="text-[11px] text-base-content/45">{t("+{value} more outputs", { value: outputs.length - 3 })}</div>
               )}
             </div>
           </details>
@@ -261,6 +260,7 @@ const PlanItem: React.FC<PlanItemProps> = ({ plan, itemsMap, baseId, base, logis
 };
 
 export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
@@ -359,16 +359,14 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
             />
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-sm font-medium text-base-content/75" title={base.name}>{base.name}</h3>
-              {advanced && <div className="mt-0.5 text-[11px] text-base-content/50">
-                Lv.{coreLevel + 1} · {base.buildings.length} buildings
-              </div>}
+              {advanced && <div className="mt-0.5 text-[11px] text-base-content/50">{t("Lv.{level} · {count} buildings", { level: coreLevel + 1, count: base.buildings.length })}</div>}
             </div>
           </div>
 
           {advanced && <div className="space-y-1.5 text-[11px]">
             <div>
               <div className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 ${isHeatOverCapacity ? 'text-error' : 'text-base-content/50'}`}>
-                <span>Heat{isHeatOverCapacity ? ' · Over capacity' : ''}</span>
+                <span>{t("Heat{value}", { value: isHeatOverCapacity ? t(" · Over capacity") : '' })}</span>
                 <span className="font-mono tabular-nums">{totalHeat} / {baseCoreHeatCapacity}</span>
               </div>
               <div className="mt-1 h-1 overflow-hidden rounded-full bg-base-content/10">
@@ -381,9 +379,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
             <div>
               <div className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 ${isEnergyInsufficient ? 'text-error' : 'text-base-content/50'}`}>
                 <div className="flex min-w-0 items-center gap-1">
-                  <span className="truncate" title={energyGroupName}>
-                    Energy{energyGroupName ? ` [${energyGroupName}]` : ''}{isEnergyInsufficient ? ' · Insufficient' : ''}
-                  </span>
+                  <span className="truncate" title={energyGroupName}>{t("Energy{value}{value2}", { value: energyGroupName ? ` [${energyGroupName}]` : '', value2: isEnergyInsufficient ? t(" · Insufficient") : '' })}</span>
                   <EnergyGroupSelector baseId={base.id} currentGroupId={energyGroupId} variant="icon" />
                 </div>
                 <span className="font-mono tabular-nums">
@@ -403,7 +399,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
 
           <div className="border-t border-base-content/5 pt-2">
             <SectionHeader
-              title="Production Plans"
+              title={t("Production Plans")}
               count={planSections.length}
               onManage={() => onOpen(base.id, 'plans')}
               onAdd={handleAddPlan}
@@ -414,9 +410,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
             />
             {!isProductionPlansCollapsed && (
               planSections.length === 0 ? (
-                <div className="py-3 text-xs text-base-content/50">
-                  No production plans yet.
-                </div>
+                <div className="py-3 text-xs text-base-content/50">{t("No production plans yet.")}</div>
               ) : (
                 <div className="divide-y divide-base-content/5">
                   {planSections.map((plan) => (
@@ -437,7 +431,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
 
           {advanced && <><div className="border-t border-base-content/5 pt-2">
             <SectionHeader
-              title="Outputs"
+              title={t("Outputs")}
               count={outputItems.length}
               onManage={() => onOpen(base.id, 'buildings')}
               onAdd={handleAddOutput}
@@ -448,9 +442,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
             />
             {!isOutputsCollapsed && (
               outputItems.length === 0 ? (
-                <div className="py-3 text-xs text-base-content/50">
-                  No outputs configured yet.
-                </div>
+                <div className="py-3 text-xs text-base-content/50">{t("No outputs configured yet.")}</div>
               ) : (
                 <div className="divide-y divide-base-content/5">
                   {outputItems.map(({ item, ratePerMinute, baseBuildingId, name, building }) => {
@@ -481,39 +473,37 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
                           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                             <span className="min-w-0 flex-1 break-words text-sm font-semibold text-base-content">{item.name}</span>
                             <span className="shrink-0 whitespace-nowrap text-right text-lg font-semibold leading-tight tabular-nums sm:text-xl" style={{ color: getItemCategoryColor(item.type) }}>
-                              {formatRate(ratePerMinute)}<span className="ml-0.5 text-xs font-normal">/min</span>
+                              {formatRate(ratePerMinute)}<span className="ml-0.5 text-xs font-normal">{t("/min")}</span>
                             </span>
                           </div>
                           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/50">
                             <span className="truncate" title={outputName}>{outputName}</span>
                             {isPlanLinked && (
-                              <span className="font-mono text-[10px]">
-                                cap {formatRate(capacityPerMinute)}/min
-                              </span>
+                              <span className="font-mono text-[10px]">{t("cap {value}/min", { value: formatRate(capacityPerMinute) })}</span>
                             )}
                             {isPlanLinked ? (
                               <span className="truncate" title={sourcePlanName}>
                                 {sourcePlanName}
                               </span>
                             ) : (
-                              <span>Manual</span>
+                              <span>{t("Manual")}</span>
                             )}
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
-                            {hasAllocationWarning && <span className="text-warning">Limited by source/capacity</span>}
+                            {hasAllocationWarning && <span className="text-warning">{t("Limited by source/capacity")}</span>}
                             {!isExcluded && (
                               <>
                                 {hasBrokenTarget && (
-                                  <span className="text-error">Broken link</span>
+                                  <span className="text-error">{t("Broken link")}</span>
                                 )}
                                 {hasTargets && !hasBrokenTarget && (
                                   <span
                                     className="truncate text-base-content/50"
-                                    title={linkedInputs.map((l) => `${l.baseName} (${l.ratePerMinute || 0}/min)`).join(', ')}
+                                    title={linkedInputs.map((l) => t("{name} ({rate}/min)", { name: l.baseName, rate: l.ratePerMinute || 0 })).join(', ')}
                                   >
                                     → {linkedInputs.length === 1
                                       ? linkedInputs[0].baseName
-                                      : `${linkedInputs.length} bases`}
+                                      : t("{count} bases", { count: linkedInputs.length })}
                                   </span>
                                 )}
                               </>
@@ -530,7 +520,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
 
           <div className="border-t border-base-content/5 pt-2">
             <SectionHeader
-              title="Inputs"
+              title={t("Inputs")}
               count={inputItems.length}
               onManage={() => onOpen(base.id, 'buildings')}
               onAdd={handleAddInput}
@@ -541,9 +531,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
             />
             {!isInputsCollapsed && (
               inputItems.length === 0 ? (
-                <div className="py-3 text-xs text-base-content/50">
-                  No inputs configured yet.
-                </div>
+                <div className="py-3 text-xs text-base-content/50">{t("No inputs configured yet.")}</div>
               ) : (
                 <div className="divide-y divide-base-content/5">
                   {inputItems.map(({ item, ratePerMinute, baseBuildingId, name, building, linkedOutput }) => {
@@ -560,24 +548,22 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
                         <ItemImage itemId={item.id} item={item} size="small" className="h-6 w-6 shrink-0 opacity-65" />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-base-content/65" title={displayName}>{displayName}</div>
-                          <div className="text-xs font-medium tabular-nums" style={{ color: getItemCategoryColor(item.type) }}>{ratePerMinute}/min</div>
+                          <div className="text-xs font-medium tabular-nums" style={{ color: getItemCategoryColor(item.type) }}>{t("{ratePerMinute}/min", { ratePerMinute: ratePerMinute })}</div>
                         </div>
                         {supportsLinking && (
                           <div className="flex shrink-0 justify-end">
                             {isBroken && (
                               <span
                                 className="text-[11px] text-error"
-                                title={`Broken link: ${linkedOutput.baseName} → ${linkedOutput.outputName} (${linkedOutput.status})`}
-                              >
-                                Broken link
-                              </span>
+                                title={t("Broken link: {baseName} → {outputName} ({status})", { baseName: (linkedOutput.baseName || t("Missing base")), outputName: linkedOutput.outputName, status: linkedOutput.status })}
+                              >{t("Broken link")}</span>
                             )}
                             {isLinked && !isBroken && (
                               <span
                                 className="max-w-[100px] truncate text-[11px] text-base-content/50"
-                                title={`${linkedOutput.baseName} → ${linkedOutput.outputName}`}
+                                title={`${(linkedOutput.baseName || t("Missing base"))} → ${linkedOutput.outputName}`}
                               >
-                                ← {linkedOutput.baseName}
+                                ← {(linkedOutput.baseName || t("Missing base"))}
                               </span>
                             )}
                           </div>
@@ -601,7 +587,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
           {defenseBuildings.length > 0 && (
             <div className="border-t border-base-content/5 pt-2">
               <SectionHeader
-                title="Defense"
+                title={t("Defense")}
                 count={defenseBuildings.length}
                 onManage={() => onOpen(base.id, 'buildings')}
                 isCollapsible
@@ -637,8 +623,8 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
               <button
                 type="button"
                 className="btn btn-sm btn-ghost h-8 min-h-8 w-8 p-0 text-base-content/55 hover:bg-error/10 hover:text-error"
-                aria-label={`Delete ${base.name}`}
-                title="Delete Base"
+                aria-label={t("Delete {name}", { name: base.name })}
+                title={t("Delete Base")}
                 onClick={() => onDelete(base.id)}
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4">
@@ -651,9 +637,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({ base, onOpen, onDelete }) =>
               type="button"
               className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"
               onClick={() => onOpen(base.id)}
-            >
-              Open
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-3.5">
+            >{t("Open")}<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-3.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-6-6 6 6-6 6" />
               </svg>
             </button>

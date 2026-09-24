@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -17,6 +18,7 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
   currentGroupId,
   variant = 'icon',
 }) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
   const [isOpen, setIsOpen] = useState(false);
@@ -76,19 +78,17 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
       open={isOpen}
       onToggle={(event) => setIsOpen(event.currentTarget.open)}
     >
-      <summary className={summaryClassName} title="Change energy group">
+      <summary className={summaryClassName} title={t("Change energy group")}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
           <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
         </svg>
-        {variant === 'text' ? (currentGroupId ? 'Change' : 'Assign') : null}
+        {variant === 'text' ? (currentGroupId ? t("Change") : t("Assign")) : null}
       </summary>
 
       <div className="dropdown-content bg-base-200 rounded-box z-10 w-56 p-2 shadow-lg space-y-2">
         <ul className="menu p-0">
           <li>
-            <button type="button" className={!currentGroupId ? 'active' : ''} onClick={() => handleSelect(null)}>
-              No Group
-            </button>
+            <button type="button" className={!currentGroupId ? 'active' : ''} onClick={() => handleSelect(null)}>{t("No Group")}</button>
           </li>
           {energyGroups.map((group) => (
             <li key={group.id}>
@@ -104,14 +104,14 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
         </ul>
 
         <div className="border-t border-base-300 pt-2">
-          <div className="text-[11px] uppercase tracking-wide text-base-content/60 mb-1">Create and assign</div>
+          <div className="text-[11px] uppercase tracking-wide text-base-content/60 mb-1">{t("Create and assign")}</div>
           <div className="flex items-center gap-1">
             <input
               type="text"
               className="input input-xs input-bordered flex-1"
               value={newGroupName}
               onChange={(event) => setNewGroupName(event.target.value)}
-              placeholder="Group name"
+              placeholder={t("Group name")}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
                   event.preventDefault();
@@ -124,9 +124,7 @@ export const EnergyGroupSelector: React.FC<EnergyGroupSelectorProps> = ({
               className="btn btn-xs btn-primary"
               disabled={!normalizedNewName}
               onClick={handleCreateAndAssign}
-            >
-              Add
-            </button>
+            >{t("Add")}</button>
           </div>
         </div>
       </div>

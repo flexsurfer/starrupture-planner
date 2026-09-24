@@ -1,3 +1,4 @@
+import { useTranslation, type Translator } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -15,54 +16,55 @@ type ShareButtonState = 'idle' | 'sharing' | 'shared' | 'copied' | 'downloaded' 
 
 const STATUS_RESET_DELAY_MS = 4000;
 
-const getButtonLabel = (state: ShareButtonState): { desktop: string; mobile: string; title: string; className: string } => {
+const getButtonLabel = (state: ShareButtonState, t: Translator): { desktop: string; mobile: string; title: string; className: string } => {
   switch (state) {
     case 'sharing':
       return {
-        desktop: 'Preparing...',
+        desktop: t("Preparing..."),
         mobile: '...',
-        title: 'Generating your share card.',
+        title: t("Generating your share card."),
         className: 'btn-ghost text-base-content/65',
       };
     case 'shared':
       return {
-        desktop: 'Shared',
-        mobile: 'Shared',
-        title: 'Shared via your device share dialog.',
+        desktop: t("Shared"),
+        mobile: t("Shared"),
+        title: t("Shared via your device share dialog."),
         className: 'btn-success',
       };
     case 'copied':
       return {
-        desktop: 'Copied',
-        mobile: 'Copied',
-        title: 'Card copied. Paste it in Discord (Ctrl+V).',
+        desktop: t("Copied"),
+        mobile: t("Copied"),
+        title: t("Card copied. Paste it in Discord (Ctrl+V)."),
         className: 'btn-success',
       };
     case 'downloaded':
       return {
-        desktop: 'Downloaded Card',
-        mobile: 'Saved',
-        title: 'Card downloaded. Upload it in Discord.',
+        desktop: t("Downloaded Card"),
+        mobile: t("Saved"),
+        title: t("Card downloaded. Upload it in Discord."),
         className: 'btn-accent',
       };
     case 'failed':
       return {
-        desktop: 'Share Failed',
-        mobile: 'Failed',
-        title: 'Sharing failed. Try again.',
+        desktop: t("Share Failed"),
+        mobile: t("Failed"),
+        title: t("Sharing failed. Try again."),
         className: 'btn-error',
       };
     default:
       return {
-        desktop: 'Share',
-        mobile: 'Share',
-        title: 'Generate a stats card and share it in Discord.',
+        desktop: t("Share"),
+        mobile: t("Share"),
+        title: t("Generate a stats card and share it in Discord."),
         className: 'btn-ghost text-base-content/65',
       };
   }
 };
 
 export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ stats, bases, className }) => {
+  const { t, locale } = useTranslation();
   const [state, setState] = useState<ShareButtonState>('idle');
   const resetTimerRef = useRef<number | null>(null);
   const isSharingRef = useRef(false);
@@ -103,7 +105,7 @@ export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ st
     setState('sharing');
     try {
       const topProducedItems = calculateTopProducedItems(bases, itemsById, corporations, 4);
-      const result = await shareBasesStats(stats, bases, topProducedItems);
+      const result = await shareBasesStats(stats, bases, topProducedItems, t, locale);
       if (result === 'cancelled') {
         setState('idle');
         return;
@@ -119,9 +121,9 @@ export const ShareBasesStatsButton: React.FC<ShareBasesStatsButtonProps> = ({ st
     } finally {
       isSharingRef.current = false;
     }
-  }, [bases, corporations, itemsById, scheduleReset, state, stats]);
+  }, [bases, corporations, itemsById, scheduleReset, state, stats, locale, t]);
 
-  const buttonInfo = getButtonLabel(state);
+  const buttonInfo = getButtonLabel(state, t);
 
   return (
     <button

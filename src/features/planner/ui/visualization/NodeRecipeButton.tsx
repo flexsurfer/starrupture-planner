@@ -1,9 +1,11 @@
+import { useTranslation } from '@/shared/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { FlowNode, Item } from '@/features/planner/types';
 import { NodeRecipeModal } from './NodeRecipeModal';
 
 export const NodeRecipeButton = ({ item, node, onSelectRecipe }: { item: Item; node: FlowNode; onSelectRecipe?: (itemId: string, recipeKey: string) => void }) => {
+    const { t } = useTranslation();
     const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
     const isOpen = portalContainer !== null;
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -33,8 +35,8 @@ export const NodeRecipeButton = ({ item, node, onSelectRecipe }: { item: Item; n
             ref={buttonRef}
             type="button"
             className="nodrag nopan btn btn-xs h-5 min-h-5 w-5 shrink-0 rounded border border-base-content/25 bg-base-300 p-0 text-base-content/75 shadow-sm hover:border-base-content/40 hover:bg-base-content/15"
-            title={`Recipes for ${item.name}`}
-            aria-label={`Recipes for ${item.name}`}
+            title={t("Recipes for {name}", { name: item.name })}
+            aria-label={t("Recipes for {name}", { name: item.name })}
             aria-haspopup="dialog"
             onClick={(event) => {
                 event.stopPropagation();
@@ -51,7 +53,7 @@ export const NodeRecipeButton = ({ item, node, onSelectRecipe }: { item: Item; n
                 ref={modalRef}
                 role="dialog"
                 aria-modal="true"
-                aria-label={`Recipes for ${item.name}`}
+                aria-label={t("Recipes for {name}", { name: item.name })}
                 className="relative z-[1000] nodrag nopan nowheel"
                 onClick={(event) => event.stopPropagation()}
                 onPointerDown={(event) => event.stopPropagation()}

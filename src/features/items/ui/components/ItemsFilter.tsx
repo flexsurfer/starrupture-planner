@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useRuntime } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 import { getCategoryDisplayName } from "../hooks/useItemsData";
@@ -9,6 +10,7 @@ interface ItemsFilterProps {
 }
 
 export const ItemsFilter = ({ categories, selectedCategory }: ItemsFilterProps) => {
+  const { t } = useTranslation();
   const runtime = useRuntime();
 
   return (
@@ -23,7 +25,7 @@ export const ItemsFilter = ({ categories, selectedCategory }: ItemsFilterProps) 
           aria-pressed={selectedCategory === category}
           onClick={() => runtime.dispatch([appIds.events.ITEMS_SET_SELECTED_CATEGORY, category])}
         >
-          {getCategoryDisplayName(category)}
+          {category === 'all' ? t("All Items") : getCategoryDisplayName(category)}
         </button>
       ))}
     </div>

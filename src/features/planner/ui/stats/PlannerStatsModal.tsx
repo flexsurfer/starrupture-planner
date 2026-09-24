@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useId, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -17,6 +18,7 @@ interface PlannerStatsModalProps {
  * Shows building counts, energy usage, and items used
  */
 export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, onClose }) => {
+    const { t , locale } = useTranslation();
     // Get detailed stats from subscription
     const stats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
     const [activeTab, setActiveTab] = useState<typeof STAT_TABS[number]>('buildings');
@@ -36,17 +38,17 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
             <div className="modal-box w-[95vw] max-w-6xl max-h-[95vh]">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between mb-4 lg:mb-6">
-                    <h3 className="text-lg lg:text-xl font-bold pr-4">Production Statistics</h3>
+                    <h3 className="text-lg lg:text-xl font-bold pr-4">{t("Production Statistics")}</h3>
                     <button
                         className="btn btn-sm btn-circle btn-ghost flex-shrink-0"
                         onClick={closeModal}
-                        aria-label="Close modal"
+                        aria-label={t("Close modal")}
                     >
                         ✕
                     </button>
                 </div>
 
-                <div role="tablist" aria-label="Production statistics views" className="tabs tabs-border mb-4">
+                <div role="tablist" aria-label={t("Production statistics views")} className="tabs tabs-border mb-4">
                     {STAT_TABS.map((tab, index) => (
                         <button
                             key={tab}
@@ -68,7 +70,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                                     ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus();
                             }}
                         >
-                            {tab === 'buildings' ? `Buildings (${stats.totalBuildings})` : `Items (${itemCount})`}
+                            {tab === 'buildings' ? t("Buildings ({totalBuildings})", { totalBuildings: stats.totalBuildings }) : t("Items ({itemCount})", { itemCount: itemCount })}
                         </button>
                     ))}
                 </div>
@@ -84,7 +86,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                     className="mb-6"
                 >
                     <div className="flex flex-wrap items-center gap-2 mb-4 px-2 py-2 bg-base-200 rounded-lg">
-                        <span className="text-sm font-semibold">Energy:</span>
+                        <span className="text-sm font-semibold">{t("Energy:")}</span>
                         <span className="text-base font-bold">⚡ {stats.totalEnergy.toFixed(0)}</span>
                         <span className="text-base font-bold">🔥 {stats.totalHotness.toFixed(0)}</span>
                     </div>
@@ -93,10 +95,10 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                             <table className="table table-zebra w-full">
                                 <thead className="sticky top-0 bg-base-200 z-10">
                                     <tr>
-                                        <th>Building</th>
-                                        <th className="text-right">Count</th>
-                                        <th className="text-right">Power</th>
-                                        <th className="text-right">Heat</th>
+                                        <th>{t("Building")}</th>
+                                        <th className="text-right">{t("Count")}</th>
+                                        <th className="text-right">{t("Power")}</th>
+                                        <th className="text-right">{t("Heat")}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -138,7 +140,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                     tabIndex={0}
                     className="mb-6"
                 >
-                    <p className="mb-2 text-xs text-base-content/60">Required amounts per minute at the current production target.</p>
+                    <p className="mb-2 text-xs text-base-content/60">{t("Required amounts per minute at the current production target.")}</p>
                     <div className="border border-base-300 rounded-lg p-3 overflow-y-auto max-h-[60vh] space-y-4 bg-base-100 shadow-sm">
                         {stats.sortedTypes.map(type => {
                             const typeItems = stats.itemsByType.get(type) || [];
@@ -166,9 +168,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                                                 </span>
                                                 <div className="min-w-0">
                                                     <div className="text-sm font-medium">{item.name}</div>
-                                                    <div className="text-sm font-semibold tabular-nums whitespace-nowrap">
-                                                        {item.requiredRate.toLocaleString(undefined, { maximumFractionDigits: 2 })}/min
-                                                    </div>
+                                                    <div className="text-sm font-semibold tabular-nums whitespace-nowrap">{t("{value}/min", { value: item.requiredRate.toLocaleString(locale, { maximumFractionDigits: 2 }) })}</div>
                                                 </div>
                                             </div>
                                         ))}
@@ -181,9 +181,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
 
                 {/* Modal Actions */}
                 <div className="modal-action">
-                    <button className="btn btn-primary btn-sm lg:btn-md" onClick={closeModal}>
-                        Close
-                    </button>
+                    <button className="btn btn-primary btn-sm lg:btn-md" onClick={closeModal}>{t("Close")}</button>
                 </div>
             </div>
             {/* Backdrop */}

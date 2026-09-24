@@ -1,3 +1,4 @@
+import { AppLocalization } from '@/features/app-shell/ui/AppLocalization';
 import { appIds } from '@/app/uklad/catalog';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -12,7 +13,7 @@ runtime.dispatch([appIds.events.APP_INIT]);
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <UkladProvider runtime={runtime}>
-      <App />
+      <AppLocalization><App /></AppLocalization>
     </UkladProvider>
   </StrictMode>,
 )

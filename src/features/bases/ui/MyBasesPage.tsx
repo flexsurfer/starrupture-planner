@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
@@ -14,6 +15,7 @@ import { NavigationHeader } from '@/shared/ui/NavigationHeader';
 type MyBasesView = 'bases' | 'logistics';
 
 const MyBasesPage = () => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
   const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
@@ -40,18 +42,18 @@ const MyBasesPage = () => {
     const base = bases.find(b => b.id === baseId);
     if (base) {
       runtime.dispatch([appIds.events.UI_SHOW_CONFIRMATION_DIALOG,
-        'Delete Base',
-      `Are you sure you want to delete ${base.name}? This action cannot be undone.`,
+        t("Delete Base"),
+      t("Are you sure you want to delete {name}? This action cannot be undone.", { name: base.name }),
       () => {
         runtime.dispatch([appIds.events.BASES_DELETE_BASE, baseId]);
       },
       {
-        confirmLabel: 'Delete',
+        confirmLabel: t("Delete"),
         confirmButtonClass: 'btn-error',
       }
       ]);
     }
-  }, [bases, runtime]);
+  }, [bases, runtime, t]);
 
   // Render base detail view
   if (selectedBase) {
@@ -63,19 +65,17 @@ const MyBasesPage = () => {
   // Render overview
   return (
     <div className={`h-full min-h-0 px-2 lg:px-3 flex flex-col ${visibleView === 'bases' ? 'pb-2 lg:pb-3' : ''}`}>
-      <NavigationHeader title="My Bases" actions={<MyBasesSettings />} summary={<>
+      <NavigationHeader title={t("My Bases")} actions={<MyBasesSettings />} summary={<>
         <MyBasesStats />
         {advanced && <button
           type="button"
           className="btn btn-ghost btn-sm h-8 min-h-8 shrink-0 gap-1.5 px-2 text-xs whitespace-nowrap"
           onClick={() => setShowEnergyGroupsModal(true)}
-          title="Manage Grids"
+          title={t("Manage Grids")}
         >
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
-          </svg>
-          Grids
-          {energyGroups.length > 0 && (
+          </svg>{t("Grids")}{energyGroups.length > 0 && (
             <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">
               {energyGroups.length}
             </span>
@@ -87,7 +87,7 @@ const MyBasesPage = () => {
         <div
           role="tablist"
           className="tabs tabs-bordered tabs-sm sm:tabs-md min-w-0 flex-1 flex-nowrap overflow-x-auto"
-          aria-label="My Bases sections"
+          aria-label={t("My Bases sections")}
         >
           <button
             type="button"
@@ -97,9 +97,7 @@ const MyBasesPage = () => {
             aria-controls="my-bases-panel-bases"
             className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${visibleView === 'bases' ? 'tab-active' : ''}`}
             onClick={() => setActiveView('bases')}
-          >
-            Bases
-            {bases.length > 0 && (
+          >{t("Bases")}{bases.length > 0 && (
               <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">{bases.length}</span>
             )}
           </button>
@@ -111,19 +109,17 @@ const MyBasesPage = () => {
             aria-controls="my-bases-panel-logistics"
             className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${visibleView === 'logistics' ? 'tab-active' : ''}`}
             onClick={() => setActiveView('logistics')}
-          >
-            Logistics
-          </button>}
+          >{t("Logistics")}</button>}
         </div>
         <button
           type="button"
           className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"
-          aria-label="Create Base"
-          title="Create Base"
+          aria-label={t("Create Base")}
+          title={t("Create Base")}
           onClick={() => setShowCreateModal(true)}
         >
           <span aria-hidden="true">＋</span>
-          <span className="hidden sm:inline">Create Base</span>
+          <span className="hidden sm:inline">{t("Create Base")}</span>
         </button>
       </div>
 

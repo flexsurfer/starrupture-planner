@@ -1,3 +1,4 @@
+import { message } from '@/shared/i18n/core';
 import { createPlannerTab, getActivePlannerTab, type PlannerTab } from './state';
 import { getMultiTargetWarning } from './target-conflicts';
 import { createRecipeResolver } from './production-flow';
@@ -109,7 +110,7 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         const tab = getActivePlannerTab(draftState);
         if (tab?.mode !== 'multi') return;
         if (tab.multiTargets.some(target => target.itemId === itemId)) {
-            draftState.plannerTargetWarning = 'This item is already a target.';
+            draftState.plannerTargetWarning = message('This item is already a target.');
             return;
         }
         const info = createRecipeResolver(draftState.buildingsList, tab.recipeSelections)(itemId);

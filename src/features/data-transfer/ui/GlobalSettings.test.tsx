@@ -68,7 +68,7 @@ it('previews the file, warns about a different game version, and imports only af
     expect(harness.getState().basesList).toHaveLength(2);
     upload(text);
     fireEvent.click(await screen.findByRole('button', { name: 'Import selected (2)' }));
-    await screen.findByText('Imported 1 base and 1 planner plan as new copies.');
+    await screen.findByText('Imported copies. Bases: 1. Planner plans: 1.');
     expect(harness.getState().basesList).toHaveLength(3);
     expect(harness.getState().plannerTabs).toHaveLength(3);
     expect(harness.getState().appDataVersion).toBe('update2_QoL');
@@ -102,7 +102,7 @@ it('lets users select import entries independently of export and disables an emp
     fireEvent.click(preview.getByRole('checkbox', { name: 'Multi plan' }));
     expect(preview.getByRole('checkbox', { name: 'Select all bases' })).toBePartiallyChecked();
     fireEvent.click(preview.getByRole('button', { name: 'Import selected (2)' }));
-    await screen.findByText('Imported 1 base and 1 planner plan as new copies.');
+    await screen.findByText('Imported copies. Bases: 1. Planner plans: 1.');
     expect(harness.getState().basesList.map(base => base.name)).toEqual(['Smelting', 'Assembly', 'Assembly Copy']);
     expect(harness.getState().plannerTabs.map(plan => plan.name)).toEqual(['Single plan', 'Multi plan', 'Multi plan Copy']);
     expect(screen.queryByRole('region', { name: 'Import preview' })).not.toBeInTheDocument();

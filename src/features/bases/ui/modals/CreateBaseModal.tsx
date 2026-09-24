@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React, { useState } from 'react';
 
 interface CreateBaseModalProps {
@@ -11,6 +12,7 @@ export const CreateBaseModal: React.FC<CreateBaseModalProps> = ({
   onClose,
   onCreate,
 }) => {
+    const { t } = useTranslation();
   const [name, setName] = useState('');
 
   if (!isOpen) {
@@ -34,19 +36,19 @@ export const CreateBaseModal: React.FC<CreateBaseModalProps> = ({
   return (
     <div className="modal modal-open">
       <div className="modal-box">
-        <h3 className="font-bold text-lg mb-4">Create New Base</h3>
+        <h3 className="font-bold text-lg mb-4">{t("Create New Base")}</h3>
         
         <form onSubmit={handleSubmit}>
           <div className="form-control mb-4">
             <label className="label">
-              <span className="label-text">Base Name</span>
+              <span className="label-text">{t("Base Name")}</span>
             </label>
             <input
               type="text"
               className="input input-bordered w-full"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter base name"
+              placeholder={t("Enter base name")}
               autoFocus
               required
             />
@@ -57,16 +59,12 @@ export const CreateBaseModal: React.FC<CreateBaseModalProps> = ({
               type="button"
               className="btn btn-ghost"
               onClick={handleCancel}
-            >
-              Cancel
-            </button>
+            >{t("Cancel")}</button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={!name.trim()}
-            >
-              Create Base
-            </button>
+            >{t("Create Base")}</button>
           </div>
         </form>
       </div>

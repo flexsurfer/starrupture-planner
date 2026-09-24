@@ -1,3 +1,4 @@
+import { message, type UiMessage } from '@/shared/i18n/core';
 import type { Building, Item } from './types';
 import { createRecipeResolver } from './production-flow';
 
@@ -7,7 +8,7 @@ export function getMultiTargetWarning(
     buildings: Building[],
     recipeSelections: Record<string, string>,
     items: Item[],
-): string | null {
+): UiMessage | null {
     if (!targetIds.length) return null;
     const getRecipe = createRecipeResolver(buildings, recipeSelections);
     const name = (id: string) => items.find(item => item.id === id)?.name ?? id;
@@ -15,15 +16,15 @@ export function getMultiTargetWarning(
         const recipe = getRecipe(itemId)?.recipe;
         if (!recipe?.inputs.length || !Number.isFinite(recipe.output.amount_per_minute)
             || recipe.output.amount_per_minute <= 0) {
-            return `${name(itemId)} has no usable production recipe in the current game data.`;
+            return message('{name} has no usable production recipe in the current game data.', { name: name(itemId) });
         }
     }
     // A shared or targeted ingredient is valid. Only revisiting an item on the
     // current dependency path is a cycle; completed branches can be reused.
     const visiting = new Set<string>();
     const visited = new Set<string>();
-    const visit = (itemId: string): string | null => {
-        if (visiting.has(itemId)) return `The selected recipes contain a circular production dependency involving ${name(itemId)}.`;
+    const visit = (itemId: string): UiMessage | null => {
+        if (visiting.has(itemId)) return message('The selected recipes contain a circular production dependency involving {name}.', { name: name(itemId) });
         if (visited.has(itemId)) return null;
         visiting.add(itemId);
         for (const input of getRecipe(itemId)?.recipe.inputs ?? []) {

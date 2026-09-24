@@ -1,3 +1,4 @@
+import { createTranslator, translateText } from '@/shared/i18n/core';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
@@ -47,7 +48,7 @@ describe('multi-target planner tabs', () => {
                 buildings, items: [], corporations: {},
             }]);
             if (itemId === 'missing') {
-                expect(warning()).toContain('missing has no usable production recipe');
+                expect(translateText(createTranslator('en'), warning() ?? '')).toContain('missing has no usable production recipe');
                 expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_PRODUCTION_FLOW]).nodes).toEqual([]);
             } else {
                 expect(warning()).toBeNull();
@@ -147,8 +148,8 @@ describe('multi-target planner tabs', () => {
             variant: 'alternative', output: { id: 'a', amount_per_minute: 10 }, inputs: [{ id: 'b', amount_per_minute: 10 }],
         });
         const selections = { a: 'factory:6', b: 'factory:4' };
-        expect(getMultiTargetWarning(['a', 'b'], cyclicBuildings, selections, [])).toContain('circular production dependency');
-        expect(getMultiTargetWarning(['c'], cyclicBuildings, selections, [])).toContain('circular production dependency');
+        expect(translateText(createTranslator('en'), getMultiTargetWarning(['a', 'b'], cyclicBuildings, selections, []) ?? '')).toContain('circular production dependency');
+        expect(translateText(createTranslator('en'), getMultiTargetWarning(['c'], cyclicBuildings, selections, []) ?? '')).toContain('circular production dependency');
         expect(getMultiTargetWarning(['c'], cyclicBuildings, { a: 'factory:6' }, [])).toBeNull();
     });
 
@@ -193,7 +194,7 @@ describe('multi-target planner tabs', () => {
             expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_STATS_SUMMARY]))
                 .toEqual({ totalBuildings: 9, totalEnergy: 90, totalHotness: 0 });
             harness.dispatchSync([appIds.events.PLANNER_ADD_TARGET, 'a']);
-            expect(harness.getState().plannerTargetWarning).toContain('already a target');
+            expect(translateText(createTranslator('en'), harness.getState().plannerTargetWarning ?? '')).toContain('already a target');
             harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'b', 'factory:4']);
             expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_MULTI_RECIPE_SELECTIONS])).toEqual({ b: 'factory:4' });
             expect(harness.getState().plannerTargetWarning).toBeNull();

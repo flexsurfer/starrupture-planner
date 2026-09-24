@@ -98,8 +98,8 @@ describe('headless application shell E2E', () => {
         ]);
         expect(shell.value('confirmation')).toMatchObject({
             isOpen: true,
-            confirmLabel: 'Confirm',
-            cancelLabel: 'Cancel',
+            confirmLabel: { key: 'Confirm' },
+            cancelLabel: { key: 'Cancel' },
             confirmButtonClass: 'btn-primary',
         });
         shell.value('confirmation').onConfirm();

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React, { useState } from 'react';
 import { useTargetAmount } from '../hooks';
 
@@ -20,6 +21,7 @@ interface TargetAmountInputProps extends PlannerTargetInputProps {
 }
 
 export const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ targetAmount, setTargetAmount, disabled, className = '' }) => {
+    const { t } = useTranslation();
     const [inputValueDraft, setInputValueDraft] = useState<string | null>(null);
     const inputValue = (!disabled ? inputValueDraft : null) ?? (targetAmount === 0 ? '' : targetAmount.toString());
 
@@ -56,7 +58,7 @@ export const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ targetAmou
         <div className="form-control flex flex-row items-center gap-1">
             <input
                 type="number"
-                aria-label="Target items per minute"
+                aria-label={t("Target items per minute")}
                 min="1"
                 step="1"
                 disabled={disabled}
@@ -65,7 +67,7 @@ export const TargetAmountInput: React.FC<TargetAmountInputProps> = ({ targetAmou
                 onBlur={handleBlur}
                 className={`input input-bordered w-15 ${className}`}
             />
-            <span className="text-sm text-base-content/70 whitespace-nowrap">/min</span>
+            <span className="text-sm text-base-content/70 whitespace-nowrap">{t("/min")}</span>
         </div>
     );
 };

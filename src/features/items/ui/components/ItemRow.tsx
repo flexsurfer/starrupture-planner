@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import { ItemIcon } from "./ItemIcon";
@@ -21,6 +22,7 @@ export const ItemRow = ({
   getCorporationId,
   openRecipeModal 
 }: ItemRowProps) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const hasProductions = producingBuildings.length > 0;
 
@@ -52,7 +54,7 @@ export const ItemRow = ({
             ))}
           </div>
         ) : (
-          <div className="text-xs text-base-content/60">Raw Material</div>
+          <div className="text-xs text-base-content/60">{t("Raw Material")}</div>
         )}
       </td>
       
@@ -63,9 +65,7 @@ export const ItemRow = ({
             <button
               className="btn btn-xs btn-outline"
               onClick={() => openRecipeModal(item)}
-            >
-              Recipe
-            </button>
+            >{t("Recipe")}</button>
           )}
           {item.type !== 'raw' && (
             <button
@@ -73,9 +73,7 @@ export const ItemRow = ({
               onClick={() => {
                 runtime.dispatch([appIds.events.PLANNER_OPEN_ITEM, item.id]);
               }}
-            >
-              Planner
-            </button>
+            >{t("Planner")}</button>
           )}
         </div>
       </td>
@@ -96,7 +94,7 @@ export const ItemRow = ({
               );
             })
           ) : (
-            <span className="text-xs text-base-content/50">Not used</span>
+            <span className="text-xs text-base-content/50">{t("Not used")}</span>
           )}
         </div>
       </td>

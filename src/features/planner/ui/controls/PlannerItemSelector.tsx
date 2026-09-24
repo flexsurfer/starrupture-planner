@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -12,17 +13,17 @@ interface ItemSelectorProps extends PlannerItemSelectorProps {
     onSelect: (itemId: string) => void;
 }
 
-export const ItemSelector: React.FC<ItemSelectorProps> = ({ selectedItemId, items, onSelect, className = '' }) => (
+export const ItemSelector: React.FC<ItemSelectorProps> = ({ selectedItemId, items, onSelect, className = '' }) => { const { t } = useTranslation(); return (
     <select
-        aria-label="Production item"
+        aria-label={t("Production item")}
         className={`select select-bordered ${className}`}
         value={selectedItemId || ''}
         onChange={(event) => onSelect(event.target.value)}
     >
-        <option value="">Choose an item...</option>
+        <option value="">{t("Choose an item...")}</option>
         {items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
     </select>
-);
+); };
 
 /**
  * Item selector dropdown for the production planner

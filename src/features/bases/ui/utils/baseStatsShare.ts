@@ -1,3 +1,4 @@
+import { createTranslator, type Translator } from '@/shared/i18n/core';
 import type { Base, Corporation, Item } from '@/app/uklad/model';
 import type { MyBasesStats, TopProducedItem } from '@/features/bases/types';
 
@@ -10,7 +11,6 @@ export type BasesStatsShareResult = 'shared' | 'copied' | 'downloaded' | 'cancel
 
 export type { TopProducedItem };
 
-const numberFormatter = new Intl.NumberFormat();
 const TOP_STATS_X = 64;
 const TOP_STATS_TOTAL_WIDTH = 538;
 const TOP_STATS_GAP = 18;
@@ -20,7 +20,6 @@ const clampPercentage = (value: number): number => {
   return Math.max(0, Math.min(100, value));
 };
 
-const formatPercent = (value: number): string => `${clampPercentage(value).toFixed(1)}%`;
 
 const drawRoundedRect = (
   ctx: CanvasRenderingContext2D,
@@ -169,26 +168,30 @@ export const createBasesStatsShareText = (
   stats: MyBasesStats,
   bases: Base[],
   topProducedItems: TopProducedItem[],
+  t: Translator = createTranslator('en'),
+  locale = 'en',
 ): string => {
+  const numberFormatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  const formatPercent = (value: number) => new Intl.NumberFormat(locale, { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(clampPercentage(value) / 100);
   const totalPlans = getTotalPlans(bases);
   const topBases = getTopBasesByBuildings(bases, 3);
   const topBasesLine = topBases.length > 0
     ? topBases.map((base) => `${base.name} (${base.buildings.length})`).join(', ')
-    : 'No bases yet';
+    : t('No bases yet');
   const topItemsLine = topProducedItems.length > 0
-    ? topProducedItems.map((item) => `${item.itemName} (${numberFormatter.format(item.totalRatePerMinute)}/min)`).join(', ')
-    : 'No output items configured';
+    ? topProducedItems.map((item) => t('{name} ({rate}/min)', { name: item.itemName, rate: numberFormatter.format(item.totalRatePerMinute) })).join(', ')
+    : t('No output items configured');
 
   return [
-    'My StarRupture base stats',
-    `Bases: ${numberFormatter.format(stats.totalBases)}`,
-    `Buildings: ${numberFormatter.format(stats.totalBuildings)}`,
-    `Plans: ${numberFormatter.format(totalPlans)}`,
-    `Heat: ${numberFormatter.format(stats.totalHeat)} / ${numberFormatter.format(stats.totalHeatCapacity)} (${formatPercent(stats.heatPercentage)})`,
-    `Energy: ${numberFormatter.format(stats.totalEnergyUsed)} / ${numberFormatter.format(stats.totalEnergyProduced)} MW (${formatPercent(stats.energyPercentage)})`,
-    `Top bases: ${topBasesLine}`,
-    `Top items produced: ${topItemsLine}`,
-    `Made with StarRupture Planner: ${getPlannerUrl()}`,
+    t('My StarRupture base stats'),
+    t('Bases: {count}', { count: stats.totalBases }),
+    t('Buildings: {count}', { count: stats.totalBuildings }),
+    t('Plans: {count}', { count: totalPlans }),
+    t('Heat: {used} / {capacity} ({percent})', { used: numberFormatter.format(stats.totalHeat), capacity: numberFormatter.format(stats.totalHeatCapacity), percent: formatPercent(stats.heatPercentage) }),
+    t('Energy: {used} / {capacity} MW ({percent})', { used: numberFormatter.format(stats.totalEnergyUsed), capacity: numberFormatter.format(stats.totalEnergyProduced), percent: formatPercent(stats.energyPercentage) }),
+    t('Top bases: {names}', { names: topBasesLine }),
+    t('Top items produced: {names}', { names: topItemsLine }),
+    t('Made with {appName}: {url}', { appName: 'StarRupture Planner', url: getPlannerUrl() }),
   ].join('\n');
 };
 
@@ -265,7 +268,10 @@ export const renderBasesStatsCard = async (
   stats: MyBasesStats,
   bases: Base[],
   topProducedItems: TopProducedItem[],
+  t: Translator = createTranslator('en'),
+  locale = 'en',
 ): Promise<Blob> => {
+  const numberFormatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   const totalPlans = getTotalPlans(bases);
   const canvas = document.createElement('canvas');
   canvas.width = CARD_WIDTH;
@@ -279,7 +285,7 @@ export const renderBasesStatsCard = async (
 
   ctx.fillStyle = '#f8fafc';
   ctx.font = '700 52px "Trebuchet MS", "Segoe UI", sans-serif';
-  ctx.fillText('My Bases Overview', 64, 88);
+  ctx.fillText(t('My Bases Overview'), 64, 88);
 
   ctx.fillStyle = 'rgba(226, 232, 240, 0.88)';
   ctx.font = '500 22px "Trebuchet MS", "Segoe UI", sans-serif';
@@ -288,7 +294,7 @@ export const renderBasesStatsCard = async (
   ctx.textAlign = 'right';
   ctx.fillStyle = 'rgba(226, 232, 240, 0.82)';
   ctx.font = '500 20px "Trebuchet MS", "Segoe UI", sans-serif';
-  ctx.fillText(new Date().toLocaleDateString(undefined, {
+  ctx.fillText(new Date().toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -302,7 +308,7 @@ export const renderBasesStatsCard = async (
     y: 154,
     width: topStatsCardWidth,
     height: 130,
-    label: 'Bases',
+    label: t('Bases'),
     value: numberFormatter.format(stats.totalBases),
     accentColor: '#60a5fa',
   });
@@ -311,7 +317,7 @@ export const renderBasesStatsCard = async (
     y: 154,
     width: topStatsCardWidth,
     height: 130,
-    label: 'Buildings',
+    label: t('Buildings'),
     value: numberFormatter.format(stats.totalBuildings),
     accentColor: '#22d3ee',
   });
@@ -320,7 +326,7 @@ export const renderBasesStatsCard = async (
     y: 154,
     width: topStatsCardWidth,
     height: 130,
-    label: 'Plans',
+    label: t('Plans'),
     value: numberFormatter.format(totalPlans),
     accentColor: '#a3e635',
   });
@@ -329,9 +335,9 @@ export const renderBasesStatsCard = async (
     y: 300,
     width: 538,
     height: 130,
-    label: 'Heat Load',
+    label: t('Heat Load'),
     value: `${numberFormatter.format(stats.totalHeat)} / ${numberFormatter.format(stats.totalHeatCapacity)}`,
-    hint: stats.isHeatOverCapacity ? 'Status: overloaded' : 'Status: stable',
+    hint: stats.isHeatOverCapacity ? t('Status: overloaded') : t('Status: stable'),
     accentColor: stats.isHeatOverCapacity ? '#ef4444' : '#38bdf8',
   });
   drawMetricCard(ctx, {
@@ -339,22 +345,22 @@ export const renderBasesStatsCard = async (
     y: 446,
     width: 538,
     height: 130,
-    label: 'Energy Load',
+    label: t('Energy Load'),
     value: `${numberFormatter.format(stats.totalEnergyUsed)} / ${numberFormatter.format(stats.totalEnergyProduced)} MW`,
-    hint: stats.isEnergyInsufficient ? 'Status: shortage' : 'Status: balanced',
+    hint: stats.isEnergyInsufficient ? t('Status: shortage') : t('Status: balanced'),
     accentColor: stats.isEnergyInsufficient ? '#ef4444' : '#22c55e',
   });
 
   drawRoundedRect(ctx, 630, 154, 506, 204, 22, 'rgba(10, 18, 38, 0.65)');
   ctx.fillStyle = '#f8fafc';
   ctx.font = '700 28px "Trebuchet MS", "Segoe UI", sans-serif';
-  ctx.fillText('Top Bases by Buildings', 658, 198);
+  ctx.fillText(t('Top Bases by Buildings'), 658, 198);
 
   const topBases = getTopBasesByBuildings(bases, 3);
   if (topBases.length === 0) {
     ctx.fillStyle = 'rgba(226, 232, 240, 0.8)';
     ctx.font = '500 24px "Trebuchet MS", "Segoe UI", sans-serif';
-    ctx.fillText('Create your first base to start sharing stats.', 658, 250);
+    ctx.fillText(t('Create your first base to start sharing stats.'), 658, 250);
   } else {
     topBases.forEach((base, index) => {
       const rowY = 238 + index * 50;
@@ -373,7 +379,7 @@ export const renderBasesStatsCard = async (
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(226, 232, 240, 0.82)';
       ctx.font = '500 16px "Trebuchet MS", "Segoe UI", sans-serif';
-      ctx.fillText(`${numberFormatter.format(base.buildings.length)} b`, 1088, rowY + 5);
+      ctx.fillText(t('{count} b', { count: base.buildings.length }), 1088, rowY + 5);
       ctx.textAlign = 'left';
     });
   }
@@ -381,13 +387,13 @@ export const renderBasesStatsCard = async (
   drawRoundedRect(ctx, 630, 380, 506, 196, 22, 'rgba(10, 18, 38, 0.65)');
   ctx.fillStyle = '#f8fafc';
   ctx.font = '700 28px "Trebuchet MS", "Segoe UI", sans-serif';
-  ctx.fillText('Top Items Produced', 658, 424);
+  ctx.fillText(t('Top Items Produced'), 658, 424);
 
   if (topProducedItems.length === 0) {
     ctx.fillStyle = 'rgba(226, 232, 240, 0.8)';
     ctx.font = '500 24px "Trebuchet MS", "Segoe UI", sans-serif';
     ctx.font = '500 24px "Trebuchet MS", "Segoe UI", sans-serif';
-    ctx.fillText('No targeted output items.', 658, 476);
+    ctx.fillText(t('No targeted output items.'), 658, 476);
   } else {
     topProducedItems.slice(0, 4).forEach((item, index) => {
       const rowY = 462 + index * 30;
@@ -405,7 +411,7 @@ export const renderBasesStatsCard = async (
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(226, 232, 240, 0.82)';
       ctx.font = '500 17px "Trebuchet MS", "Segoe UI", sans-serif';
-      ctx.fillText(`${numberFormatter.format(item.totalRatePerMinute)}/m`, 1088, rowY);
+      ctx.fillText(t('{rate}/m', { rate: numberFormatter.format(item.totalRatePerMinute) }), 1088, rowY);
       ctx.textAlign = 'left';
     });
   }
@@ -429,7 +435,7 @@ export const renderBasesStatsCard = async (
   return blob;
 };
 
-const tryNativeShare = async (file: File, text: string): Promise<'shared' | 'cancelled' | null> => {
+const tryNativeShare = async (file: File, text: string, t: Translator): Promise<'shared' | 'cancelled' | null> => {
   if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
     return null;
   }
@@ -442,11 +448,11 @@ const tryNativeShare = async (file: File, text: string): Promise<'shared' | 'can
   const canShareFile = typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
   const shareData: ShareData = canShareFile
     ? {
-      title: 'My StarRupture base stats',
+      title: t('My StarRupture base stats'),
       files: [file],
     }
     : {
-      title: 'My StarRupture base stats',
+      title: t('My StarRupture base stats'),
       text,
     };
 
@@ -501,12 +507,14 @@ export const shareBasesStats = async (
   stats: MyBasesStats,
   bases: Base[],
   topProducedItems: TopProducedItem[],
+  t: Translator = createTranslator('en'),
+  locale = 'en',
 ): Promise<BasesStatsShareResult> => {
-  const cardBlob = await renderBasesStatsCard(stats, bases, topProducedItems);
-  const shareText = createBasesStatsShareText(stats, bases, topProducedItems);
+  const cardBlob = await renderBasesStatsCard(stats, bases, topProducedItems, t, locale);
+  const shareText = createBasesStatsShareText(stats, bases, topProducedItems, t, locale);
   const shareFile = new File([cardBlob], SHARE_FILE_NAME, { type: 'image/png' });
 
-  const nativeShareResult = await tryNativeShare(shareFile, shareText);
+  const nativeShareResult = await tryNativeShare(shareFile, shareText, t);
   if (nativeShareResult === 'shared') return 'shared';
   if (nativeShareResult === 'cancelled') return 'cancelled';
 

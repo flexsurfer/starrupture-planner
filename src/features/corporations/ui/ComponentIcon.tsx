@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import type { CorporationComponent, Item } from '@/app/uklad/model';
 import { ItemImage } from '@/shared/ui';
 import { getItemCategoryColor } from '@/utils/itemColors';
@@ -8,6 +9,7 @@ type ComponentIconProps = {
 };
 
 export const ComponentIcon = ({ component, itemsMap }: ComponentIconProps) => {
+  const { locale } = useTranslation();
   const item = itemsMap[component.id];
 
   return (
@@ -19,10 +21,10 @@ export const ComponentIcon = ({ component, itemsMap }: ComponentIconProps) => {
         <span className="block text-xs font-medium leading-snug break-words sm:text-sm">{item?.name || component.id}</span>
         <span className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-xs tabular-nums">
           {component.cost != null && component.cost > 0 && <>
-            <span className="font-semibold" style={{ color: getItemCategoryColor(item?.type) }}>{component.cost.toLocaleString()}</span>
+            <span className="font-semibold" style={{ color: getItemCategoryColor(item?.type) }}>{component.cost.toLocaleString(locale)}</span>
             <span className="text-base-content/60">×</span>
           </>}
-          <span className="font-semibold text-info">{component.points.toLocaleString()} G</span>
+          <span className="font-semibold text-info">{component.points.toLocaleString(locale)} G</span>
         </span>
       </span>
     </span>

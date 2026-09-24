@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -18,6 +19,7 @@ const EnergyGroupRow: React.FC<{
   isNameTaken: (name: string, excludeId?: string) => boolean;
   onDelete: (group: EnergyGroup) => void;
 }> = ({ group, memberCount, isNameTaken, onDelete }) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(group.name);
@@ -94,15 +96,13 @@ const EnergyGroupRow: React.FC<{
               setEditName(group.name);
               setIsEditing(true);
             }}
-            title="Click to rename"
+            title={t("Click to rename")}
           >
             {group.name}
           </button>
         )}
 
-        <span className="text-xs text-base-content/60 whitespace-nowrap">
-          {memberCount} base{memberCount !== 1 ? 's' : ''}
-        </span>
+        <span className="text-xs text-base-content/60 whitespace-nowrap">{t("{count} bases", { count: memberCount })}</span>
 
         <button
           type="button"
@@ -111,7 +111,7 @@ const EnergyGroupRow: React.FC<{
             setEditName(group.name);
             setIsEditing(true);
           }}
-          title="Rename"
+          title={t("Rename")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -133,7 +133,7 @@ const EnergyGroupRow: React.FC<{
           type="button"
           className="btn btn-xs btn-ghost text-error"
           onClick={() => onDelete(group)}
-          title="Delete group"
+          title={t("Delete group")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -159,6 +159,7 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
   isOpen,
   onClose,
 }) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const energyGroups = useSubscription([appIds.subscriptions.ENERGY_GROUPS_LIST]);
   const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
@@ -199,12 +200,12 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
       e.preventDefault();
 
       if (!normalizedNewName) {
-        setCreateError('Enter a group name.');
+        setCreateError(t("Enter a group name."));
         return;
       }
 
       if (isNameTaken(normalizedNewName)) {
-        setCreateError('A group with this name already exists.');
+        setCreateError(t("A group with this name already exists."));
         return;
       }
 
@@ -212,27 +213,24 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
       setNewName('');
       setCreateError('');
     },
-    [runtime, normalizedNewName, isNameTaken],
+    [runtime, normalizedNewName, isNameTaken, t],
   );
 
   const handleDelete = useCallback((group: EnergyGroup) => {
     const memberCount = memberCountByGroup.get(group.id) || 0;
-    const baseLabel = memberCount === 1 ? 'base' : 'bases';
-    const linkedMessage = memberCount > 0
-      ? ` ${memberCount} ${baseLabel} will be unlinked from this grid.`
-      : '';
+
 
     runtime.dispatch([
       appIds.events.UI_SHOW_CONFIRMATION_DIALOG,
-      'Delete Energy Group',
-      `Delete "${group.name}"?${linkedMessage}`,
+      t("Delete Energy Group"),
+      memberCount > 0 ? t('Delete "{name}"? {count} bases will be unlinked from this grid.', { name: group.name, count: memberCount }) : t('Delete "{name}"?', { name: group.name }),
       () => runtime.dispatch([appIds.events.ENERGY_GROUP_DELETE, group.id]),
       {
-        confirmLabel: 'Delete',
+        confirmLabel: t("Delete"),
         confirmButtonClass: 'btn-error',
       },
     ]);
-  }, [runtime, memberCountByGroup]);
+  }, [runtime, memberCountByGroup, t]);
 
   const handleClose = useCallback(() => {
     setNewName('');
@@ -245,10 +243,8 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
   return (
     <div className="modal modal-open" role="dialog" aria-modal="true">
       <div className="modal-box max-w-lg">
-        <h3 className="font-bold text-lg">Manage Energy Groups</h3>
-        <p className="text-sm text-base-content/70 mt-1 mb-4">
-          {energyGroups.length} group{energyGroups.length !== 1 ? 's' : ''} across {linkedBasesCount} linked base{linkedBasesCount !== 1 ? 's' : ''}.
-        </p>
+        <h3 className="font-bold text-lg">{t("Manage Energy Groups")}</h3>
+        <p className="text-sm text-base-content/70 mt-1 mb-4">{t("Groups: {groups}. Linked bases: {bases}.", { groups: energyGroups.length, bases: linkedBasesCount })}</p>
 
         {/* Create new group */}
         <form onSubmit={handleCreate} className="mb-4">
@@ -261,16 +257,14 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
                 setNewName(e.target.value);
                 if (createError) setCreateError('');
               }}
-              placeholder="New group name"
+              placeholder={t("New group name")}
               autoFocus
             />
             <button
               type="submit"
               className="btn btn-sm btn-primary"
               disabled={!normalizedNewName}
-            >
-              Create
-            </button>
+            >{t("Create")}</button>
           </div>
           {createError && (
             <p className="text-xs text-error mt-1">{createError}</p>
@@ -279,9 +273,7 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
 
         {/* Groups list */}
         {sortedGroups.length === 0 ? (
-          <p className="text-sm text-base-content/60 text-center py-4">
-            No energy groups yet. Create one above.
-          </p>
+          <p className="text-sm text-base-content/60 text-center py-4">{t("No energy groups yet. Create one above.")}</p>
         ) : (
           <div className="space-y-2 max-h-80 overflow-auto pr-1">
             {sortedGroups.map((group) => (
@@ -297,9 +289,7 @@ export const ManageEnergyGroupsModal: React.FC<ManageEnergyGroupsModalProps> = (
         )}
 
         <div className="modal-action">
-          <button className="btn btn-ghost" onClick={handleClose}>
-            Close
-          </button>
+          <button className="btn btn-ghost" onClick={handleClose}>{t("Close")}</button>
         </div>
       </div>
       <div className="modal-backdrop" onClick={handleClose}></div>

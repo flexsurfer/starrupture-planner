@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { CorporationLevelSelector } from '@/features/corporations/ui';
@@ -6,6 +7,7 @@ import { TargetAmountInput } from '@/features/planner/ui/controls/PlannerTargetI
 import { RecipeAlternativesSelector } from './RecipeAlternativesSelector';
 
 export const FormControls: React.FC = () => {
+    const { t } = useTranslation();
     const runtime = useRuntime();
     const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
     const { currentSelectedItemId, currentTargetAmount, defaultSelectedCorporationLevel, matchInputs } =
@@ -39,7 +41,7 @@ export const FormControls: React.FC = () => {
                         checked={matchInputs}
                         onChange={(event) => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS, event.target.checked])}
                     />
-                    <span className="text-xs whitespace-nowrap">Match inputs</span>
+                    <span className="text-xs whitespace-nowrap">{t("Match inputs")}</span>
                 </label>}
                 <CorporationLevelSelector
                     corporationLevels={corporationLevels}

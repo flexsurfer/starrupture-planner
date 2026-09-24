@@ -1,3 +1,4 @@
+import { message, UiMessageError } from '@/shared/i18n/core';
 import { parseArchive, prepareArchiveImport, type PlannerArchive } from '@/features/data-transfer/archive';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
@@ -27,7 +28,7 @@ export function createHeadlessEffects({
         registrar.regEffect(appIds.effects.downloadArchive, (archive, runtime) => {
             // Headless exports go to an explicit sink; no browser download is implied.
             if (onExport) onExport(archive);
-            else runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, { kind: 'error', message: 'No export destination configured.' }]);
+            else runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, { kind: 'error', message: message('No export destination configured.') }]);
         });
         registrar.regEffect(appIds.effects.readArchive, (text, runtime) => {
             try {
@@ -35,7 +36,7 @@ export function createHeadlessEffects({
                     prepareArchiveImport(parseArchive(text), createImportId())]);
             } catch (error) {
                 runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, {
-                    kind: 'error', message: error instanceof Error ? error.message : 'Could not read this export.',
+                    kind: 'error', message: error instanceof UiMessageError ? error.uiMessage : message('Could not read this export.'),
                 }]);
             }
         });

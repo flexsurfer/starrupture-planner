@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React from 'react';
 import type { Item } from '@/app/uklad/model';
 import { RecipeCard } from './RecipeCard';
@@ -12,25 +13,26 @@ interface RecipeModalProps {
 }
 
 export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item, itemRecipes }) => {
+    const { t } = useTranslation();
 
   if (!isOpen || !item || itemRecipes.length === 0) {
     return null;
   }
 
   return (
-    <div className="modal modal-open p-1 sm:p-4" role="dialog" aria-modal="true" aria-label={`Recipes for ${item.name}`}>
+    <div className="modal modal-open p-1 sm:p-4" role="dialog" aria-modal="true" aria-label={t("Recipes for {name}", { name: item.name })}>
       <div className="modal-box flex max-h-[calc(100dvh-0.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg p-0 sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl">
         {/* Modal Header */}
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-base-300 px-3 py-2 sm:px-4 sm:py-3">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold leading-tight break-words sm:text-lg">{item.name}</h3>
-            <p className="mt-0.5 text-[11px] text-base-content/60 sm:text-xs">{itemRecipes.length} {itemRecipes.length === 1 ? 'recipe' : 'recipes'} · Rates per building</p>
+            <p className="mt-0.5 text-[11px] text-base-content/60 sm:text-xs">{t("{count} recipes · Rates per building", { count: itemRecipes.length })}</p>
           </div>
           <button
             type="button"
             className="btn btn-sm btn-circle btn-ghost size-9 shrink-0"
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label={t("Close modal")}
           >
             ✕
           </button>

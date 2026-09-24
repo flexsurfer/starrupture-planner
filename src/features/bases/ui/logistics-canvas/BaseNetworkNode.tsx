@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React, { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 
@@ -33,6 +34,7 @@ function formatRate(value: number): string {
 }
 
 export const BaseNetworkNode: React.FC<NodeProps> = memo(({ data }) => {
+    const { t } = useTranslation();
   const d = data as unknown as BaseNetworkNodeData;
 
   return (
@@ -56,17 +58,17 @@ export const BaseNetworkNode: React.FC<NodeProps> = memo(({ data }) => {
       <div className="px-3 py-2 space-y-1.5 text-xs">
         {/* Link summary */}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-base-content/70">Outputs</span>
+          <span className="text-base-content/70">{t("Outputs")}</span>
           <span className="font-mono font-medium">{d.outgoingLinkCount}</span>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-base-content/70">Inputs</span>
+          <span className="text-base-content/70">{t("Inputs")}</span>
           <span className="font-mono font-medium">{d.incomingInputCount}</span>
         </div>
 
         {/* Energy */}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-base-content/70">Energy</span>
+          <span className="text-base-content/70">{t("Energy")}</span>
           <span className={`font-mono font-medium ${d.energyBalance < 0 ? 'text-error' : 'text-success'}`}>
             {d.energyBalance >= 0 ? '+' : ''}{formatRate(d.energyBalance)} MW
           </span>
@@ -75,15 +77,15 @@ export const BaseNetworkNode: React.FC<NodeProps> = memo(({ data }) => {
         {/* Outputs */}
         {d.outputs.length > 0 && (
           <div className="pt-1 border-t border-base-300/50">
-            <div className="text-base-content/50 mb-0.5">Outputs:</div>
+            <div className="text-base-content/50 mb-0.5">{t("Outputs:")}</div>
             {d.outputs.slice(0, 4).map((output) => (
               <div key={output.id} className="flex items-center justify-between gap-1 pl-1">
                 <span className="truncate max-w-[140px]">{output.itemName || 'unassigned'}</span>
-                <span className="font-mono text-[10px]">{formatRate(output.ratePerMinute)}/min</span>
+                <span className="font-mono text-[10px]">{t("{value}/min", { value: formatRate(output.ratePerMinute) })}</span>
               </div>
             ))}
             {d.outputs.length > 4 && (
-              <div className="text-base-content/50 pl-1">+{d.outputs.length - 4} more</div>
+              <div className="text-base-content/50 pl-1">{t("+{value} more", { value: d.outputs.length - 4 })}</div>
             )}
           </div>
         )}
@@ -91,17 +93,17 @@ export const BaseNetworkNode: React.FC<NodeProps> = memo(({ data }) => {
         {/* Inputs */}
         {d.inputs.length > 0 && (
           <div className="pt-1 border-t border-base-300/50">
-            <div className="text-base-content/50 mb-0.5">Inputs:</div>
+            <div className="text-base-content/50 mb-0.5">{t("Inputs:")}</div>
             {d.inputs.slice(0, 4).map((input) => (
               <div key={input.id} className="flex items-center justify-between gap-1 pl-1">
                 <span className={`truncate max-w-[140px] ${input.hasBrokenLink ? 'text-error' : ''}`}>
                   {input.itemName || 'empty'}{input.hasBrokenLink ? ' ✗' : ''}
                 </span>
-                <span className="font-mono text-[10px]">{formatRate(input.ratePerMinute || 0)}/min</span>
+                <span className="font-mono text-[10px]">{t("{value}/min", { value: formatRate(input.ratePerMinute || 0) })}</span>
               </div>
             ))}
             {d.inputs.length > 4 && (
-              <div className="text-base-content/50 pl-1">+{d.inputs.length - 4} more</div>
+              <div className="text-base-content/50 pl-1">{t("+{value} more", { value: d.inputs.length - 4 })}</div>
             )}
           </div>
         )}

@@ -1,3 +1,5 @@
+import { getLocaleMessages, normalizeLocale } from '@/shared/i18n/locales';
+import { createTranslator, message, UiMessageError } from '@/shared/i18n/core';
 import { parseArchive, prepareArchiveImport } from '@/features/data-transfer/archive';
 import { downloadArchive } from './archive-transfer';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
@@ -9,9 +11,9 @@ export const registerWebEffects: UkladModule<UkladRegistrar<AppContracts>> = (re
     registrar.regEffect(appIds.effects.downloadArchive, (archive, runtime) => {
         try {
             downloadArchive(archive);
-            runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, { kind: 'success', message: 'Export downloaded.' }]);
+            runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, { kind: 'success', message: message('Export downloaded.') }]);
         } catch {
-            runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, { kind: 'error', message: 'Could not download the export. Please try again.' }]);
+            runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, { kind: 'error', message: message('Could not download the export. Please try again.') }]);
         }
     });
     registrar.regEffect(appIds.effects.readArchive, (text, runtime) => {
@@ -20,7 +22,7 @@ export const registerWebEffects: UkladModule<UkladRegistrar<AppContracts>> = (re
             runtime.dispatch([appIds.events.DATA_TRANSFER_IMPORT_READY, archive]);
         } catch (error) {
             runtime.dispatch([appIds.events.DATA_TRANSFER_SET_STATUS, {
-                kind: 'error', message: error instanceof Error ? error.message : 'Could not read this export.',
+                kind: 'error', message: error instanceof UiMessageError ? error.uiMessage : message('Could not read this export.'),
             }]);
         }
     });
@@ -37,7 +39,8 @@ export const registerWebEffects: UkladModule<UkladRegistrar<AppContracts>> = (re
             ]))
             .catch((error: unknown) => {
                 console.error('Failed to load game data:', error);
-                window.alert('Could not load game data. Check your connection and reload the page.');
+                const locale = normalizeLocale(document.documentElement.lang);
+                window.alert(createTranslator(locale, getLocaleMessages(locale))('Could not load game data. Check your connection and reload the page.'));
                 runtime.dispatch([appIds.events.APP_GAME_DATA_LOAD_FAILED]);
             });
     });

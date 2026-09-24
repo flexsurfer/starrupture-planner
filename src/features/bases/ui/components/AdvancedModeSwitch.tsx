@@ -1,11 +1,13 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 
 export const AdvancedModeSwitch = () => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const mode = useSubscription([appIds.subscriptions.BASES_MODE]);
 
-  return <label className="flex h-8 shrink-0 cursor-pointer items-center gap-2 px-2 text-xs" title="Switch between Planning and Advanced mode for all bases">
+  return <label className="flex h-8 shrink-0 cursor-pointer items-center gap-2 px-2 text-xs" title={t("Switch between Planning and Advanced mode for all bases")}>
     <input
       type="checkbox"
       role="switch"
@@ -13,6 +15,6 @@ export const AdvancedModeSwitch = () => {
       checked={mode === 'advanced'}
       onChange={event => runtime.dispatch([appIds.events.BASES_SET_MODE, event.target.checked ? 'advanced' : 'planning'])}
     />
-    <span>Advanced</span>
+    <span>{t("Advanced")}</span>
   </label>;
 };

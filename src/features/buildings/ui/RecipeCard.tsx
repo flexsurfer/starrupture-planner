@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import type { ReactNode } from 'react';
 import type { Building, Item, Recipe, RecipeDisplayType } from "@/app/uklad/model";
@@ -14,6 +15,7 @@ interface RecipeItemIconProps {
 }
 
 const RecipeItemIcon = ({ itemId, amount, isOutput = false, isHighlighted = false, item }: RecipeItemIconProps) => {
+    const { t } = useTranslation();
   return (
     <div
       className={`flex min-w-0 gap-2 rounded-md border p-2 ${isOutput ? 'flex-col items-center text-center' : 'items-center'} ${isHighlighted ? '' : 'border-transparent bg-base-content/5'}`}
@@ -25,7 +27,7 @@ const RecipeItemIcon = ({ itemId, amount, isOutput = false, isHighlighted = fals
       <div className="min-w-0">
         <div className="text-xs font-medium leading-snug break-words sm:text-sm">{item?.name || itemId}</div>
         <div className={`mt-0.5 font-semibold leading-tight tabular-nums ${isOutput ? 'text-lg' : 'text-sm sm:text-base'}`} style={{ color: getItemCategoryColor(item?.type) }}>
-          {amount}<span className="ml-0.5 text-[10px] font-normal sm:text-xs">/min</span>
+          {amount}<span className="ml-0.5 text-[10px] font-normal sm:text-xs">{t("/min")}</span>
         </div>
       </div>
     </div>
@@ -44,10 +46,11 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, recipeType = 'standard', className = "", showPlannerButton = true, building, selected = false, action, highlightedItemId = recipe.output.id }: RecipeCardProps) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const outputItem = itemsMap[recipe.output.id];
-  const typeLabel = recipeType === 'alternative' ? 'Alternative' : recipeType === 'upgrade' ? 'V2' : 'Standard';
+  const typeLabel = recipeType === 'alternative' ? t("Alternative") : recipeType === 'upgrade' ? 'V2' : t("Standard");
 
   return (
     <div className={`min-w-0 overflow-hidden rounded-lg border bg-base-200 ${selected ? 'border-primary' : 'border-base-300'} ${className}`}>
@@ -58,22 +61,20 @@ export const RecipeCard = ({ recipe, recipeType = 'standard', className = "", sh
             {building && <span className="text-xs font-semibold leading-tight break-words sm:text-sm">{building.name}</span>}
             <span className={`text-[10px] font-medium sm:text-xs ${recipeType === 'alternative' ? 'text-secondary' : recipeType === 'upgrade' ? 'text-info' : 'text-base-content/60'}`}>{typeLabel}</span>
           </div>
-          {selected && <span className="sr-only">Used in this node</span>}
+          {selected && <span className="sr-only">{t("Used in this node")}</span>}
         </div>
         {action ?? (showPlannerButton && outputItem?.type !== 'raw' && (
           <button
             type="button"
             className="btn btn-sm btn-primary btn-outline h-8 min-h-8 shrink-0 px-2 text-xs"
             onClick={() => runtime.dispatch([appIds.events.PLANNER_OPEN_ITEM, recipe.output.id])}
-            title={`Open ${outputItem?.name || recipe.output.id} in planner`}
-          >
-            Planner
-          </button>
+            title={t("Open {value} in planner", { value: outputItem?.name || recipe.output.id })}
+          >{t("Planner")}</button>
         ))}
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] items-start gap-2 p-2 sm:grid-cols-[160px_minmax(0,1fr)] sm:gap-3 sm:p-3">
           <div className="min-w-0 space-y-1">
-            <h4 className="text-[10px] font-medium text-base-content/60 sm:text-xs">Output</h4>
+            <h4 className="text-[10px] font-medium text-base-content/60 sm:text-xs">{t("Output")}</h4>
             <RecipeItemIcon 
               itemId={recipe.output.id} 
               amount={recipe.output.amount_per_minute} 
@@ -84,7 +85,7 @@ export const RecipeCard = ({ recipe, recipeType = 'standard', className = "", sh
           </div>
           {/* Inputs */}
           <div className="min-w-0 space-y-1">
-            <h4 className="text-[10px] font-medium text-base-content/60 sm:text-xs">Inputs</h4>
+            <h4 className="text-[10px] font-medium text-base-content/60 sm:text-xs">{t("Inputs")}</h4>
             <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2">
               {recipe.inputs.length > 0 ? (
                 recipe.inputs.map((input, idx) => (
@@ -97,9 +98,7 @@ export const RecipeCard = ({ recipe, recipeType = 'standard', className = "", sh
                   />
                 ))
               ) : (
-                <div className="py-2 text-xs text-base-content/60 sm:col-span-2">
-                  No inputs required
-                </div>
+                <div className="py-2 text-xs text-base-content/60 sm:col-span-2">{t("No inputs required")}</div>
               )}
             </div>
           </div>

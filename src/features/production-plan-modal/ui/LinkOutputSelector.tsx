@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useMemo, useState } from 'react';
 import type { LinkableOutputItem } from '@/features/bases/types';
 import { BuildingImage, ItemImage } from '@/shared/ui';
@@ -15,6 +16,7 @@ function formatRate(value: number): string {
 }
 
 export function LinkOutputSelector({ outputs, onSelect, emptyMessage, compact = false }: LinkOutputSelectorProps) {
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredOutputs = useMemo(() => {
@@ -35,8 +37,8 @@ export function LinkOutputSelector({ outputs, onSelect, emptyMessage, compact = 
     }, [outputs, searchQuery]);
 
     return <div className="space-y-3">
-        <input type="search" aria-label="Search outputs" className="input input-bordered input-sm w-full"
-            placeholder="Search outputs..." value={searchQuery}
+        <input type="search" aria-label={t("Search outputs")} className="input input-bordered input-sm w-full"
+            placeholder={t("Search outputs...")} value={searchQuery}
             onChange={event => setSearchQuery(event.target.value)} autoFocus />
         <div className="max-h-[40vh] overflow-y-auto">
             {filteredOutputs.length === 0 ? (
@@ -53,7 +55,7 @@ export function LinkOutputSelector({ outputs, onSelect, emptyMessage, compact = 
                                 type="button"
                                 onClick={() => onSelect(output)}
                                 className="rounded-lg border border-base-300 bg-base-100 hover:border-primary hover:bg-primary/5 px-3 py-2 text-left transition-colors"
-                                title={`${output.baseName}: ${output.item.name} - ${formatRate(output.ratePerMinute)}/min`}
+                                title={t("{baseName}: {name} - {value}/min", { baseName: output.baseName, name: output.item.name, value: formatRate(output.ratePerMinute) })}
                             >
                                 <div className="flex items-start gap-3 min-w-0">
                                     <div className="flex items-center gap-1.5 shrink-0">
@@ -74,15 +76,13 @@ export function LinkOutputSelector({ outputs, onSelect, emptyMessage, compact = 
                                         <div className="flex items-center gap-2 min-w-0">
                                             <span className="font-medium text-sm truncate">{displayName}</span>
                                             {output.isCurrentBase && (
-                                                <span className="badge badge-xs badge-outline shrink-0">This base</span>
+                                                <span className="badge badge-xs badge-outline shrink-0">{t("This base")}</span>
                                             )}
                                         </div>
                                         <div className="text-xs text-base-content/65 truncate">
                                             {output.baseName} / {output.building.name}
                                         </div>
-                                        <div className="text-xs text-base-content/80 mt-1">
-                                            {output.item.name} - {formatRate(output.ratePerMinute)}/min
-                                        </div>
+                                        <div className="text-xs text-base-content/80 mt-1">{t("{name} - {value}/min", { name: output.item.name, value: formatRate(output.ratePerMinute) })}</div>
                                     </div>
                                 </div>
                             </button>

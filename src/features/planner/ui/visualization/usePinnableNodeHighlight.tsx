@@ -1,14 +1,16 @@
+import { useTranslation } from '@/shared/i18n';
 import { useMemo, type ReactNode } from 'react';
 import type { Edge, Node } from '@xyflow/react';
 import { useConnectedNodeHighlight } from './useConnectedNodeHighlight';
 
 /** Share pin controls and connection highlighting across all production diagrams. */
 export function usePinnableNodeHighlight(nodes: Node[], edges: Edge[], enabled = true) {
+    const { t } = useTranslation();
     const highlight = useConnectedNodeHighlight(nodes, edges, enabled);
     const { nodes: highlightedNodes, pinnedNodeId, toggleNodePin } = highlight;
     const pinnableNodes = useMemo(() => enabled ? highlightedNodes.map((node) => {
         const isPinned = node.id === pinnedNodeId;
-        const pinLabel = isPinned ? 'Unpin node' : 'Pin node to highlight connections';
+        const pinLabel = isPinned ? t("Unpin node") : t("Pin node to highlight connections");
         return {
             ...node,
             data: {
@@ -34,7 +36,7 @@ export function usePinnableNodeHighlight(nodes: Node[], edges: Edge[], enabled =
                 </>,
             },
         };
-    }) : highlightedNodes, [enabled, highlightedNodes, pinnedNodeId, toggleNodePin]);
+    }) : highlightedNodes, [enabled, highlightedNodes, pinnedNodeId, toggleNodePin, t]);
 
     return { ...highlight, nodes: pinnableNodes };
 }

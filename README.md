@@ -231,6 +231,12 @@ git push origin feature/awesome-feature
 - **Small PRs**: Keep changes focused and reviewable
 - **Have Fun**: This is a fun project - enjoy the process! 🎉
 
+### 🌐 UI Localization
+
+The UI uses a typed English message catalog with language selection in Global settings.
+Game data and game-specific names remain unchanged. See [the localization guide](docs/localization.md)
+to add a language or new UI copy. Validate catalogs with `npm run test:i18n`.
+
 ### 🎨 Adding New Game Data
 
 Game data lives in `src/data/`:

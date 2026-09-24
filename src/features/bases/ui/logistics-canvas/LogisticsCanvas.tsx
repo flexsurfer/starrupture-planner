@@ -1,3 +1,5 @@
+import { useFlowLabels } from '@/shared/i18n/useFlowLabels';
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -52,42 +54,44 @@ interface EdgeDetailPanelProps {
   onClose: () => void;
 }
 
-const EdgeDetailPanel: React.FC<EdgeDetailPanelProps> = ({ edgeData, onClose }) => (
+const EdgeDetailPanel: React.FC<EdgeDetailPanelProps> = ({ edgeData, onClose }) => { const { t } = useTranslation(); return (
   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 bg-base-100 border border-base-300 rounded-lg shadow-xl p-3 min-w-[280px] max-w-[380px]">
     <div className="flex items-start justify-between gap-2 mb-2">
       <span className="font-bold text-sm">
-        {edgeData.type === 'item' ? '↔ Item Link' : edgeData.type === 'energy' ? '⚡ Energy Link' : '🔗 Broken Link'}
+        {edgeData.type === 'item' ? t("↔ Item Link") : edgeData.type === 'energy' ? t("⚡ Energy Link") : t("🔗 Broken Link")}
       </span>
       <button type="button" className="btn btn-xs btn-ghost" onClick={onClose}>✕</button>
     </div>
     <div className="space-y-1 text-xs">
       {edgeData.itemName && (
         <div className="flex justify-between">
-          <span className="text-base-content/70">Item</span>
+          <span className="text-base-content/70">{t("Item")}</span>
           <span className="font-medium">{edgeData.itemName}</span>
         </div>
       )}
       {edgeData.ratePerMinute != null && (
         <div className="flex justify-between">
-          <span className="text-base-content/70">Rate</span>
-          <span className="font-mono">{Math.round(edgeData.ratePerMinute)}/min</span>
+          <span className="text-base-content/70">{t("Rate")}</span>
+          <span className="font-mono">{t("{Math}/min", { Math: Math.round(edgeData.ratePerMinute) })}</span>
         </div>
       )}
       {edgeData.isBroken && (
-        <div className="text-error font-medium">Link is broken</div>
+        <div className="text-error font-medium">{t("Link is broken")}</div>
       )}
       {edgeData.type === 'energy' && (edgeData.groupName || edgeData.groupId) && (
         <div className="flex justify-between">
-          <span className="text-base-content/70">Grid</span>
+          <span className="text-base-content/70">{t("Grid")}</span>
           <span className="font-medium">{edgeData.groupName || edgeData.groupId}</span>
         </div>
       )}
     </div>
   </div>
-);
+); };
 
 const LogisticsCanvasInner: React.FC = () => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
+    const flowLabels = useFlowLabels();
   const { fitView } = useReactFlow();
 
   const theme = useSubscription([appIds.subscriptions.UI_THEME]);
@@ -109,13 +113,13 @@ const LogisticsCanvasInner: React.FC = () => {
   // Build canvas data
   const canvasData = useMemo(() => {
     if (models.length === 0) return { nodes: [], edges: [] };
-    return buildLogisticsCanvasData({
+    return buildLogisticsCanvasData({ t,
       models,
       baseStats: baseStatsMap || {},
       energyGroups,
       activeLayers,
     });
-  }, [models, baseStatsMap, energyGroups, activeLayers]);
+  }, [models, baseStatsMap, energyGroups, activeLayers, t]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -151,6 +155,7 @@ const LogisticsCanvasInner: React.FC = () => {
   return (
     <div className="relative w-full h-full min-h-0">
       <ReactFlow
+                ariaLabelConfig={flowLabels}
         nodes={nodes}
         edges={edges}
         colorMode={theme}
@@ -172,13 +177,13 @@ const LogisticsCanvasInner: React.FC = () => {
             type="button"
             onClick={() => setShowEnergy((v) => !v)}
             aria-pressed={showEnergy}
-            title={showEnergy ? 'Hide energy grids' : 'Show energy grids'}
+            title={showEnergy ? t("Hide energy grids") : t("Show energy grids")}
             className={`btn btn-sm gap-1.5 shadow ${
               showEnergy ? 'btn-warning' : 'bg-base-100 border border-base-300 text-base-content/80'
             }`}
           >
             <span>⚡</span>
-            <span>Energy grids: {showEnergy ? 'On' : 'Off'}</span>
+            <span>{t("Energy grids: {value}", { value: showEnergy ? t("On") : t("Off") })}</span>
           </button>
         </Panel>
         <Background />

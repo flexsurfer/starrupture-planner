@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useState } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -18,6 +19,7 @@ interface PlanInputModalProps {
 }
 
 export function PlanInputModal({ baseId, planId, itemId, amount, onAdd, onClose }: PlanInputModalProps) {
+    const { t } = useTranslation();
     const planning = useSubscription([appIds.subscriptions.BASES_MODE]) === 'planning';
     const items = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
     const buildings = useSubscription([appIds.subscriptions.BASES_AVAILABLE_BUILDINGS_FOR_SECTION, 'inputs']);
@@ -33,9 +35,9 @@ export function PlanInputModal({ baseId, planId, itemId, amount, onAdd, onClose 
             initialItemId={itemId} initialRatePerMinute={amount} requireItemConfiguration onAdd={onAdd} onClose={onClose} />;
     }
 
-    return <ExternalInputModal title="Add new input" item={item} building={selectingTarget ? undefined : building} initialAmount={amount}
+    return <ExternalInputModal title={t("Add new input")} item={item} building={selectingTarget ? undefined : building} initialAmount={amount}
         targetSelector={selectingTarget ? <LinkOutputSelector outputs={outputs} compact
-            emptyMessage="No available targets found."
+            emptyMessage={t("No available targets found.")}
             onSelect={output => {
                 onAdd({
                     buildingTypeId: PACKAGE_RECEIVER_BUILDING_ID, count: 1,
@@ -48,11 +50,11 @@ export function PlanInputModal({ baseId, planId, itemId, amount, onAdd, onClose 
             onAdd({ buildingTypeId: building.id, count: 1, selectedItemId: itemId, ratePerMinute });
             onClose();
         }}>
-        {!extractor && (outputs.length > 0 || selectingTarget) && <div className="flex gap-2" role="group" aria-label="Input source">
+        {!extractor && (outputs.length > 0 || selectingTarget) && <div className="flex gap-2" role="group" aria-label={t("Input source")}>
             <button type="button" className={`btn btn-sm flex-1 ${selectingTarget ? 'btn-outline' : 'btn-primary'}`}
-                aria-pressed={!selectingTarget} onClick={() => setSelectingTarget(false)}>Enter amount</button>
+                aria-pressed={!selectingTarget} onClick={() => setSelectingTarget(false)}>{t("Enter amount")}</button>
             <button type="button" className={`btn btn-sm flex-1 ${selectingTarget ? 'btn-primary' : 'btn-outline'}`}
-                aria-pressed={selectingTarget} onClick={() => setSelectingTarget(true)}>Select target</button>
+                aria-pressed={selectingTarget} onClick={() => setSelectingTarget(true)}>{t("Select target")}</button>
         </div>}
     </ExternalInputModal>;
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -8,6 +9,7 @@ import {
 import { AddBuildingCardModal } from './modals';
 
 export const BaseBuildingsView: React.FC = () => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
   const [addBuildingSection, setAddBuildingSection] = useState<BuildingSectionType | null>(null);
@@ -56,40 +58,40 @@ export const BaseBuildingsView: React.FC = () => {
     <>
       <div className="space-y-3 sm:space-y-4">
         <BuildingSection
-          title="Inputs"
-          description="Buildings that extract resources or receive packages from other bases."
+          title={t("Inputs")}
+          description={t("Buildings that extract resources or receive packages from other bases.")}
           baseId={selectedBase.id}
           sectionType="inputs"
           onAdd={() => handleOpenAddModal('inputs')}
         />
 
         <BuildingSection
-          title="Energy"
-          description="Generators that produce energy for your base, and amplifiers that increase core heat capacity."
+          title={t("Energy")}
+          description={t("Generators that produce energy for your base, and amplifiers that increase core heat capacity.")}
           baseId={selectedBase.id}
           sectionType="energy"
           onAdd={() => handleOpenAddModal('energy')}
         />
 
         <BuildingSection
-          title="Infrastructure"
-          description="Habitat buildings for population and defense structures."
+          title={t("Infrastructure")}
+          description={t("Habitat buildings for population and defense structures.")}
           baseId={selectedBase.id}
           sectionType="infrastructure"
           onAdd={() => handleOpenAddModal('infrastructure')}
         />
 
         <BuildingSection
-          title="Production"
-          description="Buildings that process materials and produce items."
+          title={t("Production")}
+          description={t("Buildings that process materials and produce items.")}
           baseId={selectedBase.id}
           sectionType="production"
           onAdd={() => handleOpenAddModal('production')}
         />
 
         <BuildingSection
-          title="Outputs"
-          description="Buildings that send items to other bases or launch cargo to orbit."
+          title={t("Outputs")}
+          description={t("Buildings that send items to other bases or launch cargo to orbit.")}
           baseId={selectedBase.id}
           sectionType="outputs"
           onAdd={() => handleOpenAddModal('outputs')}

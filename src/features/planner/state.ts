@@ -1,3 +1,4 @@
+import type { UiText } from '@/shared/i18n/core';
 import type { PlannerFlowDirection } from './flow-graph';
 import type { CorporationLevelSelection, RecipeAlternativePreset } from '@/app/uklad/model';
 
@@ -24,7 +25,7 @@ export interface PlannerFeatureState {
     plannerTabs: PlannerTab[];
     plannerActiveTabId: string | null;
     plannerTabCreation: { itemId?: string; corporationLevel?: CorporationLevelSelection } | null;
-    plannerTargetWarning: string | null;
+    plannerTargetWarning: UiText | null;
     pinnedRecipeSelections: Record<string, string>;
     recipeAlternativePresets: RecipeAlternativePreset[];
 }

@@ -30,7 +30,7 @@ it('separates total item output from building details', () => {
 
 it('keeps the single-building count neutral', () => {
     render(<NodeCard node={{ ...node, buildingCount: 1 }} items={[]} outputColor="green" />);
-    expect(screen.getByTitle('1 buildings required')).not.toHaveClass('text-secondary');
+    expect(screen.getByTitle('1 building required')).not.toHaveClass('text-secondary');
 });
 
 it.each([false, true])('renders target demand without buildings, capacity, or recipes (compact: %s)', compactOnMobile => {

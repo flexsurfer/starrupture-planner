@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useRuntime, useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 
@@ -6,6 +7,7 @@ interface BuildingSelectorProps {
 }
 
 export const BuildingSelector = ({ className = "" }: BuildingSelectorProps) => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const availableBuildings = useSubscription([appIds.subscriptions.ITEMS_AVAILABLE_PRODUCTION_BUILDINGS]);
   const selectedBuilding = useSubscription([appIds.subscriptions.ITEMS_SELECTED_BUILDING]);
@@ -23,7 +25,7 @@ export const BuildingSelector = ({ className = "" }: BuildingSelectorProps) => {
       >
         {availableBuildings.map((building) => (
           <option key={building} value={building}>
-            {building === 'all' ? 'All Buildings' : building}
+            {building === 'all' ? t("All Buildings") : building}
           </option>
         ))}
       </select>

@@ -1,3 +1,4 @@
+import { useFlowLabels } from '@/shared/i18n/useFlowLabels';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useEffect, useId, useMemo } from 'react';
 import {
@@ -53,6 +54,7 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     onRevertInput,
     inputDisabledReason,
 }) => {
+    const flowLabels = useFlowLabels();
     const { fitView } = useReactFlow();
     const backgroundId = useId();
     const width = useStore(state => state.width);
@@ -124,6 +126,7 @@ const EmbeddedFlowDiagramInner: React.FC<EmbeddedFlowDiagramInnerProps> = ({
     return (
         <div className={`w-full h-full min-h-0 ${!interactive ? 'pointer-events-none' : ''}`}>
             <ReactFlow
+                ariaLabelConfig={flowLabels}
                 nodes={highlightedNodes}
                 edges={highlightedEdges}
                 colorMode={theme}

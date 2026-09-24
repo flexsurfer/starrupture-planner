@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useState } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -8,6 +9,7 @@ import { useItemsData } from '@/features/items/ui/hooks/useItemsData';
 import { CorporationUsageBadge } from '@/features/corporations/ui/CorporationUsageBadge';
 
 const BuildingsPage = () => {
+    const { t } = useTranslation();
   const sortedBuildings = useSubscription([appIds.subscriptions.BUILDINGS_SORTED_PRODUCTION_LIST]);
   const { findBuildingCorporationUsage, getCorporationId } = useItemsData();
   const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
@@ -26,12 +28,10 @@ const BuildingsPage = () => {
   return (
     <div className="mx-auto w-full max-w-7xl p-2 sm:p-4">
       <header className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h1 className="text-lg font-bold sm:text-xl">Buildings & Recipes</h1>
+        <h1 className="text-lg font-bold sm:text-xl">{t("Buildings & Recipes")}</h1>
         <p className="text-xs text-base-content/60 tabular-nums">
-          <span className="font-semibold text-base-content">{sortedBuildings.length}</span> buildings
-          <span className="mx-2" aria-hidden="true">·</span>
-          <span className="font-semibold text-base-content">{totalRecipes}</span> recipes
-        </p>
+          <span>{t("{count} buildings", { count: sortedBuildings.length })}</span><span className="mx-2" aria-hidden="true">·</span>
+          <span>{t("{count} recipes", { count: totalRecipes })}</span></p>
       </header>
 
       <div className="space-y-2 sm:space-y-3">
@@ -52,9 +52,9 @@ const BuildingsPage = () => {
               expanded={expandedBuildings.has(building.id)}
               onToggle={() => toggleBuilding(building.id)}
               summary={<>
-                <span>{displayRecipes.length} {displayRecipes.length === 1 ? 'recipe' : 'recipes'}</span>
-                <span title="Power consumption">⚡ {building.power ?? 0}</span>
-                <span title="Heat generation">🔥 {building.heat ?? 0}</span>
+                <span>{t("{count} recipes", { count: displayRecipes.length })}</span>
+                <span title={t("Power consumption")}>⚡ {building.power ?? 0}</span>
+                <span title={t("Heat generation")}>🔥 {building.heat ?? 0}</span>
                 {findBuildingCorporationUsage(building.name).map((usage, index) => (
                   <CorporationUsageBadge key={index} usage={usage} corporationId={getCorporationId(usage.corporation)} />
                 ))}
@@ -70,7 +70,7 @@ const BuildingsPage = () => {
         })}
       </div>
 
-      {sortedBuildings.length === 0 && <p className="py-8 text-center text-sm text-base-content/60">No production buildings available</p>}
+      {sortedBuildings.length === 0 && <p className="py-8 text-center text-sm text-base-content/60">{t("No production buildings available")}</p>}
     </div>
   );
 };

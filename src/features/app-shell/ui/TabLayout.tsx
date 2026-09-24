@@ -1,3 +1,4 @@
+import { useTranslation, type MessageKey } from '@/shared/i18n';
 import { TransferNotification } from '@/features/data-transfer/ui/TransferNotification';
 import { GlobalSettings, GlobalSettingsButton } from '@/features/data-transfer/ui/GlobalSettings';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -19,7 +20,7 @@ import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { TabType } from '@/app/uklad/model';
 import { SectionIcon, type SectionIconName } from '@/shared/ui';
 
-const tabs: { id: TabType; label: string; icon: SectionIconName }[] = [
+const tabs: { id: TabType; label: MessageKey; icon: SectionIconName }[] = [
   { id: 'mybases', label: 'My Bases', icon: 'bases' },
   { id: 'items', label: 'Items', icon: 'items' },
   { id: 'recipes', label: 'Buildings', icon: 'buildings' },
@@ -28,6 +29,7 @@ const tabs: { id: TabType; label: string; icon: SectionIconName }[] = [
 ];
 
 const TabLayout = () => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const [showSettings, setShowSettings] = useState(false);
   const activeTab = useSubscription([appIds.subscriptions.UI_ACTIVE_TAB]);
@@ -135,7 +137,7 @@ const TabLayout = () => {
             <div ref={desktopBrandRef} className="flex w-max items-center gap-3 col-start-1 row-start-1">
               <img
                 src="/logo_black_bg.webp"
-                alt="Rupture Planner Logo"
+                alt={t("Rupture Planner Logo")}
                 className="h-8 w-auto shrink-0 rounded shadow-sm"
                 width={32}
                 height={32}
@@ -161,7 +163,7 @@ const TabLayout = () => {
                     onClick={() => handleTabClick(tab.id)}
                   >
                     <SectionIcon name={tab.icon} className="mr-2 h-5 w-5" />
-                    {tab.label}
+                    {t(tab.label)}
                   </button>
                 ))}
               </div>
@@ -183,7 +185,7 @@ const TabLayout = () => {
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <img
                 src="/logo_black_bg.webp"
-                alt="Rupture Planner Logo"
+                alt={t("Rupture Planner Logo")}
                 className="h-9 w-9 shrink-0 rounded shadow-sm"
                 width={36}
                 height={36}
@@ -225,7 +227,7 @@ const TabLayout = () => {
                 >
                   <div className="flex flex-row items-center gap-1">
                     <SectionIcon name={tab.icon} className="h-4 w-4" />
-                    <span className="text-xs leading-none truncate">{tab.label}</span>
+                    <span className="text-xs leading-none truncate">{t(tab.label)}</span>
                   </div>
                 </button>
               ))}

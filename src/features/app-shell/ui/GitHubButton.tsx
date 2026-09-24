@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 interface GitHubButtonProps {
   href?: string;
   className?: string;
@@ -7,13 +8,14 @@ const GitHubButton = ({
   href = "https://github.com/flexsurfer/starrupture-planner",
   className = "btn btn-ghost btn-sm"
 }: GitHubButtonProps) => {
+    const { t } = useTranslation();
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
       className={className}
-      title="View on GitHub"
+      title={t("View on GitHub")}
     >
       <svg
         className="w-5 h-5"

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState, useCallback, useId } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -34,6 +35,7 @@ const ProductionFlowDiagram: React.FC<ProductionFlowDiagramProps> = ({ baseId, s
 };
 
 export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ baseId, sectionId }) => {
+    const { t } = useTranslation();
     const runtime = useRuntime();
     const advanced = useSubscription([appIds.subscriptions.BASES_MODE]) !== 'planning';
     const diagramId = useId();
@@ -60,19 +62,19 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
     const handleDelete = useCallback(() => {
         if (section && selectedBaseId) {
             runtime.dispatch([appIds.events.UI_SHOW_CONFIRMATION_DIALOG,
-                'Delete Production Plan',
-            `Are you sure you want to delete "${section.name}"? This action cannot be undone.`,
+                t("Delete Production Plan"),
+            t("Are you sure you want to delete \"{name}\"? This action cannot be undone.", { name: section.name }),
             () => {
                 runtime.dispatch([appIds.events.PRODUCTION_PLAN_DELETE_SECTION, selectedBaseId, section.id]);
                 runtime.dispatch([appIds.events.UI_CLOSE_CONFIRMATION_DIALOG]);
             },
             {
-                confirmLabel: 'Delete',
+                confirmLabel: t("Delete"),
                 confirmButtonClass: 'btn-error',
             }
             ]);
         }
-    }, [runtime, selectedBaseId, section]);
+    }, [runtime, selectedBaseId, section, t]);
 
     const handleActivate = useCallback(() => {
         if (selectedBaseId && section) {
@@ -115,7 +117,7 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
     const statusColor = hasError ? 'text-error' : section.active
         ? (allRequirementsSatisfied && !hasMaterialShortage ? 'text-success' : 'text-warning')
         : 'text-base-content/60';
-    const warningLabels = [showBuildingWarning && 'buildings', showMaterialWarning && 'materials', showInputWarning && 'inputs'].filter(Boolean);
+    const warningLabels = [showBuildingWarning && t("buildings"), showMaterialWarning && t("materials"), showInputWarning && t("inputs")].filter(Boolean);
 
     return (
         <section className={`min-w-0 rounded-lg border bg-base-100 ${hasError ? 'border-error/50' : 'border-base-300'}`}>
@@ -132,24 +134,22 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                             <span className="min-w-0 text-sm font-semibold leading-snug break-words sm:text-base">{section.name}</span>
                             {advanced && <span className={`flex shrink-0 items-center gap-1 text-[11px] font-medium ${statusColor}`}>
                                 <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-                                {section.active ? 'Active' : 'Inactive'}
+                                {section.active ? t("Active") : t("Inactive")}
                             </span>}
                         </button>
                     </h2>
                     <div className="flex flex-wrap items-center gap-1">
                         {advanced && showManageButton && <button type="button" onClick={() => setShowRequirementsModal(true)}
-                            className="btn btn-sm btn-ghost h-8 min-h-8 px-2 text-xs" title="Manage production buildings">
-                            <SectionIcon name="buildings" className="size-4" />
-                            Manage
-                        </button>}
+                            className="btn btn-sm btn-ghost h-8 min-h-8 px-2 text-xs" title={t("Manage production buildings")}>
+                            <SectionIcon name="buildings" className="size-4" />{t("Manage")}</button>}
                         {advanced && <button type="button" className="btn btn-sm btn-outline h-8 min-h-8 px-2 text-xs"
                             onClick={section.active ? handleDeactivate : handleActivate} disabled={!section.active && hasError}
-                            title={!section.active && hasError ? 'Cannot activate: inputs are insufficient' : undefined}>
-                            {section.active ? 'Deactivate' : 'Activate'}
+                            title={!section.active && hasError ? t("Cannot activate: inputs are insufficient") : undefined}>
+                            {section.active ? t("Deactivate") : t("Activate")}
                         </button>}
-                        <button type="button" className="btn btn-sm btn-primary h-8 min-h-8 px-2 text-xs" onClick={handleEditProductionPlan}>Edit</button>
+                        <button type="button" className="btn btn-sm btn-primary h-8 min-h-8 px-2 text-xs" onClick={handleEditProductionPlan}>{t("Edit")}</button>
                         <button type="button" className="btn btn-sm btn-ghost h-8 min-h-8 w-8 p-0 text-base-content/50 hover:text-error"
-                            aria-label={`Delete ${section.name}`} title="Delete production plan" onClick={handleDelete}>
+                            aria-label={t("Delete {name}", { name: section.name })} title={t("Delete production plan")} onClick={handleDelete}>
                             <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -157,28 +157,23 @@ export const ProductionPlanSection: React.FC<ProductionPlanSectionProps> = ({ ba
                     </div>
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-base-content/65 tabular-nums sm:text-xs">
-                    <span className="inline-flex items-center gap-1" aria-label={`${stats.buildingCount} ${stats.buildingCount === 1 ? 'building' : 'buildings'}`} title="Buildings">
+                    <span className="inline-flex items-center gap-1" aria-label={t("{count} buildings", { count: stats.buildingCount })} title={t("Buildings")}>
                         <SectionIcon name="buildings" className="size-4" />
                         {stats.buildingCount}
                     </span>
-                    {stats.totalHeat > 0 && <span title="Heat">🔥 {stats.totalHeat}</span>}
-                    {stats.totalPowerConsumption > 0 && <span title="Power consumption">⚡ {stats.totalPowerConsumption} MW</span>}
-                    {corporationName && <span>{corporationName} Lv.{section.corporationLevel?.level}</span>}
+                    {stats.totalHeat > 0 && <span title={t("Heat")}>🔥 {stats.totalHeat}</span>}
+                    {stats.totalPowerConsumption > 0 && <span title={t("Power consumption")}>⚡ {stats.totalPowerConsumption} MW</span>}
+                    {corporationName && <span>{t("{corporationName} Lv.{level}", { corporationName: corporationName, level: section.corporationLevel?.level ?? '' })}</span>}
                     {advanced && hasLinkedOutputs && outputSummary && <span className={outputSummary.remainingRatePerMinute > 0 ? 'text-warning' : ''}
-                        title={`${formatRatePerMinute(outputSummary.remainingRatePerMinute)}/min remaining`}>
-                        Outputs {formatRatePerMinute(outputSummary.assignedRatePerMinute)}/min assigned
-                    </span>}
+                        title={t("{value}/min remaining", { value: formatRatePerMinute(outputSummary.remainingRatePerMinute) })}>{t("Outputs {value}/min assigned", { value: formatRatePerMinute(outputSummary.assignedRatePerMinute) })}</span>}
                 </div>
             </header>
             {advanced && warningLabels.length > 0 && <details className="border-b border-base-300 px-2 py-1.5 text-xs sm:px-3">
-                <summary className="cursor-pointer text-warning">Requirements need attention: {warningLabels.join(', ')}</summary>
+                <summary className="cursor-pointer text-warning">{t("Requirements need attention: {warningLabels}", { warningLabels: warningLabels.join(', ') })}</summary>
                 <ul className="mt-2 space-y-1 pb-1 text-base-content/75">
-                    {showBuildingWarning && <li>Not enough production buildings in base. Use Manage to add them.</li>}
-                    {showMaterialWarning && <li>Missing materials for this plan.</li>}
-                    {sharedInputShortages.map(shortage => <li key={shortage.baseBuildingId}>
-                        Not enough resources from input &quot;{shortage.inputName}&quot; ({shortage.itemName}):{' '}
-                        {formatRatePerMinute(shortage.availablePerMinute)}/min available, {formatRatePerMinute(shortage.requiredPerMinute)}/min required for all plans.
-                    </li>)}
+                    {showBuildingWarning && <li>{t("Not enough production buildings in base. Use Manage to add them.")}</li>}
+                    {showMaterialWarning && <li>{t("Missing materials for this plan.")}</li>}
+                    {sharedInputShortages.map(shortage => <li key={shortage.baseBuildingId}>{t("Not enough resources from input \"{inputName}\" ({itemName}): {value}/min available, {value2}/min required for all plans.", { inputName: shortage.inputName || t("Unknown input"), itemName: shortage.itemName || t("Unknown input"), value: formatRatePerMinute(shortage.availablePerMinute), value2: formatRatePerMinute(shortage.requiredPerMinute) })}</li>)}
                 </ul>
             </details>}
             <div id={diagramId} hidden={isCollapsed}>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -13,6 +14,7 @@ import { MyBasesSettings } from './components/MyBasesSettings';
 import { NavigationHeader } from '@/shared/ui/NavigationHeader';
 
 export const BaseDetailView: React.FC = () => {
+    const { t } = useTranslation();
   const runtime = useRuntime();
   const selectedBase = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE]);
   const { isOpen: isEditingPlan } = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_OPEN_STATE]);
@@ -41,8 +43,8 @@ export const BaseDetailView: React.FC = () => {
     <div className="h-full min-h-0 px-2 pb-2 lg:px-3 lg:pb-3 flex flex-col">
       <div hidden={isEditingPlan} className={isEditingPlan ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}>
         <NavigationHeader title={selectedBase.name}
-          breadcrumbs={[{ label: 'My Bases', onClick: backToBases }, { label: selectedBase.name }]}
-          back={{ label: 'Back to My Bases', onClick: backToBases }}
+          breadcrumbs={[{ label: t("My Bases"), onClick: backToBases }, { label: selectedBase.name }]}
+          back={{ label: t("Back to My Bases"), onClick: backToBases }}
           actions={<MyBasesSettings />} />
         {/* Core Info and Stats - Fixed, not scrollable */}
         <div className="mb-2 flex-shrink-0">
@@ -54,7 +56,7 @@ export const BaseDetailView: React.FC = () => {
             <div
               role="tablist"
               className="tabs tabs-bordered tabs-sm sm:tabs-md min-w-0 flex-1 flex-nowrap overflow-x-auto"
-              aria-label="Base sections"
+              aria-label={t("Base sections")}
             >
               <button
                 type="button"
@@ -64,9 +66,7 @@ export const BaseDetailView: React.FC = () => {
                 aria-controls="base-panel-overview"
                 className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${activeTab === 'base' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('base')}
-              >
-                Production
-              </button>
+              >{t("Production")}</button>
               <button
                 type="button"
                 role="tab"
@@ -75,9 +75,7 @@ export const BaseDetailView: React.FC = () => {
                 aria-controls="base-panel-plans"
                 className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${activeTab === 'plans' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('plans')}
-              >
-                Plans
-                {plansCount > 0 && (
+              >{t("Plans")}{plansCount > 0 && (
                   <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">{plansCount}</span>
                 )}
               </button>
@@ -89,18 +87,16 @@ export const BaseDetailView: React.FC = () => {
                 aria-controls="base-panel-buildings"
                 className={`tab shrink-0 px-2 sm:px-3 text-xs sm:text-sm font-semibold flex flex-nowrap items-center gap-1 sm:gap-1.5 whitespace-nowrap ${activeTab === 'buildings' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('buildings')}
-              >
-                Buildings
-                {buildingsCount > 0 && (
+              >{t("Buildings")}{buildingsCount > 0 && (
                   <span className="badge badge-sm border-base-content/10 bg-base-content/5 text-base-content/60">{buildingsCount}</span>
                 )}
               </button>}
             </div>
             {activeTab !== 'buildings' && <button type="button"
               className="btn btn-sm btn-primary btn-outline h-8 min-h-8 min-w-8 shrink-0 gap-1 px-2 text-xs"
-              aria-label="Add Plan" title="Add Plan"
+              aria-label={t("Add Plan")} title={t("Add Plan")}
               onClick={() => runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_OPEN])}>
-              <span aria-hidden="true">＋</span><span className="hidden sm:inline">Add Plan</span>
+              <span aria-hidden="true">＋</span><span className="hidden sm:inline">{t("Add Plan")}</span>
             </button>}
           </div>
 

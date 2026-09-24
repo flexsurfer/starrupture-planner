@@ -1,3 +1,4 @@
+import type { UiText } from '@/shared/i18n/core';
 import type { ArchiveSelection, PlannerArchive, TransferStatus } from '@/features/data-transfer/archive';
 import type { PlannerTab, PlannerMode, PlannerView } from '@/features/planner/state';
 import type { UkladContracts } from '@ukladjs/core/vanilla';
@@ -49,8 +50,8 @@ import type { PlannerFlowGraph } from '@/features/planner/flow-graph';
 import { appIds, stateKeys } from './catalog';
 
 export interface ConfirmationDialogOptions {
-    confirmLabel?: string;
-    cancelLabel?: string;
+    confirmLabel?: UiText;
+    cancelLabel?: UiText;
     confirmButtonClass?: string;
     onCancel?: () => void;
 }
@@ -114,6 +115,7 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.itemsCategories]: AppState['itemsCategories'];
         [stateKeys.buildingsList]: AppState['buildingsList'];
         [stateKeys.corporationsList]: AppState['corporationsList'];
+        [stateKeys.uiLocale]: AppState['uiLocale'];
         [stateKeys.uiTheme]: AppState['uiTheme'];
         [stateKeys.uiGameDataLoadPending]: AppState['uiGameDataLoadPending'];
         [stateKeys.uiActiveTab]: AppState['uiActiveTab'];
@@ -150,9 +152,10 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.APP_REQUEST_LOAD_GAME_DATA]: [version: DataVersion];
         [appIds.events.APP_GAME_DATA_LOAD_FAILED]: [];
         [appIds.events.APP_SET_DATA_VERSION]: [version: DataVersion, bundle?: AppVersionedGameData];
+        [appIds.events.UI_SET_LOCALE]: [locale: string];
         [appIds.events.UI_SET_THEME]: [theme: 'light' | 'dark'];
         [appIds.events.UI_SET_ACTIVE_TAB]: [tab: TabType];
-        [appIds.events.UI_SHOW_CONFIRMATION_DIALOG]: [title: string, message: string, onConfirm: () => void, options?: ConfirmationDialogOptions];
+        [appIds.events.UI_SHOW_CONFIRMATION_DIALOG]: [title: UiText, message: UiText, onConfirm: () => void, options?: ConfirmationDialogOptions];
         [appIds.events.UI_CLOSE_CONFIRMATION_DIALOG]: [];
         [appIds.events.ITEMS_SET_SELECTED_CATEGORY]: [category: string];
         [appIds.events.ITEMS_SET_SELECTED_BUILDING]: [building: string];
@@ -229,6 +232,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.DATA_TRANSFER_STATUS]: { params: []; result: TransferStatus | null };
         [appIds.subscriptions.APP_DATA_VERSION]: { params: []; result: DataVersion };
         [appIds.subscriptions.APP_DATA_VERSIONS]: { params: []; result: AppState['appDataVersions'] };
+        [appIds.subscriptions.UI_LOCALE]: { params: []; result: AppState['uiLocale'] };
         [appIds.subscriptions.UI_THEME]: { params: []; result: AppState['uiTheme'] };
         [appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]: { params: []; result: boolean };
         [appIds.subscriptions.UI_ACTIVE_TAB]: { params: []; result: TabType };
@@ -263,8 +267,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.PLANNER_ACTIVE_VIEW]: { params: []; result: PlannerView };
         [appIds.subscriptions.PLANNER_MODE]: { params: []; result: PlannerTab['mode'] };
         [appIds.subscriptions.PLANNER_MULTI_TARGETS]: { params: []; result: PlannerTab['multiTargets'] };
-        [appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING]: { params: []; result: string | null };
-        [appIds.subscriptions.PLANNER_TARGET_WARNING]: { params: []; result: string | null };
+        [appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING]: { params: []; result: UiText | null };
+        [appIds.subscriptions.PLANNER_TARGET_WARNING]: { params: []; result: UiText | null };
         [appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]: { params: []; result: string[] };
         [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID]: { params: []; result: PlannerTab['selectedItemId'] };
         [appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL]: { params: []; result: PlannerTab['selectedCorporationLevel'] };

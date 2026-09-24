@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import React, { useState } from 'react';
 
 interface RenameBaseModalProps {
@@ -15,6 +16,7 @@ export const RenameBaseModal: React.FC<RenameBaseModalProps> = ({
   onClose,
   onRename,
 }) => {
+    const { t } = useTranslation();
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const name = nameDraft ?? currentName;
 
@@ -40,19 +42,19 @@ export const RenameBaseModal: React.FC<RenameBaseModalProps> = ({
   return (
     <div className="modal modal-open">
       <div className="modal-box">
-        <h3 className="font-bold text-lg mb-4">Rename Base</h3>
+        <h3 className="font-bold text-lg mb-4">{t("Rename Base")}</h3>
         
         <form onSubmit={handleSubmit}>
           <div className="form-control mb-4">
             <label className="label">
-              <span className="label-text">Base Name</span>
+              <span className="label-text">{t("Base Name")}</span>
             </label>
             <input
               type="text"
               className="input input-bordered w-full"
               value={name}
               onChange={(e) => setNameDraft(e.target.value)}
-              placeholder="Enter base name"
+              placeholder={t("Enter base name")}
               autoFocus
               required
             />
@@ -63,16 +65,12 @@ export const RenameBaseModal: React.FC<RenameBaseModalProps> = ({
               type="button"
               className="btn btn-ghost"
               onClick={handleCancel}
-            >
-              Cancel
-            </button>
+            >{t("Cancel")}</button>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={!name.trim() || name.trim() === currentName}
-            >
-              Rename
-            </button>
+            >{t("Rename")}</button>
           </div>
         </form>
       </div>

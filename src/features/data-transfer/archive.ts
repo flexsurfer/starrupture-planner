@@ -1,3 +1,4 @@
+import { UiMessageError, type UiText, type MessageKey } from '@/shared/i18n/core';
 import type { AppState, Base, BaseBuilding, EnergyGroup } from '@/app/uklad/model';
 import type { PlannerTab } from '@/features/planner/state';
 import type { BasesMode } from '@/features/bases/state';
@@ -23,7 +24,7 @@ export interface ArchiveSelection {
 
 export interface TransferStatus {
     kind: 'success' | 'error';
-    message: string;
+    message: UiText;
 }
 
 export interface DataTransferState {
@@ -80,8 +81,8 @@ function detachLinkedOutput(input: BaseBuilding) {
     delete input.linkedOutput;
 }
 
-function check(condition: unknown, message = 'The file contains invalid or incomplete planner data.'): asserts condition {
-    if (!condition) throw new Error(message);
+function check(condition: unknown, message: MessageKey = 'The file contains invalid or incomplete planner data.'): asserts condition {
+    if (!condition) throw new UiMessageError(message);
 }
 function object(value: unknown): asserts value is Record<string, unknown> {
     check(typeof value === 'object' && value !== null && !Array.isArray(value));
@@ -140,7 +141,7 @@ export function parseArchive(text: string): PlannerArchive {
             return entry;
         });
     } catch (error) {
-        if (error instanceof SyntaxError) throw new Error('This is not a valid JSON file. Choose a Rupture Planner export.');
+        if (error instanceof SyntaxError) throw new UiMessageError('This is not a valid JSON file. Choose a Rupture Planner export.');
         throw error;
     }
     object(value);

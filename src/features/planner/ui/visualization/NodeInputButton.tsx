@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { FlowNode } from '@/features/planner/types';
@@ -26,6 +27,7 @@ export function InputActionButton({ itemName, isExternal, renderInputDialog, onR
     inputDisabledReason?: string;
     trash?: boolean;
 }) {
+    const { t } = useTranslation();
     const [container, setContainer] = useState<HTMLElement | null>(null);
     const button = useRef<HTMLButtonElement>(null);
     const modal = useRef<HTMLDivElement>(null);
@@ -51,7 +53,7 @@ export function InputActionButton({ itemName, isExternal, renderInputDialog, onR
         };
     }, [container]);
 
-    const label = trash ? `Remove external input for ${itemName}` : isExternal ? `Revert ${itemName} to production` : `Use external resource for ${itemName}`;
+    const label = trash ? t("Remove external input for {itemName}", { itemName: itemName }) : isExternal ? t("Revert {itemName} to production", { itemName: itemName }) : t("Use external resource for {itemName}", { itemName: itemName });
     return <>
         <button ref={button} type="button" aria-label={label} aria-haspopup="dialog"
             title={inputDisabledReason || label} disabled={!!inputDisabledReason}
@@ -80,16 +82,16 @@ export function InputActionButton({ itemName, isExternal, renderInputDialog, onR
                 else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
             }}>
             {isExternal ? <div className="modal modal-open">
-                <div role="alertdialog" aria-modal="true" aria-label="Remove external input?"
+                <div role="alertdialog" aria-modal="true" aria-label={t("Remove external input?")}
                     className="modal-box max-w-sm space-y-4">
-                    <h3 className="text-lg font-semibold">Remove external input?</h3>
-                    <p>Remove the external input for {itemName} and revert to production?</p>
+                    <h3 className="text-lg font-semibold">{t("Remove external input?")}</h3>
+                    <p>{t("Remove the external input for {itemName} and revert to production?", { itemName: itemName })}</p>
                     <div className="modal-action">
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={close}>Cancel</button>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={close}>{t("Cancel")}</button>
                         <button type="button" className="btn btn-primary btn-sm" onClick={() => {
                             close();
                             onRevertInput?.();
-                        }}>Remove input</button>
+                        }}>{t("Remove input")}</button>
                     </div>
                 </div>
                 <div className="modal-backdrop" onClick={close} />

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -44,6 +45,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     showChevron = false,
     panelMaxHeightClass = 'max-h-[60vh]'
 }) => {
+    const { t } = useTranslation();
     const runtime = useRuntime();
     const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]) ?? EMPTY_ITEMS_BY_ID;
     const defaultSelections = useSubscription([appIds.subscriptions.PINNED_RECIPE_SELECTIONS]) ?? EMPTY_PINNED_SELECTIONS;
@@ -101,7 +103,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
         Object.keys(defaultSelections).length > 0 && sameSelections(currentSelections, defaultSelections);
 
     const handleSavePreset = () => {
-        const name = window.prompt('Save current alternatives as:');
+        const name = window.prompt(t("Save current alternatives as:"));
         if (name && name.trim()) {
             runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, name.trim(), currentSelections]);
         }
@@ -127,11 +129,11 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                 type="button"
                 className="btn btn-sm btn-ghost gap-2 border border-base-300 bg-transparent hover:bg-base-200"
                 aria-expanded={isOpen}
-                aria-label={`Recipe alternatives: ${selectedNonDefault} of ${total} customized`}
-                title="Choose recipe alternatives"
+                aria-label={t("Recipe alternatives: {selectedNonDefault} of {total} customized", { selectedNonDefault: selectedNonDefault, total: total })}
+                title={t("Choose recipe alternatives")}
                 onClick={() => setIsOpen((prev) => !prev)}
             >
-                <span className="text-xs font-semibold">Recipes</span>
+                <span className="text-xs font-semibold">{t("Recipes")}</span>
                 {showChevron ? (
                     <span className="flex items-center gap-2">
                         <span className="text-xs">
@@ -155,32 +157,28 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                         className="relative z-20 shrink-0 rounded-t-md border-b border-base-300 bg-base-100 px-3 py-2"
                     >
                         <div className="mb-2 flex items-center justify-between sm:hidden">
-                            <span className="text-sm font-semibold">Recipe Alternatives</span>
-                            <button type="button" className="btn btn-ghost min-h-11 min-w-11" aria-label="Close recipe alternatives" onClick={() => { setIsOpen(false); setIsLoadOpen(false); }}>✕</button>
+                            <span className="text-sm font-semibold">{t("Recipe Alternatives")}</span>
+                            <button type="button" className="btn btn-ghost min-h-11 min-w-11" aria-label={t("Close recipe alternatives")} onClick={() => { setIsOpen(false); setIsLoadOpen(false); }}>✕</button>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="hidden sm:inline text-xs font-semibold text-base-content/80 mr-auto">Recipe Alternatives</span>
+                            <span className="hidden sm:inline text-xs font-semibold text-base-content/80 mr-auto">{t("Recipe Alternatives")}</span>
 
                             <button
                                 type="button"
                                 className="btn btn-xs max-sm:min-h-11 btn-ghost border border-base-300"
                                 disabled={!hasCustomSelection}
-                                title="Save the current alternatives as a named set"
+                                title={t("Save the current alternatives as a named set")}
                                 onClick={handleSavePreset}
-                            >
-                                Save set
-                            </button>
+                            >{t("Save set")}</button>
 
                             <div className="relative">
                                 <button
                                     type="button"
                                     className="btn btn-xs max-sm:min-h-11 btn-ghost border border-base-300 gap-1"
                                     disabled={!presets.length || !onApplySelections}
-                                    title="Load a saved set of alternatives"
+                                    title={t("Load a saved set of alternatives")}
                                     onClick={() => setIsLoadOpen((prev) => !prev)}
-                                >
-                                    Load set
-                                    <span className="opacity-70">({presets.length})</span>
+                                >{t("Load set")}<span className="opacity-70">({presets.length})</span>
                                     <span className="text-[10px]">▼</span>
                                 </button>
 
@@ -209,7 +207,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                                 <button
                                                     type="button"
                                                     className="btn btn-ghost btn-xs max-sm:min-h-11 max-sm:min-w-11 px-1 text-error/80 hover:text-error"
-                                                    title={`Delete "${preset.name}"`}
+                                                    title={t("Delete \"{name}\"", { name: preset.name })}
                                                     onClick={(event) => handleDeletePreset(event, preset.id)}
                                                 >
                                                     ✕
@@ -225,18 +223,15 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                 className={`btn btn-xs max-sm:min-h-11 gap-1 ${isCurrentDefault ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
                                 title={
                                     isCurrentDefault
-                                        ? 'These alternatives are the default for new plans — click to clear'
-                                        : 'Use the current alternatives as the default for new plans'
+                                        ? t("These alternatives are the default for new plans — click to clear")
+                                        : t("Use the current alternatives as the default for new plans")
                                 }
                                 onClick={handleToggleDefault}
                             >
-                                {isCurrentDefault ? 'Default ✓' : 'Set as default'}
+                                {isCurrentDefault ? t("Default ✓") : t("Set as default")}
                             </button>
                         </div>
-                        <div className="mt-1 text-[11px] leading-snug text-base-content/60">
-                            Save and load named sets of alternatives, or make the current set the default
-                            machines pre-selected for every new plan.
-                        </div>
+                        <div className="mt-1 text-[11px] leading-snug text-base-content/60">{t("Save and load named sets of alternatives, or make the current set the default machines pre-selected for every new plan.")}</div>
                     </div>
 
                     <div className="min-h-0 overflow-y-auto overscroll-contain p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
@@ -264,7 +259,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                                             ? 'border-primary bg-primary/10'
                                                             : 'border-base-300 bg-base-100 hover:bg-base-200'
                                                     }`}
-                                                    title={`${option.buildingName} - ${option.outputRate}/min`}
+                                                    title={t("{buildingName} - {outputRate}/min", { buildingName: option.buildingName, outputRate: option.outputRate })}
                                                     aria-pressed={isSelected}
                                                     onClick={() => onSelectRecipe(entry.itemId, option.key)}
                                                 >
@@ -272,9 +267,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                                         className={`absolute -top-1 -right-1 badge badge-xs font-medium ${
                                                             isSelected ? 'badge-primary' : 'badge-neutral'
                                                         }`}
-                                                    >
-                                                        {option.outputRate}/min
-                                                    </div>
+                                                    >{t("{outputRate}/min", { outputRate: option.outputRate })}</div>
                                                     <RecipeTypeIcon
                                                         recipeType={option.recipeType}
                                                         className="absolute -bottom-1 -left-1"

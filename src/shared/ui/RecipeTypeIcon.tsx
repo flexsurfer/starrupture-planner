@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import type { RecipeDisplayType } from '@/app/uklad/model';
 
 interface RecipeTypeIconProps {
@@ -6,10 +7,11 @@ interface RecipeTypeIconProps {
 }
 
 export const RecipeTypeIcon = ({ recipeType, className = '' }: RecipeTypeIconProps) => {
+    const { t } = useTranslation();
   if (recipeType === 'standard') return null;
 
   const isAlternative = recipeType === 'alternative';
-  const label = isAlternative ? 'Alternative recipe' : 'V.2 recipe';
+  const label = isAlternative ? t("Alternative recipe") : t("{type} recipe", { type: 'V.2' });
 
   return (
     <span

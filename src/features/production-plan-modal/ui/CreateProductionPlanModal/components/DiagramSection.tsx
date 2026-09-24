@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -5,6 +6,7 @@ import { EmbeddedFlowDiagram } from '@/features/production-plans/ui';
 import { usePlanInputActions } from '../../usePlanInputActions';
 
 export const DiagramSection: React.FC = () => {
+    const { t } = useTranslation();
     const runtime = useRuntime();
     const baseId = useSubscription([appIds.subscriptions.BASES_SELECTED_BASE_ID]);
     const selectedItemId = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_SELECTED_ITEM_ID]);
@@ -23,7 +25,7 @@ export const DiagramSection: React.FC = () => {
                 <div className="flex items-center justify-center h-full text-base-content/50">
                     <div className="text-center">
                         <div className="text-4xl mb-2">📐</div>
-                        <p>Select an item to preview the production flow</p>
+                        <p>{t("Select an item to preview the production flow")}</p>
                     </div>
                 </div>
             </div>
@@ -37,7 +39,7 @@ export const DiagramSection: React.FC = () => {
                 onSelectRecipe={onSelectRecipe}
                 targetItemId={selectedItemId}
                 {...inputActions}
-                inputDisabledReason={valid ? undefined : 'Choose a production item and enter a plan name first'}
+                inputDisabledReason={valid ? undefined : t("Choose a production item and enter a plan name first")}
                 className="w-full h-full"
             />
         </div>

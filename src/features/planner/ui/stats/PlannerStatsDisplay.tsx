@@ -1,3 +1,4 @@
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -9,6 +10,7 @@ import { SectionIcon } from '@/shared/ui';
  * Handles both mobile and desktop layouts responsively
  */
 export const PlannerStatsDisplay: React.FC = () => {
+    const { t } = useTranslation();
     const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]);
     const statsForButton = useSubscription([appIds.subscriptions.PLANNER_STATS_SUMMARY]);
     const detailedStats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
@@ -33,8 +35,8 @@ export const PlannerStatsDisplay: React.FC = () => {
                 className="btn btn-sm btn-ghost gap-2 border border-base-300 bg-transparent hover:bg-base-200 whitespace-nowrap text-xs"
                 aria-haspopup="dialog"
                 aria-expanded={isStatsModalOpen}
-                aria-label={`Production statistics: ${statsForButton.totalBuildings} buildings, ${itemCount} items`}
-                title={`Buildings: ${statsForButton.totalBuildings} · Items: ${itemCount} · Power ${statsForButton.totalEnergy.toFixed(0)} · Heat ${statsForButton.totalHotness.toFixed(0)}`}
+                aria-label={t("Production statistics: {totalBuildings} buildings, {itemCount} items", { totalBuildings: statsForButton.totalBuildings, itemCount: itemCount })}
+                title={t("Buildings: {totalBuildings} · Items: {itemCount} · Power {value} · Heat {value2}", { totalBuildings: statsForButton.totalBuildings, itemCount: itemCount, value: statsForButton.totalEnergy.toFixed(0), value2: statsForButton.totalHotness.toFixed(0) })}
                 onClick={() => setIsStatsModalOpen(true)}
             >
                 <span aria-hidden="true" className="inline-flex items-center gap-1.5 tabular-nums">

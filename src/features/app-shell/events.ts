@@ -1,3 +1,5 @@
+import { message } from '@/shared/i18n/core';
+import { normalizeLocale } from '@/shared/i18n/locales';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { buildItemsMap, extractCategories, parseCorporations } from '@/features/app-shell/game-data';
 import { DEFAULT_DATA_VERSION, isValidDataVersion } from '@/features/app-shell/data-version';
@@ -5,6 +7,10 @@ import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 
 export const registerAppShellEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regEvent(appIds.events.UI_SET_LOCALE, ({ draftState }, locale) => {
+        draftState.uiLocale = normalizeLocale(locale);
+    });
+
     registrar.regEvent(appIds.events.UI_SET_THEME, ({ draftState }, theme) => {
         draftState.uiTheme = theme;
         return [[appIds.effects.setTheme, theme]];
@@ -14,13 +20,13 @@ export const registerAppShellEvents: UkladModule<UkladRegistrar<AppContracts>> =
         draftState.uiActiveTab = tab;
     });
 
-    registrar.regEvent(appIds.events.UI_SHOW_CONFIRMATION_DIALOG, ({ draftState }, title, message, onConfirm, options) => {
+    registrar.regEvent(appIds.events.UI_SHOW_CONFIRMATION_DIALOG, ({ draftState }, title, body, onConfirm, options) => {
         draftState.uiConfirmationDialog = {
             isOpen: true,
             title,
-            message,
-            confirmLabel: options?.confirmLabel || 'Confirm',
-            cancelLabel: options?.cancelLabel || 'Cancel',
+            message: body,
+            confirmLabel: options?.confirmLabel || message('Confirm'),
+            cancelLabel: options?.cancelLabel || message('Cancel'),
             confirmButtonClass: options?.confirmButtonClass || 'btn-primary',
             onConfirm,
             onCancel: options?.onCancel,

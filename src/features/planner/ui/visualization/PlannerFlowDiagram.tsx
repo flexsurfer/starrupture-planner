@@ -1,3 +1,5 @@
+import { useFlowLabels } from '@/shared/i18n/useFlowLabels';
+import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import {
@@ -28,11 +30,13 @@ const edgeTypes = { production: ProductionFlowEdge };
  * Handles the React Flow visualization with automatic layout
  */
 export const PlannerFlowDiagram: React.FC = () => {
+    const { t } = useTranslation();
     const runtime = useRuntime();
     const { renderInputDialog, onRevertInput } = usePlannerInputActions();
     const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
         runtime.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, itemId, recipeKey]);
     }, [runtime]);
+    const flowLabels = useFlowLabels();
     const { fitView } = useReactFlow();
 
     // State subscriptions
@@ -90,12 +94,8 @@ export const PlannerFlowDiagram: React.FC = () => {
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                     <div className="text-6xl mb-4">📐</div>
-                    <h2 className="text-xl font-semibold text-base-content/80">
-                        Select an item to view its production flow
-                    </h2>
-                    <p className="text-base-content/60 mt-2">
-                        Choose any processed item, component, or ammo to see the required buildings and resource flow.
-                    </p>
+                    <h2 className="text-xl font-semibold text-base-content/80">{t("Select an item to view its production flow")}</h2>
+                    <p className="text-base-content/60 mt-2">{t("Choose any processed item, component, or ammo to see the required buildings and resource flow.")}</p>
                 </div>
             </div>
         );
@@ -105,6 +105,7 @@ export const PlannerFlowDiagram: React.FC = () => {
         <div className="relative w-full h-full">
             <DiagramSettings />
             <ReactFlow
+                ariaLabelConfig={flowLabels}
                 nodes={highlightedNodes}
                 edges={highlightedEdges}
                 colorMode={theme}

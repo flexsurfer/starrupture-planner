@@ -1,3 +1,4 @@
+import { createTranslator, type Translator } from '@/shared/i18n/core';
 import type { Node, Edge } from '@xyflow/react';
 import { Position as ReactFlowPosition } from '@xyflow/react';
 import type { BaseLogisticsViewModel } from '@/features/bases/types';
@@ -9,6 +10,7 @@ import type { EnergyGridNodeData } from './EnergyGridNode';
 export type LayerFilter = 'links' | 'energy' | 'broken' | 'utilization';
 
 interface BuildCanvasParams {
+  t?: Translator;
   models: BaseLogisticsViewModel[];
   baseStats: Record<string, BaseDetailStats>;
   energyGroups: EnergyGroup[];
@@ -31,6 +33,7 @@ export function buildLogisticsCanvasData({
   baseStats,
   energyGroups,
   activeLayers,
+  t = createTranslator('en'),
 }: BuildCanvasParams): CanvasData {
   const showLinks = activeLayers.has('links');
   const showEnergy = activeLayers.has('energy');
@@ -52,14 +55,14 @@ export function buildLogisticsCanvasData({
       (input) => input.linkedOutputStatus && input.linkedOutputStatus !== 'ok'
     );
     if (brokenInputs.length > 0) {
-      warnings.push(`${brokenInputs.length} broken link${brokenInputs.length > 1 ? 's' : ''}`);
+      warnings.push(t('{count} broken links', { count: brokenInputs.length }));
     }
     const unassignedOutputs = model.outputs.filter((output) => !output.itemId);
     if (unassignedOutputs.length > 0) {
-      warnings.push(`${unassignedOutputs.length} unassigned output${unassignedOutputs.length > 1 ? 's' : ''}`);
+      warnings.push(t('{count} unassigned outputs', { count: unassignedOutputs.length }));
     }
     if (stats?.isEnergyInsufficient) {
-      warnings.push('Energy deficit');
+      warnings.push(t('Energy deficit'));
     }
 
     const nodeData: BaseNetworkNodeData = {
@@ -184,7 +187,7 @@ export function buildLogisticsCanvasData({
 
           const rate = input.ratePerMinute ?? output.ratePerMinute ?? 0;
           const itemLabel = input.itemName || output.itemName || 'item';
-          const label = `${itemLabel} ${Math.round(rate)}/min`;
+          const label = t('{name} {rate}/min', { name: itemLabel, rate: Math.round(rate) });
 
           edges.push({
             id: edgeId,
@@ -241,7 +244,7 @@ export function buildLogisticsCanvasData({
           targetHandle: 'item-in',
           type: 'default',
           style: { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '4 4' },
-          label: `BROKEN: ${input.itemName || 'unknown'}`,
+          label: t('BROKEN: {name}', { name: input.itemName || t('unknown') }),
           labelStyle: { fontSize: 10, fill: '#ef4444', fontWeight: 'bold' },
           data: {
             type: 'broken',
