@@ -2783,10 +2783,6 @@
           {
             "id": "hardening_agent",
             "amount_per_minute": 40
-          },
-          {
-            "id": "chemicals",
-            "amount_per_minute": 20
           }
         ]
       },
