@@ -4,7 +4,7 @@ type CorporationIconProps = {
 };
 
 export const CorporationIcon = ({ corporationId, corporationName }: CorporationIconProps) => {
-  const webpImagePath = `./icons/corporations/${corporationId}.webp`;
+  const webpImagePath = `${import.meta.env.BASE_URL}icons/corporations/${corporationId}.webp`;
   
   return (
     <div className="flex size-10 shrink-0 items-center justify-center sm:size-12">

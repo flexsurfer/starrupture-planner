@@ -55,7 +55,7 @@ exit /b 0
 echo [INFO] Starting Rupture Planner at http://localhost:5173
 echo [INFO] Close this window to stop the planner. Closing the browser does not stop it.
 rem A stable port preserves access to browser-saved plans on subsequent launches.
-call npm run dev -- --open --host localhost --port 5173 --strictPort
+call npm start
 if errorlevel 1 (
     echo [ERROR] The planner could not run. Check the output above.
     echo If port 5173 is in use, close the existing server before trying again.

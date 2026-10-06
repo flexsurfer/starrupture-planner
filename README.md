@@ -5,7 +5,7 @@
    <img src="./assets/logo_black_bg.webp" width="100" />
 
 
-**The Ultimate Production Planning Tool for Star Rupture**
+**Free StarRupture Tools, Production Calculator & Base Planner**
 
 *Plan, optimize, and have fun with perfect resource management!* 🌌
 
@@ -22,7 +22,7 @@
 
 ## ✨ What is Rupture Planner?
 
-Rupture Planner is a **free, open-source production planning tool** designed for the Star Rupture game. Whether you're a casual builder or a min-maxing efficiency expert, this tool helps you:
+Rupture Planner is a **free, open-source collection of StarRupture tools**, including a **production calculator and base planner** for StarRupture (Star Rupture). Calculate resources, buildings and power, browse crafting recipes and corporation unlocks, and organize base logistics. Whether you're a casual builder or a min-maxing efficiency expert, this tool helps you:
 
 - 🏭 **Visualize complex production chains** with interactive flow diagrams
 - 📊 **Calculate exact building requirements** for any production target
@@ -95,21 +95,25 @@ cd starrupture-planner
 # Install dependencies
 npm install
 
-# Start development server
-npm run dev
+# Start the standalone tool and open the browser
+npm start
 ```
 
-🎉 **That's it!** Open `http://localhost:5173` and start planning your galactic empire!
+Open `http://localhost:5173`; it opens the production planner directly. The local tool includes all five sections and the language selector in Global settings. 
+
+Use `npm run dev` for development without opening the browser automatically. `npm start` and `START.bat` use the same fixed local address so browser-saved plans remain available between launches.
 
 ### Build for Production
 
 ```bash
-# Create optimized build
+# Create an optimized standalone tool build in dist/
 npm run build
 
 # Preview production build
 npm run preview
 ```
+
+Serve `dist/` with an HTTP server configured to return `index.html` for application routes such as `/planner/`. Opening the HTML directly as a `file://` URL is not supported. Preview uses a different port from the development server; browser-saved plans are separate for each origin.
 
 ---
 

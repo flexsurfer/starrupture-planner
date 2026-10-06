@@ -1,5 +1,5 @@
 import { useTranslation } from '@/shared/i18n';
-import { useEffect, useId, useRef } from 'react';
+import { useId } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { BasesMode } from '@/features/bases/state';
@@ -9,16 +9,8 @@ export const MyBasesSettings = () => {
     const { t } = useTranslation();
   const runtime = useRuntime();
   const mode = useSubscription([appIds.subscriptions.BASES_MODE]);
-  const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const open = mode === null;
-
-  useEffect(() => {
-    if (!open) return;
-    const element = dialog.current;
-    element?.showModal();
-    return () => element?.close();
-  }, [open]);
 
   const selectMode = (value: BasesMode) => {
     runtime.dispatch([appIds.events.BASES_SET_MODE, value]);
@@ -26,9 +18,10 @@ export const MyBasesSettings = () => {
 
   return <>
     <AdvancedModeSwitch />
-    {open && <dialog ref={dialog} className="modal" aria-labelledby={titleId}
-      onCancel={event => event.preventDefault()}>
-      <div className="modal-box max-w-xl">
+    {/* Keep the first-time picker within the tab content so global navigation stays available. */}
+    {open && <div role="dialog" aria-labelledby={titleId}
+      className="absolute inset-0 z-50 grid place-items-center bg-black/40 p-4">
+      <div className="max-h-full w-full max-w-xl overflow-y-auto rounded-box bg-base-100 p-6 shadow-2xl">
         <h2 id={titleId} className="text-lg font-semibold">{t("How would you like to use My Bases?")}</h2>
         <p className="mt-2 text-sm text-base-content/65">{t("Choose a mode for all your bases. Use the Advanced switch to change it anytime.")}</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -45,6 +38,6 @@ export const MyBasesSettings = () => {
         </div>
         <p className="mt-4 text-xs text-base-content/55">{t("Changing mode only changes what is shown. Your plans and base configuration are kept.")}</p>
       </div>
-    </dialog>}
+    </div>}
   </>;
 };

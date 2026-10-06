@@ -134,7 +134,7 @@ export const CorporationLevelSelector: React.FC<CorporationLevelSelectorProps> =
                                             }}
                                         >
                                             <img
-                                                src={`./icons/corporations/${levelInfo.corporationId}.webp`}
+                                                src={`${import.meta.env.BASE_URL}icons/corporations/${levelInfo.corporationId}.webp`}
                                                 alt={levelInfo.corporationName}
                                                 className="w-6 h-6 rounded object-cover flex-shrink-0"
                                                 width={24}

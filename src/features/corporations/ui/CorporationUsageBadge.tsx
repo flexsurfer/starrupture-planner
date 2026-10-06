@@ -8,7 +8,7 @@ interface CorporationUsageBadgeProps {
 
 export const CorporationUsageBadge = ({ usage, corporationId }: CorporationUsageBadgeProps) => {
     const { t } = useTranslation();
-  const webpImagePath = `./icons/corporations/${corporationId}.webp`;
+  const webpImagePath = `${import.meta.env.BASE_URL}icons/corporations/${corporationId}.webp`;
   
   return (
     <div 

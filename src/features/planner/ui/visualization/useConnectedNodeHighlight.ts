@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { Edge, Node, OnNodeDrag } from '@xyflow/react';
 
 const HIGHLIGHT_COLOR = '#f59e0b';
@@ -30,11 +30,9 @@ export const useConnectedNodeHighlight = (
         ? pinnedNodeId : null;
     const highlightedNodeId = enabled ? visiblePinnedNodeId ?? activeNodeId : null;
 
-    useEffect(() => {
-        if (pinnedNodeId && !nodes.some(node => node.id === pinnedNodeId)) {
-            setPinnedNodeId(null);
-        }
-    }, [nodes, pinnedNodeId]);
+    if (pinnedNodeId !== null && !nodes.some(node => node.id === pinnedNodeId)) {
+        setPinnedNodeId(null);
+    }
 
     const toggleNodePin = useCallback((nodeId: string) => {
         setPinnedNodeId((current) => current === nodeId ? null : nodeId);

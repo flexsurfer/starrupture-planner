@@ -6,6 +6,7 @@ import { createAppRuntime } from '@/app/uklad/runtime';
 import { localeFromPreferences } from '@/shared/i18n/locales';
 import { migrateLegacyStorage } from '@/platform/web/legacy-storage/legacy-storage-migration';
 import { PERSIST_KEYS } from './persistence';
+import { appIds } from '@/app/uklad/catalog';
 
 const PERSIST_PREFIX = 'starrupture-planner';
 
@@ -25,6 +26,14 @@ const persistence = persist(runtime, {
 });
 
 persistence.hydrate();
+
+// Initialize game data once, when an entry point first mounts the tools.
+let toolsInitialized = false;
+export function initializeTools() {
+    if (toolsInitialized) return;
+    toolsInitialized = true;
+    runtime.dispatch([appIds.events.APP_INIT]);
+}
 
 if (import.meta.env.DEV) {
     enableDevtools(createUkladInspector(runtime), {

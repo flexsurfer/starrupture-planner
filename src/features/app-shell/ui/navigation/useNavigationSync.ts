@@ -1,33 +1,18 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigation } from './useNavigation';
 import type { TabType } from '@/app/uklad/model';
+import { findToolTab, toolPaths } from '@/shared/navigation/toolPaths';
 
 export const useNavigationSync = (activeTab: TabType) => {
   const { navigate } = useNavigation();
   const location = useLocation();
   const previousActiveTab = useRef<TabType | null>(null);
 
-  const tabToPath = useMemo<Record<TabType, string>>(() => ({
-    'items': '/items',
-    'recipes': '/recipes', 
-    'corporations': '/corporations',
-    'planner': '/planner',
-    'mybases': '/mybases',
-  }), []);
-
-  const pathToTab = useMemo<Record<string, TabType>>(() => ({
-    '/items': 'items',
-    '/recipes': 'recipes',
-    '/corporations': 'corporations', 
-    '/planner': 'planner',
-    '/mybases': 'mybases',
-  }), []);
-
   useEffect(() => {
     // Only handle programmatic navigation (not user-triggered or URL-triggered)
-    const currentUrlTab = pathToTab[location.pathname];
-    const expectedPath = tabToPath[activeTab];
+    const currentUrlTab = findToolTab(location.pathname);
+    const expectedPath = toolPaths[activeTab];
     
     // If the active tab changed but URL doesn't match, it's a programmatic change
     if (
@@ -41,5 +26,5 @@ export const useNavigationSync = (activeTab: TabType) => {
     }
     
     previousActiveTab.current = activeTab;
-  }, [activeTab, navigate, location.pathname, tabToPath, pathToTab]);
+  }, [activeTab, navigate, location.pathname]);
 };

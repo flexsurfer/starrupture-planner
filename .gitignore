@@ -13,8 +13,8 @@ dist-ssr
 coverage
 *.local
 
-# Local deployment analytics token
-.env.deploy.local
+# Optional local website: landing, SEO, assets and deployment.
+/website/
 
 # Editor directories and files
 .vscode/*

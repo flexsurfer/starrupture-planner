@@ -41,4 +41,24 @@ describe('pinned connection highlighting', () => {
         expect(result.current.nodes[2].draggable).toBe(false);
         expect(result.current.edges[0].labelStyle?.outline).toBeUndefined();
     });
+
+    it('clears the pin when its node is removed and keeps it cleared when restored', () => {
+        const { result, rerender } = renderHook(
+            ({ currentNodes }) => useConnectedNodeHighlight(currentNodes, edges),
+            { initialProps: { currentNodes: nodes } },
+        );
+        act(() => result.current.toggleNodePin('a'));
+        expect(result.current.pinnedNodeId).toBe('a');
+
+        const remainingNodes = nodes.filter(node => node.id !== 'a');
+        rerender({ currentNodes: remainingNodes });
+        expect(result.current.pinnedNodeId).toBeNull();
+        expect(result.current.nodes).toBe(remainingNodes);
+        expect(result.current.edges).toBe(edges);
+
+        rerender({ currentNodes: nodes });
+        expect(result.current.pinnedNodeId).toBeNull();
+        expect(result.current.nodes).toBe(nodes);
+        expect(result.current.edges).toBe(edges);
+    });
 });
