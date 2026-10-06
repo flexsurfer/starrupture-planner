@@ -815,6 +815,42 @@ describe('headless application E2E', () => {
             output.id,
         ]);
 
+        const originalOutput = baseDetails.value('outputItems')[0];
+        const originalInput = baseDetails.value('inputItems')[0];
+        await dispatch(scenario, [
+            appIds.events.BASES_UPDATE_BUILDING_DETAILS,
+            baseId,
+            output.id,
+            '  South dock  ',
+            '  Iron shipments\nReserve for plates  ',
+        ]);
+        expect(baseDetails.value('outputItems')).toEqual([{
+            ...originalOutput,
+            name: 'South dock',
+            description: 'Iron shipments\nReserve for plates',
+        }]);
+        expect(baseDetails.value('inputItems')).toEqual([{
+            ...originalInput,
+            linkedOutput: { ...originalInput.linkedOutput, outputName: 'South dock' },
+        }]);
+
+        await dispatch(scenario, [
+            appIds.events.BASES_UPDATE_BUILDING_DETAILS,
+            baseId,
+            output.id,
+            '   ',
+            '   ',
+        ]);
+        expect(baseDetails.value('outputItems')).toEqual([{
+            ...originalOutput,
+            name: 'Package Receiver',
+            description: '',
+        }]);
+        expect(baseDetails.value('inputItems')).toEqual([{
+            ...originalInput,
+            linkedOutput: { ...originalInput.linkedOutput, outputName: 'Package Receiver' },
+        }]);
+
         await dispatch(scenario, [
             appIds.events.BASES_ADD_BUILDINGS,
             baseId,

@@ -276,6 +276,20 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
         }
     });
 
+    registrar.regEvent(appIds.events.BASES_UPDATE_BUILDING_DETAILS, ({ draftState }, baseId, buildingId, name, description) => {
+        const base = getBaseById(draftState.basesList, baseId);
+        const building = base?.buildings.find((candidate) => candidate.id === buildingId);
+        if (!building) return;
+
+        const trimmedName = name.trim();
+        if (trimmedName) building.name = trimmedName;
+        else delete building.name;
+
+        const trimmedDescription = description.trim();
+        if (trimmedDescription) building.description = trimmedDescription;
+        else delete building.description;
+    });
+
     registrar.regEvent(
         appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION,
         ({ draftState }, baseId, buildingId, itemId, ratePerMinute) => {

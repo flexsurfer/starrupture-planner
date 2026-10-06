@@ -762,7 +762,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
             </div>
             <div className="form-control flex-1">
               <label className="label py-1">
-                <span className="label-text text-xs">{t("Description ")}<span className="text-base-content/50">{t("(optional)")}</span></span>
+                <span className="label-text text-xs">{t("Description")}{' '}<span className="text-base-content/50">{t("(optional)")}</span></span>
               </label>
               <input
                 type="text"

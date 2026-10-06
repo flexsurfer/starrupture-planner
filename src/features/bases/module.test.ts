@@ -2,6 +2,7 @@ import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
+import type { Base } from '@/app/uklad/model';
 import { registerBasesModule } from './module';
 
 describe('bases Uklad module', () => {
@@ -54,6 +55,50 @@ describe('bases Uklad module', () => {
             [base.id]: { productionPlans: true },
         });
 
+        runtime.dispose();
+    });
+
+    it('edits building details while preserving configuration, links, and planning ownership', () => {
+        const runtime = createAppRuntime();
+        runtime.registerModule(registerBasesModule);
+        const harness = createUkladTestHarness(runtime);
+        const base: Base = {
+            id: 'base-1', name: 'Outpost',
+            buildings: [{
+                id: 'output', buildingTypeId: 'storage', sectionType: 'outputs', name: 'Old dock',
+                description: 'Keep this note', selectedItemId: 'iron-plate', ratePerMinute: 60,
+                sourceProductionId: 'plan', allocationMode: 'fixed', requestedRatePerMinute: 30,
+                capacityPerMinute: 40, priority: 2, planningOwnerPlanId: 'plan',
+            }],
+            productions: [{ id: 'plan', name: 'Plate plan', selectedItemId: 'iron-plate', targetAmount: 60 }],
+        };
+        const otherBase: Base = {
+            id: 'base-2', name: 'Destination', productions: [],
+            buildings: [{
+                id: 'input', buildingTypeId: 'storage', sectionType: 'inputs',
+                linkedOutput: { baseId: 'base-1', buildingId: 'output' },
+            }],
+        };
+        harness.restoreState({ ...harness.getState(), basesList: [base, otherBase], basesSelectedBaseId: 'base-2' });
+
+        harness.dispatchSync([appIds.events.BASES_UPDATE_BUILDING_DETAILS, 'base-1', 'output', '  South dock  ', '  New note\nSecond line  ']);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.BASES_BASE_BY_ID, 'base-1'])).toEqual({
+            ...base, buildings: [{ ...base.buildings[0], name: 'South dock', description: 'New note\nSecond line' }],
+        });
+        expect(harness.getState().basesList[1]).toEqual(otherBase);
+
+        const renamedState = harness.getState();
+        harness.dispatchSync([appIds.events.BASES_UPDATE_BUILDING_DETAILS, 'missing-base', 'output', 'Ignored', 'Ignored']);
+        harness.dispatchSync([appIds.events.BASES_UPDATE_BUILDING_DETAILS, 'base-2', 'output', 'Ignored', 'Ignored']);
+        expect(harness.getState()).toEqual(renamedState);
+
+        harness.dispatchSync([appIds.events.BASES_UPDATE_BUILDING_DETAILS, 'base-1', 'output', '   ', '   ']);
+        const defaultNamedBuilding = { ...base.buildings[0] };
+        delete defaultNamedBuilding.name;
+        delete defaultNamedBuilding.description;
+        expect(harness.getState().basesList).toEqual([
+            { ...base, buildings: [defaultNamedBuilding] }, otherBase,
+        ]);
         runtime.dispose();
     });
 

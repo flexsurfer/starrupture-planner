@@ -7,7 +7,7 @@ import type { BuildingSectionBuilding, LinkableOutputItem } from '@/features/bas
 import { isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
 import { sanitizeBuildingCount } from '@/features/bases/building-counts';
 import { BuildingImage, ClippedSelect, ItemImage } from '@/shared/ui';
-import { SelectItemModal } from '../modals';
+import { EditBuildingModal, SelectItemModal } from '../modals';
 import { BuildingCountControl } from './BuildingCountControl';
 import { resolveInputBuilding, resolveLinkedOutput } from '@/utils/productionPlanInputs';
 import type { ResolvedInputBuilding } from '@/utils/productionPlanInputs';
@@ -516,6 +516,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
     const { t } = useTranslation();
   const runtime = useRuntime();
   const [showSelectItemModal, setShowSelectItemModal] = useState(false);
+  const [showEditBuildingModal, setShowEditBuildingModal] = useState(false);
 
   const { baseBuilding, building, count, isGrouped, sectionType, activePlanNames } = sectionBuilding;
   const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
@@ -592,7 +593,20 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
         <div className="flex items-start gap-2">
           <BuildingImage buildingId={building.id} building={building} size="small" className="shrink-0" />
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-medium leading-snug text-base-content/80 break-words">{displayName}</h3>
+            <div className="flex items-start gap-1">
+              <h3 className="min-w-0 text-sm font-medium leading-snug text-base-content/80 break-words">{displayName}</h3>
+              {!isGrouped && baseBuilding && <button
+                type="button"
+                className="btn btn-xs btn-ghost shrink-0 px-1 text-base-content/55 hover:text-base-content"
+                aria-label={t("Edit {name}", { name: displayName })}
+                title={t("Edit {name}", { name: displayName })}
+                onClick={() => setShowEditBuildingModal(true)}
+              >
+                <svg aria-hidden="true" className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="m16.862 4.487 1.687-1.688a1.875 1.875 0 0 1 2.652 2.652L9.832 16.82a4.5 4.5 0 0 1-1.897 1.13L5.25 18.75l.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.862 4.487Zm0 0 2.651 2.652" />
+                </svg>
+              </button>}
+            </div>
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-base-content/60 tabular-nums">
               <span title={building.type === 'generator' ? t("Power generation") : t("Power consumption")}>⚡ {building.type === 'generator' ? '+' : ''}{totalPower} MW</span>
               <span title={t("Heat")}>🔥 {totalHeat}</span>
@@ -606,7 +620,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
           </button>
         </div>
 
-        {description && <p className="mt-2 text-xs leading-relaxed text-base-content/60 break-words">{description}</p>}
+        {description && <p className="mt-2 text-xs leading-relaxed text-base-content/60 whitespace-pre-wrap break-words">{description}</p>}
         {baseBuilding?.planningOwnerPlanId && <p className="mt-2 text-xs text-base-content/55" title={t("Created for this plan in Planning mode. Editing this endpoint's configuration makes it manually managed.")}>{t("Managed by plan: ")}{base?.productions.find(plan => plan.id === baseBuilding.planningOwnerPlanId)?.name || t("Unknown plan")}
         </p>}
         {isInActivePlan && <p className="mt-2 text-xs leading-snug text-base-content/60 break-words">
@@ -642,6 +656,19 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
           </div>}
         </div>}
       </article>
+
+      {showEditBuildingModal && !isGrouped && baseBuilding && (
+        <EditBuildingModal
+          defaultName={building.name}
+          currentName={baseBuilding.name}
+          currentDescription={baseBuilding.description}
+          onClose={() => setShowEditBuildingModal(false)}
+          onSave={(name, nextDescription) => {
+            runtime.dispatch([appIds.events.BASES_UPDATE_BUILDING_DETAILS, baseId, baseBuilding.id, name, nextDescription]);
+            setShowEditBuildingModal(false);
+          }}
+        />
+      )}
 
       {(isInputBuilding || isOutputBuilding) && !isLinkedInput && !isPlanLinkedOutput && baseBuilding && (
         <SelectItemModal

@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import type { Base, BaseBuilding, Building, Item } from '@/app/uklad/model';
 import type { BuildingSectionBuilding } from '@/features/bases/types';
@@ -44,7 +44,17 @@ const entry = (baseBuilding: BaseBuilding): BuildingSectionBuilding => ({
   sectionType: baseBuilding.sectionType as 'inputs' | 'outputs', count: 1, isGrouped: false, activePlanNames: [],
 });
 
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+  HTMLDialogElement.prototype.close = function () { this.open = false; };
+});
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+  Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
+  Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+});
 
 it('keeps Add accessible when a section is collapsed without toggling it', () => {
   const onAdd = vi.fn();
@@ -62,6 +72,7 @@ it('keeps Add accessible when a section is collapsed without toggling it', () =>
 
 it('preserves count adjustments, explicit draft saving, and removal confirmation', () => {
   render(<BuildingSectionCard sectionBuilding={grouped} baseId="base" />);
+  expect(screen.queryByRole('button', { name: 'Edit Smelter' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Increase Smelter production count' }));
   expect(dispatch).toHaveBeenLastCalledWith([appIds.events.BASES_SET_BUILDING_SECTION_TYPE_COUNT, 'base', 'smelter', 'production', 4]);
   dispatch.mockClear();
@@ -74,6 +85,72 @@ it('preserves count adjustments, explicit draft saving, and removal confirmation
     appIds.events.UI_SHOW_CONFIRMATION_DIALOG, 'Remove Smelter?', expect.any(String), expect.any(Function),
     expect.objectContaining({ confirmLabel: 'Remove' }),
   ]);
+});
+
+it.each([input, output])('edits a $sectionType building name and description in a popup without editing its material', (building) => {
+  const namedBuilding = { ...building, name: 'North dock', description: 'Original note' };
+  const { rerender } = render(<BuildingSectionCard sectionBuilding={entry(namedBuilding)} baseId="base" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Edit North dock' }));
+  const nameInput = screen.getByRole('textbox', { name: 'Building name' });
+  expect(screen.getByRole('dialog', { name: 'Edit building' })).toBeVisible();
+  expect(nameInput).toHaveValue('North dock');
+  const descriptionInput = screen.getByRole('textbox', { name: 'Description' });
+  expect(descriptionInput).toHaveValue('Original note');
+  expect(nameInput).toHaveFocus();
+  fireEvent.change(nameInput, { target: { value: 'South dock' } });
+  fireEvent.change(descriptionInput, { target: { value: 'Deliver plates here' } });
+  expect(dispatch).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith([appIds.events.BASES_UPDATE_BUILDING_DETAILS, 'base', building.id, 'South dock', 'Deliver plates here']);
+  expect(screen.queryByRole('textbox', { name: 'Building name' })).not.toBeInTheDocument();
+  rerender(<BuildingSectionCard sectionBuilding={entry({ ...namedBuilding, name: 'South dock', description: 'Deliver plates here' })} baseId="base" />);
+  expect(screen.getByRole('heading', { name: 'South dock' })).toBeVisible();
+  expect(screen.getByText('Deliver plates here')).toBeVisible();
+  expect(screen.getByText(building === input ? 'Wolfram Bar' : 'Wolfram Wire')).toBeVisible();
+});
+
+it.each(['Cancel', 'Escape', 'Close modal', 'Backdrop'])('discards unsaved building details with %s', (action) => {
+  render(<BuildingSectionCard sectionBuilding={entry({ ...input, name: 'North dock', description: 'Original note' })} baseId="base" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Edit North dock' }));
+  const nameInput = screen.getByRole('textbox', { name: 'Building name' });
+  fireEvent.change(nameInput, { target: { value: 'Discarded name' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Description' }), { target: { value: 'Discarded note' } });
+  const dialog = screen.getByRole('dialog', { name: 'Edit building' });
+  if (action === 'Escape') fireEvent(dialog, new Event('cancel', { cancelable: true }));
+  else if (action === 'Backdrop') fireEvent.click(dialog);
+  else fireEvent.click(screen.getByRole('button', { name: action }));
+  expect(dispatch).not.toHaveBeenCalled();
+  expect(screen.getByRole('heading', { name: 'North dock' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Edit North dock' }));
+  expect(screen.getByRole('textbox', { name: 'Building name' })).toHaveValue('North dock');
+  expect(screen.getByRole('textbox', { name: 'Description' })).toHaveValue('Original note');
+});
+
+it('allows clearing the custom name and description', () => {
+  const { rerender } = render(<BuildingSectionCard sectionBuilding={entry({ ...input, name: 'North dock', description: 'Original note' })} baseId="base" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Edit North dock' }));
+  const nameInput = screen.getByRole('textbox', { name: 'Building name' });
+  fireEvent.change(nameInput, { target: { value: '' } });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Description' }), { target: { value: '' } });
+  fireEvent.submit(nameInput.closest('form')!);
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith([appIds.events.BASES_UPDATE_BUILDING_DETAILS, 'base', 'input', '', '']);
+  rerender(<BuildingSectionCard sectionBuilding={entry(input)} baseId="base" />);
+  expect(screen.getByRole('heading', { name: 'Receiver' })).toBeVisible();
+  expect(screen.queryByText('Original note')).not.toBeInTheDocument();
+});
+
+it('allows adding a description while keeping the default building name', () => {
+  render(<BuildingSectionCard sectionBuilding={entry(input)} baseId="base" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Edit Receiver' }));
+  const nameInput = screen.getByRole('textbox', { name: 'Building name' });
+  expect(nameInput).toHaveValue('');
+  expect(nameInput).toHaveAttribute('placeholder', 'Receiver');
+  fireEvent.change(screen.getByRole('textbox', { name: 'Description' }), { target: { value: 'Unload here\nReserve for plates' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith([
+    appIds.events.BASES_UPDATE_BUILDING_DETAILS, 'base', 'input', '', 'Unload here\nReserve for plates',
+  ]);
+  expect(screen.queryByRole('dialog', { name: 'Edit building' })).not.toBeInTheDocument();
 });
 
 it('opens the item editor from a manual input and saves its new rate', () => {

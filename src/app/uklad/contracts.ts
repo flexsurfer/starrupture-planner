@@ -195,6 +195,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.BASES_ADD_BUILDINGS]: [baseId: string, buildingTypeId: string, sectionType: string, count: number, name?: string, description?: string, selectedItemId?: string | null, ratePerMinute?: number | null, linkedOutput?: BaseBuilding['linkedOutput'] | null, sourceProductionId?: string | null, allocationMode?: BaseBuilding['allocationMode'] | null, requestedRatePerMinute?: number | null, capacityPerMinute?: number | null, priority?: number | null, linkedInputRef?: LinkedInputReference | null];
         [appIds.events.BASES_SET_BUILDING_SECTION_TYPE_COUNT]: [baseId: string, buildingTypeId: string, sectionType: BuildingSectionType, targetCount: number];
         [appIds.events.BASES_REMOVE_BUILDING]: [buildingId: string];
+        [appIds.events.BASES_UPDATE_BUILDING_DETAILS]: [baseId: string, buildingId: string, name: string, description: string];
         [appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION]: [baseId: string, buildingId: string, itemId: string | null, ratePerMinute: number | null];
         [appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT]: [baseId: string, buildingId: string, sourceBaseId: string, sourceOutputBuildingId: string];
         [appIds.events.BASES_UPDATE_OUTPUT_PLAN_LINK]: [baseId: string, buildingId: string, payload: UpdateOutputPlanLinkPayload];

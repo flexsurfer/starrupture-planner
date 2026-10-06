@@ -85,6 +85,10 @@ Developer logs and internal diagnostic errors can remain English.
 
 ## Add UI copy
 
+Reuse existing message keys when the copy is the same, and keep layout spacing in
+the markup. `npm run test:i18n` checks every raw locale catalog for duplicate keys,
+including keys that differ only by surrounding whitespace and nested plural keys.
+
 Add an English entry first, then use `useTranslation()` inside the component:
 
 ```tsx
