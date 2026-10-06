@@ -247,7 +247,7 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.DATA_TRANSFER_IMPORT_READY, prepareArchiveImport(parseArchive(text), 'second-import')]);
         await dispatch(scenario, [appIds.events.DATA_TRANSFER_CONFIRM_IMPORT]);
         expect(view.value('bases')).toHaveLength(2);
-        expect(view.value('plans').map(plan => plan.name)).toEqual(['Renamed plan', 'Renamed plan Copy']);
+        expect(view.value('plans').map(plan => plan.name)).toEqual(['Renamed plan', 'Renamed plan (2)']);
         expect(view.value('plans')[1].id).not.toBe('original');
         expect(view.value('status')?.kind).toBe('success');
         expect(view.value('preview')).toBeNull();
@@ -256,7 +256,7 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.DATA_TRANSFER_CONFIRM_IMPORT, { baseIds: [], planIds: [planId] }]);
         expect(view.value('bases')).toHaveLength(2);
         expect(view.value('plans')).toHaveLength(3);
-        expect(view.value('plans')[2].name).toBe('Renamed plan Copy');
+        expect(view.value('plans')[2].name).toBe('Renamed plan (3)');
         await dispatch(scenario, [appIds.events.DATA_TRANSFER_SET_STATUS, null]);
         expect(view.value('status')).toBeNull();
         await dispatch(scenario, [appIds.events.DATA_TRANSFER_PREVIEW_IMPORT, '{broken']);
@@ -295,6 +295,20 @@ describe('headless application E2E', () => {
         // Duplicate IDs and events belonging to the other mode cannot overwrite the tab.
         await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'single', 'Replacement', 'multi']);
         await dispatch(scenario, [appIds.events.PLANNER_ADD_TARGET, 'copper-wire']);
+        expect(view.value('active')).toEqual(single);
+
+        await dispatchAll(scenario, [
+            [appIds.events.PLANNER_DUPLICATE_TAB, 'missing', 'copy'],
+            [appIds.events.PLANNER_DUPLICATE_TAB, 'single', '   '],
+            [appIds.events.PLANNER_DUPLICATE_TAB, 'single', 'single'],
+        ]);
+        expect(view.value('tabs')).toEqual([single]);
+        await dispatch(scenario, [appIds.events.PLANNER_DUPLICATE_TAB, 'single', 'copy']);
+        expect(view.value('active')).toEqual({ ...single, id: 'copy', name: 'Iron plan (2)' });
+        await dispatch(scenario, [appIds.events.PLANNER_SET_TARGET_AMOUNT, 300]);
+        expect(view.value('active')?.targetAmount).toBe(300);
+        expect(view.value('tabs')[0]).toEqual(single);
+        await dispatch(scenario, [appIds.events.PLANNER_CLOSE_TAB, 'copy']);
         expect(view.value('active')).toEqual(single);
 
         await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'multi', 'Shared production', 'multi']);

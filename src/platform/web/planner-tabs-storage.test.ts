@@ -18,6 +18,34 @@ function createSavedRuntime(storage: ReturnType<typeof memoryStorageAdapter>) {
 }
 
 describe('saved planner tabs', () => {
+    it.each(['single', 'multi'] as const)('restores an independently edited %s duplicate as the active plan', async mode => {
+        const storage = memoryStorageAdapter();
+        const first = createSavedRuntime(storage);
+        const { harness } = first;
+        harness.dispatchSync([appIds.events.PLANNER_OPEN_ITEM, 'iron-plate', { corporationId: 'miners', level: 1 }]);
+        harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'source', 'Iron', mode]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'iron-ore', 80]);
+        const source = structuredClone(harness.getState().plannerTabs[0]);
+        harness.dispatchSync([appIds.events.PLANNER_DUPLICATE_TAB, 'source', 'copy']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter:0']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'iron-ore', 100]);
+        const expectedTabs = structuredClone(harness.getState().plannerTabs);
+        expect(expectedTabs).toHaveLength(2);
+        expect(expectedTabs[0]).toEqual(source);
+        await harness.flush();
+        first.runtime.dispose();
+
+        const second = createSavedRuntime(storage);
+        try {
+            expect(second.harness.getState().plannerTabs).toEqual(expectedTabs);
+            expect(second.harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])).toEqual(expectedTabs[1]);
+            expect(second.harness.getState().plannerActiveTabId).toBe('copy');
+        } finally {
+            second.runtime.dispose();
+        }
+    });
+
     it('restores every tab setting and the active tab across restarts, including edits made without switching tabs', async () => {
         const storage = memoryStorageAdapter();
         const first = createSavedRuntime(storage);

@@ -3,6 +3,7 @@ import { current, type UkladModule, type UkladRegistrar } from '@ukladjs/core/va
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { createArchive, selectArchiveImports } from './archive';
+import { availableName } from '@/utils/availableName';
 
 export const registerDataTransferModule: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
     registrar.regRootSub(appIds.subscriptions.DATA_TRANSFER_PREVIEW, stateKeys.dataTransferPreview);
@@ -44,6 +45,16 @@ export const registerDataTransferModule: UkladModule<UkladRegistrar<AppContracts
             draftState.dataTransferStatus = { kind: 'error', message: message('These copies have already been imported. Choose the file again to create new copies.') };
             draftState.dataTransferPreview = null;
             return;
+        }
+        const baseNames = new Set(draftState.basesList.map(base => base.name.trim()));
+        for (const base of archive.bases) {
+            base.name = availableName(base.name, baseNames);
+            baseNames.add(base.name);
+        }
+        const planNames = new Set(draftState.plannerTabs.map(plan => plan.name.trim()));
+        for (const plan of archive.plans) {
+            plan.name = availableName(plan.name, planNames);
+            planNames.add(plan.name);
         }
         draftState.basesList.push(...archive.bases);
         draftState.plannerTabs.push(...archive.plans);

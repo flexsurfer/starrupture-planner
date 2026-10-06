@@ -52,6 +52,7 @@ export const appIds = {
         DATA_TRANSFER_CONFIRM_IMPORT: 'data-transfer/confirm-import',
         DATA_TRANSFER_SET_STATUS: 'data-transfer/set-status',
         PLANNER_RENAME_TAB: 'planner/rename-tab',
+        PLANNER_DUPLICATE_TAB: 'planner/duplicate-tab',
         APP_INIT: 'app/init', APP_REQUEST_LOAD_GAME_DATA: 'app/request-load-game-data', APP_GAME_DATA_LOAD_FAILED: 'app/game-data-load-failed', APP_SET_DATA_VERSION: 'app/set-data-version',
         UI_SET_LOCALE: 'ui/set-locale', UI_SET_THEME: 'ui/set-theme', UI_SET_ACTIVE_TAB: 'ui/set-active-tab', UI_SHOW_CONFIRMATION_DIALOG: 'ui/show-confirmation-dialog', UI_CLOSE_CONFIRMATION_DIALOG: 'ui/close-confirmation-dialog',
         ITEMS_SET_SELECTED_CATEGORY: 'items/set-selected-category', ITEMS_SET_SELECTED_BUILDING: 'items/set-selected-building', ITEMS_SET_SEARCH_TERM: 'items/set-search-term',

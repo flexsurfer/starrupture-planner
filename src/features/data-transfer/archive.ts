@@ -65,12 +65,10 @@ export function selectArchiveImports(archive: PlannerArchive, selection: Archive
     const includedBaseIds = new Set(bases.map(base => base.id));
     const groupIds = new Set(bases.map(base => base.energyGroupId));
     for (const base of bases) {
-        base.name = `${base.name.trim()} Copy`;
         for (const input of [...base.buildings, ...base.productions.flatMap(plan => plan.inputs ?? [])]) {
             if (input.linkedOutput && !includedBaseIds.has(input.linkedOutput.baseId)) detachLinkedOutput(input);
         }
     }
-    for (const plan of plans) plan.name = `${plan.name.trim()} Copy`;
     return { ...archive, bases, plans, energyGroups: copy(archive.energyGroups.filter(group => groupIds.has(group.id))) };
 }
 

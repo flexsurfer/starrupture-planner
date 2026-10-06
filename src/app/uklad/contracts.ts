@@ -148,6 +148,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.DATA_TRANSFER_CONFIRM_IMPORT]: [selection?: ArchiveSelection];
         [appIds.events.DATA_TRANSFER_SET_STATUS]: [status: TransferStatus | null];
         [appIds.events.PLANNER_RENAME_TAB]: [id: string, name: string];
+        [appIds.events.PLANNER_DUPLICATE_TAB]: [sourceId: string, id: string];
         [appIds.events.APP_INIT]: [];
         [appIds.events.APP_REQUEST_LOAD_GAME_DATA]: [version: DataVersion];
         [appIds.events.APP_GAME_DATA_LOAD_FAILED]: [];

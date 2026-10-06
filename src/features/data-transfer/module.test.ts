@@ -42,6 +42,12 @@ describe('archive events and persistence', () => {
             const state = harness.getState();
             expect(state.basesList).toHaveLength(6);
             expect(state.plannerTabs).toHaveLength(6);
+            expect(state.basesList.map(base => base.name)).toEqual([
+                'Smelting', 'Assembly', 'Smelting (2)', 'Assembly (2)', 'Smelting (3)', 'Assembly (3)',
+            ]);
+            expect(state.plannerTabs.map(plan => plan.name)).toEqual([
+                'Single plan', 'Multi plan', 'Single plan (2)', 'Multi plan (2)', 'Single plan (3)', 'Multi plan (3)',
+            ]);
             expect(new Set(state.basesList.map(base => base.id)).size).toBe(6);
             expect(new Set(state.plannerTabs.map(plan => plan.id)).size).toBe(6);
             expect(state.basesList.slice(0, 2)).toEqual(archiveFixture().basesList);
@@ -51,7 +57,7 @@ describe('archive events and persistence', () => {
         } finally { runtime.dispose(); }
     });
 
-    it('imports only selected entries, detaches omitted bases, and appends Copy without changing the originals', async () => {
+    it('imports only selected entries, detaches omitted bases, and numbers conflicting names without changing the originals', async () => {
         const { runtime, harness } = setup();
         try {
             const original = archiveFixture();
@@ -69,8 +75,8 @@ describe('archive events and persistence', () => {
                 baseIds: [preview.bases[1].id], planIds: [preview.plans[1].id],
             }]);
             const state = harness.getState();
-            expect(state.basesList.map(base => base.name)).toEqual(['Smelting', 'Assembly', 'Assembly Copy']);
-            expect(state.plannerTabs.map(plan => plan.name)).toEqual(['Single plan', 'Multi plan', 'Multi plan Copy']);
+            expect(state.basesList.map(base => base.name)).toEqual(['Smelting', 'Assembly', 'Assembly (2)']);
+            expect(state.plannerTabs.map(plan => plan.name)).toEqual(['Single plan', 'Multi plan', 'Multi plan (2)']);
             expect(state.basesList.slice(0, 2)).toEqual(original.basesList);
             expect(state.plannerTabs.slice(0, 2)).toEqual(original.plannerTabs);
             const imported = state.basesList[2];
@@ -95,16 +101,36 @@ describe('archive events and persistence', () => {
             harness.dispatchSync([appIds.events.DATA_TRANSFER_CONFIRM_IMPORT, { baseIds: [], planIds: [preview.plans[0].id] }]);
             expect(harness.getState().energyGroups).toEqual([]);
             expect(harness.getState().basesList).toEqual([]);
-            expect(harness.getState().plannerTabs.map(plan => plan.name)).toEqual(['Single plan Copy']);
+            expect(harness.getState().plannerTabs.map(plan => plan.name)).toEqual(['Single plan']);
             harness.dispatchSync([appIds.events.DATA_TRANSFER_PREVIEW_IMPORT, JSON.stringify(archive)]);
             await harness.flush();
             harness.dispatchSync([appIds.events.DATA_TRANSFER_CONFIRM_IMPORT, { baseIds: null, planIds: [] }]);
             const [source, target] = harness.getState().basesList;
-            expect(source.name).toBe('Smelting Copy');
-            expect(target.name).toBe('Assembly Copy');
+            expect(source.name).toBe('Smelting');
+            expect(target.name).toBe('Assembly');
             expect(target.buildings[0].linkedOutput).toMatchObject({ baseId: source.id, buildingId: source.buildings[0].id });
             expect(harness.getState().energyGroups).toHaveLength(1);
             expect(harness.getState().plannerTabs).toHaveLength(1);
+        } finally { runtime.dispose(); }
+    });
+
+    it('resolves batch name collisions against current work when the import is confirmed', async () => {
+        const { runtime, harness } = setup();
+        try {
+            const archive = createArchive(archiveFixture(), { baseIds: null, planIds: null });
+            archive.bases.forEach(base => { base.name = 'Shared'; });
+            archive.plans.forEach(plan => { plan.name = 'Shared'; });
+            harness.dispatchSync([appIds.events.DATA_TRANSFER_PREVIEW_IMPORT, JSON.stringify(archive)]);
+            await harness.flush();
+            const preview = harness.getState().dataTransferPreview!;
+            harness.dispatchSync([appIds.events.BASES_CREATE_BASE, 'Shared']);
+            harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'existing', 'Shared', 'single']);
+            harness.dispatchSync([appIds.events.PLANNER_DUPLICATE_TAB, 'existing', 'duplicate']);
+            harness.dispatchSync([appIds.events.DATA_TRANSFER_CONFIRM_IMPORT]);
+            expect(harness.getState().basesList.map(base => base.name)).toEqual(['Shared', 'Shared (2)', 'Shared (3)']);
+            expect(harness.getState().plannerTabs.map(plan => plan.name)).toEqual(['Shared', 'Shared (2)', 'Shared (3)', 'Shared (4)']);
+            expect(preview.bases.map(base => base.name)).toEqual(['Shared', 'Shared']);
+            expect(preview.plans.map(plan => plan.name)).toEqual(['Shared', 'Shared']);
         } finally { runtime.dispose(); }
     });
 
@@ -144,7 +170,7 @@ describe('archive events and persistence', () => {
             persist(restored.runtime, { storage, keys: PERSIST_KEYS }).hydrate();
             const state = restored.harness.getState();
             expect(state.plannerTabs[0].name).toBe('Renamed plan');
-            expect(state.plannerTabs[1].name).toBe('Multi plan Copy');
+            expect(state.plannerTabs[1].name).toBe('Multi plan');
             expect(state.basesList).toEqual(expected.basesList);
             expect(state.energyGroups).toEqual(expected.energyGroups);
             expect(state.plannerTabs).toEqual(expected.plannerTabs);

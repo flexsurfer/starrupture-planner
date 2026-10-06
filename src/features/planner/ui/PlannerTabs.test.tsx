@@ -6,6 +6,7 @@ import { appIds } from '@/app/uklad/catalog';
 import { UkladProvider, useSubscription } from '@/app/uklad/bindings';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerApplicationModules } from '@/app/uklad/register';
+import { TEST_GAME_DATA } from '@/platform/headless/e2e-support';
 import { ConfirmationDialog } from '@/features/app-shell/ui/ConfirmationDialog';
 import { PlannerTabs, PlannerTabCreation } from './PlannerTabs';
 import { PlannerTargetInput } from './controls/PlannerTargetInput';
@@ -98,9 +99,9 @@ it('renames only the active plan in settings and exports that plan', async () =>
     fireEvent.click(screen.getByRole('button', { name: 'Plan settings' }));
     await screen.findByRole('dialog', { name: 'Plan settings' });
     fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: '   ' } });
-    expect(screen.getByRole('button', { name: 'Rename plan' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: '  Renamed  ' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Rename plan' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await screen.findByRole('tab', { name: 'Renamed' });
     expect(screen.getByRole('tab', { name: 'One' })).toHaveAttribute('aria-selected', 'false');
     expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_MODE])).toBe('multi');
@@ -113,4 +114,57 @@ it('renames only the active plan in settings and exports that plan', async () =>
     await waitFor(() => expect(exports).toHaveLength(1));
     expect(exports[0].bases).toEqual([]);
     expect(exports[0].plans).toEqual([harness.getState().plannerTabs[1]]);
+});
+
+it.each(['single', 'multi'] as const)('duplicates a %s plan from settings and keeps edits independent', async mode => {
+    const harness = setup();
+    await act(async () => {
+        harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'playtest', structuredClone(TEST_GAME_DATA)]);
+        harness.dispatchSync([appIds.events.PLANNER_OPEN_ITEM, 'iron-plate', { corporationId: 'miners', level: 1 }]);
+        harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'source', 'Iron', mode, 'table']);
+        if (mode === 'single') harness.dispatchSync([appIds.events.PLANNER_SET_TARGET_AMOUNT, 125]);
+        else {
+            harness.dispatchSync([appIds.events.PLANNER_ADD_TARGET, 'copper-wire']);
+            harness.dispatchSync([appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'iron-plate', 125]);
+        }
+        harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'iron-ore', 80]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_FLOW_DIRECTION, 'TB']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_GROUP_BY_STAGE, true]);
+    });
+    const source = structuredClone(harness.getState().plannerTabs[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Plan settings' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Duplicate plan' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Iron (2)' })).toHaveAttribute('aria-selected', 'true'));
+    expect(screen.queryByRole('dialog', { name: 'Plan settings' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Iron' })).toHaveAttribute('aria-selected', 'false');
+    const copy = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])!;
+    expect(copy.id).not.toBe(source.id);
+    expect(copy).toEqual({ ...source, id: copy.id, name: 'Iron (2)' });
+
+    await act(async () => {
+        if (mode === 'single') {
+            harness.dispatchSync([appIds.events.PLANNER_SET_TARGET_AMOUNT, 250]);
+            harness.dispatchSync([appIds.events.PLANNER_SET_SELECTED_CORPORATION_LEVEL, null]);
+        } else harness.dispatchSync([appIds.events.PLANNER_SET_MULTI_TARGET_AMOUNT, 'iron-plate', 250]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter:0']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'iron-ore', 100]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_FLOW_DIRECTION, 'RL']);
+    });
+    const edited = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])!;
+    expect(mode === 'single' ? edited.targetAmount : edited.multiTargets[0].amount).toBe(250);
+    expect(edited.recipeSelections['iron-plate']).toBe('smelter:0');
+    expect(edited.externalInputs['iron-ore']).toBe(100);
+    expect(harness.getState().plannerTabs[0]).toEqual(source);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Iron' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Iron' })).toHaveAttribute('aria-selected', 'true'));
+    fireEvent.click(screen.getByRole('button', { name: 'Plan settings' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Duplicate plan' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Iron (3)' })).toHaveAttribute('aria-selected', 'true'));
+    expect(harness.getState().plannerTabs).toHaveLength(3);
+    expect(harness.getState().plannerTabs[0]).toEqual(source);
+    fireEvent.click(screen.getByRole('button', { name: 'Plan settings' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Duplicate plan' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Iron (4)' })).toHaveAttribute('aria-selected', 'true'));
 });

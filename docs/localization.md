@@ -39,7 +39,7 @@ Keep these unchanged:
 - **StarRupture**, **Rupture Planner**, **Discord**, **GitHub**, and keyboard shortcuts.
 - User-entered base, plan, building and group names, descriptions and notes.
   Existing names and import/export data are not rewritten when the language changes.
-  The import suffix **Copy** remains literal because it becomes part of a saved name.
+  Import and duplication resolve name collisions with a numeric suffix such as **(2)**.
 
 Game names are interpolation values, never translation keys. Game data JSON files,
 assets, URLs, DOM IDs, state/event IDs, recipe selections, keyboard key identifiers,

@@ -73,8 +73,8 @@ it('previews the file, warns about a different game version, and imports only af
     expect(harness.getState().plannerTabs).toHaveLength(3);
     expect(harness.getState().appDataVersion).toBe('update2_QoL');
     expect(harness.getState().basesList[2].id).not.toBe('source');
-    expect(harness.getState().basesList[2].name).toBe('Smelting Copy');
-    expect(harness.getState().plannerTabs[2].name).toBe('Multi plan Copy');
+    expect(harness.getState().basesList[2].name).toBe('Smelting (2)');
+    expect(harness.getState().plannerTabs[2].name).toBe('Multi plan (2)');
 });
 
 it('keeps import available with no saved data and reports invalid files without changes', async () => {
@@ -103,8 +103,8 @@ it('lets users select import entries independently of export and disables an emp
     expect(preview.getByRole('checkbox', { name: 'Select all bases' })).toBePartiallyChecked();
     fireEvent.click(preview.getByRole('button', { name: 'Import selected (2)' }));
     await screen.findByText('Imported copies. Bases: 1. Planner plans: 1.');
-    expect(harness.getState().basesList.map(base => base.name)).toEqual(['Smelting', 'Assembly', 'Assembly Copy']);
-    expect(harness.getState().plannerTabs.map(plan => plan.name)).toEqual(['Single plan', 'Multi plan', 'Multi plan Copy']);
+    expect(harness.getState().basesList.map(base => base.name)).toEqual(['Smelting', 'Assembly', 'Assembly (2)']);
+    expect(harness.getState().plannerTabs.map(plan => plan.name)).toEqual(['Single plan', 'Multi plan', 'Multi plan (2)']);
     expect(screen.queryByRole('region', { name: 'Import preview' })).not.toBeInTheDocument();
 });
 

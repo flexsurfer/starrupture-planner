@@ -6,6 +6,7 @@ import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { AppState, Building, RecipeAlternativePreset } from '@/app/uklad/model';
+import { availableName } from '@/utils/availableName';
 
 /** Slowest output rate for an item, matching the production-flow default. */
 function getSlowestOutputRateForItem(buildings: Building[], itemId: string): number {
@@ -75,6 +76,23 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
     registrar.regEvent(appIds.events.PLANNER_RENAME_TAB, ({ draftState }, id, name) => {
         const tab = draftState.plannerTabs.find(entry => entry.id === id);
         if (tab && name.trim()) tab.name = name.trim();
+    });
+    registrar.regEvent(appIds.events.PLANNER_DUPLICATE_TAB, ({ draftState }, sourceId, id) => {
+        const source = draftState.plannerTabs.find(tab => tab.id === sourceId);
+        if (!source || !id.trim() || draftState.plannerTabs.some(tab => tab.id === id)) return;
+        const name = availableName(source.name, new Set(draftState.plannerTabs.map(tab => tab.name.trim())));
+        draftState.plannerTabs.push({
+            ...source,
+            id,
+            name,
+            selectedCorporationLevel: source.selectedCorporationLevel ? { ...source.selectedCorporationLevel } : null,
+            multiTargets: source.multiTargets.map(target => ({ ...target })),
+            recipeSelections: { ...source.recipeSelections },
+            externalInputs: { ...source.externalInputs },
+        });
+        draftState.plannerActiveTabId = id;
+        draftState.plannerTabCreation = null;
+        draftState.plannerTargetWarning = null;
     });
     registrar.regEvent(appIds.events.PLANNER_SELECT_TAB, ({ draftState }, id) => {
         if (!draftState.plannerTabs.some(tab => tab.id === id)) return;

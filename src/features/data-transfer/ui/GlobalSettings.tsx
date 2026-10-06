@@ -49,7 +49,7 @@ function ImportPreview({ archive, dataVersion }: { archive: PlannerArchive; data
     const selectedCount = baseIds.length + planIds.length;
     return <section aria-label={t("Import preview")} className="mt-3 rounded-lg border border-base-300 p-3">
         <h4 className="font-semibold">{t("Ready to import")}</h4>
-        <p className="mt-1 mb-3 text-sm text-base-content/65">{t("Choose what to import. Imported names will end with “Copy”.")}</p>
+        <p className="mt-1 mb-3 text-sm text-base-content/65">{t("Choose what to import. A suffix such as (2) is added only when a name is already in use.")}</p>
         <div className="grid gap-3 sm:grid-cols-2">
             <ArchiveChecklist title={t("Bases")} selectAllLabel={t("Select all bases")} emptyLabel={t("No bases yet.")} entries={archive.bases} selected={baseIds} onChange={setBaseIds} />
             <ArchiveChecklist title={t("Planner plans")} selectAllLabel={t("Select all planner plans")} emptyLabel={t("No planner plans yet.")} entries={archive.plans} selected={planIds} onChange={setPlanIds} />

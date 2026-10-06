@@ -31,11 +31,17 @@ function PlanSettingsDialog({ plan, onClose }: { plan: PlannerTab; onClose: () =
             }}>
                 <label className="flex flex-col gap-2 text-sm">{t("Plan name")}<input autoFocus required className="input input-bordered w-full" value={name} onChange={event => setName(event.target.value)} />
                 </label>
-                <div className="mt-4 flex justify-end gap-2">
-                    <button type="button" className="btn btn-sm btn-ghost" onClick={onClose}>{t("Cancel")}</button>
-                    <button type="submit" className="btn btn-sm btn-primary" disabled={!name.trim() || name.trim() === plan.name}>{t("Rename plan")}</button>
+                <div className="mt-4 flex justify-end">
+                    <button type="submit" className="btn btn-sm btn-primary" disabled={!name.trim() || name.trim() === plan.name}>{t("Save")}</button>
                 </div>
             </form>
+            <div className="mt-5 border-t border-base-300 pt-4">
+                <p className="mb-3 text-sm text-base-content/65">{t("Duplicate this plan to try different recipes and buildings.")}</p>
+                <button type="button" className="btn btn-sm btn-outline" onClick={() => {
+                    runtime.dispatch([appIds.events.PLANNER_DUPLICATE_TAB, plan.id, crypto.randomUUID()]);
+                    onClose();
+                }}>{t("Duplicate plan")}</button>
+            </div>
             <div className="mt-5 border-t border-base-300 pt-4">
                 <p className="mb-3 text-sm text-base-content/65">{t("Save this plan’s targets, amounts, recipes, and view settings to a file.")}</p>
                 <button type="button" className="btn btn-sm btn-outline" onClick={() => {
