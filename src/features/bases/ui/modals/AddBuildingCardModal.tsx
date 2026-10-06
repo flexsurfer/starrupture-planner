@@ -9,6 +9,7 @@ import { getRawResourceBuilding, isLogisticsExcludedOutputBuildingId, isRawExtra
 import { MAX_BULK_BUILDING_COUNT, sanitizeBulkBuildingCount } from '@/features/bases/building-counts';
 import {
   DRONE_MERGER_3_TO_1_BUILDING_ID,
+  DRONE_RAIL_BUILDING_ID,
   ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
   ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
   PACKAGE_DISPATCHER_BUILDING_ID,
@@ -96,6 +97,7 @@ const LAUNCHER_BUILDING_IDS = new Set([
 
 const TRANSPORT_BUILDING_IDS = new Set([
   DRONE_MERGER_3_TO_1_BUILDING_ID,
+  DRONE_RAIL_BUILDING_ID,
   PACKAGE_DISPATCHER_BUILDING_ID,
   PACKAGE_RECEIVER_BUILDING_ID,
 ]);

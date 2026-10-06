@@ -4,6 +4,7 @@ import type { AppContracts } from '@/app/uklad/contracts';
 import { findItemRecipes, findRecipesUsingInput } from '@/features/buildings/recipe-utils';
 import {
     DRONE_MERGER_3_TO_1_BUILDING_ID,
+    DRONE_RAIL_BUILDING_ID,
     ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
     ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
     PACKAGE_DISPATCHER_BUILDING_ID,
@@ -166,6 +167,7 @@ export const registerItemsSubscriptions: UkladModule<UkladRegistrar<AppContracts
                 || building.id === ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID
                 || building.type === 'storage'
                 || building.id === DRONE_MERGER_3_TO_1_BUILDING_ID
+                || building.id === DRONE_RAIL_BUILDING_ID
             ) {
                 return [...items].sort((a, b) => a.name.localeCompare(b.name));
             }

@@ -2746,6 +2746,11 @@
     "type": "transport"
   },
   {
+    "id": "drone_rail",
+    "name": "Drone Rail",
+    "type": "transport"
+  },
+  {
     "id": "expandable_storage",
     "name": "Expandable Storage",
     "type": "storage",

@@ -1,6 +1,7 @@
 import type { Building } from '@/app/uklad/model';
 import {
   DRONE_MERGER_3_TO_1_BUILDING_ID,
+  DRONE_RAIL_BUILDING_ID,
   ORBITAL_CARGO_LAUNCHER_BUILDING_ID,
   ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID,
   PACKAGE_DISPATCHER_BUILDING_ID,
@@ -38,7 +39,8 @@ const isDispatcher = (b: Building) =>
   b.id === ORBITAL_CARGO_LAUNCHER_BUILDING_ID ||
   b.id === ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID ||
   b.id === PACKAGE_DISPATCHER_BUILDING_ID;
-const isDroneMerger = (b: Building) => b.id === DRONE_MERGER_3_TO_1_BUILDING_ID;
+const isDroneTransport = (b: Building) =>
+  b.id === DRONE_MERGER_3_TO_1_BUILDING_ID || b.id === DRONE_RAIL_BUILDING_ID;
 const isTeleporter = (b: Building) => b.id === TELEPORTER_BUILDING_ID;
 
 // ============================================================================
@@ -55,8 +57,8 @@ export function isBuildingAvailableForSection(building: Building, section: Build
   switch (section) {
     case 'inputs':
       // Extractors and receivers bring resources into the base
-      // Drone merger can be used for input
-      return isRawExtractor(building) || isReceiver(building) || isDroneMerger(building) || building.type === 'storage';
+      // Drone merger and rail can be used for input
+      return isRawExtractor(building) || isReceiver(building) || isDroneTransport(building) || building.type === 'storage';
 
     case 'energy':
       // Generators produce power, amplifiers increase heat capacity
@@ -68,8 +70,8 @@ export function isBuildingAvailableForSection(building: Building, section: Build
 
     case 'outputs':
       // Dispatchers send items out, storage can also be used for output staging
-      // Drone merger can be used for output
-      return isDispatcher(building) || building.type === 'storage' || isDroneMerger(building);
+      // Drone merger and rail can be used for output
+      return isDispatcher(building) || building.type === 'storage' || isDroneTransport(building);
 
     case 'infrastructure':
       // Habitat, defense, and teleporter
@@ -99,15 +101,15 @@ export function isBuildingCountAvailable(building: Building): boolean {
  * This reuses isBuildingAvailableForSection to maintain a single source of truth.
  * 
  * Priority order:
- * 1. 'inputs' - Extractors, receivers, and drone_merger_3_to_1
+ * 1. 'inputs' - Extractors, receivers, drone merger, and drone rail
  * 2. 'energy' - Generators and temperature
  * 3. 'infrastructure' - Habitat, defense, and teleporter
  * 4. 'production' - Production buildings (not extractors) and storage
- * 5. 'outputs' - Dispatchers, storage, and drone_merger_3_to_1
+ * 5. 'outputs' - Dispatchers, storage, drone merger, and drone rail
  * 
  * Note: Storage can be in both 'production' and 'outputs', but we default to 'production'
  * by checking it earlier in the priority order.
- * Note: drone_merger_3_to_1 can be in both 'inputs' and 'outputs', but we default to 'inputs'
+ * Note: Drone merger and rail can be in both 'inputs' and 'outputs', but we default to 'inputs'
  * by checking it earlier in the priority order.
  */
 export function getSectionTypeForBuilding(building: Building): BuildingSectionType {
