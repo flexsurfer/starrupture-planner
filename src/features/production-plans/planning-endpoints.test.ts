@@ -53,7 +53,7 @@ it('creates one owned output, follows edits and rail capacity, and retains owner
     expect(base('source').buildings).toHaveLength(1);
     const output = base('source').buildings[0];
     expect(output).toMatchObject({ buildingTypeId: 'package_dispatcher', planningOwnerPlanId: plan.id, sourceProductionId: plan.id, name: 'Plates output' });
-    expect(resolveOutputBuilding(output, base('source'))).toMatchObject({ selectedItemId: 'plate', ratePerMinute: 200 });
+    expect(resolveOutputBuilding(output, base('source'))).toMatchObject({ selectedItemId: 'plate', ratePerMinute: 240 });
     harness.dispatchSync([appIds.events.PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT, 90]);
     expect(resolveOutputBuilding(base('source').buildings[0], base('source')).ratePerMinute).toBe(90);
     createPlan('consumer', 'wire');

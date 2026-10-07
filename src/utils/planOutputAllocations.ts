@@ -4,7 +4,7 @@ import {
     PACKAGE_DISPATCHER_BUILDING_ID,
 } from '../constants/buildingIds';
 
-export const PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE = 200;
+export const PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE = 240;
 export const ORBITAL_CARGO_LAUNCHER_CAPACITY_PER_MINUTE = 10;
 
 export type OutputResolutionStatus =

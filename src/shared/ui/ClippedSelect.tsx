@@ -5,6 +5,7 @@ interface ClippedSelectProps {
   displayValue: string;
   title: string;
   ariaLabel?: string;
+  disabled?: boolean;
   size?: 'xs' | 'sm';
   tone?: 'default' | 'muted';
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -21,6 +22,7 @@ export const ClippedSelect: React.FC<ClippedSelectProps> = ({
   displayValue,
   title,
   ariaLabel,
+  disabled = false,
   size = 'xs',
   tone = 'default',
   onChange,
@@ -35,11 +37,12 @@ export const ClippedSelect: React.FC<ClippedSelectProps> = ({
   return (
     <div className="relative min-w-0 w-0 max-w-full flex-1">
       <select
-        className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+        className="peer absolute inset-0 z-10 h-full w-full cursor-pointer disabled:cursor-default opacity-0"
         value={value}
         onChange={onChange}
         title={title}
         aria-label={ariaLabel}
+        disabled={disabled}
       >
         {children}
       </select>

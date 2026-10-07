@@ -20,6 +20,30 @@ export interface LinkedInputReference {
   buildingId: string;
 }
 
+export interface BuildingConnection {
+  source: LinkedInputReference;
+  target: LinkedInputReference;
+}
+
+export interface ConnectionReference extends LinkedInputReference {
+  baseName: string;
+  buildingName: string;
+  building?: Building;
+  item?: Item;
+  ratePerMinute?: number;
+  planName?: string;
+}
+
+export interface LinkableInputItem extends LinkedInputReference {
+  key: string;
+  baseName: string;
+  building: Building;
+  name: string;
+  item?: Item;
+  ratePerMinute?: number;
+  connections: ConnectionReference[];
+}
+
 /**
  * Request payload used when creating one or more base buildings from the UI.
  */
@@ -127,6 +151,8 @@ export interface LinkableOutputItem extends BaseOutputItem {
   baseId: string;
   baseName: string;
   isCurrentBase: boolean;
+  planName?: string;
+  connections: ConnectionReference[];
 }
 
 /**

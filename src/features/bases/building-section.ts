@@ -39,7 +39,7 @@ const isDispatcher = (b: Building) =>
   b.id === ORBITAL_CARGO_LAUNCHER_BUILDING_ID ||
   b.id === ORBITAL_CARGO_LAUNCHER_TIER_2_BUILDING_ID ||
   b.id === PACKAGE_DISPATCHER_BUILDING_ID;
-const isDroneTransport = (b: Building) =>
+export const isDroneTransport = (b: Building) =>
   b.id === DRONE_MERGER_3_TO_1_BUILDING_ID || b.id === DRONE_RAIL_BUILDING_ID;
 const isTeleporter = (b: Building) => b.id === TELEPORTER_BUILDING_ID;
 

@@ -171,7 +171,9 @@ it('removes an unused Planning input and releases its reserved source output', a
     const flow = harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FLOW]);
     expect(flow.nodes.some(node => node.outputItem === 'ore')).toBe(false);
     expect(harness.getState().basesList[0].productions[0].inputs).toHaveLength(2);
-    expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS, 'base', planId, 'ore'])).toEqual([]);
+    expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS, 'base', planId, 'ore'])).toMatchObject([
+        { baseBuildingId: 'output', connections: [{ baseId: 'base', buildingId: inputId }] },
+    ]);
 
     fireEvent.click(screen.getByRole('button', { name: /Remove input Ore from Ore base/ }));
     await waitFor(() => expect(harness.getState().basesList[0].productions[0].inputs).toMatchObject([
@@ -180,7 +182,7 @@ it('removes an unused Planning input and releases its reserved source output', a
     expect(harness.getState().basesList[0].buildings.some(building => building.id === inputId)).toBe(false);
     expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_MODAL_FLOW])).toEqual(flow);
     expect(harness.getSubscriptionValue([appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS, 'base', planId, 'ore'])).toMatchObject([
-        { baseId: 'source', baseBuildingId: 'output' },
+        { baseId: 'source', baseBuildingId: 'output', connections: [] },
     ]);
 });
 

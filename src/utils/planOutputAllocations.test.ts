@@ -55,14 +55,14 @@ describe('plan output allocations', () => {
         expect(summary?.producedRatePerMinute).toBe(450);
         expect(summary?.assignedRatePerMinute).toBe(450);
         expect(summary?.remainingRatePerMinute).toBe(0);
-        expect(summary?.outputs.map((output) => output.ratePerMinute)).toEqual([200, 200, 50]);
+        expect(summary?.outputs.map((output) => output.ratePerMinute)).toEqual([240, 210, 0]);
     });
 
     it('cascades source target changes without mutating outputs', () => {
         const base = createBase(300);
         const summary = getPlanOutputAllocationSummary(base, 'plan_rods');
 
-        expect(summary?.outputs.map((output) => output.ratePerMinute)).toEqual([200, 100, 0]);
+        expect(summary?.outputs.map((output) => output.ratePerMinute)).toEqual([240, 60, 0]);
         expect(base.buildings.map((output) => output.ratePerMinute)).toEqual([undefined, undefined, undefined]);
     });
 

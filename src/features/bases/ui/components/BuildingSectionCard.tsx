@@ -1,10 +1,10 @@
 import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import type { Base, BaseBuilding, Building, Item } from '@/app/uklad/model';
-import type { BuildingSectionBuilding, LinkableOutputItem } from '@/features/bases/types';
-import { isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
+import type { Base, BaseBuilding, Item } from '@/app/uklad/model';
+import type { BuildingSectionBuilding, LinkableInputItem, LinkableOutputItem } from '@/features/bases/types';
+import { isLogisticsExcludedOutputBuildingId } from '@/features/bases/building-section';
 import { sanitizeBuildingCount } from '@/features/bases/building-counts';
 import { BuildingImage, ClippedSelect, ItemImage } from '@/shared/ui';
 import { EditBuildingModal, SelectItemModal } from '../modals';
@@ -14,10 +14,17 @@ import type { ResolvedInputBuilding } from '@/utils/productionPlanInputs';
 import { resolveOutputBuilding } from '@/utils/planOutputAllocations';
 import type { ResolvedOutputBuilding } from '@/utils/planOutputAllocations';
 import { getItemCategoryColor } from '@/utils/itemColors';
+import { areConnectionTypesCompatible, getConnectionPairs, supportsOutputLink } from '@/features/bases/connections';
+import { canDuplicateLogisticsBuilding } from '@/features/bases/building-operations';
+import { connectionLabel, connectionLocationLabel } from '../utils/connectionLabels';
+import { ConnectionPickerButton } from './ConnectionPickerButton';
+import { ConnectionPickerModal } from '../modals/ConnectionPickerModal';
+import { useDisconnectConnections } from '../useDisconnectConnections';
 
 interface LinkedInputData {
   resolved: ResolvedInputBuilding;
   hasError: boolean;
+  incompatible: boolean;
   label: string;
 }
 
@@ -45,7 +52,8 @@ const useLinkedInputData = (baseBuilding: BaseBuilding): LinkedInputData => {
   const label = `${baseName}${outputName ? ` / ${outputName}` : ''}`;
   const hasError = !!resolved.linkedOutput && resolved.linkedOutputStatus !== 'ok';
 
-  return { resolved, hasError, label };
+  const incompatible = !!sourceOutputBuilding && !areConnectionTypesCompatible(sourceOutputBuilding, buildingsById[baseBuilding.buildingTypeId]);
+  return { resolved, hasError, incompatible, label };
 };
 
 interface BuildingItemSummaryProps {
@@ -90,311 +98,83 @@ function getLinkableOutputKey(baseId: string, baseBuildingId: string): string {
   return `${baseId}:${baseBuildingId}`;
 }
 
-function isConfiguredPositiveRate(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0;
-}
-
-function useLinkableOutputs(currentBaseId: string): LinkableOutputItem[] {
-  const subscribedBases = useSubscription([appIds.subscriptions.BASES_LIST]);
-  const buildingsById = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
-  const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
-
-  return useMemo(() => {
-    const allBases = subscribedBases || [];
-    const outputs: LinkableOutputItem[] = [];
-
-    for (const base of allBases) {
-      for (const output of base.buildings) {
-        if (output.sectionType !== 'outputs') continue;
-        if (isLogisticsExcludedOutputBuildingId(output.buildingTypeId)) continue;
-
-        const resolvedOutput = resolveOutputBuilding(output, base);
-        if (!resolvedOutput.selectedItemId || !isConfiguredPositiveRate(resolvedOutput.ratePerMinute)) continue;
-
-        const building = buildingsById[output.buildingTypeId];
-        if (!building) continue;
-
-        const item = itemsById[resolvedOutput.selectedItemId] || {
-          id: resolvedOutput.selectedItemId,
-          name: resolvedOutput.selectedItemId,
-          type: 'unknown',
-        };
-
-        outputs.push({
-          baseId: base.id,
-          baseName: base.name,
-          isCurrentBase: base.id === currentBaseId,
-          baseBuildingId: output.id,
-          item,
-          ratePerMinute: resolvedOutput.ratePerMinute,
-          building,
-          name: output.name || building.name || item.name,
-          description: output.description || '',
-        });
-      }
-    }
-
-    return outputs.sort((left, right) => {
-      if (left.isCurrentBase !== right.isCurrentBase) return left.isCurrentBase ? -1 : 1;
-      const baseDelta = left.baseName.localeCompare(right.baseName);
-      if (baseDelta !== 0) return baseDelta;
-      return left.item.name.localeCompare(right.item.name);
-    });
-  }, [subscribedBases, buildingsById, currentBaseId, itemsById]);
-}
-
 interface InputOutputLinkControlsProps {
   baseId: string;
   baseBuilding: BaseBuilding;
 }
 
 const InputOutputLinkControls: React.FC<InputOutputLinkControlsProps> = ({ baseId, baseBuilding }) => {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const runtime = useRuntime();
-  const outputs = useLinkableOutputs(baseId);
-  const { resolved, hasError, label } = useLinkedInputData(baseBuilding);
+  const [showPicker, setShowPicker] = useState(false);
+  const confirmDisconnect = useDisconnectConnections();
+  const outputs = useSubscription([appIds.subscriptions.BASES_CONNECTION_OUTPUTS, baseId, baseBuilding.buildingTypeId]);
+  const { incompatible, label } = useLinkedInputData(baseBuilding);
   const linkedOutput = baseBuilding.linkedOutput;
-  const selectedOutputKey = linkedOutput
-    ? getLinkableOutputKey(linkedOutput.baseId, linkedOutput.buildingId)
-    : '';
-  const selectedOutput = selectedOutputKey
-    ? outputs.find((output) => getLinkableOutputKey(output.baseId, output.baseBuildingId) === selectedOutputKey) || null
-    : null;
-  const selectedOutputExists = !selectedOutputKey || outputs.some((output) =>
-    getLinkableOutputKey(output.baseId, output.baseBuildingId) === selectedOutputKey
-  );
-  const selectedOutputLabel = selectedOutput
-    ? `${selectedOutput.baseName} / ${selectedOutput.name || selectedOutput.item.name}`
-    : linkedOutput
-    ? (hasError ? t("Broken link") : label)
-    : t("Manual");
+  const selectedOutputKey = linkedOutput ? getLinkableOutputKey(linkedOutput.baseId, linkedOutput.buildingId) : '';
+  const selectedOutput = outputs.find(output => getLinkableOutputKey(output.baseId, output.baseBuildingId) === selectedOutputKey);
+  const selectedOutputLabel = selectedOutput ? connectionLocationLabel(selectedOutput, t) : linkedOutput ? label : t("Manual");
 
-  const handleSourceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextKey = event.target.value;
-    if (!nextKey) {
-      runtime.dispatch([
-        appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION,
-        baseId,
-        baseBuilding.id,
-        resolved.selectedItemId || null,
-        isConfiguredPositiveRate(resolved.ratePerMinute) ? resolved.ratePerMinute : null,
-      ]);
-      return;
-    }
-
-    const output = outputs.find((candidate) =>
-      getLinkableOutputKey(candidate.baseId, candidate.baseBuildingId) === nextKey
-    );
-    if (!output) return;
-
-    runtime.dispatch([
-      appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT,
-      baseId,
-      baseBuilding.id,
-      output.baseId,
-      output.baseBuildingId,
-    ]);
+  const disconnect = () => {
+    if (linkedOutput) confirmDisconnect([{ source: linkedOutput, target: { baseId, buildingId: baseBuilding.id } }]);
+  };
+  const handleSourceChange = (output: LinkableOutputItem) => {
+    if (linkedOutput || output.connections.length) return;
+    runtime.dispatch([appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT, baseId, baseBuilding.id, output.baseId, output.baseBuildingId]);
+    setShowPicker(false);
   };
 
-  return (
-    <div className="min-w-0">
-      <label className="flex min-w-0 items-center gap-2">
-        <span className="w-10 shrink-0 text-xs text-base-content/60">{t("Source")}</span>
-        <ClippedSelect
-          size="sm"
-          tone="muted"
-          ariaLabel={t("Source")}
-          value={selectedOutputKey}
-          onChange={handleSourceChange}
-          displayValue={selectedOutputLabel}
-          title={linkedOutput ? label : t("Manual")}
-        >
-          <option className="text-base-content bg-base-100" value="">{t("Manual")}</option>
-          {!selectedOutputExists && linkedOutput && (
-            <option className="text-base-content bg-base-100" value={selectedOutputKey}>
-              {hasError ? t("Broken link") : label}
-            </option>
-          )}
-          {outputs.map((output) => {
-            const key = getLinkableOutputKey(output.baseId, output.baseBuildingId);
-            const displayName = output.name || output.item.name;
-            return (
-              <option className="text-base-content bg-base-100" key={key} value={key}>
-                {output.baseName} / {displayName}
-              </option>
-            );
-          })}
-        </ClippedSelect>
-      </label>
+  return <div className="min-w-0 space-y-2">
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="w-10 shrink-0 text-xs text-base-content/60">{t("Source")}</span>
+      <ConnectionPickerButton label={t('Source')} value={selectedOutputLabel}
+        title={selectedOutput ? connectionLabel(selectedOutput, t) : selectedOutputLabel}
+        expanded={showPicker} onClick={() => setShowPicker(true)} />
     </div>
-  );
+    {incompatible && <p className="text-xs text-warning">{t('This saved connection is incompatible. Disconnect it before choosing another.')}</p>}
+    {!linkedOutput && outputs.length === 0 && <p className="text-xs text-base-content/60">{t('No compatible outputs found.')}</p>}
+    <ConnectionPickerModal isOpen={showPicker} direction="output" entries={outputs} currentBaseId={baseId}
+      currentBuildingId={baseBuilding.id}
+      currentConnections={linkedOutput ? [selectedOutputLabel] : []} onDisconnect={disconnect}
+      onSelect={handleSourceChange} onClose={() => setShowPicker(false)} />
+  </div>;
 };
-
-interface LinkableInputItem {
-  baseId: string;
-  baseName: string;
-  baseBuildingId: string;
-  building: Building;
-  name: string;
-  description: string;
-  item?: Item;
-  ratePerMinute?: number;
-  linkedOutput?: {
-    status: string;
-    baseId: string;
-    buildingId: string;
-    baseName: string;
-    outputName: string;
-  };
-}
-
-function useLinkableInputs(currentBaseId: string): LinkableInputItem[] {
-    const { t } = useTranslation();
-  const subscribedBases = useSubscription([appIds.subscriptions.BASES_LIST]);
-  const buildingsById = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
-  const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
-
-  return useMemo(() => {
-    const allBases = subscribedBases || [];
-    const inputs: LinkableInputItem[] = [];
-
-    for (const base of allBases) {
-      for (const input of base.buildings) {
-        if (input.sectionType !== 'inputs') continue;
-        const building = buildingsById[input.buildingTypeId];
-        if (!building || isRawExtractor(building)) continue;
-
-        const resolvedInput = resolveInputBuilding(input, allBases);
-        const itemId = resolvedInput.selectedItemId || input.linkedOutput?.itemIdSnapshot;
-        const item = itemId ? itemsById[itemId] || { id: itemId, name: itemId, type: 'unknown' } : undefined;
-        const resolution = input.linkedOutput ? resolveLinkedOutput(input, allBases) : null;
-        const sourceOutputBuilding = resolution?.sourceOutput
-          ? buildingsById[resolution.sourceOutput.buildingTypeId]
-          : null;
-
-        inputs.push({
-          baseId: base.id,
-          baseName: base.name,
-          baseBuildingId: input.id,
-          building,
-          name: input.name || building.name,
-          description: input.description || '',
-          item,
-          ratePerMinute: resolvedInput.ratePerMinute || input.linkedOutput?.ratePerMinuteSnapshot,
-          linkedOutput: input.linkedOutput
-            ? {
-                status: resolution?.status || 'missing-output',
-                baseId: input.linkedOutput.baseId,
-                buildingId: input.linkedOutput.buildingId,
-                baseName: resolution?.sourceBase?.name || t("Missing base"),
-                outputName:
-                  resolution?.sourceOutput?.name ||
-                  sourceOutputBuilding?.name ||
-                  input.linkedOutput.buildingId,
-              }
-            : undefined,
-        });
-      }
-    }
-
-    return inputs.sort((left, right) => {
-      const currentBaseDelta = Number(right.baseId === currentBaseId) - Number(left.baseId === currentBaseId);
-      if (currentBaseDelta !== 0) return currentBaseDelta;
-      const baseDelta = left.baseName.localeCompare(right.baseName);
-      if (baseDelta !== 0) return baseDelta;
-      return left.name.localeCompare(right.name);
-    });
-  }, [subscribedBases, buildingsById, currentBaseId, itemsById, t]);
-}
 
 interface OutputInputLinkControlsProps {
   baseId: string;
   baseBuilding: BaseBuilding;
 }
 
-const OutputInputLinkControls: React.FC<OutputInputLinkControlsProps> = ({
-  baseId,
-  baseBuilding,
-}) => {
-    const { t } = useTranslation();
+const OutputInputLinkControls: React.FC<OutputInputLinkControlsProps> = ({ baseId, baseBuilding }) => {
+  const { t } = useTranslation();
   const runtime = useRuntime();
-  const inputs = useLinkableInputs(baseId);
-  const linkedInputs = inputs.filter((input) =>
-    input.linkedOutput?.baseId === baseId &&
-    input.linkedOutput?.buildingId === baseBuilding.id
-  );
-  const linkedInput = linkedInputs[0] || null;
-  const selectedInputKey = linkedInput
-    ? getLinkableOutputKey(linkedInput.baseId, linkedInput.baseBuildingId)
-    : '';
-  const selectedInputLabel = linkedInput
-    ? `${linkedInput.baseName} / ${linkedInput.name}`
-    : t("No target");
+  const [showPicker, setShowPicker] = useState(false);
+  const confirmDisconnect = useDisconnectConnections();
+  const inputs = useSubscription([appIds.subscriptions.BASES_CONNECTION_INPUTS, baseId, baseBuilding.id, baseBuilding.buildingTypeId]);
+  const linkedInputs = inputs.filter(input => input.connections.some(connection => connection.baseId === baseId && connection.buildingId === baseBuilding.id));
+  const linkedInput = linkedInputs[0];
+  const selectedInputLabel = linkedInput ? connectionLocationLabel(linkedInput, t) : t("No target");
 
-  const handleTargetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextKey = event.target.value;
-    if (!nextKey) {
-      linkedInputs.forEach(handleRemoveInput);
-      return;
-    }
-
-    const input = inputs.find((candidate) =>
-      getLinkableOutputKey(candidate.baseId, candidate.baseBuildingId) === nextKey
-    );
-    if (!input) return;
-
-    runtime.dispatch([
-      appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT,
-      input.baseId,
-      input.baseBuildingId,
-      baseId,
-      baseBuilding.id,
-    ]);
+  const handleTargetChange = (input: LinkableInputItem) => {
+    if (linkedInputs.length || input.connections.length) return;
+    runtime.dispatch([appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT, input.baseId, input.buildingId, baseId, baseBuilding.id]);
+    setShowPicker(false);
   };
+  const disconnect = () => confirmDisconnect(linkedInputs.flatMap(getConnectionPairs));
 
-  const handleRemoveInput = (input: LinkableInputItem) => {
-    runtime.dispatch([
-      appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION,
-      input.baseId,
-      input.baseBuildingId,
-      input.item?.id || null,
-      isConfiguredPositiveRate(input.ratePerMinute) ? input.ratePerMinute : null,
-    ]);
-  };
-
-  if (isLogisticsExcludedOutputBuildingId(baseBuilding.buildingTypeId)) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-2">
-      <label className="flex min-w-0 items-center gap-2">
-        <span className="w-10 shrink-0 text-xs text-base-content/60">{t("Target")}</span>
-        <ClippedSelect
-          size="sm"
-          tone="muted"
-          ariaLabel={t("Target")}
-          value={selectedInputKey}
-          onChange={handleTargetChange}
-          displayValue={selectedInputLabel}
-          title={linkedInput ? `${linkedInput.baseName} / ${linkedInput.name}` : t("No target")}
-        >
-          <option className="text-base-content bg-base-100" value="">{t("No target")}</option>
-          {inputs.map((input) => {
-            const key = getLinkableOutputKey(input.baseId, input.baseBuildingId);
-            const linkedElsewhere = input.linkedOutput
-              ? t(" · linked to {name}", { name: `${(input.linkedOutput.baseName || t("Missing base"))} / ${input.linkedOutput.outputName}` })
-              : '';
-            return (
-              <option className="text-base-content bg-base-100" key={key} value={key}>
-                {input.baseName} / {input.name}{linkedElsewhere}
-              </option>
-            );
-          })}
-        </ClippedSelect>
-      </label>
+  return <div className="space-y-2">
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="w-10 shrink-0 text-xs text-base-content/60">{t("Target")}</span>
+      <ConnectionPickerButton label={t('Target')} value={selectedInputLabel}
+        title={linkedInput ? connectionLabel(linkedInput, t) : selectedInputLabel}
+        expanded={showPicker} onClick={() => setShowPicker(true)} />
     </div>
-  );
+    {linkedInputs.length > 1 && <p className="text-xs text-base-content/60">{linkedInputs.map(input => connectionLocationLabel(input, t)).join('; ')}</p>}
+    <ConnectionPickerModal isOpen={showPicker} direction="input" entries={inputs} currentBaseId={baseId}
+      currentBuildingId={baseBuilding.id}
+      currentConnections={linkedInputs.map(input => connectionLocationLabel(input, t))}
+      onDisconnect={disconnect} onSelect={handleTargetChange} onClose={() => setShowPicker(false)} />
+  </div>;
 };
 
 interface OutputPlanLinkControlsProps {
@@ -457,11 +237,11 @@ const OutputPlanLinkControls: React.FC<OutputPlanLinkControlsProps> = ({
   return (
     <div className="space-y-2">
       <label className="flex min-w-0 items-center gap-2">
-        <span className="w-10 shrink-0 text-xs text-base-content/60">{t("Source")}</span>
+        <span className="w-10 shrink-0 text-xs text-base-content/60">{t("Plan")}</span>
         <ClippedSelect
           size="sm"
           tone="muted"
-          ariaLabel={t("Source")}
+          ariaLabel={t("Plan")}
           value={selectedPlanId}
           onChange={handlePlanChange}
           displayValue={selectedPlanLabel}
@@ -524,7 +304,7 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
 
   const isInputBuilding = !isGrouped && baseBuilding?.sectionType === 'inputs';
   const isOutputBuilding = !isGrouped && baseBuilding?.sectionType === 'outputs';
-  const isLinkableInputBuilding = isInputBuilding && !isRawExtractor(building);
+  const isLinkableInputBuilding = isInputBuilding && (supportsOutputLink(building) || !!baseBuilding?.linkedOutput);
   const isLinkedInput = isInputBuilding && !!baseBuilding?.linkedOutput;
   const isLinkableOutputBuilding = isOutputBuilding &&
     !!baseBuilding &&
@@ -612,6 +392,18 @@ export const BuildingSectionCard: React.FC<BuildingSectionCardProps> = ({
               <span title={t("Heat")}>🔥 {totalHeat}</span>
             </div>
           </div>
+          {!isGrouped && baseBuilding && canDuplicateLogisticsBuilding(baseBuilding) && <button
+            type="button"
+            className="btn btn-sm btn-ghost h-8 min-h-8 w-8 shrink-0 p-0 text-base-content/50 hover:text-base-content"
+            aria-label={t('Duplicate {name}', { name: displayName })}
+            title={t('Duplicate without connections')}
+            onClick={() => runtime.dispatch([appIds.events.BASES_DUPLICATE_BUILDING, baseId, baseBuilding.id, `building_${crypto.randomUUID()}`])}
+          >
+            <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <rect x="8" y="8" width="12" height="12" rx="2" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4" />
+            </svg>
+          </button>}
           <button type="button" className="btn btn-sm btn-ghost h-8 min-h-8 w-8 shrink-0 p-0 text-base-content/50 hover:text-error"
             aria-label={t("Remove {displayName}", { displayName: displayName })} title={t("Remove {displayName}", { displayName: displayName })} onClick={handleRemoveClick}>
             <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

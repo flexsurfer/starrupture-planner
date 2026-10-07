@@ -3,8 +3,10 @@ import { appIds } from '@/app/uklad/catalog';
 import React from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
 import type { LinkableOutputItem } from '@/features/bases/types';
-import { LinkOutputSelector } from './LinkOutputSelector';
+import { ConnectionPickerModal } from '@/features/bases/ui/modals/ConnectionPickerModal';
 import { AdvancedModeSwitch } from '@/features/bases/ui/components/AdvancedModeSwitch';
+import { areConnectionTypesCompatible } from '@/features/bases/connections';
+import type { ConnectionCardData } from '@/features/bases/ui/components/ConnectionCard';
 
 interface LinkOutputModalProps {
     isOpen: boolean;
@@ -12,47 +14,24 @@ interface LinkOutputModalProps {
     baseId?: string;
     planId?: string;
     itemId?: string;
+    inputBuildingTypeId?: string;
     title?: string;
+    currentBuilding?: ConnectionCardData;
     onClose: () => void;
     onSelect: (output: LinkableOutputItem) => void;
 }
 
 const EMPTY_LINKABLE_OUTPUTS: LinkableOutputItem[] = [];
 
-export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClose, onSelect, showModeSwitch = false, baseId, planId, itemId, title }) => {
+export const LinkOutputModal: React.FC<LinkOutputModalProps> = ({ isOpen, onClose, onSelect, showModeSwitch = false, baseId, planId, itemId, inputBuildingTypeId, title, currentBuilding }) => {
     const { t } = useTranslation();
     const planning = useSubscription([appIds.subscriptions.BASES_MODE]) === 'planning';
     const outputs = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS, baseId ?? null, planId ?? null, itemId ?? null]) || EMPTY_LINKABLE_OUTPUTS;
-    if (!isOpen) return null;
-
-    return (
-        <div className="modal modal-open">
-            <div role="dialog" aria-modal="true" aria-label={title ?? (planning ? t("Add external item") : t("Link Output"))} className="modal-box max-w-3xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
-                <div className="px-6 pt-5 pb-3 border-b border-base-300">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="mr-auto font-bold text-lg">{title ?? (planning ? t("Add external item") : t("Link Output"))}</h3>
-                        {showModeSwitch && <AdvancedModeSwitch />}
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-circle btn-ghost"
-                            onClick={onClose}
-                            aria-label={t("Close modal")}
-                        >
-                            ✕
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4">
-                    <LinkOutputSelector outputs={outputs} onSelect={onSelect}
-                        emptyMessage={planning ? t("No available outputs found. Create a plan in another base, or configure a free output in Advanced mode.") : t("No configured outputs found.")} />
-                </div>
-
-                <div className="px-6 py-3 border-t border-base-300 flex justify-end">
-                    <button type="button" className="btn btn-sm" onClick={onClose}>{t("Cancel")}</button>
-                </div>
-            </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
-        </div>
-    );
+    const buildings = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
+    const compatibleOutputs = inputBuildingTypeId ? outputs.filter(output => areConnectionTypesCompatible(output.building, buildings[inputBuildingTypeId])) : outputs;
+    return <ConnectionPickerModal isOpen={isOpen} direction="output" entries={compatibleOutputs}
+        currentBaseId={baseId} title={title ?? (planning ? t('Add external item') : t('Link Output'))}
+        currentBuilding={currentBuilding}
+        headerAction={showModeSwitch ? <AdvancedModeSwitch /> : undefined}
+        onSelect={onSelect} onClose={onClose} />;
 };

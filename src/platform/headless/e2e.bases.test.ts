@@ -429,6 +429,12 @@ describe('headless bases and logistics E2E', () => {
             sourceId,
             outputId,
         ]);
+        expect(root.value('selected')!.buildings.find(({ id }) => id === firstInputId)?.linkedOutput).toMatchObject({ baseId: sourceId, buildingId: outputId });
+        expect(root.value('selected')!.buildings.find(({ id }) => id === secondInputId)?.linkedOutput).toBeUndefined();
+        await app.dispatch([appIds.events.BASES_DISCONNECT_CONNECTIONS, [
+            { source: { baseId: sourceId, buildingId: outputId }, target: { baseId: targetId, buildingId: firstInputId } },
+        ]]);
+        await app.dispatch([appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT, targetId, secondInputId, sourceId, outputId]);
         targetBase = root.value('selected')!;
         expect(targetBase.buildings.find(({ id }) => id === firstInputId)?.linkedOutput).toBeUndefined();
         expect(targetBase.buildings.find(({ id }) => id === secondInputId)).toMatchObject({
@@ -493,7 +499,7 @@ describe('headless bases and logistics E2E', () => {
         expect(root.value('allLogistics')).toHaveLength(1);
     });
 
-    it('emulates bulk output normalization, add-time linking, exclusive replacement, and clearing', async () => {
+    it('emulates bulk output normalization, add-time linking, explicit disconnects, and clearing', async () => {
         const app = createApp();
         await app.seed();
         const view = app.mountView('bulk-linked base', {
@@ -595,6 +601,11 @@ describe('headless bases and logistics E2E', () => {
                 ratePerMinuteSnapshot: 60,
             },
         ]);
+        expect(view.value('selected')!.buildings.some(({ name }) => name === 'Replacement receiver')).toBe(false);
+        expect(view.value('selected')!.buildings.find(({ id }) => id === originalInputId)?.linkedOutput).toMatchObject({ baseId, buildingId: planOutput.id });
+        await app.dispatch([appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION, baseId, originalInputId, 'iron-plate', 60]);
+        await app.dispatch([appIds.events.BASES_ADD_BUILDINGS, baseId, 'package_receiver', 'inputs', 1,
+            'Replacement receiver', undefined, 'iron-plate', 60, { baseId, buildingId: planOutput.id }]);
         const replacementInput = view.value('selected')!.buildings.find(({ name }) => (
             name === 'Replacement receiver'
         ))!;

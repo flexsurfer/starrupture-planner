@@ -205,12 +205,14 @@ describe('headless application E2E', () => {
         expect(targets.value('outputs')).toHaveLength(1);
         const output = targets.value('outputs')[0];
         await dispatch(scenario, [appIds.events.PRODUCTION_PLAN_LINK_OUTPUT_INPUT, baseId, planId, output.baseId, output.baseBuildingId]);
-        expect(targets.value('outputs')).toEqual([]);
+        expect(targets.value('outputs')).toHaveLength(1);
+        expect(targets.value('outputs')[0].connections).toHaveLength(1);
         expect(diagram.value('flow')?.nodes).toHaveLength(2);
         const linkedInput = bases.value('base')!.productions[0].inputs![0];
         expect(linkedInput.linkedOutput).toMatchObject({ baseId, buildingId: output.baseBuildingId });
         await dispatch(scenario, [appIds.events.PRODUCTION_PLAN_REMOVE_INPUT, baseId, planId, linkedInput.id]);
         expect(targets.value('outputs')).toHaveLength(1);
+        expect(targets.value('outputs')[0].connections).toEqual([]);
         expect(diagram.value('flow')).toEqual(original);
         targets.unmount();
         diagram.unmount();
@@ -815,6 +817,51 @@ describe('headless application E2E', () => {
             output.id,
         ]);
 
+        const connections = mountView(scenario, 'connection choices', {
+            sources: [appIds.subscriptions.BASES_CONNECTION_OUTPUTS, baseId, input.buildingTypeId],
+            targets: [appIds.subscriptions.BASES_CONNECTION_INPUTS, baseId, output.id, output.buildingTypeId],
+            inputSummary: [appIds.subscriptions.BASES_CONNECTION_BUILDING, baseId, input.id],
+            outputSummary: [appIds.subscriptions.BASES_CONNECTION_BUILDING, baseId, output.id],
+            noSelection: [appIds.subscriptions.BASES_CONNECTION_BUILDING, baseId, null],
+        } as const);
+        expect(connections.value('sources')[0].connections).toMatchObject([{ baseId, buildingId: input.id, buildingName: 'Iron intake' }]);
+        expect(connections.value('targets')[0].connections).toMatchObject([{ baseId, buildingId: output.id, buildingName: 'Iron export' }]);
+        expect(connections.value('inputSummary')).toMatchObject({
+            baseId, buildingId: input.id, baseName: 'Main Outpost', buildingName: 'Iron intake',
+            building: { id: input.buildingTypeId }, item: { id: 'iron-plate', name: 'Iron Plate' }, ratePerMinute: 60,
+        });
+        expect(connections.value('outputSummary')).toMatchObject({
+            baseId, buildingId: output.id, baseName: 'Main Outpost', buildingName: 'Iron export',
+            building: { id: output.buildingTypeId }, item: { id: 'iron-plate', name: 'Iron Plate' }, ratePerMinute: 60,
+        });
+        expect(connections.value('noSelection')).toBeNull();
+        await dispatch(scenario, [appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION, baseId, output.id, 'iron-plate', 90]);
+        expect(connections.value('inputSummary')?.ratePerMinute).toBe(90);
+        expect(connections.value('outputSummary')?.ratePerMinute).toBe(90);
+        await dispatch(scenario, [appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION, baseId, output.id, 'iron-plate', 60]);
+
+        await dispatch(scenario, [appIds.events.BASES_DUPLICATE_BUILDING, baseId, input.id, 'intake-copy']);
+        expect(baseDetails.value('inputItems')).toHaveLength(2);
+        expect(baseDetails.value('inputItems').find(entry => entry.baseBuildingId === 'intake-copy')).toMatchObject({
+            name: 'Iron intake (2)', ratePerMinute: 60, item: { id: 'iron-plate' },
+        });
+        expect(baseDetails.value('selectedBase')!.buildings.find(building => building.id === 'intake-copy')?.linkedOutput).toBeUndefined();
+        expect(baseDetails.value('inputItems').find(entry => entry.baseBuildingId === input.id)?.linkedOutput).toMatchObject({ buildingId: output.id });
+        await dispatch(scenario, [appIds.events.BASES_REMOVE_BUILDING, 'intake-copy']);
+
+        await dispatch(scenario, [appIds.events.BASES_DISCONNECT_CONNECTIONS, [
+            { source: { baseId, buildingId: output.id }, target: { baseId, buildingId: input.id } },
+        ]]);
+        expect(connections.value('sources')[0].connections).toEqual([]);
+        expect(connections.value('targets')[0].connections).toEqual([]);
+        expect(baseDetails.value('inputItems')).toEqual([]);
+        expect(connections.value('targets')[0].item).toBeUndefined();
+        expect(connections.value('targets')[0].ratePerMinute).toBeUndefined();
+        expect(connections.value('inputSummary')).toMatchObject({ buildingName: 'Iron intake', item: undefined, ratePerMinute: undefined });
+        expect(connections.value('outputSummary')).toMatchObject({ item: { id: 'iron-plate' }, ratePerMinute: 60 });
+        await dispatch(scenario, [appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT, baseId, input.id, baseId, output.id]);
+        expect(connections.value('inputSummary')).toMatchObject({ item: { id: 'iron-plate' }, ratePerMinute: 60 });
+
         const originalOutput = baseDetails.value('outputItems')[0];
         const originalInput = baseDetails.value('inputItems')[0];
         await dispatch(scenario, [
@@ -829,6 +876,7 @@ describe('headless application E2E', () => {
             name: 'South dock',
             description: 'Iron shipments\nReserve for plates',
         }]);
+        expect(connections.value('outputSummary')?.buildingName).toBe('South dock');
         expect(baseDetails.value('inputItems')).toEqual([{
             ...originalInput,
             linkedOutput: { ...originalInput.linkedOutput, outputName: 'South dock' },
@@ -846,6 +894,7 @@ describe('headless application E2E', () => {
             name: 'Package Receiver',
             description: '',
         }]);
+        expect(connections.value('outputSummary')?.buildingName).toBe('Package Receiver');
         expect(baseDetails.value('inputItems')).toEqual([{
             ...originalInput,
             linkedOutput: { ...originalInput.linkedOutput, outputName: 'Package Receiver' },

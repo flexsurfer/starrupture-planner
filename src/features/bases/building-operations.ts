@@ -1,7 +1,12 @@
-import type { Building, AppState, Base, BaseBuilding } from '@/app/uklad/model';
+import type { AppState, Base, BaseBuilding } from '@/app/uklad/model';
 import type { LinkedInputReference } from '@/features/bases/types';
-import { isBuildingAvailableForSection, isRawExtractor } from './building-section';
-import { PACKAGE_RECEIVER_BUILDING_ID } from '@/constants/buildingIds';
+import { canConnectBuildings } from './connections';
+import { PACKAGE_DISPATCHER_BUILDING_ID, PACKAGE_RECEIVER_BUILDING_ID } from '@/constants/buildingIds';
+
+export function canDuplicateLogisticsBuilding(building: BaseBuilding): boolean {
+    return (building.buildingTypeId === PACKAGE_RECEIVER_BUILDING_ID && building.sectionType === 'inputs') ||
+        (building.buildingTypeId === PACKAGE_DISPATCHER_BUILDING_ID && building.sectionType === 'outputs');
+}
 
 function createBaseBuildingId(): string {
     return `building_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
@@ -12,6 +17,7 @@ function getBaseById(bases: Base[], baseId: string): Base | undefined {
 }
 
 interface CreateBaseBuildingOptions {
+    id?: string;
     buildingTypeId: string;
     sectionType: string;
     name?: string;
@@ -28,6 +34,7 @@ interface CreateBaseBuildingOptions {
 
 /** Creates a base-building instance with the same normalization used by all base workflows. */
 export function createBaseBuilding({
+    id,
     buildingTypeId,
     sectionType,
     name,
@@ -42,7 +49,7 @@ export function createBaseBuilding({
     priority,
 }: CreateBaseBuildingOptions): BaseBuilding {
     return {
-        id: createBaseBuildingId(),
+        id: id || createBaseBuildingId(),
         buildingTypeId,
         sectionType,
         ...(name ? { name } : {}),
@@ -58,16 +65,6 @@ export function createBaseBuilding({
     };
 }
 
-export function getLinkedInputBuildingTypeId(buildings: Building[]): string | undefined {
-    const packageReceiver = buildings.find((building) => building.id === PACKAGE_RECEIVER_BUILDING_ID);
-    if (packageReceiver) return packageReceiver.id;
-
-    const fallback = buildings.find((building) =>
-        isBuildingAvailableForSection(building, 'inputs') && !isRawExtractor(building)
-    );
-    return fallback?.id;
-}
-
 export function getOutputBuilding(base: Base, outputBuildingId: string): BaseBuilding | undefined {
     return base.buildings.find((building) =>
         building.id === outputBuildingId && building.sectionType === 'outputs'
@@ -79,40 +76,19 @@ export function takeOverPlanningEndpoint(_base: Base, building: BaseBuilding): v
     delete building.planningOwnerPlanId;
 }
 
-export function unlinkInputsLinkedToOutput(
-    draftState: AppState,
-    sourceBaseId: string,
-    sourceOutputBuildingId: string,
-    exceptInputRef?: LinkedInputReference
-): void {
-    draftState.basesList.forEach((base) => {
-        base.buildings.forEach((building) => {
-            if (building.sectionType !== 'inputs') return;
-            if (building.linkedOutput?.baseId !== sourceBaseId) return;
-            if (building.linkedOutput?.buildingId !== sourceOutputBuildingId) return;
-            if (exceptInputRef?.baseId === base.id && exceptInputRef.buildingId === building.id) return;
-
-            delete building.linkedOutput;
-            takeOverPlanningEndpoint(base, building);
-        });
-    });
-}
-
 export function linkInputToOutput(
     draftState: AppState,
     inputRef: LinkedInputReference,
     sourceBaseId: string,
     sourceOutput: BaseBuilding,
     resolvedOutput: BaseBuilding
-): void {
+): boolean {
     const inputBase = getBaseById(draftState.basesList, inputRef.baseId);
-    if (!inputBase) return;
+    if (!inputBase) return false;
 
     const inputBuilding = inputBase.buildings.find((building) => building.id === inputRef.buildingId);
-    if (!inputBuilding || inputBuilding.sectionType !== 'inputs') return;
-
-    const inputBuildingType = draftState.buildingsList.find((building) => building.id === inputBuilding.buildingTypeId);
-    if (!inputBuildingType || isRawExtractor(inputBuildingType)) return;
+    if (!inputBuilding || !canConnectBuildings(draftState.basesList, draftState.buildingsList,
+        sourceBaseId, sourceOutput, inputBase.id, inputBuilding)) return false;
 
     if (resolvedOutput.selectedItemId && resolvedOutput.ratePerMinute && resolvedOutput.ratePerMinute > 0) {
         inputBuilding.selectedItemId = resolvedOutput.selectedItemId;
@@ -135,4 +111,5 @@ export function linkInputToOutput(
     }
 
     inputBuilding.linkedOutput = nextLinkedOutput;
+    return true;
 }

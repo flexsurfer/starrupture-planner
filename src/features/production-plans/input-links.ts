@@ -1,7 +1,6 @@
 import type { AppState, BaseBuilding } from '@/app/uklad/model';
-import { isBuildingAvailableForSection, isRawExtractor } from '@/features/bases/building-section';
-import { createBaseBuilding, getLinkedInputBuildingTypeId, getOutputBuilding, linkInputToOutput, unlinkInputsLinkedToOutput } from '@/features/bases/building-operations';
-import { PACKAGE_RECEIVER_BUILDING_ID } from '@/constants/buildingIds';
+import { createBaseBuilding, getOutputBuilding, linkInputToOutput } from '@/features/bases/building-operations';
+import { canConnectBuildings, getMatchingInputBuildingTypeId } from '@/features/bases/connections';
 import { resolveOutputBuilding } from '@/utils/planOutputAllocations';
 import { canUsePlanningOutput } from './planning-endpoints';
 
@@ -26,15 +25,9 @@ export function linkProductionPlanInput(
         return;
     }
 
-    const targetBuilding = targetBuildingTypeId
-        ? draftState.buildingsList.find((building) => building.id === targetBuildingTypeId)
-        : undefined;
-    const inputBuildingTypeId = planning ? PACKAGE_RECEIVER_BUILDING_ID : targetBuilding &&
-        isBuildingAvailableForSection(targetBuilding, 'inputs') &&
-        !isRawExtractor(targetBuilding)
-        ? targetBuilding.id
-        : getLinkedInputBuildingTypeId(draftState.buildingsList);
-    if (!inputBuildingTypeId || !draftState.buildingsList.some(building => building.id === inputBuildingTypeId)) return;
+    const sourceType = draftState.buildingsList.find(building => building.id === sourceOutput.buildingTypeId);
+    const inputBuildingTypeId = targetBuildingTypeId ?? getMatchingInputBuildingTypeId(sourceType);
+    if (!inputBuildingTypeId) return;
 
     const existingLinkedInput = targetBase.buildings.find((building) =>
         building.sectionType === 'inputs' &&
@@ -48,11 +41,11 @@ export function linkProductionPlanInput(
         name,
         description,
     });
+    if (!canConnectBuildings(draftState.basesList, draftState.buildingsList, sourceBaseId, sourceOutput, targetBaseId, linkedInput)) return;
     if (!existingLinkedInput) targetBase.buildings.push(linkedInput);
     if (planning && targetPlan) linkedInput.planningOwnerPlanId = targetPlan.id;
 
     const inputRef = { baseId: targetBaseId, buildingId: linkedInput.id };
-    unlinkInputsLinkedToOutput(draftState as AppState, sourceBaseId, sourceOutputBuildingId, inputRef);
     linkInputToOutput(draftState as AppState, inputRef, sourceBaseId, sourceOutput, resolvedSourceOutput);
 
     return linkedInput;

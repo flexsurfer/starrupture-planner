@@ -88,7 +88,7 @@ describe('logistics view model', () => {
       baseBuildingId: 'dispatcher_1',
       ratePerMinute: 200,
       capacityPerMinute: PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE,
-      availableCapacityPerMinute: 0,
+      availableCapacityPerMinute: 40,
     });
     expect(model?.outputs[0].linkedInputs[0]).toMatchObject({
       baseId: 'base_target',

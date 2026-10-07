@@ -2,7 +2,7 @@ import type { UiText } from '@/shared/i18n/core';
 import type { ArchiveSelection, PlannerArchive, TransferStatus } from '@/features/data-transfer/archive';
 import type { PlannerTab, PlannerMode, PlannerView } from '@/features/planner/state';
 import type { UkladContracts } from '@ukladjs/core/vanilla';
-import type { LinkedInputReference } from '@/features/bases/types';
+import type { BuildingConnection, ConnectionReference, LinkedInputReference } from '@/features/bases/types';
 import type {
     AppState,
     AppVersionedGameData,
@@ -34,6 +34,7 @@ import type {
     MyBasesStats,
     PlanSummaryRow,
     LinkableOutputItem,
+    LinkableInputItem,
     ProductionPlanRequirementsStatus,
     ProductionPlanSectionStats,
     ProductionPlanSectionViewModel,
@@ -192,12 +193,14 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.BASES_SET_DETAILS_EXPANDED]: [expanded: boolean];
         [appIds.events.BASES_SET_CORE_LEVEL]: [level: number];
         [appIds.events.BASES_ADD_BUILDING]: [baseId: string, buildingTypeId: string, sectionType: string, name?: string, description?: string];
+        [appIds.events.BASES_DUPLICATE_BUILDING]: [baseId: string, buildingId: string, newBuildingId: string];
         [appIds.events.BASES_ADD_BUILDINGS]: [baseId: string, buildingTypeId: string, sectionType: string, count: number, name?: string, description?: string, selectedItemId?: string | null, ratePerMinute?: number | null, linkedOutput?: BaseBuilding['linkedOutput'] | null, sourceProductionId?: string | null, allocationMode?: BaseBuilding['allocationMode'] | null, requestedRatePerMinute?: number | null, capacityPerMinute?: number | null, priority?: number | null, linkedInputRef?: LinkedInputReference | null];
         [appIds.events.BASES_SET_BUILDING_SECTION_TYPE_COUNT]: [baseId: string, buildingTypeId: string, sectionType: BuildingSectionType, targetCount: number];
         [appIds.events.BASES_REMOVE_BUILDING]: [buildingId: string];
         [appIds.events.BASES_UPDATE_BUILDING_DETAILS]: [baseId: string, buildingId: string, name: string, description: string];
         [appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION]: [baseId: string, buildingId: string, itemId: string | null, ratePerMinute: number | null];
         [appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT]: [baseId: string, buildingId: string, sourceBaseId: string, sourceOutputBuildingId: string];
+        [appIds.events.BASES_DISCONNECT_CONNECTIONS]: [connections: BuildingConnection[]];
         [appIds.events.BASES_UPDATE_OUTPUT_PLAN_LINK]: [baseId: string, buildingId: string, payload: UpdateOutputPlanLinkPayload];
         [appIds.events.BASES_TOGGLE_CARD_SECTION_COLLAPSED]: [baseId: string, section: BaseCardSectionKey];
         [appIds.events.BASES_SET_ENERGY_GROUP]: [baseId: string, groupId: string | null];
@@ -286,6 +289,9 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.PLANNER_STATS_DETAILED]: { params: []; result: PlannerDetailedStats };
         [appIds.subscriptions.PLANNER_SELECTABLE_ITEMS]: { params: []; result: AppState['itemsList'] };
         [appIds.subscriptions.BASES_LIST]: { params: []; result: AppState['basesList'] };
+        [appIds.subscriptions.BASES_CONNECTION_OUTPUTS]: { params: [baseId: string | null, inputBuildingTypeId: string | null]; result: LinkableOutputItem[] };
+        [appIds.subscriptions.BASES_CONNECTION_INPUTS]: { params: [baseId: string | null, outputId: string | null, outputBuildingTypeId: string | null]; result: LinkableInputItem[] };
+        [appIds.subscriptions.BASES_CONNECTION_BUILDING]: { params: [baseId: string | null, buildingId: string | null]; result: ConnectionReference | null };
         [appIds.subscriptions.BASES_CARD_COLLAPSED_SECTIONS]: { params: []; result: AppState['basesCardCollapsedSections'] };
         [appIds.subscriptions.BASES_SELECTED_BASE_ID]: { params: []; result: AppState['basesSelectedBaseId'] };
         [appIds.subscriptions.BASES_SELECTED_DETAIL_TAB]: { params: []; result: AppState['basesSelectedDetailTab'] };

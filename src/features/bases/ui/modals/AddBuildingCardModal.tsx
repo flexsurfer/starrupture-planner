@@ -2,10 +2,10 @@ import { useTranslation, type MessageKey } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useMemo, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
-import type { Building, Item } from '@/app/uklad/model';
-import type { AddBuildingRequest, BuildingSectionType, LinkableOutputItem, LinkedInputReference } from '@/features/bases/types';
+import type { Building } from '@/app/uklad/model';
+import type { AddBuildingRequest, BuildingSectionType, LinkableInputItem, LinkableOutputItem } from '@/features/bases/types';
 import { BuildingImage, ClippedSelect, ItemImage } from '@/shared/ui';
-import { getRawResourceBuilding, isLogisticsExcludedOutputBuildingId, isRawExtractor } from '@/features/bases/building-section';
+import { getRawResourceBuilding, isRawExtractor } from '@/features/bases/building-section';
 import { MAX_BULK_BUILDING_COUNT, sanitizeBulkBuildingCount } from '@/features/bases/building-counts';
 import {
   DRONE_MERGER_3_TO_1_BUILDING_ID,
@@ -18,6 +18,11 @@ import {
 import { getDefaultOutputCapacityPerMinute } from '@/utils/planOutputAllocations';
 import { SelectItemModal } from './SelectItemModal';
 import { LinkOutputModal } from '@/features/production-plan-modal/ui';
+import { connectionLabel, connectionLocationLabel } from '../utils/connectionLabels';
+import { areConnectionTypesCompatible, getMatchingInputBuildingTypeId, supportsOutputLink } from '@/features/bases/connections';
+import { ConnectionPickerButton } from '../components/ConnectionPickerButton';
+import { ConnectionPickerModal } from './ConnectionPickerModal';
+import type { ConnectionCardData } from '../components/ConnectionCard';
 
 interface AddBuildingCardModalProps {
   isOpen: boolean;
@@ -39,16 +44,6 @@ interface ConfigurationModeOption {
   detail: string;
   isAvailable: boolean;
   onSelect: () => void;
-}
-
-interface LinkableInputTarget extends LinkedInputReference {
-  key: string;
-  baseName: string;
-  building: Building;
-  name: string;
-  item?: Item;
-  ratePerMinute?: number;
-  linkedOutputLabel?: string;
 }
 
 type BuildingGroupId =
@@ -172,8 +167,6 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
     const { t } = useTranslation();
   const buildings = useSubscription([appIds.subscriptions.BASES_AVAILABLE_BUILDINGS_FOR_SECTION, sectionType]);
   const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
-  const buildingsById = useSubscription([appIds.subscriptions.BUILDINGS_BY_ID_MAP]);
-  const subscribedBases = useSubscription([appIds.subscriptions.BASES_LIST]);
   const selectedBase = useSubscription(
     baseId ? [appIds.subscriptions.BASES_BASE_BY_ID, baseId] : [appIds.subscriptions.BASES_SELECTED_BASE]
   );
@@ -186,7 +179,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const [count, setCount] = useState('1');
   const [selectedItemId, setSelectedItemId] = useState('');
   const [ratePerMinute, setRatePerMinute] = useState('');
-  const [selectedLinkedOutput, setSelectedLinkedOutput] = useState<LinkableOutputItem | null>(null);
+  const [selectedLinkedOutputKey, setSelectedLinkedOutputKey] = useState('');
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [capacityPerMinute, setCapacityPerMinute] = useState('');
   const [priority, setPriority] = useState('');
@@ -194,6 +187,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const [configurationMode, setConfigurationMode] = useState<ConfigurationMode>('manual');
   const [showSelectItemModal, setShowSelectItemModal] = useState(!!initialBuilding);
   const [showLinkOutputModal, setShowLinkOutputModal] = useState(false);
+  const [showLinkInputModal, setShowLinkInputModal] = useState(false);
 
   const plans = selectedBase?.productions || [];
   const supportsItemConfiguration = sectionType === 'inputs' || sectionType === 'outputs';
@@ -202,66 +196,33 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const selectedPlan = selectedPlanId ? plans.find((plan) => plan.id === selectedPlanId) || null : null;
   const supportsCount = sectionType === 'production' || sectionType === 'energy';
   const selectedBuildingSupportsCount = !!selectedBuilding && supportsCount;
-  const selectedBuildingSupportsLinking = !!selectedBuilding && sectionType === 'inputs' && !isRawExtractor(selectedBuilding);
+  const selectedBuildingSupportsLinking = !!selectedBuilding && sectionType === 'inputs' && supportsOutputLink(selectedBuilding);
   const selectedBuildingSupportsPlanLinking = !!selectedBuilding && sectionType === 'outputs' && plans.length > 0;
   const selectedBuildingSupportsInputTargets = !!selectedBuilding &&
     sectionType === 'outputs' &&
-    !isLogisticsExcludedOutputBuildingId(selectedBuilding.id);
-  const linkableInputTargets = useMemo<LinkableInputTarget[]>(() => {
-    const allBases = subscribedBases || [];
-    const targets: LinkableInputTarget[] = [];
-
-    for (const base of allBases) {
-      for (const input of base.buildings) {
-        if (input.sectionType !== 'inputs') continue;
-
-        const inputBuilding = buildingsById[input.buildingTypeId];
-        if (!inputBuilding || isRawExtractor(inputBuilding)) continue;
-
-        const itemId = input.selectedItemId || input.linkedOutput?.itemIdSnapshot;
-        const item = itemId ? itemsById[itemId] || { id: itemId, name: itemId, type: 'unknown' } : undefined;
-        const linkedBase = input.linkedOutput
-          ? allBases.find((candidate) => candidate.id === input.linkedOutput?.baseId)
-          : undefined;
-        const linkedOutput = linkedBase && input.linkedOutput
-          ? linkedBase.buildings.find((candidate) => candidate.id === input.linkedOutput?.buildingId)
-          : undefined;
-        const linkedOutputBuilding = linkedOutput
-          ? buildingsById[linkedOutput.buildingTypeId]
-          : undefined;
-        const linkedOutputLabel = input.linkedOutput
-          ? `${linkedBase?.name || t("Missing base")} / ${linkedOutput?.name || linkedOutputBuilding?.name || input.linkedOutput.buildingId}`
-          : undefined;
-
-        targets.push({
-          key: `${base.id}:${input.id}`,
-          baseId: base.id,
-          buildingId: input.id,
-          baseName: base.name,
-          building: inputBuilding,
-          name: input.name || inputBuilding.name,
-          item,
-          ratePerMinute: input.ratePerMinute || input.linkedOutput?.ratePerMinuteSnapshot,
-          linkedOutputLabel,
-        });
-      }
-    }
-
-    return targets.sort((left, right) => {
-      const currentBaseDelta = Number(right.baseId === selectedBase?.id) - Number(left.baseId === selectedBase?.id);
-      if (currentBaseDelta !== 0) return currentBaseDelta;
-      const baseDelta = left.baseName.localeCompare(right.baseName);
-      if (baseDelta !== 0) return baseDelta;
-      return left.name.localeCompare(right.name);
-    });
-  }, [subscribedBases, buildingsById, itemsById, selectedBase?.id, t]);
+    !!getMatchingInputBuildingTypeId(selectedBuilding);
+  const linkableInputTargets = useSubscription([appIds.subscriptions.BASES_CONNECTION_INPUTS, selectedBase?.id ?? null, null, selectedBuilding?.id ?? null]);
+  const linkableOutputs = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS, selectedBase?.id ?? null, planId ?? null, initialItemId ?? null]);
+  const selectedLinkedOutput = linkableOutputs.find(output => `${output.baseId}:${output.baseBuildingId}` === selectedLinkedOutputKey &&
+    areConnectionTypesCompatible(output.building, selectedBuilding ?? undefined)) ?? null;
   const selectedLinkedInputTarget = selectedLinkedInputKey
     ? linkableInputTargets.find((target) => target.key === selectedLinkedInputKey) || null
     : null;
+  const connectionUnavailable = (!!selectedLinkedOutputKey && (!selectedLinkedOutput || selectedLinkedOutput.connections.length > 0)) ||
+    (!!selectedLinkedInputKey && (!selectedLinkedInputTarget || selectedLinkedInputTarget.connections.length > 0));
   const selectedPlanLabel = selectedPlan?.name || t("Select plan");
   const selectedLinkedInputLabel = selectedLinkedInputTarget
-    ? `${selectedLinkedInputTarget.baseName} / ${selectedLinkedInputTarget.name}`
+    ? connectionLocationLabel(selectedLinkedInputTarget, t)
     : t("No target");
+  const currentConnectionBuilding: ConnectionCardData | undefined = selectedBuilding ? {
+    name: customName.trim() || selectedBuilding.name,
+    building: selectedBuilding,
+    baseName: selectedBase?.name || t('No base selected'),
+    item: configurationMode === 'linked' ? selectedLinkedOutput?.item : selectedItem ?? undefined,
+    ratePerMinute: configurationMode === 'linked' ? selectedLinkedOutput?.ratePerMinute
+      : configurationMode === 'manual' && selectedItem && Number(ratePerMinute) > 0 ? Number(ratePerMinute) : undefined,
+    planName: configurationMode === 'plan' ? selectedPlan?.name : undefined,
+  } : undefined;
   const initialItem = initialItemId ? itemsById[initialItemId] : undefined;
   const hideExtractors = sectionType === 'inputs' && !!initialItem && initialItem.type !== 'raw';
   const buildingGroups = useMemo(
@@ -277,7 +238,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const resetItemAndLinkState = () => {
     setSelectedItemId('');
     setRatePerMinute('');
-    setSelectedLinkedOutput(null);
+    setSelectedLinkedOutputKey('');
     setSelectedPlanId('');
     setCapacityPerMinute('');
     setPriority('');
@@ -315,12 +276,13 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const handleItemConfigured = (itemId: string, configuredRatePerMinute: number) => {
     setSelectedItemId(itemId);
     setRatePerMinute(String(configuredRatePerMinute));
-    setSelectedLinkedOutput(null);
+    setSelectedLinkedOutputKey('');
     setConfigurationMode('manual');
   };
 
   const handleLinkedOutputConfigured = (output: LinkableOutputItem) => {
-    setSelectedLinkedOutput(output);
+    if (output.connections.length || !areConnectionTypesCompatible(output.building, selectedBuilding ?? undefined)) return;
+    setSelectedLinkedOutputKey(`${output.baseId}:${output.baseBuildingId}`);
     setSelectedItemId(output.item.id);
     setRatePerMinute(String(output.ratePerMinute));
     setSelectedPlanId('');
@@ -330,7 +292,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   };
 
   const handlePlanModeClick = () => {
-    setSelectedLinkedOutput(null);
+    setSelectedLinkedOutputKey('');
     setSelectedItemId(selectedPlan?.selectedItemId || '');
     setRatePerMinute('');
     setCapacityPerMinute((current) => current || getDefaultCapacityForSelectedBuilding());
@@ -341,7 +303,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const handlePlanChange = (planId: string) => {
     const plan = plans.find((candidate) => candidate.id === planId);
     setSelectedPlanId(planId);
-    setSelectedLinkedOutput(null);
+    setSelectedLinkedOutputKey('');
     setSelectedItemId(plan?.selectedItemId || '');
     setRatePerMinute('');
     setCapacityPerMinute(getDefaultCapacityForSelectedBuilding());
@@ -349,12 +311,14 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
     setConfigurationMode('plan');
   };
 
-  const handleLinkedInputTargetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedLinkedInputKey(event.target.value);
+  const handleLinkedInputTargetChange = (target: LinkableInputItem) => {
+    if (target.connections.length) return;
+    setSelectedLinkedInputKey(target.key);
+    setShowLinkInputModal(false);
   };
 
   const handleLinkedModeClick = () => {
-    setSelectedLinkedOutput(null);
+    setSelectedLinkedOutputKey('');
     setSelectedPlanId('');
     setCapacityPerMinute('');
     setPriority('');
@@ -398,7 +362,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
   const configurationModeOptions = allConfigurationModeOptions.filter((option) => option.isAvailable);
 
   const handleConfirm = () => {
-    if (!selectedBuilding) return;
+    if (!selectedBuilding || connectionUnavailable || (configurationMode === 'linked' && !selectedLinkedOutput)) return;
 
     const normalizedCount = selectedBuildingSupportsCount
       ? sanitizeBulkBuildingCount(Number(count))
@@ -454,6 +418,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
     resetItemAndLinkState();
     setShowSelectItemModal(false);
     setShowLinkOutputModal(false);
+    setShowLinkInputModal(false);
     onClose();
   };
 
@@ -598,18 +563,19 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                       <div className="min-w-0">
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Source output")}</div>
-                        <div className="mt-1 flex min-h-10 min-w-0 items-center rounded-md border border-base-300 bg-base-200/45 px-3">
+                        <button type="button" aria-label={t('Source output')} aria-haspopup="dialog" aria-expanded={showLinkOutputModal}
+                          onClick={() => setShowLinkOutputModal(true)}
+                          className="mt-1 flex w-full min-h-10 min-w-0 items-center rounded-md border border-base-300 bg-base-200/45 px-3 text-left hover:border-primary/50 focus-visible:outline-2 focus-visible:outline-primary">
                           {selectedLinkedOutput ? (
-                            <div className="min-w-0 text-xs">
-                              <div className="truncate font-medium text-base-content/85">
-                                {selectedLinkedOutput.baseName} / {selectedLinkedOutput.item.name}
-                              </div>
-                              <div className="font-mono text-[11px] text-base-content/55">{t("{ratePerMinute}/min", { ratePerMinute: selectedLinkedOutput.ratePerMinute })}</div>
-                            </div>
+                            <span className="min-w-0 text-xs">
+                              <span className="break-words font-medium text-base-content/85">
+                                {connectionLabel(selectedLinkedOutput, t)}
+                              </span>
+                            </span>
                           ) : (
                             <span className="text-xs text-base-content/50">{t("No linked output")}</span>
                           )}
-                        </div>
+                        </button>
                       </div>
                       <button
                         type="button"
@@ -718,26 +684,22 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
                     <div className="grid gap-2 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:items-center">
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">{t("Target")}</span>
                       <div className="flex min-w-0">
-                        <ClippedSelect
-                          size="sm"
-                          value={selectedLinkedInputKey}
-                          onChange={handleLinkedInputTargetChange}
-                          displayValue={selectedLinkedInputLabel}
-                          title={selectedLinkedInputTarget
-                            ? `${selectedLinkedInputTarget.baseName} / ${selectedLinkedInputTarget.name}`
-                            : t("No target")}
-                        >
-                          <option className="text-base-content bg-base-100" value="">{t("No target")}</option>
-                          {linkableInputTargets.map((target) => (
-                            <option className="text-base-content bg-base-100" key={target.key} value={target.key}>
-                              {target.baseName} / {target.name}
-                              {target.item ? ` · ${target.item.name}` : ''}
-                              {target.linkedOutputLabel ? t(" · linked to {linkedOutputLabel}", { linkedOutputLabel: target.linkedOutputLabel }) : ''}
-                            </option>
-                          ))}
-                        </ClippedSelect>
+                        <ConnectionPickerButton
+                          value={selectedLinkedInputLabel}
+                          title={selectedLinkedInputTarget ? connectionLabel(selectedLinkedInputTarget, t) : selectedLinkedInputLabel}
+                          label={t('Target')} expanded={showLinkInputModal}
+                          onClick={() => setShowLinkInputModal(true)} />
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {selectedBuilding.type === 'storage' && (
+                  <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs leading-relaxed text-base-content/70">
+                    <p className="mb-1 font-semibold text-base-content/85">{t('Storage between plans')}</p>
+                    <p>{sectionType === 'outputs'
+                      ? t('Link this storage output to a production plan. To use it in another plan, add a storage input and link it to this output.')
+                      : t('Choose a storage output as the source, then select this input in your receiving plan. Its material and rate follow the source plan.')}</p>
                   </div>
                 )}
 
@@ -777,6 +739,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
           </div>
 
           {/* Action buttons */}
+          {connectionUnavailable && <p role="alert" className="mb-3 text-sm text-warning">{t('This connection is no longer available. Choose another building.')}</p>}
           <div className="flex justify-end gap-2">
             <button
               type="button"
@@ -787,7 +750,7 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
               type="button"
               className="btn btn-primary btn-sm"
               disabled={
-                !selectedBuilding ||
+                !selectedBuilding || connectionUnavailable || (configurationMode === 'linked' && !selectedLinkedOutput) ||
                 (
                   mustConfigureItem &&
                   !(
@@ -823,6 +786,8 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
           baseId={baseId}
           planId={planId}
           itemId={initialItemId}
+          inputBuildingTypeId={selectedBuilding?.id}
+          currentBuilding={currentConnectionBuilding}
           onClose={() => setShowLinkOutputModal(false)}
           onSelect={(output) => {
             handleLinkedOutputConfigured(output);
@@ -830,6 +795,11 @@ export const AddBuildingCardModal: React.FC<AddBuildingCardModalProps> = ({
           }}
         />
       )}
+      {selectedBuildingSupportsInputTargets && <ConnectionPickerModal isOpen={showLinkInputModal} direction="input"
+        currentBuilding={currentConnectionBuilding}
+        entries={linkableInputTargets} currentBaseId={selectedBase?.id} onSelect={handleLinkedInputTargetChange}
+        onClose={() => setShowLinkInputModal(false)}
+        onClear={() => { setSelectedLinkedInputKey(''); setShowLinkInputModal(false); }} />}
     </div>
   );
 };

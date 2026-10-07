@@ -2,15 +2,20 @@ import type { Base, BaseBuilding, Production } from '@/app/uklad/model';
 import { isLogisticsExcludedOutputBuildingId } from '@/features/bases/building-section';
 import { resolveOutputBuilding } from '@/utils/planOutputAllocations';
 import { takeOverPlanningEndpoint } from '@/features/bases/building-operations';
+import { getOutputConnections } from '@/features/bases/connections';
 
 /** A Planning connection may claim only a free output and may not create a plan cycle. */
 export function canUsePlanningOutput(bases: Base[], sourceBase: Base, output: BaseBuilding, targetBaseId: string, targetPlan: Production, existingInputId?: string): boolean {
+    if (getOutputConnections(bases, sourceBase.id, output.id).some(({ base, input }) =>
+        base.id !== targetBaseId || input.id !== existingInputId)) return false;
+    return isPlanningOutputAllowed(bases, sourceBase, output, targetBaseId, targetPlan);
+}
+
+/** Planning-specific flow rules, also used when showing occupied outputs in a picker. */
+export function isPlanningOutputAllowed(bases: Base[], sourceBase: Base, output: BaseBuilding, targetBaseId: string, targetPlan: Production): boolean {
     if (output.sectionType !== 'outputs' || isLogisticsExcludedOutputBuildingId(output.buildingTypeId)) return false;
     const resolved = resolveOutputBuilding(output, sourceBase);
     if (!resolved.selectedItemId || resolved.selectedItemId === targetPlan.selectedItemId || !resolved.ratePerMinute || resolved.ratePerMinute <= 0) return false;
-    if (bases.some(base => base.buildings.some(input => input.sectionType === 'inputs' &&
-        !(base.id === targetBaseId && input.id === existingInputId) &&
-        input.linkedOutput?.baseId === sourceBase.id && input.linkedOutput.buildingId === output.id))) return false;
 
     const visited = new Set<string>();
     const dependsOnTarget = (base: Base, planId: string): boolean => {

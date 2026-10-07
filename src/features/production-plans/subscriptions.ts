@@ -6,9 +6,7 @@ import type { LinkableOutputItem, BuildingRequirement, InputRequirement, Product
 import type { ProductionFlowResult } from '@/features/planner/types';
 import { buildProductionFlow } from '@/features/planner/production-flow';
 import { buildActivePlanOccupancy } from '@/features/bases/active-plan-occupancy';
-import { collectConfiguredSectionItems } from '@/features/bases/derived-subscriptions';
-import { isLogisticsExcludedOutputBuildingId } from '@/features/bases/building-section';
-import { canUsePlanningOutput } from './planning-endpoints';
+import { isPlanningOutputAllowed } from './planning-endpoints';
 import { calculateSharedInputShortages } from './shared-input-shortages';
 import { computeRequiredBuildings, getFlowInputBuildings, resolveInputBuilding, resolveLinkedOutput, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
 
@@ -18,24 +16,22 @@ const isLauncherEnabled = (corporationLevel?: CorporationLevelSelection | null):
 
 export const registerProductionPlansSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS,
-        () => [[appIds.subscriptions.BASES_LIST], [appIds.subscriptions.BUILDINGS_BY_ID_MAP], [appIds.subscriptions.ITEMS_BY_ID_MAP], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE], [appIds.subscriptions.BASES_MODE]],
-        ([bases, buildingsById, itemsMap, modalState, mode], baseId, planId, itemId) => {
+        () => [[appIds.subscriptions.BASES_CONNECTION_OUTPUTS, null, null], [appIds.subscriptions.BASES_LIST], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE], [appIds.subscriptions.BASES_MODE]],
+        ([allOutputs, bases, modalState, mode], baseId, planId, itemId) => {
             const targetBaseId = baseId ?? modalState.baseId;
             const targetPlanId = planId ?? (targetBaseId === modalState.baseId ? modalState.editSectionId : null);
             const targetPlan = bases.find(base => base.id === targetBaseId)?.productions.find(plan => plan.id === targetPlanId);
             const outputs: LinkableOutputItem[] = [];
-            for (const base of bases) {
-                for (const entry of collectConfiguredSectionItems(base, buildingsById, itemsMap, 'outputs')) {
-                    if (itemId && entry.item.id !== itemId) continue;
-                    if (isLogisticsExcludedOutputBuildingId(entry.building.id)) continue;
-                    if (mode === 'planning') {
-                        const output = base.buildings.find(building => building.id === entry.baseBuildingId)!;
-                        if (!targetBaseId || !targetPlan || !canUsePlanningOutput(bases, base, output, targetBaseId, targetPlan)) continue;
-                    }
-                    outputs.push({ ...entry, baseId: base.id, baseName: base.name, isCurrentBase: base.id === targetBaseId });
+            for (const entry of allOutputs) {
+                if (itemId && entry.item.id !== itemId) continue;
+                if (mode === 'planning') {
+                    const base = bases.find(base => base.id === entry.baseId)!;
+                    const output = base.buildings.find(building => building.id === entry.baseBuildingId)!;
+                    if (!targetBaseId || !targetPlan || !isPlanningOutputAllowed(bases, base, output, targetBaseId, targetPlan)) continue;
                 }
+                outputs.push({ ...entry, isCurrentBase: entry.baseId === targetBaseId });
             }
-            return outputs.sort((left, right) => left.isCurrentBase !== right.isCurrentBase ? (left.isCurrentBase ? -1 : 1) : left.baseName.localeCompare(right.baseName) || left.item.name.localeCompare(right.item.name));
+            return outputs.sort((left, right) => Number(right.isCurrentBase) - Number(left.isCurrentBase) || left.baseName.localeCompare(right.baseName) || left.item.name.localeCompare(right.item.name));
         });
 
     registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_SECTION_IDS, () => [[appIds.subscriptions.BASES_SELECTED_BASE]], ([selectedBase], ..._params) => {

@@ -16,13 +16,15 @@ import {
 import { getDefaultOutputCapacityPerMinute, resolveOutputBuilding } from '@/utils/planOutputAllocations';
 import {
     createBaseBuilding,
+    canDuplicateLogisticsBuilding,
     getOutputBuilding,
     linkInputToOutput,
-    unlinkInputsLinkedToOutput,
     takeOverPlanningEndpoint,
 } from './building-operations';
 import { selectAddedProductionPlanInputs } from '@/features/production-plan-modal/events';
 import { DEFAULT_BASE_CORE_LEVEL } from './core-stats';
+import { resolveInputBuilding } from '@/utils/productionPlanInputs';
+import { canConnectBuildings } from './connections';
 
 function getBaseById(bases: Base[], baseId: string): Base | undefined {
     return bases.find((base) => base.id === baseId);
@@ -127,6 +129,36 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
         }));
     });
 
+    registrar.regEvent(appIds.events.BASES_DUPLICATE_BUILDING, ({ draftState }, baseId, buildingId, newBuildingId) => {
+        const base = getBaseById(draftState.basesList, baseId);
+        const original = base?.buildings.find(building => building.id === buildingId);
+        if (!base || !original || !canDuplicateLogisticsBuilding(original) || !newBuildingId ||
+            draftState.basesList.some(candidate => candidate.buildings.some(building => building.id === newBuildingId))) return;
+        const buildingType = draftState.buildingsList.find(building => building.id === original.buildingTypeId);
+        if (!buildingType) return;
+
+        const resolved = original.sectionType === 'outputs'
+            ? resolveOutputBuilding(original, base)
+            : resolveInputBuilding(original, draftState.basesList);
+        const originalName = original.name || buildingType.name;
+        const usedNames = new Set(base.buildings.map(building => building.name ||
+            draftState.buildingsList.find(type => type.id === building.buildingTypeId)?.name));
+        let suffix = 2;
+        while (usedNames.has(`${originalName} (${suffix})`)) suffix += 1;
+
+        // Copy the visible supply, never its source, target, or plan ownership.
+        base.buildings.push(createBaseBuilding({
+            id: newBuildingId,
+            buildingTypeId: original.buildingTypeId,
+            sectionType: original.sectionType,
+            name: `${originalName} (${suffix})`,
+            description: original.description,
+            selectedItemId: resolved.selectedItemId,
+            ratePerMinute: resolved.ratePerMinute,
+            capacityPerMinute: original.capacityPerMinute,
+        }));
+    });
+
     registrar.regEvent(
         appIds.events.BASES_ADD_BUILDINGS,
         (
@@ -194,6 +226,18 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
                 ? linkedInputRef
                 : null;
 
+            const pendingBuilding = { id: '', buildingTypeId, sectionType };
+            const sourceBase = normalizedLinkedOutput ? getBaseById(draftState.basesList, normalizedLinkedOutput.baseId) : undefined;
+            const sourceOutput = sourceBase && normalizedLinkedOutput ? getOutputBuilding(sourceBase, normalizedLinkedOutput.buildingId) : undefined;
+            if (normalizedLinkedOutput && (sectionType !== 'inputs' || normalizedCount !== 1 || !sourceBase || !sourceOutput ||
+                !canConnectBuildings(draftState.basesList, draftState.buildingsList, sourceBase.id, sourceOutput, baseId, pendingBuilding))) return;
+            if (linkedInputRef) {
+                const targetBase = getBaseById(draftState.basesList, linkedInputRef.baseId);
+                const targetInput = targetBase?.buildings.find(candidate => candidate.id === linkedInputRef.buildingId);
+                if (sectionType !== 'outputs' || normalizedCount !== 1 || !targetBase || !targetInput ||
+                    !canConnectBuildings(draftState.basesList, draftState.buildingsList, baseId, pendingBuilding, targetBase.id, targetInput)) return;
+            }
+
             const addedInputIds: string[] = [];
             for (let index = 0; index < normalizedCount; index += 1) {
                 const newBuilding = createBaseBuilding({
@@ -203,7 +247,6 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
                     description,
                     selectedItemId: sourcePlan?.selectedItemId || selectedItemId || undefined,
                     ratePerMinute: normalizedSourceProductionId ? undefined : normalizedRatePerMinute,
-                    linkedOutput: normalizedSourceProductionId ? undefined : normalizedLinkedOutput,
                     sourceProductionId: normalizedSourceProductionId,
                     allocationMode: normalizedAllocationMode,
                     requestedRatePerMinute: normalizedRequestedRatePerMinute,
@@ -216,20 +259,15 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
 
                 if (normalizedLinkedInputRef) {
                     const resolvedNewOutput = resolveOutputBuilding(newBuilding, base);
-                    unlinkInputsLinkedToOutput(draftState as AppState, baseId, newBuilding.id, normalizedLinkedInputRef);
                     linkInputToOutput(draftState as AppState, normalizedLinkedInputRef, baseId, newBuilding, resolvedNewOutput);
                     const targetBase = getBaseById(draftState.basesList, normalizedLinkedInputRef.baseId);
                     const targetInput = targetBase?.buildings.find(candidate => candidate.id === normalizedLinkedInputRef.buildingId);
                     if (targetBase && targetInput) takeOverPlanningEndpoint(targetBase, targetInput);
                 }
 
-                if (sectionType === 'inputs' && normalizedLinkedOutput) {
-                    unlinkInputsLinkedToOutput(
-                        draftState as AppState,
-                        normalizedLinkedOutput.baseId,
-                        normalizedLinkedOutput.buildingId,
-                        { baseId, buildingId: newBuilding.id },
-                    );
+                if (normalizedLinkedOutput && sourceBase && sourceOutput) {
+                    linkInputToOutput(draftState as AppState, { baseId, buildingId: newBuilding.id },
+                        sourceBase.id, sourceOutput, resolveOutputBuilding(sourceOutput, sourceBase));
                 }
             }
             selectAddedProductionPlanInputs(draftState as AppState, baseId, addedInputIds);
@@ -314,6 +352,19 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
         },
     );
 
+    registrar.regEvent(appIds.events.BASES_DISCONNECT_CONNECTIONS, ({ draftState }, connections) => {
+        for (const { source, target } of connections) {
+            const base = getBaseById(draftState.basesList, target.baseId);
+            const input = base?.buildings.find(building => building.id === target.buildingId && building.sectionType === 'inputs');
+            // A confirmation only authorizes the specific connection the user saw.
+            if (!input?.linkedOutput || input.linkedOutput.baseId !== source.baseId || input.linkedOutput.buildingId !== source.buildingId) continue;
+            delete input.selectedItemId;
+            delete input.ratePerMinute;
+            delete input.linkedOutput;
+            takeOverPlanningEndpoint(base!, input);
+        }
+    });
+
     registrar.regEvent(
         appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT,
         ({ draftState }, baseId, buildingId, sourceBaseId, sourceOutputBuildingId) => {
@@ -332,9 +383,9 @@ export const registerBasesEvents: UkladModule<UkladRegistrar<AppContracts>> = (r
 
             const inputRef = { baseId, buildingId };
             const resolvedSourceOutput = resolveOutputBuilding(sourceOutput, sourceBase);
-            unlinkInputsLinkedToOutput(draftState as AppState, sourceBaseId, sourceOutputBuildingId, inputRef);
-            linkInputToOutput(draftState as AppState, inputRef, sourceBaseId, sourceOutput, resolvedSourceOutput);
-            takeOverPlanningEndpoint(base, inputBuilding);
+            if (linkInputToOutput(draftState as AppState, inputRef, sourceBaseId, sourceOutput, resolvedSourceOutput)) {
+                takeOverPlanningEndpoint(base, inputBuilding);
+            }
         },
     );
 

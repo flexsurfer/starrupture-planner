@@ -6,7 +6,7 @@ import type { AddBuildingRequest } from '@/features/bases/types';
 import { getRawResourceBuilding } from '@/features/bases/building-section';
 import { AddBuildingCardModal } from '@/features/bases/ui/modals/AddBuildingCardModal';
 import { ExternalInputModal } from '@/features/planner/ui/visualization/ExternalInputModal';
-import { PACKAGE_RECEIVER_BUILDING_ID } from '@/constants/buildingIds';
+import { getMatchingInputBuildingTypeId } from '@/features/bases/connections';
 import { LinkOutputSelector } from './LinkOutputSelector';
 
 interface PlanInputModalProps {
@@ -39,8 +39,10 @@ export function PlanInputModal({ baseId, planId, itemId, amount, onAdd, onClose 
         targetSelector={selectingTarget ? <LinkOutputSelector outputs={outputs} compact
             emptyMessage={t("No available targets found.")}
             onSelect={output => {
+                const buildingTypeId = getMatchingInputBuildingTypeId(output.building);
+                if (!buildingTypeId || output.connections.length) return;
                 onAdd({
-                    buildingTypeId: PACKAGE_RECEIVER_BUILDING_ID, count: 1,
+                    buildingTypeId, count: 1,
                     selectedItemId: output.item.id, ratePerMinute: output.ratePerMinute,
                     linkedOutput: { baseId: output.baseId, buildingId: output.baseBuildingId },
                 });

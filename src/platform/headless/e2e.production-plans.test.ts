@@ -278,7 +278,7 @@ describe('headless production planning E2E', () => {
         }]);
     });
 
-    it('emulates cross-base linkable outputs, fallback input selection, and idempotent linking', async () => {
+    it('emulates cross-base linkable outputs, compatible input selection, and idempotent linking', async () => {
         const app = createApp();
         await app.seed();
         const bases = app.mountView('link output bases', {
@@ -332,6 +332,11 @@ describe('headless production planning E2E', () => {
             'ore_excavator',
             'Linked ore',
             'Cross-base supply',
+        ]);
+        expect(bases.value('selected')!.buildings).toEqual([]);
+        await app.dispatch([
+            appIds.events.PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT, sourceId, sourceOutputId,
+            'package_receiver', 'Linked ore', 'Cross-base supply',
         ]);
         let linkedInputs = bases.value('selected')!.buildings.filter(({ linkedOutput }) => (
             linkedOutput?.buildingId === sourceOutputId

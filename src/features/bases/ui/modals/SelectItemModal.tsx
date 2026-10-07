@@ -5,6 +5,8 @@ import { useSubscription } from '@/app/uklad/bindings';
 import type { Building as DbBuilding } from '@/app/uklad/model';
 import { ItemImage } from '@/shared/ui';
 import { isRawExtractor } from '@/features/bases/building-section';
+import { PACKAGE_DISPATCHER_BUILDING_ID } from '@/constants/buildingIds';
+import { PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE } from '@/utils/planOutputAllocations';
 
 interface SelectItemModalProps {
   isOpen: boolean;
@@ -30,7 +32,9 @@ export const SelectItemModal: React.FC<SelectItemModalProps> = ({
   const [ratePerMinuteDraft, setRatePerMinuteDraft] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const selectedItemId = selectedItemIdDraft ?? (currentItemId || '');
-  const ratePerMinute = ratePerMinuteDraft ?? String(currentRatePerMinute || DEFAULT_RATE_PER_MINUTE);
+  const defaultRate = building.id === PACKAGE_DISPATCHER_BUILDING_ID
+    ? PACKAGE_DISPATCHER_CAPACITY_PER_MINUTE : DEFAULT_RATE_PER_MINUTE;
+  const ratePerMinute = ratePerMinuteDraft ?? String(currentRatePerMinute ?? defaultRate);
 
   // Get available items from subscription
   const availableItems = useSubscription([appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID, building.id]);

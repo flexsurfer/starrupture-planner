@@ -1,19 +1,23 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import type { Base, BaseBuilding, Building, Item } from '@/app/uklad/model';
 import type { BuildingSectionBuilding } from '@/features/bases/types';
 import { BuildingSection } from './BuildingSection';
 import { BuildingSectionCard } from './BuildingSectionCard';
+import { SelectItemModal } from '../modals/SelectItemModal';
+import { collectConnectionInputs, collectConnectionOutputs } from '@/features/bases/connection-subscriptions';
 
 const { dispatch } = vi.hoisted(() => ({ dispatch: vi.fn() }));
 vi.mock('@/app/uklad/bindings', () => ({
   useRuntime: () => ({ dispatch }),
-  useSubscription: ([id]: [string]) => {
+  useSubscription: ([id, baseId, endpointId, outputTypeId]: [string, string, string, string]) => {
     switch (id) {
       case appIds.subscriptions.ITEMS_BY_ID_MAP: return Object.fromEntries(items.map(item => [item.id, item]));
       case appIds.subscriptions.ITEMS_AVAILABLE_ITEMS_BY_BUILDING_ID: return items;
-      case appIds.subscriptions.BUILDINGS_BY_ID_MAP: return { receiver, dispatcher, smelter };
+      case appIds.subscriptions.BUILDINGS_BY_ID_MAP: return { [receiver.id]: receiver, [dispatcher.id]: dispatcher, smelter };
+      case appIds.subscriptions.BASES_CONNECTION_OUTPUTS: return collectConnectionOutputs([base], { [receiver.id]: receiver, [dispatcher.id]: dispatcher }, Object.fromEntries(items.map(item => [item.id, item])), baseId, endpointId);
+      case appIds.subscriptions.BASES_CONNECTION_INPUTS: return collectConnectionInputs([base], { [receiver.id]: receiver, [dispatcher.id]: dispatcher }, Object.fromEntries(items.map(item => [item.id, item])), baseId, endpointId, outputTypeId);
       case appIds.subscriptions.BASES_BASE_BY_ID: return base;
       case appIds.subscriptions.BASES_LIST: return [base];
       case appIds.subscriptions.BASES_BUILDING_SECTION_BUILDINGS: return [grouped];
@@ -25,15 +29,15 @@ vi.mock('@/app/uklad/bindings', () => ({
 }));
 
 const items: Item[] = [{ id: 'bar', name: 'Wolfram Bar', type: 'processed' }, { id: 'wire', name: 'Wolfram Wire', type: 'component' }];
-const receiver: Building = { id: 'receiver', name: 'Receiver', type: 'logistics', power: 40, heat: 40 };
-const dispatcher: Building = { id: 'dispatcher', name: 'Dispatcher', type: 'logistics', power: 40, heat: 40 };
+const receiver: Building = { id: 'package_receiver', name: 'Receiver', type: 'logistics', power: 40, heat: 40 };
+const dispatcher: Building = { id: 'package_dispatcher', name: 'Dispatcher', type: 'logistics', power: 40, heat: 40 };
 const smelter: Building = { id: 'smelter', name: 'Smelter', type: 'production', power: 5, heat: 3 };
 const grouped: BuildingSectionBuilding = {
   id: 'smelter', buildingTypeId: 'smelter', building: smelter, sectionType: 'production',
   count: 3, isGrouped: true, activePlanNames: ['Wolfram bars'],
 };
-const input: BaseBuilding = { id: 'input', buildingTypeId: 'receiver', sectionType: 'inputs', selectedItemId: 'bar', ratePerMinute: 10 };
-const output: BaseBuilding = { id: 'output', buildingTypeId: 'dispatcher', sectionType: 'outputs', sourceProductionId: 'plan', capacityPerMinute: 200, priority: 0 };
+const input: BaseBuilding = { id: 'input', buildingTypeId: 'package_receiver', sectionType: 'inputs', selectedItemId: 'bar', ratePerMinute: 10 };
+const output: BaseBuilding = { id: 'output', buildingTypeId: 'package_dispatcher', sectionType: 'outputs', sourceProductionId: 'plan', capacityPerMinute: 200, priority: 0 };
 const base: Base = {
   id: 'base', name: 'Base', buildings: [input, output],
   productions: [{ id: 'plan', name: 'Wire plan', selectedItemId: 'wire', targetAmount: 150 }],
@@ -47,6 +51,27 @@ const entry = (baseBuilding: BaseBuilding): BuildingSectionBuilding => ({
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   HTMLDialogElement.prototype.close = function () { this.open = false; };
+});
+
+it.each([
+  { ...input, buildingTypeId: 'package_receiver' },
+  { ...output, buildingTypeId: 'package_dispatcher' },
+])('duplicates a $sectionType endpoint with a fresh ID', (endpoint) => {
+  render(<BuildingSectionCard sectionBuilding={entry(endpoint)} baseId="base" />);
+  fireEvent.click(screen.getByRole('button', { name: /^Duplicate / }));
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith([
+    appIds.events.BASES_DUPLICATE_BUILDING, 'base', endpoint.id, expect.stringMatching(/^building_[\w-]+$/),
+  ]);
+});
+
+it('defaults a new manual dispatcher to 240/min and preserves a saved custom rate', () => {
+  const props = { isOpen: true, building: { ...dispatcher, id: 'package_dispatcher' }, onClose: vi.fn(), onConfirm: vi.fn() };
+  const { rerender } = render(<SelectItemModal {...props} />);
+  expect(screen.getByRole('spinbutton')).toHaveValue(240);
+  rerender(<SelectItemModal {...props} currentItemId="wire" currentRatePerMinute={180} />);
+  expect(screen.getByRole('spinbutton')).toHaveValue(180);
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+  expect(props.onConfirm).toHaveBeenCalledWith('wire', 180);
 });
 
 afterEach(() => {
@@ -169,8 +194,17 @@ it('shows live linked supply and lets the source return to manual', () => {
   expect(screen.getByText('Wolfram Wire')).toBeVisible();
   expect(screen.getByText('150/min')).toBeVisible();
   expect(screen.queryByRole('button', { name: /Edit .* item and rate/ })).not.toBeInTheDocument();
-  fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), { target: { value: '' } });
-  expect(dispatch).toHaveBeenLastCalledWith([appIds.events.BASES_UPDATE_BUILDING_ITEM_SELECTION, 'base', 'input', 'wire', 150]);
+  expect(screen.getByRole('button', { name: 'Source' })).toHaveAttribute('aria-haspopup', 'dialog');
+  expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Source' }));
+  const picker = within(screen.getByRole('dialog', { name: 'Link Output' }));
+  fireEvent.click(picker.getByRole('button', { name: 'Disconnect' }));
+  expect(dispatch).toHaveBeenLastCalledWith([appIds.events.UI_SHOW_CONFIRMATION_DIALOG, expect.any(Object), expect.any(Object), expect.any(Function), expect.any(Object)]);
+  dispatch.mock.calls.at(-1)![0][3]();
+  expect(dispatch).toHaveBeenLastCalledWith([appIds.events.BASES_DISCONNECT_CONNECTIONS, [
+    { source: linked.linkedOutput, target: { baseId: 'base', buildingId: 'input' } },
+  ]]);
+  fireEvent.click(picker.getByRole('button', { name: 'Cancel' }));
   rerender(<BuildingSectionCard sectionBuilding={entry({ ...linked, linkedOutput: { ...linked.linkedOutput, baseId: 'missing' } })} baseId="base" />);
   expect(screen.getByTitle('Broken linked output: Missing base / output')).toHaveTextContent('Broken link');
   expect(screen.getByText('10/min')).toBeVisible();
@@ -185,6 +219,7 @@ it('keeps plan-linked output capacity and target controls available', () => {
     appIds.events.BASES_UPDATE_OUTPUT_PLAN_LINK, 'base', 'output',
     { sourceProductionId: 'plan', allocationMode: 'auto', capacityPerMinute: 120, priority: 0 },
   ]);
-  fireEvent.change(screen.getByRole('combobox', { name: 'Target' }), { target: { value: 'base:input' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Target' }));
+  fireEvent.click(screen.getByRole('button', { name: /Wolfram Bar.*Receiver/ }));
   expect(dispatch).toHaveBeenLastCalledWith([appIds.events.BASES_UPDATE_BUILDING_LINKED_OUTPUT, 'base', 'input', 'base', 'output']);
 });

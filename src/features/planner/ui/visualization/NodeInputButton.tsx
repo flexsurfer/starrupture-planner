@@ -42,6 +42,10 @@ export function InputActionButton({ itemName, isExternal, renderInputDialog, onR
         (activeDialog?.querySelector<HTMLElement>('input') ?? activeDialog?.querySelector<HTMLElement>('button'))?.focus();
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
+            // Nested pickers and confirmations handle Escape through their native cancel event.
+            // The containing full-screen dialog still delegates dismissal to this popup.
+            const nativeDialog = event.target instanceof Element ? event.target.closest('dialog[open]') : null;
+            if (nativeDialog && nativeDialog !== container) return;
             event.preventDefault();
             event.stopPropagation();
             setContainer(null);
