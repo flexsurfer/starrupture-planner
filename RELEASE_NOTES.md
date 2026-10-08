@@ -1,3 +1,30 @@
+# Release Notes — 2026-10-08
+
+## What's New
+
+### 🌐 A Localized Interface
+- Use the interface in English, German, French, or Polish, and choose your language in **Global settings**. Your preference is saved between sessions.
+
+### 🍳 Save and Reuse Recipe Choices
+- Save recipe alternatives as named presets and load them in the planner or production plans.
+- Choose **Standard recipes**, **Upgraded recipes**, or one of your saved presets as the default for new plans. Rename or delete custom presets without changing existing plans.
+- Manage presets directly from the recipe selector with improved keyboard navigation.
+
+### 🏭 More Control Over Buildings and Storage Links
+- Edit a building's name and description to keep your base organized.
+- Duplicate package receivers and dispatchers without carrying over their connections.
+- Choose compatible storage inputs and outputs from building cards, and disconnect one or more links when your logistics change.
+
+### 🧭 Planner and Import Improvements
+- Duplicate planner tabs to create independent copies of a plan.
+- Resolve name collisions during imports with numbered names, such as **(2)**, instead of a generic “Copy” suffix.
+- Navigate directly between the planner, base manager, and reference catalogs.
+
+### 🎮 Game Data Updates
+- Added the **Drone Rail** building to the available game-data sets and updated Hardening Agent recipe data.
+
+---
+
 # Release Notes — 2026-09-23
 
 ## What's New
