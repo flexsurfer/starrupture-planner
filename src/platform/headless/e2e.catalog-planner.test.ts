@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppVersionedGameData } from '@/app/uklad/model';
+import { createV2RecipePreset, STANDARD_RECIPE_PRESET_ID, V2_RECIPE_PRESET_ID } from '@/features/planner/recipe-presets';
 import {
     createHeadlessE2EApp,
     TEST_GAME_DATA,
@@ -81,7 +82,7 @@ describe('headless catalog and planner E2E', () => {
             selectedCorporationLevel: null,
             recipeSelections: {},
             pinnedSelections: {},
-            presets: [],
+            presets: [{ id: STANDARD_RECIPE_PRESET_ID, name: 'Standard recipes', selections: {}, isDefault: true }, createV2RecipePreset()],
             targetAmount: 60,
             corporationLevels: [],
             flow: { nodes: [], edges: [] },
@@ -354,7 +355,7 @@ describe('headless catalog and planner E2E', () => {
         } as const);
 
         await app.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, '   ', {}]);
-        expect(view.value('presets')).toEqual([]);
+        expect(view.value('presets')).toEqual([{ id: STANDARD_RECIPE_PRESET_ID, name: 'Standard recipes', selections: {}, isDefault: true }, createV2RecipePreset(TEST_GAME_DATA.buildings)]);
 
         await app.dispatch([appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULTS, {
             'iron-plate': 'smelter:0',
@@ -364,7 +365,7 @@ describe('headless catalog and planner E2E', () => {
         await app.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, '  Fast   line  ', {
             'iron-plate': 'smelter:0',
         }]);
-        const [created] = view.value('presets');
+        const created = view.value('presets').find(preset => preset.name === 'Fast line');
         expect(created).toMatchObject({
             name: 'Fast line',
             selections: { 'iron-plate': 'smelter:0' },
@@ -373,8 +374,8 @@ describe('headless catalog and planner E2E', () => {
         await app.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, 'fast LINE', {
             'iron-plate': 'smelter_mk2:0',
         }]);
-        expect(view.value('presets')).toHaveLength(1);
-        expect(view.value('presets')[0]).toMatchObject({
+        expect(view.value('presets')).toHaveLength(4);
+        expect(view.value('presets').find(preset => preset.id === created!.id)).toMatchObject({
             id: created!.id,
             name: 'Fast line',
             selections: { 'iron-plate': 'smelter_mk2:0' },
@@ -382,9 +383,9 @@ describe('headless catalog and planner E2E', () => {
 
         await app.dispatch([appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, '']);
         await app.dispatch([appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, 'missing']);
-        expect(view.value('presets')).toHaveLength(1);
+        expect(view.value('presets')).toHaveLength(4);
 
         await app.dispatch([appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, created!.id]);
-        expect(view.value('presets')).toEqual([]);
+        expect(view.value('presets').map(preset => preset.id)).toEqual([STANDARD_RECIPE_PRESET_ID, V2_RECIPE_PRESET_ID, 'rap_recovered_default']);
     });
 });

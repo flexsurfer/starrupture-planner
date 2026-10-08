@@ -1,6 +1,7 @@
 import type { UiText } from '@/shared/i18n/core';
 import type { PlannerFlowDirection } from './flow-graph';
 import type { CorporationLevelSelection, RecipeAlternativePreset } from '@/app/uklad/model';
+import { createStandardRecipePreset, createV2RecipePreset } from './recipe-presets';
 
 export type PlannerMode = 'single' | 'multi';
 export type PlannerView = 'graph' | 'table';
@@ -56,6 +57,6 @@ export function createPlannerFeatureState(): PlannerFeatureState {
         plannerTabCreation: null,
         plannerTargetWarning: null,
         pinnedRecipeSelections: {},
-        recipeAlternativePresets: [],
+        recipeAlternativePresets: [createStandardRecipePreset(), createV2RecipePreset()],
     };
 }

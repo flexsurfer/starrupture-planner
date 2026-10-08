@@ -1,3 +1,4 @@
+import { refreshRecipePresets } from '@/features/planner/recipe-presets';
 import { message } from '@/shared/i18n/core';
 import { normalizeLocale } from '@/shared/i18n/locales';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
@@ -70,6 +71,7 @@ export const registerAppShellEvents: UkladModule<UkladRegistrar<AppContracts>> =
         draftState.itemsList = data.items;
         draftState.itemsById = buildItemsMap(data.items);
         draftState.buildingsList = data.buildings;
+        refreshRecipePresets(draftState, data.buildings);
         draftState.corporationsList = parseCorporations(data.corporations);
         draftState.itemsCategories = extractCategories(data.items);
         if (bundle !== undefined) {

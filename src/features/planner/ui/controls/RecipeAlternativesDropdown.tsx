@@ -1,26 +1,23 @@
 import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { recipePresetName, type RecipePresetState } from '@/features/planner/recipe-presets';
+import { ManageRecipePresetsDialog, SaveRecipePresetDialog } from './RecipePresetDialogs';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Item, RecipeAlternativePreset } from '@/app/uklad/model';
 import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
 import { BuildingImage, RecipeTypeIcon } from '@/shared/ui';
 import { RecipePreview } from './RecipePreview';
+import { RecipePresetIcon } from './RecipePresetIcon';
 import { useDropdownViewportPosition } from '@/shared/ui/useDropdownViewportPosition';
 
 const EMPTY_ITEMS_BY_ID: Record<string, Item> = {};
-const EMPTY_PINNED_SELECTIONS: Record<string, string> = {};
 const EMPTY_PRESETS: RecipeAlternativePreset[] = [];
-
-/** True when two `itemId -> recipeKey` maps hold exactly the same entries. */
-function sameSelections(a: Record<string, string>, b: Record<string, string>): boolean {
-    const aKeys = Object.keys(a);
-    if (aKeys.length !== Object.keys(b).length) return false;
-    return aKeys.every((key) => a[key] === b[key]);
-}
 
 export interface RecipeAlternativesDropdownProps {
     options: PlannerRecipeOptionsItem[];
+    presetState: RecipePresetState;
     onSelectRecipe: (itemId: string, optionKey: string) => void;
     /** Replaces the whole current selection at once (used when loading a saved set). */
     onApplySelections?: (selections: Record<string, string>) => void;
@@ -33,12 +30,12 @@ export interface RecipeAlternativesDropdownProps {
  * Dropdown for choosing per-output recipe alternatives (buildings/rates).
  * Used by the main planner and the production plan modal with different subs/events.
  *
- * The panel header exposes set-level controls: save the current alternatives as a
- * named set, load a saved set, and make the current alternatives the default for
- * new plans. Saved sets and the default are global and persisted.
+ * A dedicated presets section separates reusable choices from recipe editing.
+ * Dialogs handle saving and defaults; recipe choices apply to the current plan.
  */
 export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProps> = ({
     options,
+    presetState,
     onSelectRecipe,
     onApplySelections,
     className = '',
@@ -48,30 +45,30 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     const { t } = useTranslation();
     const runtime = useRuntime();
     const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]) ?? EMPTY_ITEMS_BY_ID;
-    const defaultSelections = useSubscription([appIds.subscriptions.PINNED_RECIPE_SELECTIONS]) ?? EMPTY_PINNED_SELECTIONS;
     const presets = useSubscription([appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]) ?? EMPTY_PRESETS;
     const [isOpen, setIsOpen] = useState(false);
-    const [isLoadOpen, setIsLoadOpen] = useState(false);
+    const presetsId = useId();
+    const [preferredPresetId, setPreferredPresetId] = useState('');
+    const [dialog, setDialog] = useState<{ kind: 'save' | 'manage'; container: HTMLElement; trigger: HTMLButtonElement } | null>(null);
     const rootRef = useRef<HTMLDivElement | null>(null);
     const panelRef = useDropdownViewportPosition(isOpen && options.length > 0, rootRef);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || dialog) return;
 
         const onMouseDown = (event: MouseEvent) => {
             if (!rootRef.current) return;
             if (!rootRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
-                setIsLoadOpen(false);
             }
         };
 
         document.addEventListener('mousedown', onMouseDown);
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
-            event.stopPropagation();
+            event.preventDefault();
+            event.stopImmediatePropagation();
             setIsOpen(false);
-            setIsLoadOpen(false);
             rootRef.current?.querySelector('button')?.focus();
         };
         document.addEventListener('keydown', onKeyDown, true);
@@ -79,7 +76,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
             document.removeEventListener('mousedown', onMouseDown);
             document.removeEventListener('keydown', onKeyDown, true);
         };
-    }, [isOpen]);
+    }, [isOpen, dialog]);
 
     if (!options.length) return null;
 
@@ -91,36 +88,19 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
         return { entry, selectedOption };
     });
 
-    // The current alternatives = non-default overrides among the items on screen.
-    const currentSelections: Record<string, string> = {};
-    for (const entry of options) {
-        if (entry.selectedKey && entry.selectedKey !== entry.defaultKey) {
-            currentSelections[entry.itemId] = entry.selectedKey;
-        }
-    }
-    const hasCustomSelection = Object.keys(currentSelections).length > 0;
-    const isCurrentDefault =
-        Object.keys(defaultSelections).length > 0 && sameSelections(currentSelections, defaultSelections);
-
-    const handleSavePreset = () => {
-        const name = window.prompt(t("Save current alternatives as:"));
-        if (name && name.trim()) {
-            runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, name.trim(), currentSelections]);
-        }
+    const selectedPreset = presetState.matchingPresets.find(preset => preset.id === preferredPresetId)
+        ?? presetState.matchingPresets.find(preset => preset.id === presetState.defaultPreset?.id)
+        ?? presetState.matchingPresets[0];
+    const openDialog = (kind: 'save' | 'manage', trigger: HTMLButtonElement) => {
+        setDialog({ kind, trigger, container: trigger.closest('dialog') ?? document.body });
     };
-
-    const handleToggleDefault = () => {
-        runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULTS, isCurrentDefault ? {} : currentSelections]);
+    const closeDialog = () => {
+        dialog?.trigger.focus();
+        setDialog(null);
     };
-
     const handleLoadPreset = (preset: RecipeAlternativePreset) => {
+        setPreferredPresetId(preset.id);
         onApplySelections?.({ ...preset.selections });
-        setIsLoadOpen(false);
-    };
-
-    const handleDeletePreset = (event: React.MouseEvent, presetId: string) => {
-        event.stopPropagation();
-        runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, presetId]);
     };
 
     return (
@@ -151,99 +131,68 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
             {isOpen && (
                 <div
                     ref={panelRef}
-                    className={`fixed inset-x-2 bottom-2 z-30 flex max-sm:max-h-[85dvh] flex-col sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-[var(--dropdown-right,0px)] sm:mt-2 sm:w-[min(92vw,560px)] ${panelMaxHeightClass} rounded-md border border-base-300 bg-base-100 shadow-xl`}
+                    className={`fixed inset-x-2 bottom-2 z-30 flex max-sm:max-h-[85dvh] flex-col sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-[var(--dropdown-right,0px)] sm:mt-2 sm:w-[min(92vw,600px)] ${panelMaxHeightClass} rounded-xl border border-base-300 bg-base-100 shadow-xl`}
                 >
-                    <div
-                        className="relative z-20 shrink-0 rounded-t-md border-b border-base-300 bg-base-100 px-3 py-2"
-                    >
-                        <div className="mb-2 flex items-center justify-between sm:hidden">
-                            <span className="text-sm font-semibold">{t("Recipe Alternatives")}</span>
-                            <button type="button" className="btn btn-ghost min-h-11 min-w-11" aria-label={t("Close recipe alternatives")} onClick={() => { setIsOpen(false); setIsLoadOpen(false); }}>✕</button>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="hidden sm:inline text-xs font-semibold text-base-content/80 mr-auto">{t("Recipe Alternatives")}</span>
+                    <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
+                        <h2 className="text-base font-semibold">{t('Recipe Alternatives')}</h2>
+                        <button type="button" className="btn btn-xs btn-square btn-ghost size-7 min-h-7" aria-label={t('Close recipe alternatives')} onClick={() => setIsOpen(false)}>
+                            <RecipePresetIcon name="close" />
+                        </button>
+                    </header>
 
-                            <button
-                                type="button"
-                                className="btn btn-xs max-sm:min-h-11 btn-ghost border border-base-300"
-                                disabled={!hasCustomSelection}
-                                title={t("Save the current alternatives as a named set")}
-                                onClick={handleSavePreset}
-                            >{t("Save set")}</button>
-
-                            <div className="relative">
-                                <button
-                                    type="button"
-                                    className="btn btn-xs max-sm:min-h-11 btn-ghost border border-base-300 gap-1"
-                                    disabled={!presets.length || !onApplySelections}
-                                    title={t("Load a saved set of alternatives")}
-                                    onClick={() => setIsLoadOpen((prev) => !prev)}
-                                >{t("Load set")}<span className="opacity-70">({presets.length})</span>
-                                    <span className="text-[10px]">▼</span>
-                                </button>
-
-                                {isLoadOpen && presets.length > 0 && (
-                                    <div className="absolute left-0 sm:left-auto sm:right-0 mt-1 z-40 w-48 max-h-[35dvh] overflow-y-auto overscroll-contain rounded-md border border-base-300 bg-base-100 p-1 shadow-xl">
-                                        {presets.map((preset) => (
-                                            <div
-                                                key={preset.id}
-                                                role="button"
-                                                tabIndex={0}
-                                                className="flex items-center gap-2 rounded px-2 py-1 max-sm:min-h-11 hover:bg-base-200 cursor-pointer"
-                                                onClick={() => handleLoadPreset(preset)}
-                                                onKeyDown={(event) => {
-                                                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-                                                        event.preventDefault();
-                                                        handleLoadPreset(preset);
-                                                    }
-                                                }}
-                                            >
-                                                <span className="text-xs truncate flex-1" title={preset.name}>
-                                                    {preset.name}
-                                                </span>
-                                                <span className="text-[10px] text-base-content/50">
-                                                    {Object.keys(preset.selections).length}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-ghost btn-xs max-sm:min-h-11 max-sm:min-w-11 px-1 text-error/80 hover:text-error"
-                                                    title={t("Delete \"{name}\"", { name: preset.name })}
-                                                    onClick={(event) => handleDeletePreset(event, preset.id)}
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <button
-                                type="button"
-                                className={`btn btn-xs max-sm:min-h-11 gap-1 ${isCurrentDefault ? 'btn-primary' : 'btn-ghost border border-base-300'}`}
-                                title={
-                                    isCurrentDefault
-                                        ? t("These alternatives are the default for new plans — click to clear")
-                                        : t("Use the current alternatives as the default for new plans")
-                                }
-                                onClick={handleToggleDefault}
-                            >
-                                {isCurrentDefault ? t("Default ✓") : t("Set as default")}
+                    <section aria-labelledby={presetsId} className="mx-3 mb-3 shrink-0 rounded-lg border border-base-300 bg-base-200/50 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                            <h3 id={presetsId} className="flex items-center gap-2 text-sm font-medium">
+                                <RecipePresetIcon name="presets" className="size-4 text-base-content/55" />
+                                {t('Presets')}
+                            </h3>
+                            <button type="button" className="btn btn-xs h-7 min-h-7 btn-ghost gap-1.5 text-base-content/65"
+                                aria-label={t('Manage presets')} aria-haspopup="dialog" onClick={event => openDialog('manage', event.currentTarget)}>
+                                <RecipePresetIcon name="manage" className="size-3.5" />
+                                {t('Manage')}
                             </button>
                         </div>
-                        <div className="mt-1 text-[11px] leading-snug text-base-content/60">{t("Save and load named sets of alternatives, or make the current set the default machines pre-selected for every new plan.")}</div>
-                    </div>
+                        <div className="flex items-center gap-2">
+                            <div className="relative min-w-0 flex-1">
+                            <select className="select select-sm select-bordered h-8 min-h-8 w-full bg-base-100 text-xs"
+                                aria-label={t('Selected preset')} value={selectedPreset?.id ?? ''}
+                                disabled={!presets.length || !onApplySelections}
+                                onChange={event => {
+                                    const preset = presets.find(entry => entry.id === event.target.value);
+                                    if (preset) handleLoadPreset(preset);
+                                }}>
+                                {!selectedPreset && <option value="" disabled>{t('Custom recipes (unsaved)')}</option>}
+                                {presets.map(preset => <option key={preset.id} value={preset.id}>
+                                    {preset.id === presetState.defaultPreset?.id
+                                        ? t('{name} (Default)', { name: recipePresetName(preset, t) })
+                                        : recipePresetName(preset, t)}
+                                </option>)}
+                            </select>
+                            </div>
+                            <button type="button" className="btn btn-xs h-8 min-h-8 btn-primary px-3" disabled={Boolean(selectedPreset)}
+                                aria-haspopup="dialog" onClick={event => openDialog('save', event.currentTarget)}>
+                                {t('Save')}
+                            </button>
+                        </div>
+                        <span className="sr-only" role="status">
+                            {selectedPreset ? t('Preset: {name}', { name: recipePresetName(selectedPreset, t) }) : t('Custom recipes (unsaved)')}
+                        </span>
+                    </section>
 
-                    <div className="min-h-0 overflow-y-auto overscroll-contain p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                    <div className="min-h-0 overflow-y-auto overscroll-contain px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
+                            <h3 className="text-xs font-medium text-base-content/80">{t('Recipes')}</h3>
+                            <span className="text-xs text-base-content/50">{t('Changes apply to this plan.')}</span>
+                        </div>
                     {normalizedOptions.map(({ entry, selectedOption }) => (
-                        <div key={entry.itemId} className="rounded-md border border-base-300 bg-base-200/40 p-2 mb-2 last:mb-0">
+                        <div key={entry.itemId} className="rounded-lg border border-base-300 bg-base-200/30 p-3 mb-2 last:mb-0">
                             <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
                                 <div className="min-w-0 space-y-2">
-                                    <div className="text-sm sm:text-xs font-medium">{entry.itemName}</div>
+                                    <div className="text-sm font-medium">{entry.itemName}</div>
                                     <RecipePreview option={selectedOption} itemsById={itemsById} />
                                 </div>
 
-                                <div className="flex flex-wrap items-end justify-start sm:justify-end gap-x-2 gap-y-3 min-w-0">
+                                <div className="flex flex-wrap items-start justify-start sm:justify-end gap-x-2 gap-y-3 min-w-0">
                                     {entry.options.map((option) => {
                                         const isSelected = option.key === entry.selectedKey;
 
@@ -275,7 +224,7 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                                     <BuildingImage buildingId={option.buildingId} size="medium" />
                                                 </button>
                                                 <div
-                                                    className="text-[10px] leading-tight w-16 text-center break-words"
+                                                    className="text-[11px] leading-tight w-16 text-center break-words"
                                                     title={option.buildingName}
                                                 >
                                                     {option.buildingName}
@@ -291,6 +240,28 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                 </div>
             )}
 
+            {dialog && createPortal(dialog.kind === 'save' ? (
+                <SaveRecipePresetDialog
+                    preset={selectedPreset}
+                    presets={presets}
+                    defaultPresetId={presetState.defaultPreset?.id}
+                    onClose={closeDialog}
+                    onSave={(name, makeDefault) => {
+                        setPreferredPresetId('');
+                        runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, name, { ...presetState.selections }, makeDefault]);
+                        closeDialog();
+                    }}
+                />
+            ) : (
+                <ManageRecipePresetsDialog
+                    presets={presets}
+                    defaultPresetId={presetState.defaultPreset?.id}
+                    onClose={closeDialog}
+                    onSetDefault={id => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET, id])}
+                    onDelete={id => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, id])}
+                    onRename={(id, name) => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_RENAME_PRESET, id, name])}
+                />
+            ), dialog.container)}
         </div>
     );
 };

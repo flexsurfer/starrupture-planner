@@ -173,6 +173,7 @@ export interface RecipeAlternativePreset {
     id: string;
     name: string;
     selections: Record<string, string>; // output item id -> `${buildingId}:${recipeIdOrIndex}`
+    isDefault?: boolean;
 }
 
 export interface Base {

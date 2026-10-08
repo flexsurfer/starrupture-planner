@@ -47,7 +47,8 @@ export function normalizeRecipePresets(raw: unknown): RecipeAlternativePreset[] 
         if (!id || !name || seenIds.has(id)) continue;
 
         seenIds.add(id);
-        presets.push({ id, name, selections: normalizeSelections(preset.selections) });
+        presets.push({ id, name, selections: normalizeSelections(preset.selections),
+            ...(preset.isDefault === true && !presets.some(entry => entry.isDefault) ? { isDefault: true } : {}) });
     }
 
     return presets;

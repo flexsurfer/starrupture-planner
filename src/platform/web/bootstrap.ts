@@ -26,6 +26,7 @@ const persistence = persist(runtime, {
 });
 
 persistence.hydrate();
+runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_INITIALIZE_PRESETS]);
 
 // Initialize game data once, when an entry point first mounts the tools.
 let toolsInitialized = false;

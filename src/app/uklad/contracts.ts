@@ -1,4 +1,5 @@
 import type { UiText } from '@/shared/i18n/core';
+import type { RecipePresetState } from '@/features/planner/recipe-presets';
 import type { ArchiveSelection, PlannerArchive, TransferStatus } from '@/features/data-transfer/archive';
 import type { PlannerTab, PlannerMode, PlannerView } from '@/features/planner/state';
 import type { UkladContracts } from '@ukladjs/core/vanilla';
@@ -181,7 +182,10 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PLANNER_SET_RECIPE_SELECTIONS]: [selections: Record<string, string>];
         [appIds.events.PLANNER_SET_TARGET_AMOUNT]: [targetAmount: number];
         [appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULTS]: [selections: Record<string, string>];
-        [appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET]: [name: string, selections: Record<string, string>];
+        [appIds.events.RECIPE_ALTERNATIVES_INITIALIZE_PRESETS]: [];
+        [appIds.events.RECIPE_ALTERNATIVES_RENAME_PRESET]: [presetId: string, name: string];
+        [appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET]: [name: string, selections: Record<string, string>, makeDefault?: boolean];
+        [appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET]: [presetId: string];
         [appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET]: [presetId: string];
         [appIds.events.BASES_CREATE_BASE]: [name: string];
         [appIds.events.BASES_UPDATE_BASE_NAME]: [baseId: string, name: string];
@@ -280,6 +284,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.PLANNER_RECIPE_SELECTIONS]: { params: []; result: PlannerTab['recipeSelections'] };
         [appIds.subscriptions.PINNED_RECIPE_SELECTIONS]: { params: []; result: AppState['pinnedRecipeSelections'] };
         [appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]: { params: []; result: AppState['recipeAlternativePresets'] };
+        [appIds.subscriptions.PLANNER_RECIPE_PRESET_STATE]: { params: []; result: RecipePresetState };
+        [appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_PRESET_STATE]: { params: []; result: RecipePresetState };
         [appIds.subscriptions.PLANNER_TARGET_AMOUNT]: { params: []; result: number };
         [appIds.subscriptions.PLANNER_AVAILABLE_CORPORATION_LEVELS]: { params: []; result: CorporationLevelInfo[] };
         [appIds.subscriptions.PLANNER_PRODUCTION_FLOW]: { params: []; result: PlannerProductionFlowResult };

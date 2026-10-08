@@ -14,6 +14,7 @@ import { createAppRuntime } from '@/app/uklad/runtime';
 import { DEFAULT_DATA_VERSION } from '@/features/app-shell/data-version';
 import { registerHeadlessApplication, type HeadlessApplicationOptions } from './register';
 import { parseArchive, prepareArchiveImport, type PlannerArchive } from '@/features/data-transfer/archive';
+import { STANDARD_RECIPE_PRESET_ID, V2_RECIPE_PRESET_ID } from '@/features/planner/recipe-presets';
 
 type AppScenario = UkladHeadlessScenario<AppContracts>;
 type AppEvent = Parameters<AppScenario['dispatch']>[0];
@@ -622,6 +623,7 @@ describe('headless application E2E', () => {
             recipeSelections: [appIds.subscriptions.PLANNER_RECIPE_SELECTIONS],
             pinnedRecipeSelections: [appIds.subscriptions.PINNED_RECIPE_SELECTIONS],
             recipePresets: [appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS],
+            recipePresetState: [appIds.subscriptions.PLANNER_RECIPE_PRESET_STATE],
             recipeOptions: [appIds.subscriptions.PLANNER_RECIPE_OPTIONS],
             corporationLevels: [appIds.subscriptions.PLANNER_AVAILABLE_CORPORATION_LEVELS],
             targetAmount: [appIds.subscriptions.PLANNER_TARGET_AMOUNT],
@@ -667,6 +669,7 @@ describe('headless application E2E', () => {
             totalCost: 100,
         });
 
+        await dispatch(scenario, [appIds.events.RECIPE_ALTERNATIVES_INITIALIZE_PRESETS]);
         await dispatch(scenario, [
             appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULTS,
             { 'iron-plate': 'smelter:0' },
@@ -707,13 +710,25 @@ describe('headless application E2E', () => {
             '  Fast   iron  ',
             { 'iron-plate': 'smelter_mk2:0' },
         ]);
-        const [preset] = catalog.value('recipePresets');
+        const preset = catalog.value('recipePresets').find(entry => entry.name === 'Fast iron');
         expect(preset).toMatchObject({
             name: 'Fast iron',
             selections: { 'iron-plate': 'smelter_mk2:0' },
         });
+        await dispatch(scenario, [appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET, preset!.id]);
+        expect(catalog.value('recipePresetState').defaultPreset?.name).toBe('Fast iron');
+        expect(catalog.value('pinnedRecipeSelections')).toEqual({ 'iron-plate': 'smelter_mk2:0' });
+        expect(catalog.value('recipeSelections')).toEqual({ 'iron-plate': 'smelter:0' });
+        await dispatch(scenario, [appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET, STANDARD_RECIPE_PRESET_ID]);
+        expect(catalog.value('recipePresetState').defaultPreset?.id).toBe(STANDARD_RECIPE_PRESET_ID);
+        await dispatch(scenario, [appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, 'Fast iron', { 'iron-plate': 'smelter_mk2:0' }, true]);
+        expect(catalog.value('recipePresetState').defaultPreset?.id).toBe(preset!.id);
+        await dispatch(scenario, [appIds.events.RECIPE_ALTERNATIVES_RENAME_PRESET, preset!.id, 'Upgraded iron']);
+        expect(catalog.value('recipePresetState').defaultPreset?.name).toBe('Upgraded iron');
         await dispatch(scenario, [appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, preset!.id]);
-        expect(catalog.value('recipePresets')).toEqual([]);
+        expect(catalog.value('recipePresetState').defaultPreset?.id).toBe(STANDARD_RECIPE_PRESET_ID);
+        expect(catalog.value('recipePresets').map(entry => entry.id)).toEqual([STANDARD_RECIPE_PRESET_ID, V2_RECIPE_PRESET_ID, 'rap_recovered_default']);
+        expect(catalog.value('pinnedRecipeSelections')).toEqual({});
 
         await dispatch(scenario, [appIds.events.PLANNER_SET_SELECTED_ITEM, 'steel-plate']);
         expect(catalog.value('selectedItemId')).toBe('steel-plate');
@@ -1029,6 +1044,7 @@ describe('headless application E2E', () => {
             formValues: [appIds.subscriptions.PRODUCTION_PLAN_MODAL_FORM_VALUES],
             flow: [appIds.subscriptions.PRODUCTION_PLAN_MODAL_FLOW],
             recipeOptions: [appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS],
+            recipePresetState: [appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_PRESET_STATE],
             corporationLevels: [appIds.subscriptions.PRODUCTION_PLAN_MODAL_AVAILABLE_CORPORATION_LEVELS],
             inputSelector: [appIds.subscriptions.PRODUCTION_PLAN_MODAL_INPUT_SELECTOR_DATA],
             linkableOutputs: [appIds.subscriptions.PRODUCTION_PLAN_MODAL_LINKABLE_OUTPUTS],
@@ -1053,6 +1069,9 @@ describe('headless application E2E', () => {
             'iron-plate',
             'smelter_mk2:0',
         ]);
+        expect(modal.value('recipePresetState')).toMatchObject({
+            selections: { 'iron-plate': 'smelter_mk2:0' }, matchingPresets: [{ id: V2_RECIPE_PRESET_ID }], hasDefault: true,
+        });
         await dispatch(scenario, [
             appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS,
             { 'iron-plate': 'smelter:0' },

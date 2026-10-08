@@ -5,6 +5,7 @@ import type { BasesById, Building as DbBuilding, Corporation, CreateProductionPl
 import type { CorporationLevelInfo, ProductionFlowResult, RawMaterialDeficitWithName } from '@/features/planner/types';
 import { buildProductionFlow } from '@/features/planner/production-flow';
 import { buildRecipeOptionsForOutputItems } from '@/features/planner/recipe-options';
+import { buildRecipePresetState } from '@/features/planner/recipe-presets';
 import { collectConfiguredSectionItems } from '@/features/bases/derived-subscriptions';
 import { getItemName } from '@/utils/itemUtils';
 import { getSelectedFlowInputBuildings, sanitizeRecipeSelectionsForInputItems } from '@/utils/productionPlanInputs';
@@ -15,6 +16,16 @@ const isLauncherEnabled = (corporationLevel: CreateProductionPlanModalState['sel
 
 export const registerProductionPlanModalSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regRootSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE, stateKeys.productionPlanModalState);
+    registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_PRESET_STATE,
+        () => [[appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS], [appIds.subscriptions.PINNED_RECIPE_SELECTIONS],
+            [appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE], [appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS],
+            [appIds.subscriptions.BASES_BY_ID_MAP]],
+        ([presets, defaults, modal, options, basesById]) => {
+            const base = modal.baseId ? basesById[modal.baseId] : undefined;
+            const inputItemIds = getSelectedFlowInputBuildings(base, modal.selectedInputIds, Object.values(basesById))
+                .map(input => input.selectedItemId).filter((id): id is string => !!id);
+            return buildRecipePresetState(presets, defaults, modal.recipeSelections, options, inputItemIds);
+        });
 
     registrar.regSub(appIds.subscriptions.PRODUCTION_PLAN_MODAL_OPEN_STATE, () => [[appIds.subscriptions.PRODUCTION_PLAN_MODAL_STATE]], ([modalState], ..._params) => {
         void _params;

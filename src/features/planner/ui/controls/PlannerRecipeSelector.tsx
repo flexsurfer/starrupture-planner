@@ -14,9 +14,11 @@ interface PlannerRecipeSelectorProps {
 export const PlannerRecipeSelector: React.FC<PlannerRecipeSelectorProps> = ({ className = '' }) => {
     const runtime = useRuntime();
     const options = useSubscription([appIds.subscriptions.PLANNER_RECIPE_OPTIONS]);
+    const presetState = useSubscription([appIds.subscriptions.PLANNER_RECIPE_PRESET_STATE]);
 
     return <RecipeAlternativesDropdown
         options={options}
+        presetState={presetState}
         onSelectRecipe={(itemId, optionKey) => {
             runtime.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, itemId, optionKey]);
         }}

@@ -7,6 +7,7 @@ import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import type { AppState, Building, RecipeAlternativePreset } from '@/app/uklad/model';
 import { availableName } from '@/utils/availableName';
+import { getDefaultRecipePreset, isBuiltInRecipePreset, refreshRecipePresets, STANDARD_RECIPE_PRESET_ID } from './recipe-presets';
 
 /** Slowest output rate for an item, matching the production-flow default. */
 function getSlowestOutputRateForItem(buildings: Building[], itemId: string): number {
@@ -22,8 +23,20 @@ function getSlowestOutputRateForItem(buildings: Building[], itemId: string): num
     return bestRate ?? 60;
 }
 
-function createRecipeAlternativePresetId(): string {
-    return `rap_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+function createRecipeAlternativePresetId(presets: RecipeAlternativePreset[]): string {
+    let number = 1;
+    while (presets.some(preset => preset.id === `rap_${number}`)) number++;
+    return `rap_${number}`;
+}
+
+function setDefaultRecipePreset(state: AppState, presetId: string): void {
+    const selected = state.recipeAlternativePresets.find(preset => preset.id === presetId);
+    if (!selected) return;
+    for (const preset of state.recipeAlternativePresets) {
+        if (preset.id === selected.id) preset.isDefault = true;
+        else delete preset.isDefault;
+    }
+    state.pinnedRecipeSelections = { ...selected.selections };
 }
 
 function validateTargets(state: AppState, tab: PlannerTab, ids: string[], selections = tab.recipeSelections): boolean {
@@ -181,32 +194,59 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         tab.recipeSelections = { ...(selections || {}) };
     });
 
-    registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULTS, ({ draftState }, selections) => {
-        draftState.pinnedRecipeSelections = { ...(selections || {}) };
+    registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_INITIALIZE_PRESETS, ({ draftState }) => {
+        refreshRecipePresets(draftState, draftState.buildingsList.length ? draftState.buildingsList : undefined);
     });
 
-    registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, ({ draftState }, name, selections) => {
+    registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULTS, ({ draftState }, selections) => {
+        draftState.pinnedRecipeSelections = { ...(selections || {}) };
+        for (const preset of draftState.recipeAlternativePresets) delete preset.isDefault;
+        refreshRecipePresets(draftState, draftState.buildingsList.length ? draftState.buildingsList : undefined);
+    });
+
+    registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET, ({ draftState }, presetId) => {
+        setDefaultRecipePreset(draftState, presetId);
+    });
+
+    registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, ({ draftState }, name, selections, makeDefault) => {
         const trimmedName = (name || '').trim().replace(/\s+/g, ' ');
-        if (!trimmedName) return;
+        if (!trimmedName || trimmedName.length > 100) return;
 
         const presetSelections = { ...(selections || {}) };
         const existing = draftState.recipeAlternativePresets.find(
             (preset: RecipeAlternativePreset) => preset.name.toLowerCase() === trimmedName.toLowerCase(),
         );
-        if (existing) {
-            existing.selections = presetSelections;
-            return;
-        }
-
-        draftState.recipeAlternativePresets.push({
-            id: createRecipeAlternativePresetId(),
+        if (existing && isBuiltInRecipePreset(existing.id)) return;
+        const previousDefault = getDefaultRecipePreset(draftState.recipeAlternativePresets, draftState.pinnedRecipeSelections);
+        const saved = existing ?? {
+            id: createRecipeAlternativePresetId(draftState.recipeAlternativePresets),
             name: trimmedName,
             selections: presetSelections,
-        });
+        };
+        const wasDefault = previousDefault?.id === saved.id;
+        if (existing) existing.selections = presetSelections;
+        else draftState.recipeAlternativePresets.push(saved);
+
+        if (makeDefault === true || (makeDefault === undefined && wasDefault)) {
+            setDefaultRecipePreset(draftState, saved.id);
+        } else if (makeDefault === false && wasDefault) {
+            setDefaultRecipePreset(draftState, STANDARD_RECIPE_PRESET_ID);
+        }
+    });
+
+    registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_RENAME_PRESET, ({ draftState }, presetId, name) => {
+        const trimmedName = name.trim().replace(/\s+/g, ' ');
+        if (!trimmedName || trimmedName.length > 100 || isBuiltInRecipePreset(presetId)) return;
+        if (draftState.recipeAlternativePresets.some(preset => preset.id !== presetId && preset.name.toLowerCase() === trimmedName.toLowerCase())) return;
+        const preset = draftState.recipeAlternativePresets.find(preset => preset.id === presetId);
+        if (preset) preset.name = trimmedName;
     });
 
     registrar.regEvent(appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, ({ draftState }, presetId) => {
-        if (!presetId) return;
+        if (!presetId || isBuiltInRecipePreset(presetId)) return;
+        if (getDefaultRecipePreset(draftState.recipeAlternativePresets, draftState.pinnedRecipeSelections)?.id === presetId) {
+            setDefaultRecipePreset(draftState, STANDARD_RECIPE_PRESET_ID);
+        }
         draftState.recipeAlternativePresets = draftState.recipeAlternativePresets.filter(
             (preset: RecipeAlternativePreset) => preset.id !== presetId,
         );

@@ -1,4 +1,5 @@
 import { getActivePlannerTab } from './state';
+import { buildRecipePresetState } from './recipe-presets';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
@@ -70,6 +71,10 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
     );
     registrar.regRootSub(appIds.subscriptions.PINNED_RECIPE_SELECTIONS, stateKeys.pinnedRecipeSelections);
     registrar.regRootSub(appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS, stateKeys.recipeAlternativePresets);
+    registrar.regSub(appIds.subscriptions.PLANNER_RECIPE_PRESET_STATE,
+        () => [[appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS], [appIds.subscriptions.PINNED_RECIPE_SELECTIONS],
+            [appIds.subscriptions.PLANNER_RECIPE_SELECTIONS], [appIds.subscriptions.PLANNER_RECIPE_OPTIONS]],
+        ([presets, defaults, selections, options]) => buildRecipePresetState(presets, defaults, selections, options));
     registrar.regSub(appIds.subscriptions.PLANNER_TARGET_AMOUNT,
         () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.targetAmount ?? 60);
 

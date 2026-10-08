@@ -22,11 +22,11 @@ export const PERSIST_KEYS = [
     },
     'energyGroups',
     {
-        key: 'pinnedRecipeSelections',
+        key: stateKeys.pinnedRecipeSelections,
         deserialize: normalizePinnedRecipeSelections,
     },
     {
-        key: 'recipeAlternativePresets',
+        key: stateKeys.recipeAlternativePresets,
         deserialize: normalizeRecipePresets,
     },
 ] as const satisfies readonly PersistKey<AppState>[];

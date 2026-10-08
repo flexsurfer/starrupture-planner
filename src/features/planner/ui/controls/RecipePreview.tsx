@@ -44,14 +44,14 @@ export const RecipePreview = ({ option, itemsById }: RecipePreviewProps) => {
             aria-label={t("Selected recipe")}
             className="min-w-0"
         >
-            <div className="flex items-end gap-1.5">
+            <div className="flex items-start gap-1.5">
                 <RecipeIngredient
                     itemId={recipe.output.id}
                     amount={recipe.output.amount_per_minute}
                     item={itemsById[recipe.output.id]}
                 />
-                <span className="shrink-0 self-center text-base-content/50" aria-hidden="true">←</span>
-                <div className="flex min-w-0 flex-wrap items-end gap-1">
+                <span className="mt-4 shrink-0 text-base-content/50" aria-hidden="true">←</span>
+                <div className="flex min-w-0 flex-wrap items-start gap-1">
                     {recipe.inputs.length > 0 ? (
                         recipe.inputs.map((input, index) => (
                             <RecipeIngredient

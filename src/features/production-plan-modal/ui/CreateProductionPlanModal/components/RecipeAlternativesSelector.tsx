@@ -6,9 +6,11 @@ import { RecipeAlternativesDropdown } from '@/features/planner/ui/controls';
 export const RecipeAlternativesSelector: React.FC = () => {
     const runtime = useRuntime();
     const options = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_OPTIONS]);
+    const presetState = useSubscription([appIds.subscriptions.PRODUCTION_PLAN_MODAL_RECIPE_PRESET_STATE]);
 
     return <RecipeAlternativesDropdown
         options={options}
+        presetState={presetState}
         onSelectRecipe={(itemId, optionKey) => {
             runtime.dispatch([appIds.events.PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION, itemId, optionKey]);
         }}

@@ -40,6 +40,9 @@ export const stateKeys = {
 
 export const appIds = {
     events: {
+        RECIPE_ALTERNATIVES_INITIALIZE_PRESETS: 'recipe-alternatives/initialize-presets',
+        RECIPE_ALTERNATIVES_RENAME_PRESET: 'recipe-alternatives/rename-preset',
+        RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET: 'recipe-alternatives/set-default-preset',
         PLANNER_SET_EXTERNAL_INPUT: 'planner/set-external-input',
         PLANNER_REMOVE_EXTERNAL_INPUT: 'planner/remove-external-input',
         PRODUCTION_PLAN_ADD_INPUT: 'production-plans/add-input',
@@ -80,6 +83,8 @@ export const appIds = {
         PRODUCTION_PLAN_MODAL_OPEN: 'production-plan-modal/open', PRODUCTION_PLAN_MODAL_CLOSE: 'production-plan-modal/close', PRODUCTION_PLAN_MODAL_SET_NAME: 'production-plan-modal/set-name', PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM: 'production-plan-modal/set-selected-item', PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'production-plan-modal/set-target-amount', PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'production-plan-modal/set-selected-corporation-level', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'production-plan-modal/set-recipe-selection', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS: 'production-plan-modal/set-recipe-selections', PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'production-plan-modal/toggle-input', PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'production-plan-modal/link-output-input', PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'production-plan-modal/set-match-inputs', PRODUCTION_PLAN_MODAL_SUBMIT: 'production-plan-modal/submit',
     },
     subscriptions: {
+        PLANNER_RECIPE_PRESET_STATE: 'planner/recipe-preset-state',
+        PRODUCTION_PLAN_MODAL_RECIPE_PRESET_STATE: 'production-plan-modal/recipe-preset-state',
         BASES_CONNECTION_OUTPUTS: 'bases/connection-outputs',
         BASES_CONNECTION_INPUTS: 'bases/connection-inputs',
         BASES_CONNECTION_BUILDING: 'bases/connection-building',
