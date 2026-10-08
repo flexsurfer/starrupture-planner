@@ -25,13 +25,13 @@ export const CreateProductionPlanModal: React.FC = () => {
             <InputsSelector />
 
             {/* Controls section */}
-            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col flex-1 min-h-0">
+            <div className="flex flex-col flex-1 min-h-0">
                 <FormControls />
 
                 {/* Diagram section - takes all remaining space */}
                 <DiagramSection />
 
-            </form>
+            </div>
         </div>
     );
 };

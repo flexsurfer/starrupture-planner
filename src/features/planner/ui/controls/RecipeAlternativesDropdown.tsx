@@ -1,9 +1,8 @@
 import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { recipePresetName, type RecipePresetState } from '@/features/planner/recipe-presets';
-import { ManageRecipePresetsDialog, SaveRecipePresetDialog } from './RecipePresetDialogs';
+import { ManageRecipePresetsPanel, SaveRecipePresetPanel } from './RecipePresetPanels';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { Item, RecipeAlternativePreset } from '@/app/uklad/model';
 import type { PlannerRecipeOptionsItem } from '@/features/planner/types';
@@ -31,7 +30,7 @@ export interface RecipeAlternativesDropdownProps {
  * Used by the main planner and the production plan modal with different subs/events.
  *
  * A dedicated presets section separates reusable choices from recipe editing.
- * Dialogs handle saving and defaults; recipe choices apply to the current plan.
+ * Preset management replaces the recipe list in the same panel.
  */
 export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProps> = ({
     options,
@@ -47,36 +46,47 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]) ?? EMPTY_ITEMS_BY_ID;
     const presets = useSubscription([appIds.subscriptions.RECIPE_ALTERNATIVE_PRESETS]) ?? EMPTY_PRESETS;
     const [isOpen, setIsOpen] = useState(false);
+    const [view, setView] = useState<'recipes' | 'manage' | 'save'>('recipes');
     const presetsId = useId();
     const [preferredPresetId, setPreferredPresetId] = useState('');
-    const [dialog, setDialog] = useState<{ kind: 'save' | 'manage'; container: HTMLElement; trigger: HTMLButtonElement } | null>(null);
     const rootRef = useRef<HTMLDivElement | null>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const manageRef = useRef<HTMLButtonElement>(null);
+    const saveRef = useRef<HTMLButtonElement>(null);
+    const returnFocusRef = useRef<'manage' | 'save'>('manage');
     const panelRef = useDropdownViewportPosition(isOpen && options.length > 0, rootRef);
 
     useEffect(() => {
-        if (!isOpen || dialog) return;
+        if (!isOpen || view !== 'recipes') return;
+        const target = returnFocusRef.current === 'save' && !saveRef.current?.disabled ? saveRef.current : manageRef.current;
+        target?.focus();
+    }, [isOpen, view]);
+
+    useEffect(() => {
+        if (!isOpen) return;
 
         const onMouseDown = (event: MouseEvent) => {
             if (!rootRef.current) return;
             if (!rootRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
+                setView('recipes');
             }
         };
 
         document.addEventListener('mousedown', onMouseDown);
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape') return;
+            if (event.key !== 'Escape' || view !== 'recipes') return;
             event.preventDefault();
             event.stopImmediatePropagation();
             setIsOpen(false);
-            rootRef.current?.querySelector('button')?.focus();
+            triggerRef.current?.focus();
         };
         document.addEventListener('keydown', onKeyDown, true);
         return () => {
             document.removeEventListener('mousedown', onMouseDown);
             document.removeEventListener('keydown', onKeyDown, true);
         };
-    }, [isOpen, dialog]);
+    }, [isOpen, view]);
 
     if (!options.length) return null;
 
@@ -91,12 +101,10 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     const selectedPreset = presetState.matchingPresets.find(preset => preset.id === preferredPresetId)
         ?? presetState.matchingPresets.find(preset => preset.id === presetState.defaultPreset?.id)
         ?? presetState.matchingPresets[0];
-    const openDialog = (kind: 'save' | 'manage', trigger: HTMLButtonElement) => {
-        setDialog({ kind, trigger, container: trigger.closest('dialog') ?? document.body });
-    };
-    const closeDialog = () => {
-        dialog?.trigger.focus();
-        setDialog(null);
+    const closePanel = () => {
+        setIsOpen(false);
+        setView('recipes');
+        triggerRef.current?.focus();
     };
     const handleLoadPreset = (preset: RecipeAlternativePreset) => {
         setPreferredPresetId(preset.id);
@@ -106,12 +114,13 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
     return (
         <div ref={rootRef} className={`relative ${className}`.trim()}>
             <button
+                ref={triggerRef}
                 type="button"
                 className="btn btn-sm btn-ghost gap-2 border border-base-300 bg-transparent hover:bg-base-200"
                 aria-expanded={isOpen}
                 aria-label={t("Recipe alternatives: {selectedNonDefault} of {total} customized", { selectedNonDefault: selectedNonDefault, total: total })}
                 title={t("Choose recipe alternatives")}
-                onClick={() => setIsOpen((prev) => !prev)}
+                onClick={() => { returnFocusRef.current = 'manage'; setIsOpen((prev) => !prev); setView('recipes'); }}
             >
                 <span className="text-xs font-semibold">{t("Recipes")}</span>
                 {showChevron ? (
@@ -133,9 +142,34 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                     ref={panelRef}
                     className={`fixed inset-x-2 bottom-2 z-30 flex max-sm:max-h-[85dvh] flex-col sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-[var(--dropdown-right,0px)] sm:mt-2 sm:w-[min(92vw,600px)] ${panelMaxHeightClass} rounded-xl border border-base-300 bg-base-100 shadow-xl`}
                 >
+                    {view === 'save' ? (
+                        <SaveRecipePresetPanel
+                            preset={selectedPreset}
+                            presets={presets}
+                            defaultPresetId={presetState.defaultPreset?.id}
+                            onClose={closePanel}
+                            onBack={() => setView('recipes')}
+                            onSave={(name, makeDefault) => {
+                                setPreferredPresetId('');
+                                runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, name, { ...presetState.selections }, makeDefault]);
+                                returnFocusRef.current = 'manage';
+                                setView('recipes');
+                            }}
+                        />
+                    ) : view === 'manage' ? (
+                        <ManageRecipePresetsPanel
+                            presets={presets}
+                            defaultPresetId={presetState.defaultPreset?.id}
+                            onClose={closePanel}
+                            onBack={() => setView('recipes')}
+                            onSetDefault={id => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET, id])}
+                            onDelete={id => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, id])}
+                            onRename={(id, name) => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_RENAME_PRESET, id, name])}
+                        />
+                    ) : <>
                     <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
                         <h2 className="text-base font-semibold">{t('Recipe Alternatives')}</h2>
-                        <button type="button" className="btn btn-xs btn-square btn-ghost size-7 min-h-7" aria-label={t('Close recipe alternatives')} onClick={() => setIsOpen(false)}>
+                        <button type="button" className="btn btn-xs btn-square btn-ghost size-7 min-h-7" aria-label={t('Close recipe alternatives')} onClick={closePanel}>
                             <RecipePresetIcon name="close" />
                         </button>
                     </header>
@@ -146,8 +180,8 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                 <RecipePresetIcon name="presets" className="size-4 text-base-content/55" />
                                 {t('Presets')}
                             </h3>
-                            <button type="button" className="btn btn-xs h-7 min-h-7 btn-ghost gap-1.5 text-base-content/65"
-                                aria-label={t('Manage presets')} aria-haspopup="dialog" onClick={event => openDialog('manage', event.currentTarget)}>
+                            <button ref={manageRef} type="button" className="btn btn-xs h-7 min-h-7 btn-ghost gap-1.5 text-base-content/65"
+                                aria-label={t('Manage presets')} onClick={() => { returnFocusRef.current = 'manage'; setView('manage'); }}>
                                 <RecipePresetIcon name="manage" className="size-3.5" />
                                 {t('Manage')}
                             </button>
@@ -169,8 +203,8 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                                 </option>)}
                             </select>
                             </div>
-                            <button type="button" className="btn btn-xs h-8 min-h-8 btn-primary px-3" disabled={Boolean(selectedPreset)}
-                                aria-haspopup="dialog" onClick={event => openDialog('save', event.currentTarget)}>
+                            <button ref={saveRef} type="button" className="btn btn-xs h-8 min-h-8 btn-primary px-3" disabled={Boolean(selectedPreset)}
+                                onClick={() => { returnFocusRef.current = 'save'; setView('save'); }}>
                                 {t('Save')}
                             </button>
                         </div>
@@ -237,31 +271,9 @@ export const RecipeAlternativesDropdown: React.FC<RecipeAlternativesDropdownProp
                         </div>
                     ))}
                     </div>
+                    </>}
                 </div>
             )}
-
-            {dialog && createPortal(dialog.kind === 'save' ? (
-                <SaveRecipePresetDialog
-                    preset={selectedPreset}
-                    presets={presets}
-                    defaultPresetId={presetState.defaultPreset?.id}
-                    onClose={closeDialog}
-                    onSave={(name, makeDefault) => {
-                        setPreferredPresetId('');
-                        runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, name, { ...presetState.selections }, makeDefault]);
-                        closeDialog();
-                    }}
-                />
-            ) : (
-                <ManageRecipePresetsDialog
-                    presets={presets}
-                    defaultPresetId={presetState.defaultPreset?.id}
-                    onClose={closeDialog}
-                    onSetDefault={id => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET, id])}
-                    onDelete={id => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_DELETE_PRESET, id])}
-                    onRename={(id, name) => runtime.dispatch([appIds.events.RECIPE_ALTERNATIVES_RENAME_PRESET, id, name])}
-                />
-            ), dialog.container)}
         </div>
     );
 };

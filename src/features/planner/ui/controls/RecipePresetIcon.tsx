@@ -5,6 +5,7 @@ const paths = {
     trash: <><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" /></>,
     rename: <><path d="m16 3 5 5-12 12-6 1 1-6L16 3ZM13 6l5 5" /></>,
     close: <path d="m6 6 12 12M6 18 18 6" />,
+    back: <path d="m12 5-7 7 7 7M5 12h14" />,
 };
 
 export function RecipePresetIcon({ name, className = 'size-4' }: { name: keyof typeof paths; className?: string }) {

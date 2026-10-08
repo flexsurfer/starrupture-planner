@@ -42,13 +42,70 @@ function setup(productionPlan = false, withUpgrade = false) {
 }
 
 describe('recipe preset controls', () => {
+    it.each([false, true])('replaces panel content and navigates back without opening another popup (production plan: %s)', productionPlan => {
+        const harness = setup(productionPlan);
+        act(() => harness.dispatchSync([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, 'Fast', { plate: 'smelter-v2:0' }]));
+        const panel = screen.getByRole('heading', { name: 'Recipe Alternatives' }).parentElement!.parentElement!;
+        const trigger = screen.getByRole('button', { name: /Recipe alternatives:/ });
+        fireEvent.click(screen.getByRole('button', { name: 'Manage presets' }));
+        expect(panel).toContainElement(screen.getByRole('region', { name: 'Manage presets' }));
+        expect(screen.queryByRole('combobox', { name: 'Selected preset' })).not.toBeInTheDocument();
+        expect(screen.getAllByRole('dialog')).toHaveLength(1);
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Rename "Fast"' }));
+        expect(panel).toContainElement(screen.getByRole('region', { name: 'Rename preset' }));
+        expect(screen.queryByRole('region', { name: 'Manage presets' })).not.toBeInTheDocument();
+        expect(screen.getAllByRole('dialog')).toHaveLength(1);
+        expect(screen.getByLabelText('Preset name')).toHaveFocus();
+        fireEvent.change(screen.getByLabelText('Preset name'), { target: { value: 'Unsaved name' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Back to Manage presets' }));
+        expect(panel).toContainElement(screen.getByRole('region', { name: 'Manage presets' }));
+        expect(harness.getState().recipeAlternativePresets.some(preset => preset.name === 'Unsaved name')).toBe(false);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Rename "Fast"' }));
+        expect(screen.getByLabelText('Preset name')).toHaveValue('Fast');
+        const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+        fireEvent(document.activeElement!, escape);
+        expect(escape.defaultPrevented).toBe(true);
+        expect(panel).toContainElement(screen.getByRole('region', { name: 'Manage presets' }));
+        fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+        expect(panel).toContainElement(screen.getByRole('combobox', { name: 'Selected preset' }));
+        expect(screen.getByRole('button', { name: 'Manage presets' })).toHaveFocus();
+        fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        expect(trigger).toHaveFocus();
+        expect(screen.getByRole('dialog', { name: 'Parent plan' })).toHaveAttribute('open');
+    });
+
+    it.each([false, true])('dismisses preset views and reopens at the recipe list (production plan: %s)', productionPlan => {
+        const harness = setup(productionPlan);
+        act(() => harness.dispatchSync([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, 'Fast', { plate: 'smelter-v2:0' }]));
+        const trigger = screen.getByRole('button', { name: /Recipe alternatives:/ });
+        fireEvent.click(screen.getByRole('button', { name: 'Manage presets' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Rename "Fast"' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Close recipe alternatives' }));
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        expect(trigger).toHaveFocus();
+        fireEvent.click(trigger);
+        expect(screen.getByRole('combobox', { name: 'Selected preset' })).toBeVisible();
+        fireEvent.click(screen.getByRole('button', { name: 'Manage presets' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Back to Recipe Alternatives' }));
+        expect(screen.getByRole('button', { name: 'Manage presets' })).toHaveFocus();
+        fireEvent.click(screen.getByRole('button', { name: 'Manage presets' }));
+        fireEvent.mouseDown(screen.getByRole('dialog', { name: 'Parent plan' }));
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(trigger);
+        expect(screen.getByRole('combobox', { name: 'Selected preset' })).toBeVisible();
+    });
+
     it.each([false, true])('loads built-in Upgraded recipes and allows making them the default (production plan: %s)', async productionPlan => {
         const harness = setup(productionPlan, true);
         fireEvent.change(screen.getByRole('combobox', { name: 'Selected preset' }), { target: { value: V2_RECIPE_PRESET_ID } });
         await waitFor(() => expect(screen.getByTitle('Smelter v.2 - 180/min')).toHaveAttribute('aria-pressed', 'true'));
         expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
         fireEvent.click(screen.getByRole('button', { name: 'Manage presets' }));
-        const dialog = within(screen.getByRole('dialog', { name: 'Manage presets' }));
+        const dialog = within(screen.getByRole('region', { name: 'Manage presets' }));
         expect(dialog.queryByRole('button', { name: 'Rename "Upgraded recipes"' })).not.toBeInTheDocument();
         expect(dialog.queryByRole('button', { name: 'Delete "Upgraded recipes"' })).not.toBeInTheDocument();
         fireEvent.change(dialog.getByRole('combobox', { name: 'Default for new plans' }), { target: { value: V2_RECIPE_PRESET_ID } });
@@ -57,21 +114,24 @@ describe('recipe preset controls', () => {
         expect(screen.getByRole('combobox', { name: 'Selected preset' })).toHaveDisplayValue('Upgraded recipes (Default)');
     });
 
-    it.each([false, true])('saves through a dialog, matches live recipe choices, and defaults only new plans (production plan: %s)', async productionPlan => {
+    it.each([false, true])('saves inside the recipe panel, matches live recipe choices, and defaults only new plans (production plan: %s)', async productionPlan => {
         const harness = setup(productionPlan);
+        const panel = screen.getByRole('heading', { name: 'Recipe Alternatives' }).parentElement!.parentElement!;
         expect(screen.getByRole('combobox', { name: 'Selected preset' })).toHaveDisplayValue('Standard recipes (Default)');
         expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
         expect(within(screen.getByRole('combobox', { name: 'Selected preset' })).getByRole('option', { name: 'Standard recipes (Default)' })).toBeInTheDocument();
         fireEvent.click(screen.getByTitle('Smelter v.2 - 180/min'));
         await waitFor(() => expect(screen.getByTitle('Smelter v.2 - 180/min')).toHaveAttribute('aria-pressed', 'true'));
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-        const dialog = screen.getByRole('dialog', { name: 'Save preset' });
-        expect(screen.getByRole('dialog', { name: 'Parent plan' })).toContainElement(dialog);
-        expect(within(dialog).getByRole('button', { name: 'Save' })).toBeDisabled();
-        fireEvent.click(within(dialog).getByLabelText('Make default for new plans'));
-        fireEvent.change(within(dialog).getByLabelText('Preset name'), { target: { value: 'Fast machines' } });
-        expect(within(dialog).getByLabelText('Make default for new plans')).toBeChecked();
-        fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+        const savePanel = screen.getByRole('region', { name: 'Save preset' });
+        expect(panel).toContainElement(savePanel);
+        expect(screen.getAllByRole('dialog')).toHaveLength(1);
+        expect(screen.queryByRole('combobox', { name: 'Selected preset' })).not.toBeInTheDocument();
+        expect(within(savePanel).getByRole('button', { name: 'Save' })).toBeDisabled();
+        fireEvent.click(within(savePanel).getByLabelText('Make default for new plans'));
+        fireEvent.change(within(savePanel).getByLabelText('Preset name'), { target: { value: 'Fast machines' } });
+        expect(within(savePanel).getByLabelText('Make default for new plans')).toBeChecked();
+        fireEvent.click(within(savePanel).getByRole('button', { name: 'Save' }));
         await screen.findByText('Preset: Fast machines');
         expect(harness.getState().pinnedRecipeSelections).toEqual({ plate: 'smelter-v2:0' });
         expect(harness.getState().recipeAlternativePresets.find(preset => preset.name === 'Fast machines')?.isDefault).toBe(true);
@@ -98,7 +158,7 @@ describe('recipe preset controls', () => {
         fireEvent.change(screen.getByRole('combobox', { name: 'Selected preset' }), { target: { value: fastId } });
         await screen.findByText('Preset: Fast');
         fireEvent.click(screen.getByRole('button', { name: 'Manage presets' }));
-        let dialog = screen.getByRole('dialog', { name: 'Manage presets' });
+        let dialog = screen.getByRole('region', { name: 'Manage presets' });
         expect(within(dialog).queryByRole('option', { name: 'No default preset' })).not.toBeInTheDocument();
         expect(within(dialog).queryByRole('button', { name: 'Delete "Standard recipes"' })).not.toBeInTheDocument();
         expect(within(dialog).queryByRole('button', { name: 'Rename "Standard recipes"' })).not.toBeInTheDocument();
@@ -111,7 +171,7 @@ describe('recipe preset controls', () => {
         fireEvent.change(within(dialog).getByRole('combobox', { name: 'Default for new plans' }), { target: { value: fastId } });
         await waitFor(() => expect(harness.getState().pinnedRecipeSelections).toEqual({ plate: 'smelter-v2:0' }));
         fireEvent.click(within(dialog).getByRole('button', { name: 'Delete "Fast"' }));
-        dialog = screen.getByRole('dialog', { name: 'Delete preset' });
+        dialog = screen.getByRole('region', { name: 'Delete preset' });
         expect(within(dialog).getByText('New plans will use "Standard recipes".')).toBeVisible();
         fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
         await waitFor(() => expect(harness.getState().recipeAlternativePresets).toHaveLength(3));
@@ -146,29 +206,44 @@ describe('recipe preset controls', () => {
         expect(harness.getState().recipeAlternativePresets.find(preset => preset.name === 'First')?.selections).toEqual(selections);
     });
 
-    it('traps dialog focus and closes only the top dialog on Escape', async () => {
-        setup();
+    it.each([false, true])('returns from Save preset without saving and restores focus (production plan: %s)', async productionPlan => {
+        const harness = setup(productionPlan);
         fireEvent.click(screen.getByTitle('Smelter v.2 - 180/min'));
-        const save = screen.getByRole('button', { name: 'Save' });
-        await waitFor(() => expect(save).toBeEnabled());
-        fireEvent.click(save);
-        const input = screen.getByLabelText('Preset name');
-        expect(input).toHaveFocus();
-        const close = within(screen.getByRole('dialog', { name: 'Save preset' })).getByRole('button', { name: 'Close' });
-        close.focus();
-        fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
-        expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
-        fireEvent.keyDown(document.activeElement!, { key: 'Tab' });
-        expect(close).toHaveFocus();
-        fireEvent.keyDown(close, { key: 'Escape' });
-        expect(screen.queryByRole('dialog', { name: 'Save preset' })).not.toBeInTheDocument();
-        expect(screen.getByRole('dialog', { name: 'Parent plan' })).toHaveAttribute('open');
-        expect(save).toHaveFocus();
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
+        for (const action of ['Cancel', 'Back to Recipe Alternatives', 'Escape']) {
+            fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+            const input = screen.getByLabelText('Preset name');
+            expect(input).toHaveFocus();
+            expect(input).toHaveValue('');
+            fireEvent.change(input, { target: { value: 'Unsaved preset' } });
+            if (action === 'Escape') {
+                const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+                fireEvent(input, escape);
+                expect(escape.defaultPrevented).toBe(true);
+            } else {
+                fireEvent.click(screen.getByRole('button', { name: action }));
+            }
+            expect(screen.queryByRole('region', { name: 'Save preset' })).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'Save' })).toHaveFocus();
+            expect(screen.getByRole('combobox', { name: 'Selected preset' })).toHaveDisplayValue('Custom recipes (unsaved)');
+            expect(harness.getState().recipeAlternativePresets.some(preset => preset.name === 'Unsaved preset')).toBe(false);
+        }
+
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Close recipe alternatives' }));
+        const trigger = screen.getByRole('button', { name: /Recipe alternatives:/ });
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        expect(trigger).toHaveFocus();
+        fireEvent.click(trigger);
         expect(screen.getByRole('combobox', { name: 'Selected preset' })).toHaveDisplayValue('Custom recipes (unsaved)');
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        fireEvent.mouseDown(screen.getByRole('dialog', { name: 'Parent plan' }));
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.getByRole('dialog', { name: 'Parent plan' })).toHaveAttribute('open');
     });
 
-    it('renames a selected default preset without losing its identity, selections, or default status', async () => {
-        const harness = setup();
+    it.each([false, true])('renames a selected default preset without losing its identity, selections, or default status (production plan: %s)', async productionPlan => {
+        const harness = setup(productionPlan);
         act(() => {
             harness.dispatchSync([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, 'Fast', { plate: 'smelter-v2:0' }, true]);
             harness.dispatchSync([appIds.events.RECIPE_ALTERNATIVES_SAVE_PRESET, 'Same choices', { plate: 'smelter-v2:0' }]);
@@ -178,7 +253,7 @@ describe('recipe preset controls', () => {
         await screen.findByText('Preset: Fast');
         fireEvent.click(screen.getByRole('button', { name: 'Manage presets' }));
         fireEvent.click(screen.getByRole('button', { name: 'Rename "Fast"' }));
-        const rename = within(screen.getByRole('dialog', { name: 'Rename preset' }));
+        const rename = within(screen.getByRole('region', { name: 'Rename preset' }));
         expect(rename.getByRole('button', { name: 'Save' })).toBeDisabled();
         fireEvent.change(rename.getByLabelText('Preset name'), { target: { value: ' standard recipes ' } });
         expect(rename.getByRole('alert')).toHaveTextContent('A preset with this name already exists.');

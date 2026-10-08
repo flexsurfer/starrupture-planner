@@ -4,70 +4,65 @@ import { useTranslation } from '@/shared/i18n';
 import { RecipePresetIcon } from './RecipePresetIcon';
 import { isBuiltInRecipePreset, recipePresetName, STANDARD_RECIPE_PRESET_ID } from '@/features/planner/recipe-presets';
 
-function PresetDialog({ title, description, children, footer, onClose }: {
+function PresetView({ title, description, children, footer, onClose, back }: {
     title: string;
     description?: string;
     children: ReactNode;
     footer: ReactNode;
     onClose: () => void;
+    back: { label: string; onClick: () => void };
 }) {
     const { t } = useTranslation();
     const titleId = useId();
-    const dialogRef = useRef<HTMLDivElement>(null);
-    const closeRef = useRef(onClose);
-    useEffect(() => { closeRef.current = onClose; }, [onClose]);
+    const panelRef = useRef<HTMLDivElement>(null);
+    const backRef = useRef(back.onClick);
+    useEffect(() => { backRef.current = back.onClick; }, [back.onClick]);
     useEffect(() => {
-        const initialFocus = dialogRef.current?.querySelector<HTMLElement>('[data-preset-autofocus]')
-            ?? dialogRef.current?.querySelector<HTMLElement>('input, select, button');
+        const initialFocus = panelRef.current?.querySelector<HTMLElement>('[data-preset-autofocus]')
+            ?? panelRef.current?.querySelector<HTMLElement>('input, select, button');
         initialFocus?.focus();
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             event.preventDefault();
             event.stopImmediatePropagation();
-            closeRef.current();
+            backRef.current();
         };
         document.addEventListener('keydown', handleKeyDown, true);
         return () => document.removeEventListener('keydown', handleKeyDown, true);
     }, [title]);
 
-    return <div className="modal modal-open z-[1000] p-2 sm:p-4" onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
-        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId}
-            className="modal-box flex w-full max-w-md max-h-[85dvh] flex-col overflow-hidden rounded-xl p-0"
-            onKeyDown={event => {
-                event.stopPropagation();
-                if (event.key !== 'Tab') return;
-                const focusable = dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled])');
-                if (!focusable?.length) return;
-                const first = focusable[0];
-                const last = focusable[focusable.length - 1];
-                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-                else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-            }}>
+    return <div ref={panelRef} role="region" aria-labelledby={titleId}
+            className="flex min-h-0 flex-col overflow-hidden rounded-xl"
+            onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}
+            onKeyDown={event => event.stopPropagation()}>
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-base-300 px-4 py-3">
-                <div className="min-w-0">
+                <button type="button" className="btn btn-xs btn-square btn-ghost size-7 min-h-7 shrink-0 text-base-content/60"
+                    aria-label={back.label} title={back.label} onClick={back.onClick}>
+                    <RecipePresetIcon name="back" />
+                </button>
+                <div className="min-w-0 flex-1">
                     <h3 id={titleId} className="text-base font-semibold">{title}</h3>
                     {description && <p className="mt-1 text-xs text-base-content/60">{description}</p>}
                 </div>
-                <button type="button" className="btn btn-xs btn-square btn-ghost size-7 min-h-7 shrink-0 text-base-content/60" aria-label={t('Close')} onClick={onClose}>
+                <button type="button" className="btn btn-xs btn-square btn-ghost size-7 min-h-7 shrink-0 text-base-content/60" aria-label={t('Close recipe alternatives')} onClick={onClose}>
                     <RecipePresetIcon name="close" />
                 </button>
             </header>
             <div className="min-h-0 overflow-y-auto overscroll-contain p-4">{children}</div>
             <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-base-300 bg-base-200/30 px-4 py-2.5">{footer}</footer>
-        </div>
-        <div className="modal-backdrop" onClick={onClose} />
     </div>;
 }
 
-interface SaveRecipePresetDialogProps {
+interface SaveRecipePresetPanelProps {
     preset?: RecipeAlternativePreset;
     presets: RecipeAlternativePreset[];
     defaultPresetId?: string;
     onClose: () => void;
+    onBack: () => void;
     onSave: (name: string, makeDefault: boolean) => void;
 }
 
-export function SaveRecipePresetDialog({ preset, presets, defaultPresetId, onClose, onSave }: SaveRecipePresetDialogProps) {
+export function SaveRecipePresetPanel({ preset, presets, defaultPresetId, onClose, onBack, onSave }: SaveRecipePresetPanelProps) {
     const { t } = useTranslation();
     const formId = useId();
     const [name, setName] = useState(preset ? recipePresetName(preset, t) : '');
@@ -77,9 +72,10 @@ export function SaveRecipePresetDialog({ preset, presets, defaultPresetId, onClo
     const isReservedName = existing !== undefined && isBuiltInRecipePreset(existing.id);
     const makeDefault = defaultOverride ?? (existing !== undefined && existing.id === defaultPresetId);
 
-    return <PresetDialog title={t('Save preset')} description={t('Save your recipe choices to use in other plans.')} onClose={onClose}
+    return <PresetView title={t('Save preset')} description={t('Save your recipe choices to use in other plans.')} onClose={onClose}
+        back={{ label: t('Back to {returnLabel}', { returnLabel: t('Recipe Alternatives') }), onClick: onBack }}
         footer={<>
-            <button type="button" className="btn btn-xs h-8 min-h-8 btn-ghost px-3" onClick={onClose}>{t('Cancel')}</button>
+            <button type="button" className="btn btn-xs h-8 min-h-8 btn-ghost px-3" onClick={onBack}>{t('Cancel')}</button>
             <button type="submit" form={formId} className="btn btn-xs h-8 min-h-8 btn-primary px-3" disabled={!normalizedName || isReservedName}>
                 {existing && !isReservedName ? t('Replace preset') : t('Save')}
             </button>
@@ -104,22 +100,24 @@ export function SaveRecipePresetDialog({ preset, presets, defaultPresetId, onClo
                 </span>
             </label>
         </form>
-    </PresetDialog>;
+    </PresetView>;
 }
 
-interface ManageRecipePresetsDialogProps {
+interface ManageRecipePresetsPanelProps {
     presets: RecipeAlternativePreset[];
     defaultPresetId?: string;
     onClose: () => void;
+    onBack: () => void;
     onSetDefault: (id: string) => void;
     onDelete: (id: string) => void;
     onRename: (id: string, name: string) => void;
 }
 
-function RenameRecipePresetDialog({ preset, presets, onClose, onRename }: {
+function RenameRecipePresetPanel({ preset, presets, onClose, onBack, onRename }: {
     preset: RecipeAlternativePreset;
     presets: RecipeAlternativePreset[];
     onClose: () => void;
+    onBack: () => void;
     onRename: (id: string, name: string) => void;
 }) {
     const { t } = useTranslation();
@@ -129,13 +127,14 @@ function RenameRecipePresetDialog({ preset, presets, onClose, onRename }: {
     const normalizedName = name.trim().replace(/\s+/g, ' ');
     const conflict = presets.some(entry => entry.id !== preset.id && (entry.name.toLowerCase() === normalizedName.toLowerCase() || recipePresetName(entry, t).toLowerCase() === normalizedName.toLowerCase()));
     const canRename = Boolean(normalizedName) && normalizedName !== preset.name && !conflict;
-    return <PresetDialog title={t('Rename preset')} onClose={onClose} footer={<>
-        <button type="button" className="btn btn-xs h-8 min-h-8 btn-ghost px-3" onClick={onClose}>{t('Cancel')}</button>
+    return <PresetView title={t('Rename preset')} onClose={onClose}
+        back={{ label: t('Back to {returnLabel}', { returnLabel: t('Manage presets') }), onClick: onBack }} footer={<>
+        <button type="button" className="btn btn-xs h-8 min-h-8 btn-ghost px-3" onClick={onBack}>{t('Cancel')}</button>
         <button type="submit" form={formId} className="btn btn-xs h-8 min-h-8 btn-primary px-3" disabled={!canRename}>{t('Save')}</button>
     </>}>
         <form id={formId} onSubmit={event => {
             event.preventDefault();
-            if (canRename) { onRename(preset.id, normalizedName); onClose(); }
+            if (canRename) { onRename(preset.id, normalizedName); onBack(); }
         }}>
             <label className="block space-y-1">
                 <span className="text-xs font-medium">{t('Preset name')}</span>
@@ -144,25 +143,27 @@ function RenameRecipePresetDialog({ preset, presets, onClose, onRename }: {
             </label>
             {conflict && <p id={errorId} role="alert" className="mt-2 text-xs text-error">{t('A preset with this name already exists.')}</p>}
         </form>
-    </PresetDialog>;
+    </PresetView>;
 }
 
-export function ManageRecipePresetsDialog({ presets, defaultPresetId = STANDARD_RECIPE_PRESET_ID, onClose, onSetDefault, onDelete, onRename }: ManageRecipePresetsDialogProps) {
+export function ManageRecipePresetsPanel({ presets, defaultPresetId = STANDARD_RECIPE_PRESET_ID, onClose, onBack, onSetDefault, onDelete, onRename }: ManageRecipePresetsPanelProps) {
     const { t } = useTranslation();
     const [deleting, setDeleting] = useState<RecipeAlternativePreset | null>(null);
     const [renaming, setRenaming] = useState<RecipeAlternativePreset | null>(null);
-    if (renaming) return <RenameRecipePresetDialog preset={renaming} presets={presets} onClose={() => setRenaming(null)} onRename={onRename} />;
-    if (deleting) return <PresetDialog title={t('Delete preset')} onClose={() => setDeleting(null)}
+    if (renaming) return <RenameRecipePresetPanel preset={renaming} presets={presets} onClose={onClose} onBack={() => setRenaming(null)} onRename={onRename} />;
+    if (deleting) return <PresetView title={t('Delete preset')} onClose={onClose}
+        back={{ label: t('Back to {returnLabel}', { returnLabel: t('Manage presets') }), onClick: () => setDeleting(null) }}
         footer={<>
             <button data-preset-autofocus type="button" className="btn btn-xs h-8 min-h-8 btn-ghost px-3" onClick={() => setDeleting(null)}>{t('Cancel')}</button>
             <button type="button" className="btn btn-xs h-8 min-h-8 btn-error px-3" onClick={() => { onDelete(deleting.id); setDeleting(null); }}>{t('Delete')}</button>
         </>}>
         <p className="text-sm leading-relaxed break-words">{t('Delete "{name}"? Existing plans will keep their recipe choices.', { name: deleting.name })}</p>
         {deleting.id === defaultPresetId && <p className="mt-3 text-xs text-base-content/60">{t('New plans will use "{name}".', { name: t('Standard recipes') })}</p>}
-    </PresetDialog>;
+    </PresetView>;
 
-    return <PresetDialog title={t('Manage presets')} description={t('Choose how new plans start.')} onClose={onClose}
-        footer={<button type="button" className="btn btn-xs h-8 min-h-8 btn-primary min-w-16 px-3" onClick={onClose}>{t('Done')}</button>}>
+    return <PresetView title={t('Manage presets')} description={t('Choose how new plans start.')} onClose={onClose}
+        back={{ label: t('Back to {returnLabel}', { returnLabel: t('Recipe Alternatives') }), onClick: onBack }}
+        footer={<button type="button" className="btn btn-xs h-8 min-h-8 btn-primary min-w-16 px-3" onClick={onBack}>{t('Done')}</button>}>
         <div className="rounded-lg border border-base-300 bg-base-200/40 p-3">
             <label className="block space-y-1.5">
                 <span className="text-xs font-medium">{t('Default for new plans')}</span>
@@ -204,5 +205,5 @@ export function ManageRecipePresetsDialog({ presets, defaultPresetId = STANDARD_
                 </li>)}
             </ul>}
         </div>
-    </PresetDialog>;
+    </PresetView>;
 }
