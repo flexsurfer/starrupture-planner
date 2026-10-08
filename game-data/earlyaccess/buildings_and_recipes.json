@@ -1219,6 +1219,11 @@
     "type": "transport"
   },
   {
+    "id": "drone_rail",
+    "name": "Drone Rail",
+    "type": "transport"
+  },
+  {
     "id": "base_core",
     "name": "Base Core",
     "type": "core",
