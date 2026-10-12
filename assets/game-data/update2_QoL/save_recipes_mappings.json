@@ -1,0 +1,1438 @@
+{
+  "schemaVersion": 1,
+  "appDataVersion": "update2_QoL",
+  "steamBuildId": "25646882",
+  "mappings": {
+    "assembler": {
+      "/Game/Chimera/Crafting/CR_Accumulator.CR_Accumulator": {
+        "catalogRecipeId": "assembler:0",
+        "outputItemId": "accumulator",
+        "inputItemIds": [
+          "battery",
+          "electronics",
+          "stator"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Condenser.CR_Condenser": {
+        "catalogRecipeId": "assembler:5",
+        "outputItemId": "condenser",
+        "inputItemIds": [
+          "nanofiber",
+          "pump",
+          "resonator"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Electromagnet.CR_Electromagnet": {
+        "catalogRecipeId": "assembler:2",
+        "outputItemId": "electromagnet",
+        "inputItemIds": [
+          "accumulator",
+          "electromagnetic_coil",
+          "synthetic_resin"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Generator.CR_Generator": {
+        "catalogRecipeId": "assembler:1",
+        "outputItemId": "generator",
+        "inputItemIds": [
+          "battery",
+          "nozzle",
+          "turbine"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Grenade.CR_Grenade": {
+        "catalogRecipeId": "assembler:10",
+        "outputItemId": "grenade",
+        "inputItemIds": [
+          "epoxy",
+          "reinforcedhousing"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_LaserEmitter.CR_LaserEmitter": {
+        "catalogRecipeId": "assembler:6",
+        "outputItemId": "laser_emitter",
+        "inputItemIds": [
+          "electromagnetic_coil",
+          "lens",
+          "resonator"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_OnboardInstruments.CR_OnboardInstruments": {
+        "catalogRecipeId": "assembler:9",
+        "outputItemId": "onboardinstruments",
+        "inputItemIds": [
+          "electronics",
+          "reinforcedhousing",
+          "stabilizer"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_PlasticDust.CR_PlasticDust": {
+        "catalogRecipeId": "assembler:12",
+        "outputItemId": "plasticdust",
+        "inputItemIds": [
+          "basicfuel",
+          "organiccompound",
+          "uberoil"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_PressureTank.CR_PressureTank": {
+        "catalogRecipeId": "assembler:3",
+        "outputItemId": "pressure_tank",
+        "inputItemIds": [
+          "heat_sheet",
+          "pump",
+          "valve"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_PseudorubberInsulator.CR_PseudorubberInsulator": {
+        "catalogRecipeId": "assembler:11",
+        "outputItemId": "pseudorubberinsulator",
+        "inputItemIds": [
+          "epoxy",
+          "goethitelattice",
+          "uberoil"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Resonator.CR_Resonator": {
+        "catalogRecipeId": "assembler:4",
+        "outputItemId": "resonator",
+        "inputItemIds": [
+          "accumulator",
+          "generator",
+          "liquid_helium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Scanner.CR_Scanner": {
+        "catalogRecipeId": "assembler:7",
+        "outputItemId": "scanner",
+        "inputItemIds": [
+          "generator",
+          "lens",
+          "stabilizer"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Uberfilament.CR_Uberfilament": {
+        "catalogRecipeId": "assembler:8",
+        "outputItemId": "uberfilament",
+        "inputItemIds": [
+          "epoxy",
+          "goethitelattice",
+          "powder_calcium"
+        ],
+        "variant": "default"
+      }
+    },
+    "compounder": {
+      "/Game/Chimera/Crafting/CR_Aerogel.CR_Aerogel": {
+        "catalogRecipeId": "compounder:12",
+        "outputItemId": "aerogel",
+        "inputItemIds": [
+          "goethitepowder",
+          "liquid_helium",
+          "powder_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_BasicFuel.CR_BasicFuel": {
+        "catalogRecipeId": "compounder:10",
+        "outputItemId": "basicfuel",
+        "inputItemIds": [
+          "goethitepowder",
+          "liquid_helium",
+          "powder_wolfram"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Epoxy.CR_Epoxy": {
+        "catalogRecipeId": "compounder:7",
+        "outputItemId": "epoxy",
+        "inputItemIds": [
+          "goethitepowder",
+          "liquid_helium",
+          "synthetic_resin"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_GoethitePowder.CR_GoethitePowder": {
+        "catalogRecipeId": "compounder:6",
+        "outputItemId": "goethitepowder",
+        "inputItemIds": [
+          "goethiteingot",
+          "powder_calcium",
+          "pressurized_helium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_IonInjector.CR_IonInjector": {
+        "catalogRecipeId": "compounder:4",
+        "outputItemId": "ion_injector",
+        "inputItemIds": [
+          "applicator",
+          "electromagnet",
+          "pressure_tank"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Lens.CR_Lens": {
+        "catalogRecipeId": "compounder:2",
+        "outputItemId": "lens",
+        "inputItemIds": [
+          "glass",
+          "hardening_agent",
+          "synthetic_resin"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_LiquidHelium.CR_LiquidHelium": {
+        "catalogRecipeId": "compounder:1",
+        "outputItemId": "liquid_helium",
+        "inputItemIds": [
+          "hardening_agent",
+          "pressurized_helium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Nanofibre.CR_Nanofibre": {
+        "catalogRecipeId": "compounder:3",
+        "outputItemId": "nanofiber",
+        "inputItemIds": [
+          "liquid_helium",
+          "tube",
+          "wolfram_wire"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_OrganicCompound.CR_OrganicCompound": {
+        "catalogRecipeId": "compounder:11",
+        "outputItemId": "organiccompound",
+        "inputItemIds": [
+          "epoxy",
+          "refinedoil",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SubstanceFHS-135-493.CR_SubstanceFHS-135-493": {
+        "catalogRecipeId": "compounder:8",
+        "outputItemId": "substancefhs-135-493",
+        "inputItemIds": [
+          "goethitepowder",
+          "liquid_helium",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Superconductor.CR_Superconductor": {
+        "catalogRecipeId": "compounder:5",
+        "outputItemId": "superconductor",
+        "inputItemIds": [
+          "electromagnet",
+          "supermagnet",
+          "synthetic_resin"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SyntheticProtein.CR_SyntheticProtein": {
+        "catalogRecipeId": "compounder:13",
+        "outputItemId": "syntheticprotein",
+        "inputItemIds": [
+          "organiccompound",
+          "substancefhs-135-493",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SyntheticResin.CR_SyntheticResin": {
+        "catalogRecipeId": "compounder:0",
+        "outputItemId": "synthetic_resin",
+        "inputItemIds": [
+          "calcite_sheets",
+          "hardening_agent",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_UberOil.CR_UberOil": {
+        "catalogRecipeId": "compounder:9",
+        "outputItemId": "uberoil",
+        "inputItemIds": [
+          "chemicals",
+          "refinedoil",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      }
+    },
+    "craftertier2": {
+      "/Game/Chimera/Crafting/CR_Applicator_v2.CR_Applicator_v2": {
+        "catalogRecipeId": "craftertier2:applicator_v2",
+        "outputItemId": "applicator",
+        "inputItemIds": [
+          "glass",
+          "tube"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_CalciteSheets_v2.CR_CalciteSheets_v2": {
+        "catalogRecipeId": "craftertier2:calcite_sheets_v2",
+        "outputItemId": "calcite_sheets",
+        "inputItemIds": [
+          "block_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Rotor_v2.CR_Rotor_v2": {
+        "catalogRecipeId": "craftertier2:4",
+        "outputItemId": "rotor",
+        "inputItemIds": [
+          "titanium_rod",
+          "wolfram_wire"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Stabilizer_v2.CR_Stabilizer_v2": {
+        "catalogRecipeId": "craftertier2:stabilizer_v2",
+        "outputItemId": "stabilizer",
+        "inputItemIds": [
+          "rotor",
+          "titanium_rod"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Stator_v2.CR_Stator_v2": {
+        "catalogRecipeId": "craftertier2:6",
+        "outputItemId": "stator",
+        "inputItemIds": [
+          "titanium_housing",
+          "wolfram_wire"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumBeam_v2.CR_TitaniumBeam_v2": {
+        "catalogRecipeId": "craftertier2:titanium_beam_v2",
+        "outputItemId": "titanium_beam",
+        "inputItemIds": [
+          "bar_titanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumRod_v2.CR_TitaniumRod_v2": {
+        "catalogRecipeId": "craftertier2:0",
+        "outputItemId": "titanium_rod",
+        "inputItemIds": [
+          "bar_titanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumSheet_v2.CR_TitaniumSheet_v2": {
+        "catalogRecipeId": "craftertier2:1",
+        "outputItemId": "titanium_sheet",
+        "inputItemIds": [
+          "bar_titanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Tube_v2.CR_Tube_v2": {
+        "catalogRecipeId": "craftertier2:5",
+        "outputItemId": "tube",
+        "inputItemIds": [
+          "goethiteingot",
+          "titanium_sheet"
+        ],
+        "variant": "alternative"
+      },
+      "/Game/Chimera/Crafting/CR_Tube_v3.CR_Tube_v3": {
+        "catalogRecipeId": "craftertier2:tube_v2",
+        "outputItemId": "tube",
+        "inputItemIds": [
+          "titanium_rod",
+          "titanium_sheet"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_WolframPlate_v2.CR_WolframPlate_v2": {
+        "catalogRecipeId": "craftertier2:2",
+        "outputItemId": "wolfram_plate",
+        "inputItemIds": [
+          "bar_wolfram"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_WolframWire_v2.CR_WolframWire_v2": {
+        "catalogRecipeId": "craftertier2:3",
+        "outputItemId": "wolfram_wire",
+        "inputItemIds": [
+          "bar_wolfram"
+        ],
+        "variant": "default"
+      }
+    },
+    "fabricator": {
+      "/Game/Chimera/Crafting/CR_BasicBuildingMaterial.CR_BasicBuildingMaterial": {
+        "catalogRecipeId": "fabricator:0",
+        "outputItemId": "basic_building",
+        "inputItemIds": [
+          "ore_titanium",
+          "ore_wolfram"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_CalciteSheets.CR_CalciteSheets": {
+        "catalogRecipeId": "fabricator:4",
+        "outputItemId": "calcite_sheets",
+        "inputItemIds": [
+          "block_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Gyroscope.CR_Gyroscope": {
+        "catalogRecipeId": "fabricator:10",
+        "outputItemId": "stabilizer",
+        "inputItemIds": [
+          "rotor",
+          "titanium_rod"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_PistolAmmoItem.CR_PistolAmmoItem": {
+        "catalogRecipeId": "fabricator:1",
+        "outputItemId": "pistol_ammo",
+        "inputItemIds": [
+          "basic_building"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Rotor.CR_Rotor": {
+        "catalogRecipeId": "fabricator:8",
+        "outputItemId": "rotor",
+        "inputItemIds": [
+          "titanium_rod",
+          "wolfram_wire"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Stator.CR_Stator": {
+        "catalogRecipeId": "fabricator:11",
+        "outputItemId": "stator",
+        "inputItemIds": [
+          "titanium_housing",
+          "wolfram_wire"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Syringe.CR_Syringe": {
+        "catalogRecipeId": "fabricator:12",
+        "outputItemId": "applicator",
+        "inputItemIds": [
+          "glass",
+          "tube"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumBeam.CR_TitaniumBeam": {
+        "catalogRecipeId": "fabricator:5",
+        "outputItemId": "titanium_beam",
+        "inputItemIds": [
+          "bar_titanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumRod.CR_TitaniumRod": {
+        "catalogRecipeId": "fabricator:2",
+        "outputItemId": "titanium_rod",
+        "inputItemIds": [
+          "bar_titanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumSheet.CR_TitaniumSheet": {
+        "catalogRecipeId": "fabricator:6",
+        "outputItemId": "titanium_sheet",
+        "inputItemIds": [
+          "bar_titanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Tube.CR_Tube": {
+        "catalogRecipeId": "fabricator:9",
+        "outputItemId": "tube",
+        "inputItemIds": [
+          "titanium_rod",
+          "titanium_sheet"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_WolframPlate.CR_WolframPlate": {
+        "catalogRecipeId": "fabricator:7",
+        "outputItemId": "wolfram_plate",
+        "inputItemIds": [
+          "bar_wolfram"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_WolframWire.CR_WolframWire": {
+        "catalogRecipeId": "fabricator:3",
+        "outputItemId": "wolfram_wire",
+        "inputItemIds": [
+          "bar_wolfram"
+        ],
+        "variant": "default"
+      }
+    },
+    "factory": {
+      "/Game/Chimera/Crafting/CR_Airlock.CR_Airlock": {
+        "catalogRecipeId": "factory:4",
+        "outputItemId": "airlock",
+        "inputItemIds": [
+          "pressure_tank",
+          "pseudorubberinsulator",
+          "scafolding",
+          "uberfilament"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Anti-RadiationCovers.CR_Anti-RadiationCovers": {
+        "catalogRecipeId": "factory:2",
+        "outputItemId": "anti-radiationcovers",
+        "inputItemIds": [
+          "epoxy",
+          "pseudorubberinsulator",
+          "reinforcedframe",
+          "reinforcedhousing"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_CarbonSonar.CR_CarbonSonar": {
+        "catalogRecipeId": "factory:5",
+        "outputItemId": "carbonsonar",
+        "inputItemIds": [
+          "accumulator",
+          "ionstabilizer",
+          "onboardinstruments",
+          "quantumtranqualizer"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_IonThrusters.CR_IonThrusters": {
+        "catalogRecipeId": "factory:8",
+        "outputItemId": "ionthrusters",
+        "inputItemIds": [
+          "heatshield",
+          "pressure_tank",
+          "rocketfuel",
+          "valve"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Nanosyringe.CR_Nanosyringe": {
+        "catalogRecipeId": "factory:3",
+        "outputItemId": "nanosyringe",
+        "inputItemIds": [
+          "applicator",
+          "hardening_agent",
+          "nanofiber",
+          "substancefhs-135-493"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_QuantumTranqualizer.CR_QuantumTranqualizer": {
+        "catalogRecipeId": "factory:1",
+        "outputItemId": "quantumtranqualizer",
+        "inputItemIds": [
+          "ionstabilizer",
+          "plasticdust",
+          "sulfuric_acid",
+          "supermagnet"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_RNAStabilizer.CR_RNAStabilizer": {
+        "catalogRecipeId": "factory:7",
+        "outputItemId": "rnastabilizer",
+        "inputItemIds": [
+          "nanosyringe",
+          "organiccompound",
+          "syntheticprotein",
+          "uberoil"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_RocketFuel.CR_RocketFuel": {
+        "catalogRecipeId": "factory:9",
+        "outputItemId": "rocketfuel",
+        "inputItemIds": [
+          "basicfuel",
+          "liquid_helium",
+          "refinedoil",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_RTSC.CR_RTSC": {
+        "catalogRecipeId": "factory:6",
+        "outputItemId": "rtsc",
+        "inputItemIds": [
+          "aerogel",
+          "anti-radiationcovers",
+          "heatshield",
+          "pseudorubberinsulator"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Scafolding.CR_Scafolding": {
+        "catalogRecipeId": "factory:0",
+        "outputItemId": "scafolding",
+        "inputItemIds": [
+          "goethitelattice",
+          "plasticdust",
+          "reinforcedframe",
+          "uberfilament"
+        ],
+        "variant": "default"
+      }
+    },
+    "factorytier2": {
+      "/Game/Chimera/Crafting/CR_Condenser_v2.CR_Condenser_v2": {
+        "catalogRecipeId": "factorytier2:0",
+        "outputItemId": "condenser",
+        "inputItemIds": [
+          "nanofiber",
+          "pump",
+          "resonator"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_IonInjector_v2.CR_IonInjector_v2": {
+        "catalogRecipeId": "factorytier2:1",
+        "outputItemId": "ion_injector",
+        "inputItemIds": [
+          "applicator",
+          "electromagnet",
+          "pressure_tank"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_LaserEmitter_v2.CR_LaserEmitter_v2": {
+        "catalogRecipeId": "factorytier2:2",
+        "outputItemId": "laser_emitter",
+        "inputItemIds": [
+          "electromagnetic_coil",
+          "lens",
+          "resonator"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Scanner_v2.CR_Scanner_v2": {
+        "catalogRecipeId": "factorytier2:3",
+        "outputItemId": "scanner",
+        "inputItemIds": [
+          "generator",
+          "lens",
+          "stabilizer"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Superconductor_v2.CR_Superconductor_v2": {
+        "catalogRecipeId": "factorytier2:4",
+        "outputItemId": "superconductor",
+        "inputItemIds": [
+          "electromagnet",
+          "supermagnet",
+          "synthetic_resin"
+        ],
+        "variant": "default"
+      }
+    },
+    "forge": {
+      "/Game/Chimera/Crafting/CR_GoethiteIngot.CR_GoethiteIngot": {
+        "catalogRecipeId": "forge:0",
+        "outputItemId": "goethiteingot",
+        "inputItemIds": [
+          "goethiteore"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_UberTitanium.CR_UberTitanium": {
+        "catalogRecipeId": "forge:2",
+        "outputItemId": "ubertitanium",
+        "inputItemIds": [
+          "goethiteore",
+          "ore_titanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_UberWolfram.CR_UberWolfram": {
+        "catalogRecipeId": "forge:1",
+        "outputItemId": "uberwolfram",
+        "inputItemIds": [
+          "goethiteore",
+          "ore_wolfram"
+        ],
+        "variant": "default"
+      }
+    },
+    "furnace": {
+      "/Game/Chimera/Crafting/CR_CalciumPowder.CR_CalciumPowder": {
+        "catalogRecipeId": "furnace:1",
+        "outputItemId": "powder_calcium",
+        "inputItemIds": [
+          "block_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Ceramics.CR_Ceramics": {
+        "catalogRecipeId": "furnace:2",
+        "outputItemId": "ceramics",
+        "inputItemIds": [
+          "calcite_sheets",
+          "powder_wolfram"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Coil.CR_Coil": {
+        "catalogRecipeId": "furnace:5",
+        "outputItemId": "inductor",
+        "inputItemIds": [
+          "ceramics",
+          "tube",
+          "wolfram_wire"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Electronics.CR_Electronics": {
+        "catalogRecipeId": "furnace:8",
+        "outputItemId": "electronics",
+        "inputItemIds": [
+          "inductor",
+          "stator",
+          "synthetic_silicon"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Explosive.CR_Explosive": {
+        "catalogRecipeId": "furnace:9",
+        "outputItemId": "chemicals",
+        "inputItemIds": [
+          "helium",
+          "powder_wolfram",
+          "synthetic_silicon"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Glass.CR_Glass": {
+        "catalogRecipeId": "furnace:4",
+        "outputItemId": "glass",
+        "inputItemIds": [
+          "helium",
+          "powder_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_HardeningAgent.CR_HardeningAgent": {
+        "catalogRecipeId": "furnace:10",
+        "outputItemId": "hardening_agent",
+        "inputItemIds": [
+          "applicator",
+          "sulfuric_acid",
+          "synthetic_silicon"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_HeatResistantSheet.CR_HeatResistantSheet": {
+        "catalogRecipeId": "furnace:6",
+        "outputItemId": "heat_sheet",
+        "inputItemIds": [
+          "glass",
+          "titanium_sheet",
+          "wolfram_plate"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SilicaSand.CR_SilicaSand": {
+        "catalogRecipeId": "furnace:7",
+        "outputItemId": "synthetic_silicon",
+        "inputItemIds": [
+          "ceramics",
+          "helium",
+          "powder_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Supermagnet.CR_Supermagnet": {
+        "catalogRecipeId": "furnace:11",
+        "outputItemId": "supermagnet",
+        "inputItemIds": [
+          "chemicals",
+          "sulfuric_acid",
+          "wolfram_plate"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumHousing.CR_TitaniumHousing": {
+        "catalogRecipeId": "furnace:3",
+        "outputItemId": "titanium_housing",
+        "inputItemIds": [
+          "titanium_beam",
+          "titanium_sheet"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_WolframPowder.CR_WolframPowder": {
+        "catalogRecipeId": "furnace:0",
+        "outputItemId": "powder_wolfram",
+        "inputItemIds": [
+          "bar_wolfram"
+        ],
+        "variant": "default"
+      }
+    },
+    "furnacetier2": {
+      "/Game/Chimera/Crafting/CR_CalciumPowder_v2.CR_CalciumPowder_v2": {
+        "catalogRecipeId": "furnacetier2:0",
+        "outputItemId": "powder_calcium",
+        "inputItemIds": [
+          "block_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Ceramics_v2.CR_Ceramics_v2": {
+        "catalogRecipeId": "furnacetier2:2",
+        "outputItemId": "ceramics",
+        "inputItemIds": [
+          "calcite_sheets",
+          "powder_wolfram"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Electronics_v2.CR_Electronics_v2": {
+        "catalogRecipeId": "furnacetier2:electronics_v2",
+        "outputItemId": "electronics",
+        "inputItemIds": [
+          "inductor",
+          "stator",
+          "synthetic_silicon"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Explosive_v2.CR_Explosive_v2": {
+        "catalogRecipeId": "furnacetier2:3",
+        "outputItemId": "chemicals",
+        "inputItemIds": [
+          "goethiteingot",
+          "helium",
+          "powder_calcium",
+          "powder_wolfram"
+        ],
+        "variant": "alternative"
+      },
+      "/Game/Chimera/Crafting/CR_Explosive_v3.CR_Explosive_v3": {
+        "catalogRecipeId": "furnacetier2:chemicals_v2",
+        "outputItemId": "chemicals",
+        "inputItemIds": [
+          "helium",
+          "powder_wolfram",
+          "synthetic_silicon"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Glass_v2.CR_Glass_v2": {
+        "catalogRecipeId": "furnacetier2:4",
+        "outputItemId": "glass",
+        "inputItemIds": [
+          "calcite_sheets",
+          "goethiteingot",
+          "pressurized_helium"
+        ],
+        "variant": "alternative"
+      },
+      "/Game/Chimera/Crafting/CR_Glass_v3.CR_Glass_v3": {
+        "catalogRecipeId": "furnacetier2:glass_v2",
+        "outputItemId": "glass",
+        "inputItemIds": [
+          "helium",
+          "powder_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_HardeningAgent_v2.CR_HardeningAgent_v2": {
+        "catalogRecipeId": "furnacetier2:6",
+        "outputItemId": "hardening_agent",
+        "inputItemIds": [
+          "applicator",
+          "sulfuric_acid",
+          "synthetic_silicon"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_HeatResistantSheet_v2.CR_HeatResistantSheet_v2": {
+        "catalogRecipeId": "furnacetier2:5",
+        "outputItemId": "heat_sheet",
+        "inputItemIds": [
+          "helium",
+          "ubertitanium",
+          "uberwolfram"
+        ],
+        "variant": "alternative"
+      },
+      "/Game/Chimera/Crafting/CR_HeatResistantSheet_v3.CR_HeatResistantSheet_v3": {
+        "catalogRecipeId": "furnacetier2:heat_sheet_v2",
+        "outputItemId": "heat_sheet",
+        "inputItemIds": [
+          "glass",
+          "titanium_sheet",
+          "wolfram_plate"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Inductor_v2.CR_Inductor_v2": {
+        "catalogRecipeId": "furnacetier2:inductor_v2",
+        "outputItemId": "inductor",
+        "inputItemIds": [
+          "ceramics",
+          "tube",
+          "wolfram_wire"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Supermagnet_v2.CR_Supermagnet_v2": {
+        "catalogRecipeId": "furnacetier2:supermagnet_v2",
+        "outputItemId": "supermagnet",
+        "inputItemIds": [
+          "chemicals",
+          "sulfuric_acid",
+          "wolfram_plate"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SyntheticSilicon_v2.CR_SyntheticSilicon_v2": {
+        "catalogRecipeId": "furnacetier2:synthetic_silicon_v2",
+        "outputItemId": "synthetic_silicon",
+        "inputItemIds": [
+          "ceramics",
+          "helium",
+          "powder_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumHousing_v2.CR_TitaniumHousing_v2": {
+        "catalogRecipeId": "furnacetier2:titanium_housing_v2",
+        "outputItemId": "titanium_housing",
+        "inputItemIds": [
+          "titanium_beam",
+          "titanium_sheet"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_WolframPowder_v2.CR_WolframPowder_v2": {
+        "catalogRecipeId": "furnacetier2:1",
+        "outputItemId": "powder_wolfram",
+        "inputItemIds": [
+          "bar_wolfram"
+        ],
+        "variant": "default"
+      }
+    },
+    "helium_extractor": {
+      "/Game/Chimera/Crafting/CR_Helium.CR_Helium": {
+        "catalogRecipeId": "helium_extractor:0",
+        "outputItemId": "helium",
+        "inputItemIds": [],
+        "variant": "default"
+      }
+    },
+    "laserdrill": {
+      "/Game/Chimera/Crafting/LaserDrill/CR_GoethiteOre_LaserDrill.CR_GoethiteOre_LaserDrill": {
+        "catalogRecipeId": "laserdrill:0",
+        "outputItemId": "goethiteore",
+        "inputItemIds": [],
+        "variant": "default"
+      }
+    },
+    "liquidextractor": {
+      "/Game/Chimera/Crafting/CR_MagicOilOre.CR_MagicOilOre": {
+        "catalogRecipeId": "liquidextractor:0",
+        "outputItemId": "magicoilore",
+        "inputItemIds": [],
+        "variant": "default"
+      }
+    },
+    "mechanicaldrilltier2": {
+      "/Game/Chimera/Crafting/MechanicalDrill/CR_CalciumOre_MechanicalDrill.CR_CalciumOre_MechanicalDrill": {
+        "catalogRecipeId": "mechanicaldrilltier2:1",
+        "outputItemId": "ore_calcium",
+        "inputItemIds": [],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/MechanicalDrill/CR_TitaniumOre_MechanicalDrill.CR_TitaniumOre_MechanicalDrill": {
+        "catalogRecipeId": "mechanicaldrilltier2:2",
+        "outputItemId": "ore_titanium",
+        "inputItemIds": [],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/MechanicalDrill/CR_WolframOre_MechanicalDrill.CR_WolframOre_MechanicalDrill": {
+        "catalogRecipeId": "mechanicaldrilltier2:0",
+        "outputItemId": "ore_wolfram",
+        "inputItemIds": [],
+        "variant": "default"
+      }
+    },
+    "mega_press": {
+      "/Game/Chimera/Crafting/CR_Battery.CR_Battery": {
+        "catalogRecipeId": "mega_press:6",
+        "outputItemId": "battery",
+        "inputItemIds": [
+          "electronics",
+          "inductor",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_ElectromagneticCoil.CR_ElectromagneticCoil": {
+        "catalogRecipeId": "mega_press:9",
+        "outputItemId": "electromagnetic_coil",
+        "inputItemIds": [
+          "inductor",
+          "pressurized_helium",
+          "supermagnet",
+          "wolfram_plate"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_GoethiteLattice.CR_GoethiteLattice": {
+        "catalogRecipeId": "mega_press:13",
+        "outputItemId": "goethitelattice",
+        "inputItemIds": [
+          "goethiteingot",
+          "ubertitanium",
+          "uberwolfram"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_HeatShield.CR_HeatShield": {
+        "catalogRecipeId": "mega_press:14",
+        "outputItemId": "heatshield",
+        "inputItemIds": [
+          "aerogel",
+          "epoxy",
+          "reinforcedframe",
+          "uberfilament"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_HeavyAmmo.CR_HeavyAmmo": {
+        "catalogRecipeId": "mega_press:3",
+        "outputItemId": "heavy_ammo",
+        "inputItemIds": [
+          "basic_building",
+          "titanium_rod"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Impeller.CR_Impeller": {
+        "catalogRecipeId": "mega_press:4",
+        "outputItemId": "impeller",
+        "inputItemIds": [
+          "heat_sheet",
+          "stabilizer",
+          "titanium_rod",
+          "wolfram_plate"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_IntermediateBuildingMaterial.CR_IntermediateBuildingMaterial": {
+        "catalogRecipeId": "mega_press:0",
+        "outputItemId": "intermediate_building",
+        "inputItemIds": [
+          "basic_building",
+          "glass",
+          "inductor",
+          "titanium_housing"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_IonStabilizer.CR_IonStabilizer": {
+        "catalogRecipeId": "mega_press:15",
+        "outputItemId": "ionstabilizer",
+        "inputItemIds": [
+          "epoxy",
+          "grenade",
+          "liquid_helium",
+          "onboardinstruments"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Nozzle.CR_Nozzle": {
+        "catalogRecipeId": "mega_press:5",
+        "outputItemId": "nozzle",
+        "inputItemIds": [
+          "heat_sheet",
+          "helium",
+          "stabilizer"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Pump.CR_Pump": {
+        "catalogRecipeId": "mega_press:10",
+        "outputItemId": "pump",
+        "inputItemIds": [
+          "impeller",
+          "sulfuric_acid",
+          "turbine",
+          "valve"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_ReinforcedFrame.CR_ReinforcedFrame": {
+        "catalogRecipeId": "mega_press:11",
+        "outputItemId": "reinforcedframe",
+        "inputItemIds": [
+          "titanium_beam",
+          "tube",
+          "ubertitanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_ReinforcedHousing.CR_ReinforcedHousing": {
+        "catalogRecipeId": "mega_press:12",
+        "outputItemId": "reinforcedhousing",
+        "inputItemIds": [
+          "titanium_housing",
+          "uberwolfram",
+          "wolfram_plate"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_ShotgunAmmo.CR_ShotgunAmmo": {
+        "catalogRecipeId": "mega_press:2",
+        "outputItemId": "shotgun_ammo",
+        "inputItemIds": [
+          "basic_building",
+          "powder_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_StandardAmmo.CR_StandardAmmo": {
+        "catalogRecipeId": "mega_press:1",
+        "outputItemId": "standard_ammo",
+        "inputItemIds": [
+          "basic_building",
+          "powder_wolfram"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Turbine.CR_Turbine": {
+        "catalogRecipeId": "mega_press:7",
+        "outputItemId": "turbine",
+        "inputItemIds": [
+          "impeller",
+          "rotor",
+          "stator",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Valve.CR_Valve": {
+        "catalogRecipeId": "mega_press:8",
+        "outputItemId": "valve",
+        "inputItemIds": [
+          "nozzle",
+          "titanium_beam",
+          "titanium_housing",
+          "titanium_rod"
+        ],
+        "variant": "default"
+      }
+    },
+    "militaryassembler": {
+      "/Game/Chimera/Crafting/CR_Biofilament.CR_Biofilament": {
+        "catalogRecipeId": "militaryassembler:0",
+        "outputItemId": "biofilament",
+        "inputItemIds": [
+          "nanofiber",
+          "rnastabilizer",
+          "substancefhs-135-493",
+          "superconductor",
+          "syntheticprotein"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Converter.CR_Converter": {
+        "catalogRecipeId": "militaryassembler:1",
+        "outputItemId": "converter",
+        "inputItemIds": [
+          "accumulator",
+          "electromagnetic_coil",
+          "laser_emitter",
+          "rtsc",
+          "uberoil"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Cyclotrone.CR_Cyclotrone": {
+        "catalogRecipeId": "militaryassembler:2",
+        "outputItemId": "cyclotrone",
+        "inputItemIds": [
+          "aerogel",
+          "electromagnet",
+          "ion_injector",
+          "plasticdust",
+          "reinforcedhousing"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Dome.CR_Dome": {
+        "catalogRecipeId": "militaryassembler:5",
+        "outputItemId": "dome",
+        "inputItemIds": [
+          "airlock",
+          "condenser",
+          "converter",
+          "scafolding",
+          "uberfilament"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_IonBomb.CR_IonBomb": {
+        "catalogRecipeId": "militaryassembler:6",
+        "outputItemId": "ionbomb",
+        "inputItemIds": [
+          "grenade",
+          "ion_injector",
+          "ionstabilizer",
+          "resonator",
+          "trackingdevice"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_RocketEngine.CR_RocketEngine": {
+        "catalogRecipeId": "militaryassembler:3",
+        "outputItemId": "rocketengine",
+        "inputItemIds": [
+          "condenser",
+          "nozzle",
+          "pump",
+          "rocketfuel",
+          "turbine"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_RTSCGenerator.CR_RTSCGenerator": {
+        "catalogRecipeId": "militaryassembler:7",
+        "outputItemId": "rtscgenerator",
+        "inputItemIds": [
+          "anti-radiationcovers",
+          "cyclotrone",
+          "generator",
+          "laser_emitter",
+          "rtsc"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SatelliteBody.CR_SatelliteBody": {
+        "catalogRecipeId": "militaryassembler:8",
+        "outputItemId": "satellitebody",
+        "inputItemIds": [
+          "heatshield",
+          "ionthrusters",
+          "onboardinstruments",
+          "rocketengine",
+          "scanner"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SyntheticDNA.CR_SyntheticDNA": {
+        "catalogRecipeId": "militaryassembler:9",
+        "outputItemId": "syntheticdna",
+        "inputItemIds": [
+          "biofilament",
+          "nanosyringe",
+          "substancefhs-135-493",
+          "syntheticprotein",
+          "uberoil"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TrackingDevice.CR_TrackingDevice": {
+        "catalogRecipeId": "militaryassembler:4",
+        "outputItemId": "trackingdevice",
+        "inputItemIds": [
+          "carbonsonar",
+          "lens",
+          "onboardinstruments",
+          "quantumtranqualizer",
+          "scanner"
+        ],
+        "variant": "default"
+      }
+    },
+    "ore_excavator": {
+      "/Game/Chimera/Crafting/MechanicalDrill/CR_CalciumOre_MechanicalDrill.CR_CalciumOre_MechanicalDrill": {
+        "catalogRecipeId": "ore_excavator:1",
+        "outputItemId": "ore_calcium",
+        "inputItemIds": [],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/MechanicalDrill/CR_TitaniumOre_MechanicalDrill.CR_TitaniumOre_MechanicalDrill": {
+        "catalogRecipeId": "ore_excavator:2",
+        "outputItemId": "ore_titanium",
+        "inputItemIds": [],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/MechanicalDrill/CR_WolframOre_MechanicalDrill.CR_WolframOre_MechanicalDrill": {
+        "catalogRecipeId": "ore_excavator:0",
+        "outputItemId": "ore_wolfram",
+        "inputItemIds": [],
+        "variant": "default"
+      }
+    },
+    "pressurizer": {
+      "/Game/Chimera/Crafting/CR_RefinedOil.CR_RefinedOil": {
+        "catalogRecipeId": "pressurizer:0",
+        "outputItemId": "refinedoil",
+        "inputItemIds": [
+          "magicoilore",
+          "ore_calcium",
+          "ore_titanium"
+        ],
+        "variant": "default"
+      }
+    },
+    "refinery": {
+      "/Game/Chimera/Crafting/CR_PressurizedHelium.CR_PressurizedHelium": {
+        "catalogRecipeId": "refinery:1",
+        "outputItemId": "pressurized_helium",
+        "inputItemIds": [
+          "helium",
+          "ore_sulfur"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SulphuricAcid.CR_SulphuricAcid": {
+        "catalogRecipeId": "refinery:0",
+        "outputItemId": "sulfuric_acid",
+        "inputItemIds": [
+          "chemicals",
+          "ore_sulfur"
+        ],
+        "variant": "default"
+      }
+    },
+    "smelter": {
+      "/Game/Chimera/Crafting/CR_CalciumBlock.CR_CalciumBlock": {
+        "catalogRecipeId": "smelter:2",
+        "outputItemId": "block_calcium",
+        "inputItemIds": [
+          "ore_calcium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_TitaniumBar.CR_TitaniumBar": {
+        "catalogRecipeId": "smelter:0",
+        "outputItemId": "bar_titanium",
+        "inputItemIds": [
+          "ore_titanium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_WolframBar.CR_WolframBar": {
+        "catalogRecipeId": "smelter:1",
+        "outputItemId": "bar_wolfram",
+        "inputItemIds": [
+          "ore_wolfram"
+        ],
+        "variant": "default"
+      }
+    },
+    "sulfur_extractor": {
+      "/Game/Chimera/Crafting/CR_SulphurOre.CR_SulphurOre": {
+        "catalogRecipeId": "sulfur_extractor:0",
+        "outputItemId": "ore_sulfur",
+        "inputItemIds": [],
+        "variant": "default"
+      }
+    },
+    "synthetizertier2": {
+      "/Game/Chimera/Crafting/CR_Epoxy_v2.CR_Epoxy_v2": {
+        "catalogRecipeId": "synthetizertier2:epoxy_v2",
+        "outputItemId": "epoxy",
+        "inputItemIds": [
+          "goethitepowder",
+          "liquid_helium",
+          "synthetic_resin"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Lens_v2.CR_Lens_v2": {
+        "catalogRecipeId": "synthetizertier2:lens_v2",
+        "outputItemId": "lens",
+        "inputItemIds": [
+          "glass",
+          "hardening_agent",
+          "synthetic_resin"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_LiquidHelium_v2.CR_LiquidHelium_v2": {
+        "catalogRecipeId": "synthetizertier2:2",
+        "outputItemId": "liquid_helium",
+        "inputItemIds": [
+          "hardening_agent",
+          "pressurized_helium"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_Nanofibre_v2.CR_Nanofibre_v2": {
+        "catalogRecipeId": "synthetizertier2:nanofiber_v2",
+        "outputItemId": "nanofiber",
+        "inputItemIds": [
+          "liquid_helium",
+          "tube",
+          "wolfram_wire"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_PressurizedHelium_v2.CR_PressurizedHelium_v2": {
+        "catalogRecipeId": "synthetizertier2:0",
+        "outputItemId": "pressurized_helium",
+        "inputItemIds": [
+          "helium",
+          "ore_sulfur"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SulphuricAcid_v2.CR_SulphuricAcid_v2": {
+        "catalogRecipeId": "synthetizertier2:1",
+        "outputItemId": "sulfuric_acid",
+        "inputItemIds": [
+          "chemicals",
+          "ore_sulfur"
+        ],
+        "variant": "default"
+      },
+      "/Game/Chimera/Crafting/CR_SyntheticResin_v2.CR_SyntheticResin_v2": {
+        "catalogRecipeId": "synthetizertier2:3",
+        "outputItemId": "synthetic_resin",
+        "inputItemIds": [
+          "calcite_sheets",
+          "hardening_agent",
+          "sulfuric_acid"
+        ],
+        "variant": "default"
+      }
+    }
+  },
+  "mappingRevision": "sha256:251875733baf623147dfa703130203bcb16c54b97dc6f08f0b79c6d36e4e4978",
+  "catalogRevision": "sha256:3869cdb6fee3b0910f45d3ab1dff5502bcb056b8ecb0d475fcef9ec95cc2567f"
+}

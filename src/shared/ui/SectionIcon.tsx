@@ -1,4 +1,10 @@
 const iconPaths = {
+    saves: (
+        <>
+            <path d="M5 3h11l4 4v14H5zM15 3v5H8V3M8 21v-8h9v8" />
+            <path d="M2 6v15" />
+        </>
+    ),
     bases: (
         <>
             <path d="m3 10 9-7 9 7M5 8.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5" />

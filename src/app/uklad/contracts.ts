@@ -1,3 +1,4 @@
+import type { SaveGameData } from '@/features/saves/game-data';
 import type { UiText } from '@/shared/i18n/core';
 import type { RecipePresetState } from '@/features/planner/recipe-presets';
 import type { ArchiveSelection, PlannerArchive, TransferStatus } from '@/features/data-transfer/archive';
@@ -50,6 +51,11 @@ import type {
 } from '@/features/planner/types';
 import type { PlannerFlowGraph } from '@/features/planner/flow-graph';
 import { appIds, stateKeys } from './catalog';
+import type { SaveFileSource } from '@/features/saves/reader';
+import type { SaveSnapshot } from '@/features/saves/snapshot';
+import type { SaveImportErrorCode } from '@/features/saves/import-error';
+import type { SaveCoreObjective, SaveImportRequest, SaveImportState, SaveWorkspace, SaveWorkspaceSelection, SaveStorageError } from '@/features/saves/types';
+import type { SaveCoreOverview, SaveOverview } from '@/features/saves/overview';
 
 export interface ConfirmationDialogOptions {
     confirmLabel?: UiText;
@@ -104,6 +110,13 @@ type ProductionPlanModalInputSelectorData = {
  */
 export interface AppContracts extends UkladContracts {
     state: {
+        [stateKeys.savesBuildingCatalog]: AppState['savesBuildingCatalog'];
+        [stateKeys.savesImport]: SaveImportState;
+        [stateKeys.savesWorkspaces]: Record<string, SaveWorkspace>;
+        [stateKeys.savesWorkspaceOrder]: string[];
+        [stateKeys.savesActiveWorkspaceId]: string | null;
+        [stateKeys.savesSelections]: Record<string, SaveWorkspaceSelection>;
+        [stateKeys.savesStorageError]: SaveStorageError;
         [stateKeys.dataTransferPreview]: PlannerArchive | null;
         [stateKeys.dataTransferStatus]: TransferStatus | null;
         [stateKeys.appDataVersion]: AppState['appDataVersion'];
@@ -138,6 +151,17 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.productionPlanModalState]: AppState['productionPlanModalState'];
     };
     events: {
+        [appIds.events.SAVES_STORAGE_FAILED]: [error: Exclude<SaveStorageError, null>];
+        [appIds.events.SAVES_IMPORT_OPEN]: [workspaceId?: string];
+        [appIds.events.SAVES_IMPORT_CLOSE]: [];
+        [appIds.events.SAVES_IMPORT_READ]: [file: SaveFileSource];
+        [appIds.events.SAVES_IMPORT_READY]: [requestId: number, report: SaveSnapshot];
+        [appIds.events.SAVES_IMPORT_FAILED]: [requestId: number, error: SaveImportErrorCode];
+        [appIds.events.SAVES_SELECT_WORKSPACE]: [workspaceId: string];
+        [appIds.events.SAVES_RENAME_WORKSPACE]: [workspaceId: string, name: string];
+        [appIds.events.SAVES_REMOVE_WORKSPACE]: [workspaceId: string];
+        [appIds.events.SAVES_SELECT_CORE]: [workspaceId: string, coreId: number | null];
+        [appIds.events.SAVES_SET_CORE_OBJECTIVE]: [workspaceId: string, coreId: number, objective: SaveCoreObjective | null];
         [appIds.events.PLANNER_SET_EXTERNAL_INPUT]: [itemId: string, amount: number];
         [appIds.events.PLANNER_REMOVE_EXTERNAL_INPUT]: [itemId: string];
         [appIds.events.PRODUCTION_PLAN_ADD_INPUT]: [baseId: string, planId: string, itemId: string, amount: number, buildingTypeId: string, name?: string, description?: string];
@@ -229,12 +253,28 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PRODUCTION_PLAN_MODAL_SUBMIT]: [];
     };
     effects: {
+        [appIds.effects.savesReadImport]: SaveImportRequest;
+        [appIds.effects.savesCancelImport]: undefined;
         [appIds.effects.downloadArchive]: PlannerArchive;
         [appIds.effects.readArchive]: string;
         [appIds.effects.setTheme]: 'light' | 'dark';
         [appIds.effects.loadGameData]: DataVersion;
     };
     subscriptions: {
+        [appIds.subscriptions.SAVES_BUILDING_CATALOG]: { params: []; result: AppState['savesBuildingCatalog'] };
+        [appIds.subscriptions.SAVES_GAME_DATA]: { params: []; result: SaveGameData };
+        [appIds.subscriptions.SAVES_IMPORT]: { params: []; result: SaveImportState };
+        [appIds.subscriptions.SAVES_WORKSPACES]: { params: []; result: Record<string, SaveWorkspace> };
+        [appIds.subscriptions.SAVES_WORKSPACE_ORDER]: { params: []; result: string[] };
+        [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE_ID]: { params: []; result: string | null };
+        [appIds.subscriptions.SAVES_SELECTIONS]: { params: []; result: Record<string, SaveWorkspaceSelection> };
+        [appIds.subscriptions.SAVES_STORAGE_ERROR]: { params: []; result: SaveStorageError };
+        [appIds.subscriptions.SAVES_TABS]: { params: []; result: { id: string; name: string }[] };
+        [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE]: { params: []; result: SaveWorkspace | null };
+        [appIds.subscriptions.SAVES_WORKSPACE_BY_ID]: { params: [workspaceId: string]; result: SaveWorkspace | null };
+        [appIds.subscriptions.SAVES_OVERVIEW]: { params: [workspaceId: string]; result: SaveOverview | null };
+        [appIds.subscriptions.SAVES_CORE_BY_ID]: { params: [workspaceId: string, coreId: number]; result: SaveCoreOverview | null };
+        [appIds.subscriptions.SAVES_SELECTED_CORE]: { params: [workspaceId: string]; result: SaveCoreOverview | null };
         [appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS]: { params: [baseId: string | null, planId: string | null, itemId: string | null]; result: LinkableOutputItem[] };
         [appIds.subscriptions.PLANNER_EXTERNAL_INPUTS]: { params: []; result: Record<string, number> };
         [appIds.subscriptions.DATA_TRANSFER_PREVIEW]: { params: []; result: PlannerArchive | null };

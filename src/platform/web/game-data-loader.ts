@@ -1,6 +1,9 @@
 import { gameDataBundleToAppVersioned, type GameDataBundle } from '@/app/uklad/game-data';
-import type { RawCorporationsData } from '@/app/uklad/model';
-import type { DataVersion } from '@/features/app-shell/data-version';
+import { createSaveBuildingCatalog } from '@/features/saves/game-data';
+import type { Building, RawCorporationsData } from '@/app/uklad/model';
+import { hasSaveMappings, type DataVersion } from '@/features/app-shell/data-version';
+import { loadSaveDecodeContext, loadSaveMappings } from '@/features/saves/decoder/mappings';
+import type { SaveDataContext } from '@/features/saves/decoder/types';
 
 const FILES = {
     items: 'items_catalog.json',
@@ -26,17 +29,23 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 const cache = new Map<DataVersion, GameDataBundle>();
 
+export function loadWebSaveContext(context: SaveDataContext) {
+    return loadSaveDecodeContext(context, file => fetchJson(gameDataFileUrl(context.dataVersion, file)));
+}
+
 export async function loadGameDataVersion(version: DataVersion): Promise<GameDataBundle> {
     const hit = cache.get(version);
     if (hit) return hit;
 
-    const [items, buildings, corporations] = await Promise.all([
+    const [items, buildings, corporations, mappings] = await Promise.all([
         fetchJson<unknown>(gameDataFileUrl(version, FILES.items)),
         fetchJson<unknown>(gameDataFileUrl(version, FILES.buildings)),
         fetchJson<RawCorporationsData>(gameDataFileUrl(version, FILES.corporations)),
+        hasSaveMappings(version) ? loadSaveMappings(version, file => fetchJson(gameDataFileUrl(version, file))).catch(() => null) : null,
     ]);
 
-    const bundle: GameDataBundle = { items, buildings, corporations };
+    const bundle: GameDataBundle = { items, buildings, corporations,
+        saveBuildingCatalog: mappings ? createSaveBuildingCatalog(mappings, buildings as Building[]) : null };
     cache.set(version, bundle);
     return bundle;
 }

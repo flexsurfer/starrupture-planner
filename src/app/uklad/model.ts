@@ -1,4 +1,6 @@
+import type { SaveBuildingCatalog } from '@/features/saves/game-data';
 import type { UiText } from '@/shared/i18n/core';
+import type { SavesFeatureState } from '@/features/saves/types';
 import type { DataTransferState } from '@/features/data-transfer/archive';
 import type { PlannerFeatureState } from '@/features/planner/state';
 import type { DataVersion } from '@/features/app-shell/data-version';
@@ -19,6 +21,7 @@ export interface RawCorporationsData {
 }
 
 export type AppVersionedGameData = {
+    saveBuildingCatalog?: SaveBuildingCatalog | null;
     items: Item[];
     buildings: Building[];
     corporations: RawCorporationsData;
@@ -99,7 +102,7 @@ export interface Corporation {
     levels: CorporationLevel[];
 }
 
-export type TabType = 'items' | 'recipes' | 'corporations' | 'planner' | 'mybases';
+export type TabType = 'items' | 'recipes' | 'corporations' | 'planner' | 'mybases' | 'mysaves';
 export type BaseDetailTab = 'base' | 'plans' | 'buildings';
 
 export interface Tab {
@@ -213,7 +216,7 @@ export interface CreateProductionPlanModalState {
     matchInputs: boolean;
 }
 
-export interface AppState extends PlannerFeatureState, DataTransferState {
+export interface AppState extends PlannerFeatureState, DataTransferState, SavesFeatureState {
     appDataVersion: DataVersion;
     appDataVersions: { id: DataVersion; label: string }[];
     /** Populated as versions are fetched from `/game-data/{version}/`. */

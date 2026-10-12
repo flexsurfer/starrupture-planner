@@ -1,3 +1,4 @@
+import { createSaveImportState } from '@/features/saves/state';
 import { refreshRecipePresets } from '@/features/planner/recipe-presets';
 import { message } from '@/shared/i18n/core';
 import { normalizeLocale } from '@/shared/i18n/locales';
@@ -67,6 +68,9 @@ export const registerAppShellEvents: UkladModule<UkladRegistrar<AppContracts>> =
         const data = draftState.appVersionedData[version];
         if (!data) return;
 
+        const cancelImport = draftState.savesImport.phase !== 'closed';
+        if (cancelImport) draftState.savesImport = createSaveImportState(draftState.savesImport.requestId + 1);
+        draftState.savesBuildingCatalog = data.saveBuildingCatalog ?? null;
         draftState.appDataVersion = version;
         draftState.itemsList = data.items;
         draftState.itemsById = buildItemsMap(data.items);
@@ -77,5 +81,6 @@ export const registerAppShellEvents: UkladModule<UkladRegistrar<AppContracts>> =
         if (bundle !== undefined) {
             draftState.uiGameDataLoadPending = false;
         }
+        if (cancelImport) return [[appIds.effects.savesCancelImport]];
     });
 };

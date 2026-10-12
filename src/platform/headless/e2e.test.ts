@@ -15,6 +15,10 @@ import { DEFAULT_DATA_VERSION } from '@/features/app-shell/data-version';
 import { registerHeadlessApplication, type HeadlessApplicationOptions } from './register';
 import { parseArchive, prepareArchiveImport, type PlannerArchive } from '@/features/data-transfer/archive';
 import { STANDARD_RECIPE_PRESET_ID, V2_RECIPE_PRESET_ID } from '@/features/planner/recipe-presets';
+import { analyzeSave } from '@/features/saves/decoder/analyze';
+import { saveGameData, extractionContext, snapshotFixture, transportFixture } from '@/features/saves/decoder/test-fixture';
+import { memoryStorageAdapter, persist } from '@ukladjs/persist';
+import { PERSIST_KEYS } from '@/platform/web/persistence';
 
 type AppScenario = UkladHeadlessScenario<AppContracts>;
 type AppEvent = Parameters<AppScenario['dispatch']>[0];
@@ -155,6 +159,184 @@ afterAll(() => {
 });
 
 describe('headless application E2E', () => {
+    it('opens independent save workspaces, preserves intent across tabs and a reload, and reports storage failures', async () => {
+        const memory = memoryStorageAdapter();
+        let failWrites = false;
+        const storage = {
+            sync: true as const,
+            getItem: (key: string) => memory.getItem(key),
+            setItem: (key: string, value: string) => { if (failWrites) throw new Error('quota'); memory.setItem(key, value); },
+            removeItem: (key: string) => memory.removeItem(key),
+        };
+        const runtime = createAppRuntime({ runtimeId: 'saves-workspaces-e2e' });
+        registerHeadlessApplication(runtime, { effects: { decodeSaveFile: () => new Promise(() => {}) } });
+        const persistence = persist(runtime, { storage, keys: PERSIST_KEYS, prefix: 'headless-saves',
+            onError: () => runtime.dispatch([appIds.events.SAVES_STORAGE_FAILED, 'write']),
+        });
+        const scenario = createUkladHeadlessScenario(runtime);
+        scenarios.push(scenario);
+        persistence.hydrate();
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
+        await scenario.settle();
+        const saves = mountView(scenario, 'My Saves', {
+            metadata: [appIds.subscriptions.SAVES_BUILDING_CATALOG], gameData: [appIds.subscriptions.SAVES_GAME_DATA],
+            records: [appIds.subscriptions.SAVES_WORKSPACES], order: [appIds.subscriptions.SAVES_WORKSPACE_ORDER],
+            activeId: [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE_ID], selections: [appIds.subscriptions.SAVES_SELECTIONS],
+            storage: [appIds.subscriptions.SAVES_STORAGE_ERROR], tabs: [appIds.subscriptions.SAVES_TABS],
+            active: [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE], one: [appIds.subscriptions.SAVES_WORKSPACE_BY_ID, 'one'],
+            overview: [appIds.subscriptions.SAVES_OVERVIEW, 'one'], core: [appIds.subscriptions.SAVES_CORE_BY_ID, 'one', 1],
+            selected: [appIds.subscriptions.SAVES_SELECTED_CORE, 'one'], candidate: [appIds.subscriptions.SAVES_IMPORT],
+            bases: [appIds.subscriptions.BASES_LIST], planner: [appIds.subscriptions.PLANNER_TABS],
+        } as const);
+        await dispatch(scenario, [appIds.events.BASES_CREATE_BASE, 'Keep manual work']);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'keep', 'Keep planner work', 'single']);
+        const unrelated = { bases: saves.value('bases'), planner: saves.value('planner') };
+        const importCandidate = async (id: string) => {
+            await dispatch(scenario, [appIds.events.SAVES_IMPORT_OPEN, id]);
+            await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, { name: 'sample.sav', size: 10, arrayBuffer: async () => new ArrayBuffer(10) }]);
+            await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, saves.value('candidate').requestId, analyzeSave(snapshotFixture(), extractionContext)]);
+        };
+        await importCandidate('one');
+        await dispatch(scenario, [appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'First world']);
+        await dispatch(scenario, [appIds.events.SAVES_SELECT_CORE, 'one', 1]);
+        await dispatch(scenario, [appIds.events.SAVES_SET_CORE_OBJECTIVE, 'one', 1, { kind: 'intermediate', itemIds: ['tube'] }]);
+        const baseline = saves.value('one')!.snapshot;
+        await importCandidate('two');
+        await dispatch(scenario, [appIds.events.SAVES_SELECT_WORKSPACE, 'one']);
+        expect(saves.value('candidate').phase).toBe('closed');
+        await dispatch(scenario, [appIds.events.SAVES_RENAME_WORKSPACE, 'two', 'Second world']);
+        await dispatch(scenario, [appIds.events.SAVES_SELECT_CORE, 'two', 2]);
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update1', TEST_GAME_DATA]);
+        expect(saves.value('one')!.snapshot).toEqual(baseline);
+        expect(saves.value('overview')!.cores).toHaveLength(2);
+        expect(saves.value('core')?.buildings.some(building => building.id === 200)).toBe(true);
+        expect(saves.value('one')?.coreSettings['1:10.5']?.objective).toEqual({ kind: 'intermediate', itemIds: ['tube'] });
+        expect(saves.value('selected')?.core.id).toBe(1);
+        expect({ bases: saves.value('bases'), planner: saves.value('planner') }).toEqual(unrelated);
+        failWrites = true;
+        await dispatch(scenario, [appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Unsaved world']);
+        expect(saves.value('storage')).toBe('write');
+        await dispatch(scenario, [appIds.events.SAVES_STORAGE_FAILED, 'write']);
+        failWrites = false;
+        await dispatch(scenario, [appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Renamed world']);
+        await dispatch(scenario, [appIds.events.SAVES_SELECT_WORKSPACE, 'one']);
+        const expected = saves.value('one');
+        persistence.dispose();
+        saves.unmount();
+        await scenario.dispose();
+
+        const restoredRuntime = createAppRuntime({ runtimeId: 'saves-reloaded-e2e' });
+        registerHeadlessApplication(restoredRuntime);
+        const restoredPersistence = persist(restoredRuntime, { storage, keys: PERSIST_KEYS, prefix: 'headless-saves' });
+        const restored = createUkladHeadlessScenario(restoredRuntime);
+        scenarios.push(restored);
+        const reopened = mountView(restored, 'Reopened save', {
+            active: [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE], selected: [appIds.subscriptions.SAVES_SELECTED_CORE, 'one'],
+            tabs: [appIds.subscriptions.SAVES_TABS],
+        } as const);
+        restoredPersistence.hydrate();
+        await restored.settle();
+        expect(reopened.value('active')).toEqual(expected);
+        expect(reopened.value('selected')?.core.id).toBe(1);
+        await dispatch(restored, [appIds.events.SAVES_REMOVE_WORKSPACE, 'one']);
+        expect(reopened.value('tabs')).toEqual([{ id: 'two', name: 'Second world' }]);
+        expect(reopened.value('active')?.id).toBe('two');
+        restoredPersistence.dispose();
+    });
+    it('keeps imported extraction and individual transport links separate from manually tracked bases', async () => {
+        const scenario = createScenario({ effects: { decodeSaveFile: () => new Promise(() => {}) } });
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
+        await dispatch(scenario, [appIds.events.BASES_CREATE_BASE, 'Manual base']);
+        const view = mountView(scenario, 'Saves import candidate', {
+            candidate: [appIds.subscriptions.SAVES_IMPORT], active: [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE], bases: [appIds.subscriptions.BASES_LIST],
+            selected: [appIds.subscriptions.BASES_SELECTED_BASE_ID], mode: [appIds.subscriptions.BASES_MODE],
+        } as const);
+        const before = { bases: view.value('bases'), selected: view.value('selected'), mode: view.value('mode') };
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_OPEN]);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, { name: 'sample.sav', size: 10, arrayBuffer: async () => new ArrayBuffer(10) }]);
+        const requestId = view.value('candidate').requestId;
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, requestId, analyzeSave(snapshotFixture(), extractionContext)]);
+        expect(view.value('candidate').phase).toBe('closed');
+        const report = view.value('active')!.snapshot;
+        expect(report.gameData.version).toBe('update2_QoL');
+        const buildings = report.cores.flatMap(core => core.buildings);
+        expect(buildings.find(building => building.id === 105)?.configuration).toEqual({ kind: 'extractor', itemId: 'ore_titanium', nodePurity: 'pure' });
+        expect(buildings.find(building => building.id === 200)?.configuration).toEqual({ kind: 'production', recipeId: 'fabricator:9' });
+        expect(buildings.find(building => building.id === 201)?.configuration).toEqual({ kind: 'production', recipeId: 'craftertier2:5' });
+        expect(report).not.toHaveProperty('catalog');
+        expect({ bases: view.value('bases'), selected: view.value('selected'), mode: view.value('mode') }).toEqual(before);
+        view.unmount();
+    });
+
+    it('reads and cancels an independent Saves candidate without changing manually tracked work', async () => {
+        // Hold IO at the boundary so the scenario controls each completion event.
+        const scenario = createScenario({ effects: { decodeSaveFile: () => new Promise(() => {}) } });
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
+        await dispatchAll(scenario, [
+            [appIds.events.BASES_CREATE_BASE, 'Manual base'],
+            [appIds.events.PLANNER_CREATE_TAB, 'keep', 'Keep this plan', 'single'],
+        ]);
+        const view = mountView(scenario, 'Saves import candidate', {
+            review: [appIds.subscriptions.SAVES_IMPORT],
+            active: [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE],
+            bases: [appIds.subscriptions.BASES_LIST],
+            plans: [appIds.subscriptions.PLANNER_TABS],
+            grids: [appIds.subscriptions.ENERGY_GROUPS_LIST],
+        } as const);
+        const before = { bases: view.value('bases'), plans: view.value('plans'), grids: view.value('grids') };
+        const file = { name: 'sample.sav', size: 10, arrayBuffer: async () => new ArrayBuffer(10) };
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_OPEN]);
+        expect(view.value('review').phase).toBe('select');
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, file]);
+        expect(view.value('review').phase).toBe('reading');
+        const first = view.value('review').requestId;
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_FAILED, first, 'compression']);
+        expect(view.value('review')).toMatchObject({ phase: 'select', error: 'compression' });
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, file]);
+        const requestId = view.value('review').requestId;
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_CLOSE]);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, requestId, analyzeSave(transportFixture(), extractionContext)]);
+        expect(view.value('review').phase).toBe('closed');
+        expect(view.value('active')).toBeNull();
+        expect({ bases: view.value('bases'), plans: view.value('plans'), grids: view.value('grids') }).toEqual(before);
+        view.unmount();
+    });
+
+    it('recomputes mounted Saves views from selected catalogs without rewriting saved work', async () => {
+        const scenario = createScenario({ effects: { decodeSaveFile: () => new Promise(() => {}) } });
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
+        const view = mountView(scenario, 'Version-aware Saves', {
+            workspace: [appIds.subscriptions.SAVES_WORKSPACE_BY_ID, 'one'],
+            overview: [appIds.subscriptions.SAVES_OVERVIEW, 'one'],
+            candidate: [appIds.subscriptions.SAVES_IMPORT],
+        } as const);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_OPEN, 'one']);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, { name: 'world.sav', size: 10, arrayBuffer: async () => new ArrayBuffer(10) }]);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, view.value('candidate').requestId, analyzeSave(snapshotFixture(), extractionContext)]);
+        const stored = view.value('workspace');
+        const original = view.value('overview')!;
+        const selected = structuredClone(saveGameData);
+        selected.buildings.find(building => building.id === 'smelter')!.name = 'Selected smelter';
+        selected.buildings.find(building => building.id === 'smelter')!.heat = 123;
+        selected.buildings.find(building => building.id === 'fabricator')!.recipes![9].output.amount_per_minute = 987;
+        selected.items.find(item => item.id === 'ore_titanium')!.name = 'Selected titanium';
+        for (const key of Object.keys(selected.saveBuildingCatalog.extractionRates)) selected.saveBuildingCatalog.extractionRates[key] = 1;
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update1', selected]);
+        const changed = view.value('overview')!;
+        expect(changed.cores.flatMap(core => core.buildingDetails).find(detail => detail.instance.id === 10)!.building.name).toBe('Selected smelter');
+        expect(changed.cores[0].heat).not.toBe(original.cores[0].heat);
+        expect(changed.cores.flatMap(core => core.buildingDetails).find(detail => detail.instance.id === 200)!.resources[0].rate).toBe(987);
+        expect(changed.cores[0].incoming.find(resource => resource.itemId === 'ore_titanium')).toMatchObject({ name: 'Selected titanium', rate: 3 });
+        expect(view.value('workspace')).toEqual(stored);
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'earlyaccess', { buildings: [], items: [], corporations: {} }]);
+        expect(view.value('overview')!.cores[0].heat).toBeNull();
+        expect(view.value('overview')!.cores.flatMap(core => core.buildingDetails).find(detail => detail.instance.id === 10)!.building.name).toBe('smelter');
+        expect(view.value('workspace')).toEqual(stored);
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL']);
+        expect(view.value('overview')).toEqual(original);
+        view.unmount();
+    });
+
     it('converts ingredients to external resources and restores production in planner and base diagrams', async () => {
         const scenario = await createSeededScenario();
         const planner = mountView(scenario, 'Planner input controls', {

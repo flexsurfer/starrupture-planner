@@ -2,7 +2,7 @@ import type { Building } from "@/app/uklad/model";
 
 export interface BuildingImageProps {
   buildingId: string;
-  building?: Building;
+  building?: Pick<Building, 'name'>;
   className?: string;
   size?: 'xsmall' | 'small' | 'medium' | 'large';
   style?: React.CSSProperties;

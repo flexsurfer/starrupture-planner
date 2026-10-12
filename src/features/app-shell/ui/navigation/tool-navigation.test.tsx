@@ -4,7 +4,7 @@ import { createUkladTestHarness } from '@ukladjs/core/testing';
 import App from '@/App';
 import { AppProviders } from '../AppProviders';
 import { appIds } from '@/app/uklad/catalog';
-import { runtime } from '@/platform/web/bootstrap';
+import { persistence, runtime } from '@/platform/web/bootstrap';
 import { loadGameDataVersion } from '@/platform/web/game-data-loader';
 
 vi.mock('@ukladjs/devtools', () => ({ enableDevtools: vi.fn() }));
@@ -14,13 +14,14 @@ vi.mock('@/platform/web/game-data-loader', async importOriginal => ({
 }));
 vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 
-afterAll(() => { cleanup(); runtime.dispose(); vi.unstubAllGlobals(); });
+afterAll(() => { cleanup(); persistence.dispose(); runtime.dispose(); vi.unstubAllGlobals(); });
 
 it('opens tools directly and preserves URL, runtime and language across navigation and remounts', async () => {
     window.history.replaceState(null, '', '/');
     const harness = createUkladTestHarness(runtime);
     render(<AppProviders><App /></AppProviders>);
-    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('planner'));
+    // The initial route loads lazily; allow for module loading in the full suite.
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('planner'), { timeout: 5000 });
     expect(window.location.pathname).toBe('/planner/');
     await waitFor(() => expect(loadGameDataVersion).toHaveBeenCalledTimes(1));
     expect(document.querySelector('a[href="/planner/"]')).not.toBeNull();
@@ -48,7 +49,13 @@ it('opens tools directly and preserves URL, runtime and language across navigati
     expect(loadGameDataVersion).toHaveBeenCalledTimes(1);
     expect(harness.getSubscriptionValue([appIds.subscriptions.UI_THEME])).toBe('light');
 
+    fireEvent.click(screen.getAllByRole('link', { name: 'My Saves' })[0]);
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('mysaves'));
+    expect(window.location.pathname).toBe('/mysaves/');
+    expect(await screen.findByRole('heading', { name: 'Import your first save' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Import save' })).toBeEnabled();
+
     await act(async () => { runtime.dispatch([appIds.events.UI_SET_LOCALE, 'de']); });
     await waitFor(() => expect(document.documentElement.lang).toBe('de'));
-    expect(window.location.pathname).toBe('/planner/');
+    expect(window.location.pathname).toBe('/mysaves/');
 });

@@ -2,12 +2,15 @@ import { getLocaleMessages, normalizeLocale } from '@/shared/i18n/locales';
 import { createTranslator, message, UiMessageError } from '@/shared/i18n/core';
 import { parseArchive, prepareArchiveImport } from '@/features/data-transfer/archive';
 import { downloadArchive } from './archive-transfer';
+import { registerSaveImportEffects } from '@/platform/shared/save-import-effects';
+import { readSaveInWorker } from './save-import';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { gameDataBundleToAppVersioned, loadGameDataVersion } from '@/platform/web/game-data-loader';
 
 export const registerWebEffects: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    const disposeSaveImport = registerSaveImportEffects(registrar, readSaveInWorker);
     registrar.regEffect(appIds.effects.downloadArchive, (archive, runtime) => {
         try {
             downloadArchive(archive);
@@ -44,4 +47,5 @@ export const registerWebEffects: UkladModule<UkladRegistrar<AppContracts>> = (re
                 runtime.dispatch([appIds.events.APP_GAME_DATA_LOAD_FAILED]);
             });
     });
+    return disposeSaveImport;
 };

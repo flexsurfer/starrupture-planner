@@ -1,0 +1,123 @@
+import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
+import { appIds } from '@/app/uklad/catalog';
+import type { AppContracts } from '@/app/uklad/contracts';
+import { current } from '@ukladjs/core/vanilla';
+import { createSaveGameData } from './game-data';
+import { coreKey } from './snapshot';
+import { createSaveImportState } from './state';
+import { createSaveWorkspace, workspaceIds } from './workspace';
+import { validateSaveSnapshotCatalog, validateSaveObjectiveCatalog, normalizeSaveObjective, saveCollectionStorageBytes, MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, SaveWorkspaceLimitError } from './storage-schema';
+
+export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
+    registrar.regEvent(appIds.events.SAVES_IMPORT_OPEN, ({ draftState }, workspaceId) => {
+        if (draftState.savesStorageError === 'load') return;
+        if (!workspaceId) {
+            let index = draftState.savesImport.requestId + 1;
+            do { workspaceId = `save-${index++}`; } while (Object.hasOwn(draftState.savesWorkspaces, workspaceId));
+        }
+        draftState.savesImport = { ...createSaveImportState(draftState.savesImport.requestId + 1),
+            targetWorkspaceId: workspaceId ?? null, phase: 'select' };
+        return [[appIds.effects.savesCancelImport]];
+    });
+    registrar.regEvent(appIds.events.SAVES_IMPORT_CLOSE, ({ draftState }) => {
+        if (draftState.savesImport.phase === 'closed') return;
+        draftState.savesImport = createSaveImportState(draftState.savesImport.requestId + 1);
+        return [[appIds.effects.savesCancelImport]];
+    });
+    registrar.regEvent(appIds.events.SAVES_IMPORT_READ, ({ draftState }, file) => {
+        if (draftState.savesStorageError === 'load' || draftState.savesImport.phase === 'closed') return;
+        if (draftState.uiGameDataLoadPending) return;
+        if (!draftState.savesBuildingCatalog) { draftState.savesImport.error = 'mapping-version'; return; }
+        const requestId = draftState.savesImport.requestId + 1;
+        const targetWorkspaceId = draftState.savesImport.targetWorkspaceId;
+        draftState.savesImport = { requestId, targetWorkspaceId, phase: 'reading', fileName: file.name, error: null };
+        return [[appIds.effects.savesReadImport, {
+            requestId, targetWorkspaceId, file, dataVersion: draftState.appDataVersion,
+            buildings: current(draftState.buildingsList), items: current(draftState.itemsList),
+        }]];
+    });
+    registrar.regEvent(appIds.events.SAVES_IMPORT_READY, ({ draftState }, requestId, snapshot) => {
+        const candidate = draftState.savesImport;
+        if (candidate.phase !== 'reading' || candidate.requestId !== requestId) return;
+        if (draftState.savesStorageError === 'load') {
+            draftState.savesImport = createSaveImportState(requestId + 1);
+            return;
+        }
+        const workspaceId = candidate.targetWorkspaceId;
+        if (!workspaceId) return;
+        const previous = draftState.savesWorkspaces[workspaceId];
+        candidate.phase = 'select';
+        let workspace;
+        try {
+            validateSaveSnapshotCatalog(snapshot, draftState.appDataVersion, createSaveGameData(draftState.buildingsList, draftState.itemsList, draftState.savesBuildingCatalog));
+            const name = previous?.name ?? (candidate.fileName!.replace(/\.sav$/i, '').trim().slice(0, 120) || 'Save');
+            workspace = createSaveWorkspace(workspaceId, name, snapshot, previous);
+        } catch (error) { candidate.error = error instanceof SaveWorkspaceLimitError ? 'save-storage-limit' : 'structure'; return; }
+        if ((!previous && Object.keys(draftState.savesWorkspaces).length >= MAX_SAVE_WORKSPACES)
+            || saveCollectionStorageBytes({ ...draftState.savesWorkspaces, [workspaceId]: workspace }) > MAX_SAVES_BYTES) {
+            candidate.error = 'workspace-limit';
+            return;
+        }
+        const selectedId = draftState.savesSelections[workspaceId]?.coreId;
+        const selected = previous?.snapshot.cores.find(core => core.id === selectedId);
+        const retainedSelection = selected && workspace.snapshot.cores.some(core => coreKey(core) === coreKey(selected)) ? selected.id : null;
+        draftState.savesWorkspaces[workspaceId] = workspace;
+        if (!previous) draftState.savesWorkspaceOrder.push(workspaceId);
+        draftState.savesActiveWorkspaceId = workspaceId;
+        draftState.savesSelections[workspaceId] = { coreId: retainedSelection };
+        draftState.savesImport = createSaveImportState(requestId + 1);
+        return [[appIds.effects.savesCancelImport]];
+    });
+    registrar.regEvent(appIds.events.SAVES_IMPORT_FAILED, ({ draftState }, requestId, error) => {
+        if (draftState.savesImport.phase !== 'reading' || draftState.savesImport.requestId !== requestId) return;
+        draftState.savesImport.phase = 'select';
+        draftState.savesImport.error = error;
+    });
+    registrar.regEvent(appIds.events.SAVES_SELECT_WORKSPACE, ({ draftState }, id) => {
+        if (draftState.savesStorageError !== 'load' && Object.hasOwn(draftState.savesWorkspaces, id)) draftState.savesActiveWorkspaceId = id;
+    });
+    registrar.regEvent(appIds.events.SAVES_RENAME_WORKSPACE, ({ draftState }, id, name) => {
+        const workspace = draftState.savesWorkspaces[id];
+        if (draftState.savesStorageError === 'load' || !Object.hasOwn(draftState.savesWorkspaces, id)
+            || !name.trim() || name.trim().length > 120) return;
+        workspace.name = name.trim();
+    });
+    registrar.regEvent(appIds.events.SAVES_REMOVE_WORKSPACE, ({ draftState }, id) => {
+        if (draftState.savesStorageError === 'load' || !Object.hasOwn(draftState.savesWorkspaces, id)) return;
+        const order = workspaceIds(draftState.savesWorkspaces, draftState.savesWorkspaceOrder);
+        const index = order.indexOf(id);
+        delete draftState.savesWorkspaces[id];
+        delete draftState.savesSelections[id];
+        draftState.savesWorkspaceOrder = order.filter(entry => entry !== id);
+        if (draftState.savesActiveWorkspaceId === id) {
+            draftState.savesActiveWorkspaceId = draftState.savesWorkspaceOrder[Math.max(0, index - 1)] ?? draftState.savesWorkspaceOrder[0] ?? null;
+        }
+        if (draftState.savesImport.targetWorkspaceId === id) {
+            draftState.savesImport = createSaveImportState(draftState.savesImport.requestId + 1);
+            return [[appIds.effects.savesCancelImport]];
+        }
+    });
+    registrar.regEvent(appIds.events.SAVES_SELECT_CORE, ({ draftState }, id, coreId) => {
+        const workspace = draftState.savesWorkspaces[id];
+        if (draftState.savesStorageError === 'load' || !Object.hasOwn(draftState.savesWorkspaces, id)) return;
+        if (coreId !== null && !workspace.snapshot.cores.some(core => core.id === coreId)) return;
+        draftState.savesSelections[id] = { coreId };
+    });
+    registrar.regEvent(appIds.events.SAVES_SET_CORE_OBJECTIVE, ({ draftState }, id, coreId, value) => {
+        if (draftState.savesStorageError === 'load' || !Object.hasOwn(draftState.savesWorkspaces, id)) return;
+        const workspace = draftState.savesWorkspaces[id];
+        const core = workspace.snapshot.cores.find(core => core.id === coreId);
+        if (!core) return;
+        const key = coreKey(core);
+        if (value === null) { delete workspace.coreSettings[key]; return; }
+        try {
+            const objective = normalizeSaveObjective(value);
+            validateSaveObjectiveCatalog(objective, new Map(draftState.itemsList.map(item => [item.id, item])), draftState.corporationsList);
+            workspace.coreSettings[key] = { objective };
+        } catch { /* Reject malformed external selections without changing saved intent. */ }
+    });
+    registrar.regEvent(appIds.events.SAVES_STORAGE_FAILED, ({ draftState }, error) => {
+        // A later write diagnostic must not hide a failed load.
+        if (draftState.savesStorageError !== 'load') draftState.savesStorageError = error;
+    });
+};
