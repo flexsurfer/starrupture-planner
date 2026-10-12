@@ -4,6 +4,13 @@
  * Feature modules import these values; no feature owns a second ids file.
  */
 export const stateKeys = {
+    savesBuildingCatalog: 'savesBuildingCatalog',
+    savesImport: 'savesImport',
+    savesWorkspaces: 'savesWorkspaces',
+    savesWorkspaceOrder: 'savesWorkspaceOrder',
+    savesActiveWorkspaceId: 'savesActiveWorkspaceId',
+    savesSelections: 'savesSelections',
+    savesStorageError: 'savesStorageError',
     dataTransferPreview: 'dataTransferPreview',
     dataTransferStatus: 'dataTransferStatus',
     appDataVersion: 'appDataVersion',
@@ -40,6 +47,17 @@ export const stateKeys = {
 
 export const appIds = {
     events: {
+        SAVES_STORAGE_FAILED: 'saves/storage-failed',
+        SAVES_IMPORT_OPEN: 'saves/import-open',
+        SAVES_IMPORT_CLOSE: 'saves/import-close',
+        SAVES_IMPORT_READ: 'saves/import-read',
+        SAVES_IMPORT_READY: 'saves/import-ready',
+        SAVES_IMPORT_FAILED: 'saves/import-failed',
+        SAVES_SELECT_WORKSPACE: 'saves/select-workspace',
+        SAVES_RENAME_WORKSPACE: 'saves/rename-workspace',
+        SAVES_REMOVE_WORKSPACE: 'saves/remove-workspace',
+        SAVES_SELECT_CORE: 'saves/select-core',
+        SAVES_SET_CORE_OBJECTIVE: 'saves/set-core-objective',
         RECIPE_ALTERNATIVES_INITIALIZE_PRESETS: 'recipe-alternatives/initialize-presets',
         RECIPE_ALTERNATIVES_RENAME_PRESET: 'recipe-alternatives/rename-preset',
         RECIPE_ALTERNATIVES_SET_DEFAULT_PRESET: 'recipe-alternatives/set-default-preset',
@@ -83,6 +101,20 @@ export const appIds = {
         PRODUCTION_PLAN_MODAL_OPEN: 'production-plan-modal/open', PRODUCTION_PLAN_MODAL_CLOSE: 'production-plan-modal/close', PRODUCTION_PLAN_MODAL_SET_NAME: 'production-plan-modal/set-name', PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM: 'production-plan-modal/set-selected-item', PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'production-plan-modal/set-target-amount', PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'production-plan-modal/set-selected-corporation-level', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'production-plan-modal/set-recipe-selection', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS: 'production-plan-modal/set-recipe-selections', PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'production-plan-modal/toggle-input', PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'production-plan-modal/link-output-input', PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'production-plan-modal/set-match-inputs', PRODUCTION_PLAN_MODAL_SUBMIT: 'production-plan-modal/submit',
     },
     subscriptions: {
+        SAVES_BUILDING_CATALOG: 'saves/building-catalog',
+        SAVES_GAME_DATA: 'saves/game-data',
+        SAVES_IMPORT: 'saves/import-state',
+        SAVES_WORKSPACES: 'saves/workspaces',
+        SAVES_WORKSPACE_ORDER: 'saves/workspace-order',
+        SAVES_ACTIVE_WORKSPACE_ID: 'saves/active-workspace-id',
+        SAVES_SELECTIONS: 'saves/selections',
+        SAVES_STORAGE_ERROR: 'saves/storage-error',
+        SAVES_TABS: 'saves/tabs',
+        SAVES_ACTIVE_WORKSPACE: 'saves/active-workspace',
+        SAVES_WORKSPACE_BY_ID: 'saves/workspace-by-id',
+        SAVES_OVERVIEW: 'saves/overview',
+        SAVES_CORE_BY_ID: 'saves/core-by-id',
+        SAVES_SELECTED_CORE: 'saves/selected-core',
         PLANNER_RECIPE_PRESET_STATE: 'planner/recipe-preset-state',
         PRODUCTION_PLAN_MODAL_RECIPE_PRESET_STATE: 'production-plan-modal/recipe-preset-state',
         BASES_CONNECTION_OUTPUTS: 'bases/connection-outputs',
@@ -120,5 +152,5 @@ export const appIds = {
         BASES_OVERVIEW_PLAN_ROWS: 'bases/overview-plan-rows', BASES_OVERVIEW_MATERIAL_BALANCE_ROWS: 'bases/overview-material-balance-rows', BASES_OVERVIEW_BUILDING_COVERAGE_ROWS: 'bases/overview-building-coverage-rows',
         BASES_PRODUCTION_TABLE: 'bases/production-table',
     },
-    effects: { downloadArchive: 'data-transfer/download-archive', readArchive: 'data-transfer/read-archive', setTheme: 'ui/set-theme-in-dom', loadGameData: 'app/load-game-data' },
+    effects: { savesReadImport: 'saves/import-decode-file', savesCancelImport: 'saves/import-cancel-read', downloadArchive: 'data-transfer/download-archive', readArchive: 'data-transfer/read-archive', setTheme: 'ui/set-theme-in-dom', loadGameData: 'app/load-game-data' },
 } as const;

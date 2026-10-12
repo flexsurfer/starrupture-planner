@@ -8,6 +8,7 @@ import { BuildingsPage } from '@/features/buildings/ui';
 import { CorporationsPage } from '@/features/corporations/ui';
 import { MyBasesPage } from '@/features/bases/ui';
 import { PlannerPage } from '@/features/planner/ui';
+import { MySavesPage } from '@/features/saves/ui/MySavesPage';
 import {
   ConfirmationDialog,
   DiscordButton,
@@ -23,6 +24,7 @@ import { DEFAULT_TOOL_PATH, findToolTab, toolPaths } from '@/shared/navigation/t
 import type { ToolShellOptions } from './ToolShellOptions';
 
 const tabs: { id: TabType; label: MessageKey; icon: SectionIconName }[] = [
+  { id: 'mysaves', label: 'My Saves', icon: 'saves' },
   { id: 'mybases', label: 'My Bases', icon: 'bases' },
   { id: 'items', label: 'Items', icon: 'items' },
   { id: 'recipes', label: 'Buildings', icon: 'buildings' },
@@ -100,6 +102,8 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
         return <PlannerPage />;
       case 'mybases':
         return <MyBasesPage />;
+      case 'mysaves':
+        return <MySavesPage />;
       default:
         return null;
     }

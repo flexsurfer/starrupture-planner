@@ -6,6 +6,7 @@ export const toolPaths = {
     corporations: '/corporations/',
     planner: '/planner/',
     mybases: '/mybases/',
+    mysaves: '/mysaves/',
 } as const satisfies Record<TabType, string>;
 
 export const DEFAULT_TOOL_PATH = toolPaths.planner;

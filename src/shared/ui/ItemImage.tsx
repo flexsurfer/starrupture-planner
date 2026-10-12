@@ -2,7 +2,7 @@ import type { Item } from "@/app/uklad/model";
 
 export interface ItemImageProps {
   itemId: string;
-  item?: Item;
+  item?: Pick<Item, 'name'>;
   className?: string;
   size?: 'xsmall' | 'small' | 'medium' | 'large';
   showFallback?: boolean;

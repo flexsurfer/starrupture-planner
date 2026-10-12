@@ -1,0 +1,498 @@
+{
+  "gameVersion": {
+    "major": 0,
+    "minor": 3,
+    "pATCH": 5
+  },
+  "itemData": {
+    "BaseCoreReplicationHelperSaveData": {
+      "baseCoreSaveData": [
+        {
+          "baseCore": {
+            "iD": 1
+          },
+          "upgradeLevel": 0
+        }
+      ]
+    },
+    "Mass": {
+      "entities": {
+        "(ID=1)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/BaseCore/DA_BaseCore.DA_BaseCore",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)",
+            "/Script/Chimera.CrMassBuildingBaseCoreFragment(CachedBoundingBox=(Min=(X=-100.000000,Y=-100.000000,Z=-100.000000),Max=(X=100.000000,Y=100.000000,Z=100.000000),IsValid=True))"
+          ]
+        },
+        "(ID=2)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/Smelter/DA_Smelter.DA_Smelter",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=\"/Script/Chimera.CrItemRecipeData'/Game/Chimera/Crafting/CR_TitaniumBar.CR_TitaniumBar'\",CurrentRecipe=\"/Script/Chimera.CrItemRecipeData'/Game/Chimera/Crafting/CR_TitaniumBar.CR_TitaniumBar'\",CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=True,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=3)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/Crafter/DA_Crafter.DA_Crafter",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=\"/Script/Chimera.CrItemRecipeData'/Game/Chimera/Crafting/CR_Rotor.CR_Rotor'\",CurrentRecipe=\"/Script/Chimera.CrItemRecipeData'/Game/Chimera/Crafting/CR_Rotor.CR_Rotor'\",CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=True,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=4)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/CrafterTier2/DA_CrafterTier2.DA_CrafterTier2",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=5)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/MechanicalDrill/DA_MechanicalDrill.DA_MechanicalDrill",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=\"/Script/Chimera.CrItemRecipeData'/Game/Chimera/Crafting/MechanicalDrill/CR_TitaniumOreImpure_MechanicalDrill.CR_TitaniumOreImpure_MechanicalDrill'\",CurrentRecipe=\"/Script/Chimera.CrItemRecipeData'/Game/Chimera/Crafting/MechanicalDrill/CR_TitaniumOreImpure_MechanicalDrill.CR_TitaniumOreImpure_MechanicalDrill'\",CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=True,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=6)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/GasExtractor/DA_GasExtractor.DA_GasExtractor",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=\"/Script/Chimera.CrItemRecipeData'/Game/Chimera/Crafting/CR_Helium.CR_Helium'\",CurrentRecipe=\"/Script/Chimera.CrItemRecipeData'/Game/Chimera/Crafting/CR_Helium.CR_Helium'\",CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=True,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=7)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/Antena/DA_Antena.DA_Antena",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=8)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageSender/DA_PackageSender.DA_PackageSender",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=9)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageSender/DA_PackageSender.DA_PackageSender",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=10)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageReceiver/DA_PackageReceiver.DA_PackageReceiver",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=11)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageReceiver/DA_PackageReceiver.DA_PackageReceiver",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=12)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageSender/DA_PackageSender.DA_PackageSender",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=13)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageReceiver/DA_PackageReceiver.DA_PackageReceiver",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=14)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageSender/DA_PackageSender.DA_PackageSender",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=15)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageReceiver/DA_PackageReceiver.DA_PackageReceiver",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=16)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageReceiver/DA_PackageReceiver.DA_PackageReceiver",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=17)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageSender/DA_PackageSender.DA_PackageSender",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        },
+        "(ID=18)": {
+          "spawnData": {
+            "entityConfigDataPath": "/Game/Chimera/Buildings/PackageStation/PackageSender/DA_PackageSender.DA_PackageSender",
+            "transform": {
+              "translation": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              }
+            }
+          },
+          "fragmentValues": [
+            "/Script/Chimera.CrBuildingStateFragment(bDisabled=False)",
+            "/Script/Chimera.CrCraftingFragment(SelectedRecipe=None,CurrentRecipe=None,CraftingSpeed=1.000000,CraftingMultiplier=1,bOutputFull=False,bIsMissingItems=False)"
+          ]
+        }
+      },
+      "electricitySubsystemState": {
+        "nodeData": {
+          "(UId=(ID=1))": {
+            "handle": {
+              "iD": 1
+            },
+            "subGraph": {
+              "subGraphId": 100
+            }
+          },
+          "(UId=(ID=2))": {
+            "handle": {
+              "iD": 2
+            },
+            "subGraph": {
+              "subGraphId": 100
+            }
+          },
+          "(UId=(ID=3))": {
+            "handle": {
+              "iD": 3
+            },
+            "subGraph": {
+              "subGraphId": 100
+            }
+          },
+          "(UId=(ID=4))": {
+            "handle": {
+              "iD": 4
+            },
+            "subGraph": {
+              "subGraphId": 101
+            }
+          },
+          "(UId=(ID=5))": {
+            "handle": {
+              "iD": 5
+            },
+            "subGraph": {
+              "subGraphId": 100
+            }
+          },
+          "(UId=(ID=6))": {
+            "handle": {
+              "iD": 6
+            },
+            "subGraph": {
+              "subGraphId": 102
+            }
+          },
+          "(UId=(ID=8))": {
+            "handle": {
+              "iD": 8
+            },
+            "subGraph": {
+              "subGraphId": 102
+            }
+          },
+          "(UId=(ID=9))": {
+            "handle": {
+              "iD": 9
+            },
+            "subGraph": {
+              "subGraphId": 103
+            }
+          },
+          "(UId=(ID=10))": {
+            "handle": {
+              "iD": 10
+            },
+            "subGraph": {
+              "subGraphId": 100
+            }
+          },
+          "(UId=(ID=11))": {
+            "handle": {
+              "iD": 11
+            },
+            "subGraph": {
+              "subGraphId": 100
+            }
+          },
+          "(UId=(ID=12))": {
+            "handle": {
+              "iD": 12
+            },
+            "subGraph": {
+              "subGraphId": 103
+            }
+          },
+          "(UId=(ID=13))": {
+            "handle": {
+              "iD": 13
+            },
+            "subGraph": {
+              "subGraphId": 100
+            }
+          },
+          "(UId=(ID=14))": {
+            "handle": {
+              "iD": 14
+            },
+            "subGraph": {
+              "subGraphId": 102
+            }
+          },
+          "(UId=(ID=15))": {
+            "handle": {
+              "iD": 15
+            },
+            "subGraph": {
+              "subGraphId": 104
+            }
+          },
+          "(UId=(ID=16))": {
+            "handle": {
+              "iD": 16
+            },
+            "subGraph": {
+              "subGraphId": 104
+            }
+          },
+          "(UId=(ID=17))": {
+            "handle": {
+              "iD": 17
+            },
+            "subGraph": {
+              "subGraphId": 105
+            }
+          },
+          "(UId=(ID=18))": {
+            "handle": {
+              "iD": 18
+            },
+            "subGraph": {
+              "subGraphId": 105
+            }
+          }
+        }
+      }
+    },
+    "CrPackageTransportReplicator": {
+      "senderConnections": {
+        "(ID=8)": {
+          "receiver": {
+            "iD": 4294967295
+          },
+          "item": "/Game/Chimera/Items/I_HeliumOre.I_HeliumOre_C'/Game/Chimera/Items/I_HeliumOre.Default__I_HeliumOre_C'",
+          "requestedAmount": 100
+        },
+        "(ID=9)": {
+          "receiver": {
+            "iD": 11
+          },
+          "item": "/Game/Chimera/Items/I_CalciteSheets.I_CalciteSheets_C'/Game/Chimera/Items/I_CalciteSheets.Default__I_CalciteSheets_C'",
+          "requestedAmount": 100
+        },
+        "(ID=12)": {
+          "receiver": {
+            "iD": 10
+          },
+          "item": "/Game/Chimera/Items/I_CalciumPowder.I_CalciumPowder_C'/Game/Chimera/Items/I_CalciumPowder.Default__I_CalciumPowder_C'",
+          "requestedAmount": 100
+        },
+        "(ID=14)": {
+          "receiver": {
+            "iD": 13
+          },
+          "item": "/Game/Chimera/Items/I_HeliumOre.I_HeliumOre_C'/Game/Chimera/Items/I_HeliumOre.Default__I_HeliumOre_C'",
+          "requestedAmount": 100
+        },
+        "(ID=17)": {
+          "receiver": {
+            "iD": 16
+          },
+          "item": "/Game/Chimera/Items/I_CalciteSheets.I_CalciteSheets_C'/Game/Chimera/Items/I_CalciteSheets.Default__I_CalciteSheets_C'",
+          "requestedAmount": 100
+        },
+        "(ID=18)": {
+          "receiver": {
+            "iD": 15
+          },
+          "item": "/Game/Chimera/Items/I_CalciumPowder.I_CalciumPowder_C'/Game/Chimera/Items/I_CalciumPowder.Default__I_CalciumPowder_C'",
+          "requestedAmount": 100
+        }
+      }
+    }
+  }
+}

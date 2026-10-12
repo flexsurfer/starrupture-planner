@@ -1,4 +1,5 @@
 import { message } from '@/shared/i18n/core';
+import { createSavesFeatureState } from '@/features/saves/state';
 import { DEFAULT_LOCALE, normalizeLocale } from '@/shared/i18n/locales';
 import { createDataTransferState } from '@/features/data-transfer/archive';
 import type { AppState } from '@/app/uklad/model';
@@ -12,6 +13,7 @@ import { createProductionPlanModalFeatureState } from '@/features/production-pla
 /** Creates state owned by exactly one Uklad runtime. */
 export function createAppState(initialLocale: string = DEFAULT_LOCALE): AppState {
     return {
+        ...createSavesFeatureState(),
         ...createDataTransferState(),
         appDataVersion: DEFAULT_DATA_VERSION,
         appDataVersions: DATA_VERSIONS.map((version) => ({ ...version })),

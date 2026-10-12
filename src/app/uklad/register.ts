@@ -1,4 +1,5 @@
 import { registerDataTransferModule } from '@/features/data-transfer/module';
+import { registerSavesModule } from '@/features/saves/module';
 import type { UkladModule, UkladRegistrar, UkladRuntime } from '@ukladjs/core/vanilla';
 import { registerAppShellModule } from '@/features/app-shell/module';
 import { registerBasesModule } from '@/features/bases/module';
@@ -16,6 +17,7 @@ import type { AppContracts } from './contracts';
 export const registerApplicationModules: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registerAppShellModule(registrar);
     registerDataTransferModule(registrar);
+    registerSavesModule(registrar);
     registerCorporationsModule(registrar);
     registerBuildingsModule(registrar);
     registerItemsModule(registrar);
