@@ -3,6 +3,7 @@ import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { createSaveGameData } from './game-data';
 import { buildSaveOverview } from './overview';
+import { buildSaveMap } from './map';
 import { workspaceIds } from './workspace';
 
 export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
@@ -28,6 +29,9 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
     registrar.regSub(appIds.subscriptions.SAVES_OVERVIEW,
         id => [[appIds.subscriptions.SAVES_WORKSPACE_BY_ID, id], [appIds.subscriptions.SAVES_GAME_DATA]],
         ([workspace, data]) => workspace ? buildSaveOverview(workspace, data) : null);
+    registrar.regSub(appIds.subscriptions.SAVES_MAP,
+        id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA]],
+        ([overview, data]) => overview ? buildSaveMap(overview, data) : null);
     registrar.regSub(appIds.subscriptions.SAVES_CORE_BY_ID,
         id => [[appIds.subscriptions.SAVES_OVERVIEW, id]],
         ([overview], _id, coreId) => overview?.cores.find(coreOverview => coreOverview.core.id === coreId) ?? null);

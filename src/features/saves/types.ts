@@ -23,7 +23,7 @@ export interface SaveImportState {
 
 /** Snapshot replacement and user intent are scoped to this workspace. */
 export interface SaveWorkspace {
-    schemaVersion: 3;
+    schemaVersion: 4;
     id: string;
     name: string;
     snapshot: SaveSnapshot;

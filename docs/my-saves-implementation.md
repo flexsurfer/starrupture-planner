@@ -2,7 +2,16 @@
 
 The user imports a StarRupture save and sees Cores, their individual buildings,
 local extraction, incoming supplies and outgoing shipments. Updating a workspace
-replaces its snapshot. User objectives live outside the snapshot.
+replaces its snapshot. Workspace and Core-settings data structures remain unchanged;
+the UI exposes one active save, with no workspace tabs or renaming. Production
+objective controls are deferred. The centered first-import panel identifies the
+experimental feature and its tested combination: Update 2 QoL data / StarRupture
+0.3.5 saves. Once imported, a compact borderless bar shows Overview/Map tabs, the
+saved timestamp, Update, and Remove with confirmation. Overview cards show heat
+beside the Core name, visually separate extraction from deliveries, omit empty
+shipment sections, and open the full Core view with View details. Power networks
+appear only in the expanded Core view; corporation shipment summaries and building
+previews are omitted from cards.
 
 ## Rules
 
@@ -29,7 +38,10 @@ replaces its snapshot. User objectives live outside the snapshot.
   Derive its heat limit from the catalog level plus its assigned amplifiers. Missing
   or conflicting levels stay unknown; cards show levels starting from one, heat
   load against capacity, and separate energy gauges for each electrical network.
-- Ignore running state, inventories, coordinates after association, raw fragments,
+- Retain finite XYZ world positions on each Core and building for the snapshot map.
+- Retain valid Core `CachedBoundingBox` minimum/maximum XYZ coordinates for display.
+  Missing, ambiguous or invalid source bounds stay unknown and never affect ownership.
+- Ignore running state, inventories, raw fragments,
   source diagnostics and unrelated entities. Unknown supported configuration is
   nullable; never guess an item, recipe, rate or power network.
 - Derive nominal rates from the currently selected game data in application state,
@@ -47,12 +59,13 @@ replaces its snapshot. User objectives live outside the snapshot.
 
 ```ts
 SaveSnapshot = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   gameData: { version, revision },
   savedAt,
   cores: [{
-    id, spawnTimeSeconds, name, level, powerNetworkId,
-    buildings: [{ id, buildingTypeId, name, powerNetworkId, configuration }]
+    id, spawnTimeSeconds, name, level, powerNetworkId, position: { x, y, z },
+    bounds: { min: { x, y, z }, max: { x, y, z } } | null,
+    buildings: [{ id, buildingTypeId, name, powerNetworkId, position: { x, y, z }, configuration }]
   }]
 }
 
@@ -65,14 +78,14 @@ configuration =
   | { kind: 'other' }
 
 SaveWorkspace = {
-  schemaVersion: 3, id, name, snapshot,
+  schemaVersion: 4, id, name, snapshot,
   coreSettings: { [coreKey]: { objective } }
 }
 ```
 
 Building and network IDs are references within a snapshot. Only Core keys are
-used to preserve intent across imports. Coordinates are used transiently; they
-are not available for later map rendering or ownership overrides.
+used to preserve intent across imports. Coordinates retain their original units
+and precision; they support map rendering without changing spatial ownership.
 
 ## Module boundaries
 
@@ -83,6 +96,8 @@ are not available for later map rendering or ownership overrides.
 | `features/saves/snapshot.ts` | Minimal app contract and Core key. |
 | `features/saves/game-data.ts` | Pure indexes over selected state catalogs and version-specific extraction metadata. |
 | `features/saves/overview.ts` | Pure resource, building, heat and electricity projections. |
+| `features/saves/map.ts` | Linear projection of spatial entities, recipe inputs and direct cargo links. |
+| `features/saves/ui/SaveMap*.tsx` | Read-only React Flow map, camera controls and building inspector. |
 | `features/saves/workspace.ts` | Replacement and Core-settings retention. |
 | `features/saves/storage-schema.ts` | Whitelist/detach data, validate references and enforce storage budgets. |
 | `features/saves/events.ts`, `subscriptions.ts` | Existing Uklad state ownership and event/subscription flow. |
@@ -103,8 +118,10 @@ save mappings can decode new saves. No raw save crosses into app state.
 ## Persistence and limits
 
 The application retains its single synchronous Uklad Persist attachment. Saves
-use `starrupture-planner/saves-v3/`; experimental storage entries are ignored, not
+use `starrupture-planner/saves-v4/`; experimental storage entries are ignored, not
 migrated. Other app roots retain their existing keys.
+Older v4 Cores without bounds hydrate with `bounds: null`; re-import obtains bounds
+from the original save. Existing workspaces and objectives remain compatible.
 
 Corrupt Saves entries are preserved and Saves editing is blocked for that load;
 other settings can still persist. Normal edits remain synchronous. Limits are
@@ -117,8 +134,9 @@ measured conservatively as UTF-16 storage strings.
 
 The available local sample (`6.sav`, game version 0.3.5) contains 6,220 entities.
 The refactored decoder retains all nine Cores and 232 supported buildings. Its
-workspace occupies approximately 64 KB as a localStorage string, versus roughly
-657 KB before the refactor. This is one sample, not a compatibility guarantee.
+workspace occupies approximately 89 KB as a localStorage string, versus roughly
+64 KB before retaining XYZ coordinates and Core bounds (about 25 KB extra for 241
+entities). This is one sample, not a compatibility guarantee.
 
 `decoder/fixtures/observed-0.3.5.json` is a sanitized 18-entity subset: IDs were
 remapped, custom names/timestamps omitted and positions replaced with synthetic
@@ -134,10 +152,69 @@ replacement/settings retention, cancellation, stale results, UI update flow,
 size budgets, persistence round trips and corruption isolation. The measurement
 script accepts a local `.sav` path and prints only counts, sizes and timings.
 
+## Snapshot map
+
+My Saves exposes Overview and Map views, both for the whole save and from a Core.
+The map reuses React Flow with fixed XY positions (+X right, +Y down), viewport
+culling, pan, wheel/pinch zoom, fit-to-save and focus-Core controls. It does not
+run a graph layout. Core markers remain readable at world scale. Building icons
+are location markers, not inferred footprints. Coordinates are retained in the
+snapshot but omitted from the inspector.
+A searchable building picker also makes stacked or coincident buildings accessible,
+with keyboard navigation and matching by name, Core, resource or snapshot-local ID.
+
+The map fills the remaining app height without page scrollbars. A compact planner-
+style toolbar sits above the canvas. The icon-only settings popover sits at the
+top right and includes layer toggles; standard React Flow controls and attribution
+sit at the bottom left. Building
+details float over the map at all sizes, with their own bounded scrolling. The
+background uses the planner's dot pattern, adapted for world-scale zoom. The game artwork and fixed projection are preserved. Grid spacing adapts
+to zoom; nearby Core labels move to a free side of their markers so every Core name remains
+visible. Core building counts appear below 12% zoom and disappear at closer zoom.
+Building markers have a uniform 72-unit default size, allowing some overlap in
+dense rows. Coincident/stacked buildings remain accessible through search.
+Unselected building artwork has no card background or border. Larger resource
+badges sit inside the lower-right corner, with opaque backgrounds tinted using
+the shared item-type color palette. Their frames fit the visible
+artwork with 1-unit padding; cached alpha bounds remove transparent image margins
+from the display without modifying the source assets.
+**Map settings** offers uniform 56/72/88-unit building sizes, building names,
+resource icons, grid visibility and
+optional cargo movement, with a reset to display defaults. These are local view
+settings; resizing markers never moves saved positions or changes Core bounds.
+
+Core bounds are translucent rectangular XY projections of saved boxes, behind
+buildings and cargo links. The **Core bounds** checkbox shows/hides them (on by
+default), independently of cargo links. Bounds ignore pointer/keyboard interaction,
+participate in fit-to-save/focus-Core while shown, and highlight the selected
+building's Core. Unknown bounds are omitted with a re-import hint; no sizes are
+inferred from Core level or building locations. Visibility remains local UI state.
+
+The **Power networks** checkbox (off by default) colors Core markers and adds
+small network-color dots to buildings
+using their saved power network IDs, including networks shared across Cores.
+A deterministic palette stays stable across map remounts and layer toggles;
+markers without a network retain their normal appearance. Highlighted marker
+tooltips include the network number, and selection retains its separate ring.
+
+Selecting a building shows configured output, recipe inputs, nominal capacity,
+heat, power, Core and cargo peer navigation. Selected items appear
+inside building markers, including received cargo and launcher shipments. Only
+explicit dispatcher-to-receiver references produce cargo connections; unknown
+items retain the connection. Rounded orthogonal routes use ports facing their
+peer, subtle cargo segments and small direction indicators. They are schematic,
+not reconstructed in-game paths. Strokes, arrows, selected route labels and hit
+areas compensate for React Flow's HTML zoom transform, remaining readable and
+clickable at whole-save scale. Optional motion respects reduced-motion settings.
+Conveyor/pipe reconstruction, terrain and launcher destinations
+are deliberately outside this version. No routes, rendered nodes, derived resource
+summaries or camera state are persisted. Re-import clears building selection,
+since building IDs cannot be reconciled across snapshots.
+
 ## Subsequent work
 
 Build production planning as a separate layer over snapshots and Core settings:
 corporation, intermediate-resource and mission objectives; supply-aware recipe
 calculations; then building changes needed to reach the objective. Objectives
-are currently stored but do not calculate a rework plan. Preserve the existing
+have no current UI; the reserved Core-settings data shape remains intact. Preserve the existing
 Planner and My Bases state and behavior throughout that work.

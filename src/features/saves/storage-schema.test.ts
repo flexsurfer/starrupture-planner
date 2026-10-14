@@ -6,6 +6,49 @@ import { expect, it } from 'vitest';
 import { assertSaveStorageLimits, jsonBytes, localStorageBytes, MAX_SAVES_BYTES, MAX_WORKSPACE_BYTES, normalizeSaveWorkspace, normalizeSaveWorkspaces, saveCollectionStorageBytes, SaveWorkspaceLimitError } from './storage-schema';
 import { workspaceAtStorageBytes } from './storage-test-fixture';
 
+it('round-trips detached Core bounds and keeps older workspaces without bounds compatible', () => {
+    const workspace = createSaveWorkspace('one', 'World', analyzeSave(saveFixture(), extractionContext));
+    const normalized = normalizeSaveWorkspace(workspace);
+    expect(normalized).toEqual(workspace);
+    expect(normalized.snapshot.cores[0].bounds?.min).not.toBe(workspace.snapshot.cores[0].bounds?.min);
+    workspace.snapshot.cores[0].bounds!.min.x = -100;
+    expect(normalized.snapshot.cores[0].bounds?.min.x).toBe(-10);
+    const legacy = JSON.parse(JSON.stringify(workspace));
+    delete legacy.snapshot.cores[0].bounds;
+    legacy.snapshot.cores[1].bounds = null;
+    expect(normalizeSaveWorkspace(legacy).snapshot.cores.map(core => core.bounds)).toEqual([null, null]);
+});
+
+it.each([
+    {}, { min: { x: 0, y: 0, z: 0 } },
+    { min: { x: -10, y: -10, z: -10 }, max: { x: Infinity, y: 10, z: 10 } },
+    { min: { x: -10, y: -10, z: -10 }, max: { x: '10', y: 10, z: 10 } },
+    { min: { x: 20, y: -10, z: -10 }, max: { x: 10, y: 10, z: 10 } },
+    { min: { x: -10, y: -10, z: 10 }, max: { x: 10, y: 10, z: 10 } },
+    { min: { x: -1e308, y: -10, z: -10 }, max: { x: 1e308, y: 10, z: 10 } },
+])('rejects corrupt stored Core bounds: %j', bounds => {
+    const workspace = createSaveWorkspace('one', 'World', analyzeSave(saveFixture(), extractionContext));
+    Object.assign(workspace.snapshot.cores[0], { bounds });
+    expect(() => normalizeSaveWorkspace(workspace)).toThrow();
+});
+
+it('round-trips only finite XYZ coordinates and detaches them from imported data', () => {
+    const workspace = createSaveWorkspace('one', 'World', analyzeSave(saveFixture(), extractionContext));
+    workspace.snapshot.cores[0].position = { x: -123.75, y: 40.25, z: -5 };
+    workspace.snapshot.cores[0].buildings[0].position = { x: -123.75, y: 40.25, z: 1500 };
+    const normalized = normalizeSaveWorkspace(JSON.parse(JSON.stringify(workspace)));
+    expect(normalized).toEqual(workspace);
+    expect(normalized.snapshot.cores[0].position).not.toBe(workspace.snapshot.cores[0].position);
+    for (const value of [undefined, null, { x: 1, y: 2 }, { x: Infinity, y: 0, z: 0 }, { x: 0, y: NaN, z: 0 }, { x: 0, y: 0, z: '1' }]) {
+        const copy = structuredClone(workspace);
+        Object.assign(copy.snapshot.cores[0], { position: value });
+        expect(() => normalizeSaveWorkspace(copy)).toThrow();
+        Object.assign(copy.snapshot.cores[0], { position: workspace.snapshot.cores[0].position });
+        Object.assign(copy.snapshot.cores[0].buildings[0], { position: value });
+        expect(() => normalizeSaveWorkspace(copy)).toThrow();
+    }
+});
+
 it('counts UTF-16 code units for storage, including surrogate pairs, separately from UTF-8 JSON bytes', () => {
     expect(localStorageBytes('a')).toBe(6);
     expect(localStorageBytes('界')).toBe(6);

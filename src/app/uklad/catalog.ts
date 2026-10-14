@@ -113,6 +113,7 @@ export const appIds = {
         SAVES_ACTIVE_WORKSPACE: 'saves/active-workspace',
         SAVES_WORKSPACE_BY_ID: 'saves/workspace-by-id',
         SAVES_OVERVIEW: 'saves/overview',
+        SAVES_MAP: 'saves/map',
         SAVES_CORE_BY_ID: 'saves/core-by-id',
         SAVES_SELECTED_CORE: 'saves/selected-core',
         PLANNER_RECIPE_PRESET_STATE: 'planner/recipe-preset-state',

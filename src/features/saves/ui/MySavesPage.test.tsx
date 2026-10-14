@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { memoryStorageAdapter, persist } from '@ukladjs/persist';
 import { afterEach, expect, it } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
@@ -33,15 +34,13 @@ async function setup(error?: SaveImportError, save: unknown = snapshotFixture())
     runtime.dispatch([appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
     owners.push({ runtime, persistence });
     render(<UkladProvider runtime={runtime}><MySavesPage /><ConfirmationDialog /></UkladProvider>);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Import save' })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Choose save file' })).toBeEnabled());
     return { runtime, persistence };
 }
 
 async function importSave(name: string) {
-    fireEvent.click(screen.getByRole('button', { name: 'Import save' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Import save' });
-    fireEvent.change(within(dialog).getByLabelText('Choose save file'), { target: { files: [saveFile(name)] } });
-    await waitFor(() => expect(screen.getByRole('tab', { name })).toHaveAttribute('aria-selected', 'true'));
+    fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile(name)] } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Update' })).toBeVisible());
 }
 
 function saveFile(name = 'world') {
@@ -50,71 +49,69 @@ function saveFile(name = 'world') {
     return file;
 }
 
-it('automatically imports, opens and switches save tabs with Planner keyboard conventions; removal requires confirmation', async () => {
-    await setup();
+it('imports from the centered empty state and removes the save only after confirmation', async () => {
+    const { runtime } = await setup();
     expect(screen.getByRole('heading', { name: 'Import your first save' })).toBeVisible();
+    expect(screen.getByText('Experimental functionality')).toBeVisible();
+    expect(screen.getByText(/Only tested with Update 2 QoL game data and .sav files from StarRupture 0.3.5/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Import save' })).toBeNull();
     await importSave('First world');
+    expect(screen.queryByRole('heading', { name: 'My Saves' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'First world' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Rename' })).toBeNull();
+    expect(screen.getByText('Last updated: 2026-04-03 13:00')).toBeVisible();
+    expect(screen.queryByText(/Nominal capacity from configured recipes/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Open Core Workshop' }));
     expect(await screen.findByRole('button', { name: 'Back to save overview' })).toBeVisible();
-    expect(screen.getByRole('tab', { name: 'First world' })).toBeVisible();
-    await importSave('Second world');
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Second world' }), { key: 'ArrowLeft' });
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'First world' })).toHaveAttribute('aria-selected', 'true'));
-    expect(screen.getByRole('tab', { name: 'First world' })).toHaveFocus();
-    expect(screen.getByRole('button', { name: 'Back to save overview' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
-    fireEvent.change(screen.getByLabelText('Save name'), { target: { value: '  Renamed world  ' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'Renamed world' })).toBeVisible());
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Renamed world' }), { key: 'End' });
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'Second world' })).toHaveAttribute('aria-selected', 'true'));
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Second world' }), { key: 'Delete' });
-    const confirmation = await screen.findByRole('alertdialog');
-    fireEvent.click(within(confirmation).getByRole('button', { name: 'Cancel' }));
-    expect(screen.getByRole('tab', { name: 'Second world' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Remove save Second world' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: 'Update' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
     fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Remove save' }));
-    await waitFor(() => expect(screen.queryByRole('tab', { name: 'Second world' })).toBeNull());
-    expect(screen.getByRole('tab', { name: 'Renamed world' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByRole('heading', { name: 'Import your first save' })).toBeVisible();
+    expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_TABS])).toEqual([]);
+    await importSave('Another world');
+    expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])?.name).toBe('Another world');
 });
 
 it('shows controlled read errors, cancellation, hydration failure and unsaved changes', async () => {
     const { runtime } = await setup(new SaveImportError('compression'));
-    fireEvent.click(screen.getByRole('button', { name: 'Import save' }));
+    fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
     const dialog = await screen.findByRole('dialog', { name: 'Import save' });
-    fireEvent.change(within(dialog).getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('This file could not be decoded');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel import' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await act(async () => { runtime.dispatch([appIds.events.SAVES_STORAGE_FAILED, 'write']); });
     expect(await screen.findByRole('alert')).toHaveTextContent('Some changes could not be saved');
     expect(screen.queryByRole('button', { name: 'Retry saving' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Import save' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Choose save file' })).toBeEnabled();
     await act(async () => { runtime.dispatch([appIds.events.SAVES_STORAGE_FAILED, 'load']); });
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Your saves could not be loaded'));
-    expect(screen.getByRole('button', { name: 'Import save' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Choose save file' })).toBeDisabled();
 });
 
 
-it('accepts a dropped file, skips review, shows building visuals and saves the chosen objective', async () => {
+it('accepts a dropped file and shows building visuals without production objectives', async () => {
     await setup();
     fireEvent.drop(screen.getByRole('region', { name: 'Save import' }), { dataTransfer: { files: [saveFile('Dropped world')] } });
-    expect(await screen.findByRole('tab', { name: 'Dropped world' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByRole('button', { name: 'Update' })).toBeVisible();
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.queryByLabelText('Save name')).toBeNull();
     expect(screen.queryByText(/Review imported facts|Unrecognized entities|Mapping revision|Candidate buildings/)).toBeNull();
     const card = screen.getByRole('article', { name: 'Workshop' });
     expect(within(card).getByText(/^Lv\.1 · \d+ buildings$/)).toBeVisible();
     expect(within(card).getByRole('meter', { name: 'Heat' })).toHaveAttribute('aria-valuetext', expect.stringMatching(/ \/ 1,000$/));
-    expect(within(card).getAllByRole('meter', { name: 'Energy Load' }).length).toBeGreaterThan(0);
+    expect(within(card).queryByRole('region', { name: 'Energy' })).toBeNull();
+    expect(within(card).getAllByText('Local extraction').length).toBeGreaterThan(0);
+    expect(within(card).queryByRole('heading', { name: 'Local extraction' })).toBeNull();
+    expect(within(card).getByText('Heat')).toBeVisible();
+    expect(within(card).queryByText('Imported from other Cores')).toBeNull();
+    expect(within(card).getByText('View details')).toBeVisible();
+    expect(within(card).queryByAltText('Fabricator')).toBeNull();
     expect(within(card).getByRole('region', { name: 'Available resources' })).toHaveTextContent('Titanium Ore');
     expect(within(card).getByRole('region', { name: 'Sent to other Cores' })).toBeVisible();
     expect(within(card).getByAltText('Base Core')).toBeVisible();
-    fireEvent.click(within(card).getByText('No objective selected'));
-    fireEvent.click(within(card).getByRole('button', { name: 'Intermediate resources' }));
-    fireEvent.change(await within(card).findByRole('searchbox', { name: 'Search resources' }), { target: { value: 'Tube' } });
-    fireEvent.click(within(card).getByRole('checkbox', { name: 'Tube' }));
-    await waitFor(() => expect(within(card).getByRole('checkbox', { name: 'Tube' })).toBeChecked());
+    expect(within(card).queryByRole('region', { name: 'Production objective' })).toBeNull();
     fireEvent.click(within(card).getByRole('button', { name: 'Open Core Workshop' }));
     expect(await screen.findByRole('button', { name: 'Production' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Energy' })).toBeVisible();
@@ -132,7 +129,7 @@ it('requires one dropped save and leaves cancellation as a no-op', async () => {
 });
 
 
-it('separates supplies and Core shipments, expands buildings, and keeps launchers under the production objective', async () => {
+it('separates supplies and Core shipments, expands buildings, omits corporation shipments and empty outgoing sections from cards', async () => {
     const save = transportFixture();
     Object.assign(save.itemData.CrBuildingCustomNameSubsystem.customNames, { '(ID=20)': 'Ore dispatch', '(ID=30)': 'Ore intake' });
     Object.assign(save.itemData.Mass.entities, { '(ID=50)': saveEntity('Exporter/DA_Exporter.DA_Exporter', 0, [
@@ -159,52 +156,31 @@ it('separates supplies and Core shipments, expands buildings, and keeps launcher
     fireEvent.click(within(outgoing).getByText('Helium-3').closest('summary')!);
     expect(within(outgoing).getByRole('list', { name: 'Buildings' })).toHaveTextContent('To Core 2 · Ore intake');
     expect(outgoing).not.toHaveTextContent('Sent to corporations');
-    const objective = within(sender).getByRole('region', { name: 'Production objective' });
-    expect(objective).toHaveTextContent('Sent to corporations');
-    expect(objective).toHaveTextContent('10/min');
-    expect(within(sender).getByText('Power network 7')).toBeVisible();
+    expect(within(sender).queryByRole('region', { name: 'Sent to corporations' })).toBeNull();
+    expect(within(receiver).queryByRole('region', { name: 'Sent to other Cores' })).toBeNull();
+    expect(within(receiver).queryByText('No shipments to other Cores')).toBeNull();
+    expect(within(sender).queryByRole('region', { name: 'Production objective' })).toBeNull();
+    expect(within(sender).queryByText('Power network 7')).toBeNull();
     fireEvent.click(within(receiver).getByRole('button', { name: 'Open Core Core 2' }));
     await screen.findByRole('button', { name: 'Back to save overview' });
     expect(within(screen.getByRole('article', { name: 'Core 2' })).getByText('From Workshop · Ore dispatch · From Workshop · Cargo Dispatcher')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Back to save overview' }));
 });
 
-it('updates the current save without adding a tab or losing its name and objective', async () => {
+it('updates the existing workspace without adding another or changing its identity', async () => {
     const save = snapshotFixture();
-    await setup(undefined, save);
+    const { runtime } = await setup(undefined, save);
     await importSave('My world');
-    const card = screen.getByRole('article', { name: 'Workshop' });
-    fireEvent.click(within(card).getByText('No objective selected'));
-    fireEvent.click(within(card).getByRole('button', { name: 'Intermediate resources' }));
+    const before = createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])!;
     save.itemData.BaseCoreReplicationHelperSaveData.baseCoreSaveData[0].upgradeLevel = 2;
-    fireEvent.click(screen.getByRole('button', { name: 'Update save' }));
+    save.timestamp = '20260404153000';
+    fireEvent.click(screen.getByRole('button', { name: 'Update' }));
     const dialog = await screen.findByRole('dialog', { name: 'Update save' });
     fireEvent.change(within(dialog).getByLabelText('Choose save file'), { target: { files: [saveFile('New filename')] } });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(screen.getAllByRole('tab')).toHaveLength(1);
-    expect(screen.getByRole('tab', { name: 'My world' })).toHaveAttribute('aria-selected', 'true');
-    expect(within(screen.getByRole('article', { name: 'Workshop' })).getByRole('button', { name: 'Intermediate resources' })).toHaveAttribute('aria-pressed', 'true');
+    expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_TABS])).toHaveLength(1);
+    expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])).toMatchObject({ id: before.id, name: 'My world' });
+    expect(screen.getByText('Last updated: 2026-04-04 15:30')).toBeVisible();
     expect(within(screen.getByRole('article', { name: 'Workshop' })).getByText(/^Lv\.3 · \d+ buildings$/)).toBeVisible();
     expect(within(screen.getByRole('article', { name: 'Workshop' })).getByRole('meter', { name: 'Heat' })).toHaveAttribute('aria-valuetext', expect.stringMatching(/ \/ 4,000$/));
-});
-
-it('updates objective choices from the selected catalogs and uses their actual first level', async () => {
-    const { runtime } = await setup();
-    await importSave('Versioned world');
-    await act(async () => {
-        runtime.dispatch([appIds.events.APP_SET_DATA_VERSION, 'earlyaccess', {
-            buildings: [], items: [{ id: 'selected_item', name: 'Selected item', type: 'resource' }],
-            corporations: { 'Selected corporation': { id: 'selected_corp', levels: [{ level: 7, components: [], rewards: [] }] } },
-        }]);
-    });
-    await screen.findAllByAltText('smelter');
-    const card = screen.getByRole('article', { name: 'Workshop' });
-    fireEvent.click(within(card).getByText('No objective selected'));
-    fireEvent.click(within(card).getByRole('button', { name: 'Corporation level' }));
-    await waitFor(() => expect(within(card).getByRole('combobox', { name: 'Corporation' })).toHaveValue('selected_corp'));
-    expect(within(card).getByRole('combobox', { name: 'Level' })).toHaveValue('7');
-    expect(within(card).getByText('Selected corporation Lv.7')).toBeVisible();
-    fireEvent.click(within(card).getByRole('button', { name: 'Intermediate resources' }));
-    expect(await within(card).findByRole('checkbox', { name: 'Selected item' })).toBeVisible();
-    expect(within(card).queryByRole('checkbox', { name: 'Tube' })).toBeNull();
 });

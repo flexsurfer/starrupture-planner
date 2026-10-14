@@ -8,8 +8,8 @@ const resourceSources: Record<SaveResource['source'], MessageKey> = {
     corporation: 'Sent to corporations', production: 'Configured production',
 };
 
-export function ResourceRows({ resources, empty, expandable = true }: {
-    resources: SaveResource[]; empty?: MessageKey; expandable?: boolean;
+export function ResourceRows({ resources, empty, expandable = true, showSourceLabel = true }: {
+    resources: SaveResource[]; empty?: MessageKey; expandable?: boolean; showSourceLabel?: boolean;
 }) {
     const { t, formatNumber } = useTranslation();
     const rate = (value: number | null) => value === null ? <span className="text-base-content/35">—</span>
@@ -36,7 +36,7 @@ export function ResourceRows({ resources, empty, expandable = true }: {
             <span className="shrink-0"><ItemImage itemId={resource.itemId} item={{ name: resource.name }} size="small" /></span>
             <span className="min-w-0 flex-1">
                 <span className="block break-words text-sm font-medium leading-snug text-base-content/85">{resource.name}</span>
-                <span className="mt-0.5 block text-[11px] text-base-content/45">{hasRoute ? routes.join(' · ') : t(resourceSources[resource.source])}</span>
+                {(hasRoute || showSourceLabel) && <span className="mt-0.5 block text-[11px] text-base-content/45">{hasRoute ? routes.join(' · ') : t(resourceSources[resource.source])}</span>}
             </span>
             <span className="shrink-0 text-right text-base font-semibold tabular-nums" style={{ color: getItemCategoryColor(resource.type) }}
                 title={t(resource.rate === null ? 'Rate unavailable' : 'Configured capacity')}>{rate(resource.rate)}</span>

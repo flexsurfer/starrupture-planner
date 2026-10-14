@@ -1,7 +1,7 @@
 import { isValidDataVersion } from '@/features/app-shell/data-version';
 import type { Corporation } from '@/app/uklad/model';
 import type { SaveGameData } from './game-data';
-import { coreKey, type SaveSnapshot, type SaveBuildingConfiguration } from './snapshot';
+import { coreKey, isValidSaveBounds, type SaveBounds, type SaveSnapshot, type SaveBuildingConfiguration } from './snapshot';
 import type { SaveWorkspace, SaveWorkspaceSelection, SaveCoreObjective } from './types';
 
 export const MAX_SAVE_WORKSPACES = 8;
@@ -36,6 +36,13 @@ const record = <T>(parse: Parser<T>, limit: number, keyParser = id): Parser<Reco
     return Object.fromEntries(entries.map(([key, entry]) => [keyParser(key), parse(entry)]));
 };
 const itemId = id;
+const coordinate: Parser<number> = value => typeof value === 'number' && Number.isFinite(value) ? value : invalid();
+const position = object({ x: coordinate, y: coordinate, z: coordinate });
+const bounds: Parser<SaveBounds | null> = value => {
+    if (value === undefined || value === null) return null;
+    const parsed = object({ min: position, max: position })(value);
+    return isValidSaveBounds(parsed) ? parsed : invalid();
+};
 const configuration: Parser<SaveBuildingConfiguration> = value => {
     const kind = object({ kind: text })(value).kind;
     switch (kind) {
@@ -47,13 +54,13 @@ const configuration: Parser<SaveBuildingConfiguration> = value => {
     }
 };
 const snapshotParser: Parser<SaveSnapshot> = object({
-    schemaVersion: oneOf(3),
+    schemaVersion: oneOf(4),
     gameData: object({ version: value => typeof value === 'string' && isValidDataVersion(value) ? value : invalid(),
         revision: value => typeof value === 'string' && /^sha256:[a-f0-9]{64}$/.test(value) ? value : invalid() }),
     savedAt: nullable(text),
-    cores: array(object({ id: integer, spawnTimeSeconds: number, name: nullable(text), powerNetworkId: nullable(integer),
+    cores: array(object({ id: integer, spawnTimeSeconds: number, name: nullable(text), powerNetworkId: nullable(integer), position, bounds,
         level: value => value === undefined ? null : nullable(integer)(value),
-        buildings: array(object({ id: integer, buildingTypeId: id, name: nullable(text), powerNetworkId: nullable(integer), configuration })),
+        buildings: array(object({ id: integer, buildingTypeId: id, name: nullable(text), powerNetworkId: nullable(integer), position, configuration })),
     })),
 });
 
@@ -87,7 +94,7 @@ export function normalizeSaveObjective(value: unknown): SaveCoreObjective {
 }
 
 const workspaceParser: Parser<SaveWorkspace> = object({
-    schemaVersion: oneOf(3), id, name: value => {
+    schemaVersion: oneOf(4), id, name: value => {
         const name = text(value).trim();
         return name.length > 0 && name.length <= 120 ? name : invalid();
     },

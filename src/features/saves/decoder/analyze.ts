@@ -1,5 +1,6 @@
-import type { SaveBuilding, SaveBuildingConfiguration, SaveCore, SaveSnapshot } from '../snapshot';
+import type { SaveBuilding, SaveBuildingConfiguration, SaveCore, SaveSnapshot, SavePosition } from '../snapshot';
 import { fragmentFields } from './fragments';
+import { readCoreBounds } from './core-bounds';
 import { readLauncherItem } from './launchers';
 import type { SaveBuildingMapping } from './mappings';
 import { selectedRecipe } from './recipes';
@@ -7,7 +8,6 @@ import { SaveImportError } from '../import-error';
 import type { SaveDecodeContext } from './types';
 
 type RecordValue = Record<string, unknown>;
-type Position = { x: number; y: number; z: number };
 const record = (value: unknown): RecordValue | null => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : null;
 const number = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null;
 const handle = (value: unknown): number | null => Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) < 4294967295 ? Number(value) : null;
@@ -17,7 +17,7 @@ function text(value: unknown, max = 512): string | null {
     if (value.length > max) throw new SaveImportError('complexity');
     return value;
 }
-function position(value: unknown): Position {
+function position(value: unknown): SavePosition {
     const point = record(value);
     const x = number(point?.x), y = number(point?.y), z = number(point?.z);
     if (x === null || y === null || z === null) throw new SaveImportError('position');
@@ -123,8 +123,8 @@ export function analyzeSave(value: unknown, context: SaveDecodeContext): SaveSna
     const names = record(record(itemData.CrBuildingCustomNameSubsystem)?.customNames);
     const networks = powerNetworks(mass);
     const levels = coreLevels(itemData);
-    const cores: { core: SaveCore; position: Position }[] = [];
-    const buildings: { building: SaveBuilding; position: Position }[] = [];
+    const cores: SaveCore[] = [];
+    const buildings: SaveBuilding[] = [];
     const ids = new Set<number>();
     for (const [key, value] of entries) {
         const entity = record(value), spawn = record(entity?.spawnData);
@@ -136,17 +136,18 @@ export function analyzeSave(value: unknown, context: SaveDecodeContext): SaveSna
         ids.add(id);
         const fragments = Array.isArray(entity?.fragmentValues) ? entity.fragmentValues.filter((value): value is string => typeof value === 'string') : [];
         if (fragments.length > 4096 || fragments.some(fragment => fragment.length > 1024 * 1024)) throw new SaveImportError('complexity');
-        const common = { id, name: text(names?.[key]), powerNetworkId: networks.get(id) ?? null };
+        const common = { id, name: text(names?.[key]), powerNetworkId: networks.get(id) ?? null,
+            position: position(record(spawn?.transform)?.translation) };
         if (mapping.role === 'core') {
-            const core: SaveCore = { ...common, spawnTimeSeconds: spawnTime(fragments), level: levels.get(id) ?? null, buildings: [] };
-            cores.push({ core, position: position(record(spawn?.transform)?.translation) });
+            const core: SaveCore = { ...common, spawnTimeSeconds: spawnTime(fragments), level: levels.get(id) ?? null,
+                bounds: readCoreBounds(fragments), buildings: [] };
+            cores.push(core);
         } else {
-            buildings.push({ building: { ...common, buildingTypeId: mapping.id, configuration: configuration(mapping, fragments, context) },
-                position: position(record(spawn?.transform)?.translation) });
+            buildings.push({ ...common, buildingTypeId: mapping.id, configuration: configuration(mapping, fragments, context) });
         }
     }
-    cores.sort((a, b) => a.core.id - b.core.id);
-    buildings.sort((a, b) => a.building.id - b.building.id);
+    cores.sort((a, b) => a.id - b.id);
+    buildings.sort((a, b) => a.id - b.id);
     if (buildings.length && !cores.length) throw new SaveImportError('position');
     if (buildings.length * cores.length > 10_000_000) throw new SaveImportError('complexity');
     for (const entry of buildings) {
@@ -157,9 +158,9 @@ export function analyzeSave(value: unknown, context: SaveDecodeContext): SaveSna
             if (!Number.isFinite(distance)) throw new SaveImportError('position');
             if (distance < closest) { nearest = candidate; closest = distance; }
         }
-        nearest.core.buildings.push(entry.building);
+        nearest.buildings.push(entry);
     }
-    connectTransport(itemData, buildings.map(entry => entry.building), context);
-    return { schemaVersion: 3, gameData: { version: context.dataVersion, revision: context.mappings.mappingRevision },
-        savedAt: text(root.timestamp), cores: cores.map(entry => entry.core) };
+    connectTransport(itemData, buildings, context);
+    return { schemaVersion: 4, gameData: { version: context.dataVersion, revision: context.mappings.mappingRevision },
+        savedAt: text(root.timestamp), cores };
 }
