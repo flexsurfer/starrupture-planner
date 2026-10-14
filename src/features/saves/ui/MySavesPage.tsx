@@ -7,13 +7,24 @@ import type { SaveWorkspace } from '../types';
 import { SaveCoreCard, SaveBuildingSections } from './SaveCoreCards';
 import { SaveImportDialog, SaveFileDropZone, SaveImportCompatibility } from './SaveImportDialog';
 import { SaveMap } from './SaveMap';
+import { SavePowerNetworks } from './SavePowerNetworks';
+
+const saveViews = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'map', label: 'Map' },
+    { id: 'power-networks', label: 'Power networks' },
+] as const;
 
 function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disabled: boolean }) {
     const { t } = useTranslation();
     const runtime = useRuntime();
     const overview = useSubscription([appIds.subscriptions.SAVES_OVERVIEW, workspace.id]);
     const selected = useSubscription([appIds.subscriptions.SAVES_SELECTED_CORE, workspace.id]);
-    const [view, setView] = useState<'overview' | 'map'>('overview');
+    const [view, setView] = useState<typeof saveViews[number]['id']>('overview');
+    const openCore = (id: number) => {
+        runtime.dispatch([appIds.events.SAVES_SELECT_CORE, workspace.id, id]);
+        setView('overview');
+    };
     const coreName = (core: { id: number; name: string | null }) => core.name ?? t('Core {number}', {
         number: (overview?.cores.findIndex(coreOverview => coreOverview.core.id === core.id) ?? 0) + 1,
     });
@@ -27,17 +38,20 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
     return <>
         <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 px-2 py-0.5">
             <div className="tabs tabs-bordered tabs-sm" role="tablist" aria-label={t('Save view')}>
-                {(['overview', 'map'] as const).map(tab => <button key={tab} type="button" role="tab"
+                {saveViews.map(({ id: tab, label }) => <button key={tab} type="button" role="tab"
                     id={`save-view-${tab}`} aria-controls={`save-panel-${tab}`} aria-selected={view === tab}
                     tabIndex={view === tab ? 0 : -1}
                     className={`tab h-7 min-h-7 shrink-0 px-2 sm:px-3 text-xs font-semibold ${view === tab ? 'tab-active' : ''}`}
                     onClick={() => setView(tab)} onKeyDown={event => {
                         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
                         event.preventDefault();
-                        const next = event.key === 'Home' ? 'overview' : event.key === 'End' ? 'map' : view === 'overview' ? 'map' : 'overview';
+                        const index = saveViews.findIndex(item => item.id === tab);
+                        const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? saveViews.length - 1
+                            : (index + (event.key === 'ArrowRight' ? 1 : -1) + saveViews.length) % saveViews.length;
+                        const next = saveViews[nextIndex].id;
                         setView(next);
                         document.getElementById(`save-view-${next}`)?.focus();
-                    }}>{t(tab === 'overview' ? 'Overview' : 'Map')}</button>)}
+                    }}>{t(label)}</button>)}
             </div>
             <p className="order-last w-full px-2 pb-1 text-xs text-base-content/50 sm:order-none sm:ml-auto sm:w-auto sm:p-0">{t('Last updated: {date}', { date: updated })}</p>
             <div className="ml-auto flex shrink-0 items-center gap-1 sm:ml-0">
@@ -48,10 +62,8 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
         </div>
         <div id={`save-panel-${view}`} role="tabpanel" aria-labelledby={`save-view-${view}`}
             className={view === 'map' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'min-h-0 flex-1 overflow-auto p-3 sm:p-4'}>
-            {view === 'map' ? <SaveMap key={selected?.core.id ?? 'all'} workspace={workspace} initialCoreId={selected?.core.id ?? null} onOpenCore={id => {
-                runtime.dispatch([appIds.events.SAVES_SELECT_CORE, workspace.id, id]);
-                setView('overview');
-            }} /> : selected ? <div className="space-y-3">
+            {view === 'map' ? <SaveMap key={selected?.core.id ?? 'all'} workspace={workspace} initialCoreId={selected?.core.id ?? null} onOpenCore={openCore} />
+                : view === 'power-networks' ? <SavePowerNetworks networks={overview?.powerNetworks ?? []} onOpenCore={openCore} /> : selected ? <div className="space-y-3">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => runtime.dispatch([appIds.events.SAVES_SELECT_CORE, workspace.id, null])}>
                     <span aria-hidden="true">←</span>{t('Back to save overview')}
                 </button>
@@ -61,7 +73,7 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
                 {overview?.cores.map(coreOverview => <SaveCoreCard key={coreKey(coreOverview.core)} workspace={workspace} coreOverview={coreOverview}
                     name={coreName(coreOverview.core)} disabled={disabled} />)}
             </div>}
-            {overview?.cores.length === 0 && <p className="py-10 text-center text-sm text-base-content/60">{t('No Cores found in this save.')}</p>}
+            {view === 'overview' && overview?.cores.length === 0 && <p className="py-10 text-center text-sm text-base-content/60">{t('No Cores found in this save.')}</p>}
         </div>
     </>;
 }

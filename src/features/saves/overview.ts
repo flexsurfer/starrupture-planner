@@ -30,6 +30,9 @@ export interface SaveBuildingView {
 export interface SavePowerNetwork {
     id: number;
     coreIds: number[];
+    /** Owners of network buildings, plus directly connected Cores even when they own no members. */
+    coreContributions: { coreId: number; name: string | null; number: number; buildingCount: number }[];
+    buildingCount: number;
     powerUse: number | null;
     powerGeneration: number | null;
 }
@@ -96,9 +99,20 @@ export function buildSaveOverview(workspace: SaveWorkspace, data: SaveGameData) 
     const networkIds = new Set([...orderedCores, ...buildings].flatMap(entity => entity.powerNetworkId === null ? [] : [entity.powerNetworkId]));
     const powerNetworks: SavePowerNetwork[] = [...networkIds].sort((a, b) => a - b).map(id => {
         const members = buildings.filter(building => building.powerNetworkId === id);
+        const countsByCore = new Map<number, number>();
+        for (const building of members) {
+            const owner = owners.get(building.id)!;
+            countsByCore.set(owner.id, (countsByCore.get(owner.id) ?? 0) + 1);
+        }
+        const coreContributions = orderedCores.flatMap((core, index) => {
+            const buildingCount = countsByCore.get(core.id) ?? 0;
+            return buildingCount > 0 || core.powerNetworkId === id
+                ? [{ coreId: core.id, name: core.name, number: index + 1, buildingCount }] : [];
+        });
         const power = (generator: boolean) => sum(members.filter(building => !saveBuildings.has(building.buildingTypeId) || (saveBuildings.get(building.buildingTypeId)?.type === 'generator') === generator)
             .map(building => saveBuildings.get(building.buildingTypeId)?.power));
-        return { id, coreIds: orderedCores.filter(core => core.powerNetworkId === id).map(core => core.id), powerUse: power(false), powerGeneration: power(true) };
+        return { id, coreIds: orderedCores.filter(core => core.powerNetworkId === id).map(core => core.id),
+            coreContributions, buildingCount: members.length, powerUse: power(false), powerGeneration: power(true) };
     });
     const cores: SaveCoreOverview[] = orderedCores.map(core => {
         const buildingDetails = core.buildings.map((instance): SaveBuildingView => {

@@ -820,5 +820,7 @@
   "Experimental functionality": "Experimentelle Funktion",
   "Only tested with {dataVersion} game data and .sav files from StarRupture {gameVersion}.": "Nur mit Spieldaten von {dataVersion} und .sav-Dateien aus StarRupture {gameVersion} getestet.",
   "Update": "Aktualisieren",
-  "View details": "Details anzeigen"
+  "View details": "Details anzeigen",
+  "Core": "Core",
+  "No power networks found in this save.": "Keine Stromnetze in diesem Spielstand gefunden."
 }
