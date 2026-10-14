@@ -83,11 +83,16 @@
 .save-map-marker { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border: 1px solid transparent; border-radius: 5px; background: transparent; }
 .save-map-marker > .save-map-building-image { width: 100%; height: 100%; padding: 3px; }
 .save-map-building-image img { width: 100%; height: 100%; object-fit: contain; }
-.save-map-marker:not(.is-core)::before { content: ''; position: absolute; left: 3px; top: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--save-map-network-color, transparent); pointer-events: none; }
 .save-map-marker.is-related > .save-map-building-image { filter: drop-shadow(0 0 2px var(--save-map-accent)); }
 .save-map-marker.is-selected, .save-map-core-marker.is-selected { border-color: var(--save-map-accent); outline: 2px solid var(--save-map-accent); outline-offset: 3px; background: var(--save-map-panel); }
 .save-map-marker.is-core { border: 0; background: transparent !important; box-shadow: none; outline: none; }
 .save-map-core-marker { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--save-map-accent); background: var(--save-map-panel); }
+.save-map-marker.has-power-network:not(.is-core), .save-map-marker.has-power-network .save-map-core-marker {
+  border: 3px var(--save-map-network-border-style, solid) var(--save-map-network-color);
+  background: color-mix(in srgb, var(--save-map-network-color) 24%, var(--save-map-panel));
+  box-shadow: 0 0 0 1px var(--save-map-panel);
+}
+.save-map-network-badge { position: absolute; top: -9px; right: -5px; max-width: calc(100% + 10px); padding: 1px 4px; overflow: hidden; border: 1px solid var(--save-map-network-color); border-radius: 4px; background: var(--save-map-panel); color: var(--save-map-text); font-size: 10px; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
 .save-map-marker.is-core:focus-visible .save-map-core-marker { outline: 2px solid var(--save-map-accent); outline-offset: 3px; }
 .save-map-core-label { position: absolute; transform-origin: center; min-width: max-content; max-width: 170px; padding: 3px 7px; border-radius: 4px; background: var(--save-map-panel); text-align: center; pointer-events: none; }
 .save-map-core-label > span { display: block; max-width: 156px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }

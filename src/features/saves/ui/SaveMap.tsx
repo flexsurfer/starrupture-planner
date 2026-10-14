@@ -15,6 +15,7 @@ import { SaveMapSearch } from './SaveMapSearch';
 import { SaveMapEdge, type CargoEdge } from './SaveMapEdge';
 import { SaveMapSettings, type MapLayers } from './SaveMapSettings';
 import { cargoHandles, defaultMapDisplay } from './map-display';
+import { powerNetworkStyles } from './power-network-style';
 import './SaveMap.css';
 
 const nodeTypes = { saveBuilding: SaveMapNode, saveCoreBounds: SaveMapCoreBounds };
@@ -44,15 +45,8 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     const { showLinks, showBounds, showPowerNetworks } = layers;
     const [display, setDisplay] = useState(defaultMapDisplay);
     const [focusedCore, setFocusedCore] = useState(initialCoreId === null ? '' : String(initialCoreId));
-    const powerColors = useMemo(() => {
-        const ids = new Set(map.entities.flatMap(entity => {
-            const id = (entity.detail?.instance ?? entity.core.core).powerNetworkId;
-            return id === null ? [] : [id];
-        }));
-        // Stable, restrained colors across remounts as well as layer and selection changes.
-        return new Map([...ids].sort((a, b) => a - b).map((id, index) =>
-            [id, `hsl(${(205 + index * 137.508) % 360}, 48%, 57%)`]));
-    }, [map]);
+    const powerStyles = useMemo(() => powerNetworkStyles(map.entities.map(entity =>
+        (entity.detail?.instance ?? entity.core.core).powerNetworkId)), [map]);
     const coreName = useCallback((entity: SaveMapEntity) => entity.core.core.name ?? t('Core {number}', { number: entity.coreNumber }), [t]);
     const entityName = useCallback((entity: SaveMapEntity) => entity.detail
         ? entity.detail.instance.name ?? entity.detail.building.name : coreName(entity), [coreName]);
@@ -74,10 +68,11 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     };
     const nodes = useMemo<MapNode[]>(() => map.entities.flatMap(entity => {
         const networkId = (entity.detail?.instance ?? entity.core.core).powerNetworkId;
+        const powerStyle = showPowerNetworks && networkId !== null ? powerStyles.get(networkId) : undefined;
         const data = { entity, name: entityName(entity), selected: entity.id === selected?.id,
             related: entity.id === selected?.connectedBuildingId, labelPeers: entity.detail ? undefined : corePositions, onSelect: selectEntity,
             showNames: display.showNames, showResources: display.showResources,
-            powerColor: showPowerNetworks && networkId !== null ? powerColors.get(networkId) : undefined };
+            powerColor: powerStyle?.color, powerBorderStyle: powerStyle?.borderStyle };
         const size = entity.detail ? display.buildingSize : 48;
         const marker: MapNode = {
             id: String(entity.id), type: 'saveBuilding', position: project(entity.position), width: size, height: size,
@@ -96,7 +91,7 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
             data: { ...data, selected: selectedCoreId === entity.id },
         };
         return [area, marker];
-    }), [map, entityName, selectEntity, selected?.id, selected?.connectedBuildingId, selectedCoreId, showBounds, showPowerNetworks, powerColors, corePositions,
+    }), [map, entityName, selectEntity, selected?.id, selected?.connectedBuildingId, selectedCoreId, showBounds, showPowerNetworks, powerStyles, corePositions,
         display.buildingSize, display.showNames, display.showResources]);
     const edges = useMemo<CargoEdge[]>(() => showLinks ? map.links.map(link => {
         const highlighted = selected?.id === link.source || selected?.id === link.target;
