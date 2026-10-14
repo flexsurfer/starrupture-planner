@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { memoryStorageAdapter, persist } from '@ukladjs/persist';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { appIds } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { UkladProvider } from '@/app/uklad/bindings';
@@ -10,8 +10,11 @@ import { PERSIST_KEYS } from '@/platform/web/persistence';
 import { ConfirmationDialog } from '@/features/app-shell/ui/ConfirmationDialog';
 import { SaveImportError } from '../import-error';
 import { analyzeSave } from '../decoder/analyze';
-import { saveGameData, extractionContext, snapshotFixture, transportFixture, saveEntity, heliumItemAsset } from '../decoder/test-fixture';
+import { saveGameData, extractionContext, snapshotFixture, transportFixture, saveFixture, saveEntity, heliumItemAsset } from '../decoder/test-fixture';
 import { MySavesPage } from './MySavesPage';
+
+// Map rendering has its own suite; this suite exercises the save view navigation.
+vi.mock('./SaveMap', () => ({ SaveMap: () => <div /> }));
 
 const owners: { runtime: ReturnType<typeof createAppRuntime>; persistence: ReturnType<typeof persist> }[] = [];
 afterEach(async () => {
@@ -183,4 +186,61 @@ it('updates the existing workspace without adding another or changing its identi
     expect(screen.getByText('Last updated: 2026-04-04 15:30')).toBeVisible();
     expect(within(screen.getByRole('article', { name: 'Workshop' })).getByText(/^Lv\.3 · \d+ buildings$/)).toBeVisible();
     expect(within(screen.getByRole('article', { name: 'Workshop' })).getByRole('meter', { name: 'Heat' })).toHaveAttribute('aria-valuetext', expect.stringMatching(/ \/ 4,000$/));
+});
+
+it('lists all power networks with per-Core building counts and opens Core details', async () => {
+    const save = saveFixture();
+    await setup(undefined, save);
+    await importSave('Power world');
+    fireEvent.click(screen.getByRole('tab', { name: 'Power networks' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Power networks' });
+    expect(within(panel).getAllByRole('article')).toHaveLength(3);
+    const shared = within(panel).getByRole('article', { name: 'Power network 9' });
+    expect(within(shared).getByText('2 Cores · 2 buildings')).toBeVisible();
+    expect(within(shared).getByRole('row', { name: 'Workshop 1' })).toBeVisible();
+    expect(within(shared).getByRole('row', { name: 'Core 2 1' })).toBeVisible();
+    expect(within(panel).getByRole('article', { name: 'Power network 7' })).toHaveTextContent('1 Core · 0 buildings');
+    expect(within(panel).getByRole('article', { name: 'Power network 8' })).toHaveTextContent('1 Core · 0 buildings');
+    fireEvent.click(within(shared).getByRole('button', { name: 'Open Core Core 2' }));
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(screen.getByRole('article', { name: 'Core 2' })).toBeVisible());
+    expect(screen.getByRole('button', { name: 'Back to save overview' })).toBeVisible();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Power networks' }));
+    expect(within(screen.getByRole('tabpanel', { name: 'Power networks' })).getAllByRole('article')).toHaveLength(3);
+    // Re-importing updates the derived counts while this tab is selected.
+    save.itemData.Mass.electricitySubsystemState.nodeData['(UId=(ID=10))'].subGraph.subGraphId = 8;
+    fireEvent.click(screen.getByRole('button', { name: 'Update' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Update save' });
+    fireEvent.change(within(dialog).getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const updated = screen.getByRole('article', { name: 'Power network 9' });
+    expect(within(updated).getByText('1 Core · 1 building')).toBeVisible();
+    expect(within(updated).queryByRole('button', { name: 'Open Core Workshop' })).toBeNull();
+    expect(within(screen.getByRole('article', { name: 'Power network 8' })).getByRole('row', { name: 'Workshop 1' })).toBeVisible();
+});
+
+it('supports three-tab keyboard navigation and shows an empty power networks state', async () => {
+    const save = saveFixture();
+    save.itemData.Mass.electricitySubsystemState.nodeData = {} as typeof save.itemData.Mass.electricitySubsystemState.nodeData;
+    await setup(undefined, save);
+    await importSave('No networks');
+    const overview = screen.getByRole('tab', { name: 'Overview' });
+    const map = screen.getByRole('tab', { name: 'Map' });
+    const networks = screen.getByRole('tab', { name: 'Power networks' });
+    fireEvent.keyDown(overview, { key: 'End' });
+    expect(networks).toHaveFocus();
+    expect(networks).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('No power networks found in this save.')).toBeVisible();
+    fireEvent.keyDown(networks, { key: 'ArrowRight' });
+    expect(overview).toHaveFocus();
+    fireEvent.keyDown(overview, { key: 'ArrowLeft' });
+    expect(networks).toHaveFocus();
+    fireEvent.keyDown(networks, { key: 'Home' });
+    expect(overview).toHaveFocus();
+    fireEvent.keyDown(overview, { key: 'ArrowRight' });
+    expect(map).toHaveFocus();
+    fireEvent.keyDown(map, { key: 'ArrowRight' });
+    expect(networks).toHaveFocus();
+    expect(screen.getByRole('tabpanel', { name: 'Power networks' })).toHaveTextContent('No power networks found in this save.');
 });

@@ -49,11 +49,36 @@ it('never merges different power networks just because they belong to one Core',
     snapshot.cores[1].buildings = [];
     const overview = buildSaveOverview(createSaveWorkspace('one', 'World', snapshot), saveLookups);
     expect(overview.powerNetworks).toEqual([
-        { id: 1, coreIds: [1, 2], powerUse: 5, powerGeneration: 0 },
-        { id: 2, coreIds: [], powerUse: 0, powerGeneration: 140 },
+        { id: 1, coreIds: [1, 2], buildingCount: 1, powerUse: 5, powerGeneration: 0, coreContributions: [
+            { coreId: 1, name: 'Workshop', number: 1, buildingCount: 1 },
+            { coreId: 2, name: null, number: 2, buildingCount: 0 },
+        ] },
+        { id: 2, coreIds: [], buildingCount: 1, powerUse: 0, powerGeneration: 140, coreContributions: [
+            { coreId: 1, name: 'Workshop', number: 1, buildingCount: 1 },
+        ] },
     ]);
     expect(overview.cores[0].powerNetworks).toHaveLength(2);
     expect(overview.cores[1].powerNetworks).toEqual([overview.powerNetworks[0]]);
+});
+it('counts network buildings by owner across Cores without counting unknown networks or Cores as buildings', () => {
+    const snapshot = analyzeSave(saveFixture(), extractionContext);
+    snapshot.cores[0].powerNetworkId = 0;
+    snapshot.cores[1].powerNetworkId = null;
+    snapshot.cores[0].buildings[0].powerNetworkId = 0;
+    snapshot.cores[0].buildings.push(
+        { ...snapshot.cores[0].buildings[0], id: 20 },
+        { ...snapshot.cores[0].buildings[0], id: 21, powerNetworkId: null },
+    );
+    snapshot.cores[1].buildings[0].powerNetworkId = 0;
+    // Snapshot order must not change fallback Core numbers or contribution order.
+    snapshot.cores.reverse();
+    const overview = buildSaveOverview(createSaveWorkspace('one', 'World', snapshot), saveLookups);
+    expect(overview.powerNetworks).toEqual([{
+        id: 0, coreIds: [1], buildingCount: 3, powerUse: 20, powerGeneration: 0, coreContributions: [
+            { coreId: 1, name: 'Workshop', number: 1, buildingCount: 2 },
+            { coreId: 2, name: null, number: 2, buildingCount: 1 },
+        ],
+    }]);
 });
 it('derives heat capacity from each persisted Core level and its own individual amplifiers', () => {
     const snapshot = analyzeSave(saveFixture(), extractionContext);

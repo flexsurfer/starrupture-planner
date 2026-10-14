@@ -6,12 +6,16 @@ replaces its snapshot. Workspace and Core-settings data structures remain unchan
 the UI exposes one active save, with no workspace tabs or renaming. Production
 objective controls are deferred. The centered first-import panel identifies the
 experimental feature and its tested combination: Update 2 QoL data / StarRupture
-0.3.5 saves. Once imported, a compact borderless bar shows Overview/Map tabs, the
+0.3.5 saves. Once imported, a compact borderless bar shows Overview/Map/Power networks tabs, the
 saved timestamp, Update, and Remove with confirmation. Overview cards show heat
 beside the Core name, visually separate extraction from deliveries, omit empty
 shipment sections, and open the full Core view with View details. Power networks
-appear only in the expanded Core view; corporation shipment summaries and building
-previews are omitted from cards.
+appear in the expanded Core view and a dedicated save-wide tab. The Power networks
+tab lists each known network, its nominal power totals, and building counts grouped
+by owning Core. Directly connected Cores with no buildings on that network appear
+with zero buildings; buildings with unknown network IDs are excluded. Core names
+open their detail view. Corporation shipment summaries and building previews are
+omitted from overview cards.
 
 ## Rules
 
