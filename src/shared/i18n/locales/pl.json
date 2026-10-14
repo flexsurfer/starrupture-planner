@@ -824,5 +824,7 @@
   "Update": "Aktualizuj",
   "View details": "Zobacz szczegóły",
   "Core": "Core",
-  "No power networks found in this save.": "Nie znaleziono sieci energetycznych w tym zapisie."
+  "No power networks found in this save.": "Nie znaleziono sieci energetycznych w tym zapisie.",
+  "Where to find .sav files": "Gdzie znaleźć pliki .sav",
+  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Otwórz ten folder w Eksploratorze plików, zastępując [SteamNumber] numerem folderu swojego konta Steam. Jeśli Steam jest zainstalowany w innym miejscu, użyj jego folderu instalacyjnego."
 }

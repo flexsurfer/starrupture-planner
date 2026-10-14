@@ -822,5 +822,7 @@
   "Update": "Aktualisieren",
   "View details": "Details anzeigen",
   "Core": "Core",
-  "No power networks found in this save.": "Keine Stromnetze in diesem Spielstand gefunden."
+  "No power networks found in this save.": "Keine Stromnetze in diesem Spielstand gefunden.",
+  "Where to find .sav files": "Wo du .sav-Dateien findest",
+  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Öffne diesen Ordner im Datei-Explorer und ersetze [SteamNumber] durch die Nummer deines Steam-Kontoordners. Wenn Steam woanders installiert ist, verwende stattdessen diesen Installationsordner."
 }
