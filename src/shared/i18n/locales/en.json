@@ -822,5 +822,7 @@
   "Update": "Update",
   "View details": "View details",
   "Core": "Core",
-  "No power networks found in this save.": "No power networks found in this save."
+  "No power networks found in this save.": "No power networks found in this save.",
+  "Where to find .sav files": "Where to find .sav files",
+  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead."
 }
