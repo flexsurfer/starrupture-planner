@@ -5,6 +5,7 @@ import { useTranslation } from '@/shared/i18n';
 import type { SaveMapEntity } from '../map';
 import { placeCoreLabels, type CoreLabelPeer } from './map-display';
 import { SaveMapResourceMarker } from './SaveMapResourceMarker';
+import type { PowerNetworkStyle } from './power-network-style';
 
 export type MapNode = Node<{
     entity: SaveMapEntity;
@@ -15,6 +16,7 @@ export type MapNode = Node<{
     showResources: boolean;
     labelPeers?: CoreLabelPeer[];
     powerColor?: string;
+    powerBorderStyle?: PowerNetworkStyle['borderStyle'];
     onSelect: (id: number) => void;
 }, 'saveBuilding' | 'saveCoreBounds'>;
 
@@ -26,8 +28,9 @@ export const SaveMapCoreBounds = memo(function SaveMapCoreBounds({ data }: NodeP
     </svg>;
 });
 
-function powerStyle(color?: string): CSSProperties | undefined {
-    return color ? { borderColor: color, backgroundColor: `color-mix(in srgb, ${color} 16%, var(--save-map-panel))` } : undefined;
+function NetworkBadge({ networkId }: { networkId: number | null }) {
+    const { formatNumber } = useTranslation();
+    return networkId === null ? null : <span className="save-map-network-badge" aria-hidden="true">#{formatNumber(networkId)}</span>;
 }
 
 function CoreMarker({ data }: { data: MapNode['data'] }) {
@@ -39,8 +42,9 @@ function CoreMarker({ data }: { data: MapNode['data'] }) {
     const placements = useMemo(() => placeCoreLabels(labelPeers ?? [], zoom), [labelPeers, zoom]);
     const label = placements.get(entity.id) ?? { x: 0, y: Math.max(36, 48 * zoom) / 2 + 26 };
     return <div className={`save-map-core-marker ${selected ? 'is-selected' : ''}`}
-        style={{ ...powerStyle(powerColor), transform: `scale(${scale})` }}>
+        style={{ transform: `scale(${scale})` }}>
         <BuildingImage buildingId="base_core" building={{ name }} size="small" />
+        {powerColor && <NetworkBadge networkId={entity.core.core.powerNetworkId} />}
         <span className="save-map-core-label" style={{ left: `calc(50% + ${label.x / (scale * zoom)}px)`,
             top: `calc(50% + ${label.y / (scale * zoom)}px)`, transform: `translate(-50%, -50%) scale(${Math.max(1, 1 / (scale * zoom))})` }}>
             <span>{name}</span>{zoom < 0.12 && <small>{t('{count} buildings', { count: entity.core.buildings.length })}</small>}
@@ -49,7 +53,7 @@ function CoreMarker({ data }: { data: MapNode['data'] }) {
 }
 
 export const SaveMapNode = memo(function SaveMapNode({ data, width = 72 }: NodeProps<MapNode>) {
-    const { entity, name, selected, related, powerColor, showNames, showResources, onSelect } = data;
+    const { entity, name, selected, related, powerColor, powerBorderStyle, showNames, showResources, onSelect } = data;
     const { t } = useTranslation();
     // Only update building detail density at the threshold, not on every zoom or pan frame.
     const showDetail = useStore(state => state.transform[2] >= 0.45);
@@ -61,11 +65,13 @@ export const SaveMapNode = memo(function SaveMapNode({ data, width = 72 }: NodeP
         {[Position.Top, Position.Right, Position.Bottom, Position.Left].flatMap(position =>
             (['target', 'source'] as const).map(type => <Handle key={`${type}-${position}`} id={`${type}-${position}`}
                 type={type} position={position} className="!pointer-events-none !opacity-0" />))}
-        <button type="button" className={`nodrag nopan save-map-marker ${detail ? '' : 'is-core'} ${selected ? 'is-selected' : ''} ${related ? 'is-related' : ''}`}
-            style={powerColor ? { '--save-map-network-color': powerColor } as CSSProperties : undefined} aria-label={name} aria-pressed={selected}
+        <button type="button" className={`nodrag nopan save-map-marker ${detail ? '' : 'is-core'} ${selected ? 'is-selected' : ''} ${related ? 'is-related' : ''} ${powerColor ? 'has-power-network' : ''}`}
+            style={powerColor ? { '--save-map-network-color': powerColor, '--save-map-network-border-style': powerBorderStyle } as CSSProperties : undefined}
+            aria-label={name} aria-description={networkLabel} aria-pressed={selected}
             title={[name, resource?.name, networkLabel].filter(Boolean).join(' · ')} onClick={() => onSelect(entity.id)}>
             {detail ? <>
                 <BuildingImage buildingId={detail.building.id} building={detail.building} size="large" className="save-map-building-image" />
+                {powerColor && showDetail && <NetworkBadge networkId={networkId} />}
                 {resource && showResources && showDetail && <SaveMapResourceMarker key={resource.itemId} resource={resource} markerSize={width} />}
                 {showDetail && <span className={`save-map-building-label ${selected || showNames ? 'is-visible' : ''}`}>{name}</span>}
             </> : <CoreMarker data={data} />}

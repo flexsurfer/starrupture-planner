@@ -212,8 +212,15 @@ it('toggles stable network colors across Cores and buildings without changing ot
     expect(button(20).style.getPropertyValue('--save-map-network-color')).toBe(color);
     expect(button(30).style.getPropertyValue('--save-map-network-color')).toBe(color);
     expect(button(1).style.getPropertyValue('--save-map-network-color')).toBe(color);
-    expect(button(1).querySelector('div')!.style.borderColor).not.toBe('');
+    for (const id of [1, 20, 30]) {
+        expect(button(id)).toHaveClass('has-power-network');
+        expect(button(id).style.getPropertyValue('--save-map-network-border-style')).toBe('solid');
+        expect(button(id).querySelector('.save-map-network-badge')).toHaveTextContent('#0');
+        expect(button(id)).toHaveAttribute('aria-description', 'Power network 0');
+    }
     expect(button(22).style.getPropertyValue('--save-map-network-color')).toBe('');
+    expect(button(22)).not.toHaveClass('has-power-network');
+    expect(button(22).querySelector('.save-map-network-badge')).toBeNull();
     expect(button(20)).toHaveAttribute('title', expect.stringContaining('Power network 0'));
     expect(geometry()).toEqual(originalGeometry);
     expect(flowProps.edges).toEqual(originalEdges);
@@ -223,7 +230,9 @@ it('toggles stable network colors across Cores and buildings without changing ot
     expect(node(20).data.powerColor).toBe(color);
     fireEvent.click(layerCheckbox('Power networks'));
     expect(button(20).style.getPropertyValue('--save-map-network-color')).toBe('');
-    expect(button(1).querySelector('div')!.style.borderColor).toBe('');
+    expect(button(1)).not.toHaveClass('has-power-network');
+    expect(button(20).querySelector('.save-map-network-badge')).toBeNull();
+    expect(button(20)).not.toHaveAttribute('aria-description');
     expect(button(20)).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(layerCheckbox('Core bounds'));
     fireEvent.click(layerCheckbox('Cargo links'));
@@ -262,6 +271,18 @@ it('uses uniform building sizes without moving saved positions, resizing Cores o
     expect(screen.getByRole('button', { name: 'Map settings' })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('button', { name: 'Map settings' })).toHaveFocus();
     expect(screen.getByRole('region', { name: 'Building details' })).toBeInTheDocument();
+});
+
+it('keeps network identities on Cores at overview zoom without crowding small buildings with badges', () => {
+    viewport.zoom = 0.2;
+    setup({ networkIds: { 1: 0, 20: 0 } });
+    fireEvent.click(layerCheckbox('Power networks'));
+    const core = screen.getByTestId('rf-node-1');
+    const building = screen.getByTestId('rf-node-20');
+    expect(core.querySelector('.save-map-network-badge')).toHaveTextContent('#0');
+    expect(building.querySelector('.save-map-network-badge')).toBeNull();
+    expect(within(building).getByRole('button')).toHaveClass('has-power-network');
+    expect(within(building).getByRole('button')).toHaveAttribute('aria-description', 'Power network 0');
 });
 
 it('keeps nearby Core names visible and shows building counts at overview zoom', () => {
