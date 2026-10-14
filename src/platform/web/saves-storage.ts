@@ -10,7 +10,7 @@ const validators: Record<string, (value: unknown) => unknown> = {
 };
 
 /** A fresh namespace deliberately leaves experimental schemas behind, without migrating them. */
-export const savesStorageKey = (prefix: string, root: string) => `${prefix}/saves-v3/${encodeURIComponent(root)}`;
+export const savesStorageKey = (prefix: string, root: string) => `${prefix}/saves-v4/${encodeURIComponent(root)}`;
 
 /** Invalid Saves data must not stop persistence of unrelated app roots. Preserve bad entries for recovery. */
 export function createSavesStorage(storage: SyncPersistStorage, prefix: string) {

@@ -13,8 +13,9 @@ it('assigns every supported building to the nearest Core, including outside all 
     expect(snapshot.cores[0]).toMatchObject({ id: 1, name: 'Workshop', spawnTimeSeconds: 10.5, level: 0, powerNetworkId: 7 });
     expect(snapshot.cores[1].level).toBe(3);
     expect(snapshot.cores[0].buildings[0]).toMatchObject({ powerNetworkId: 9 });
-    expect(Object.keys(snapshot.cores[0]).sort()).toEqual(['buildings', 'id', 'level', 'name', 'powerNetworkId', 'spawnTimeSeconds']);
-    expect(Object.keys(snapshot.cores[0].buildings[0]).sort()).toEqual(['buildingTypeId', 'configuration', 'id', 'name', 'powerNetworkId']);
+    expect(snapshot.cores[0].bounds).toEqual({ min: { x: -10, y: -10, z: -10 }, max: { x: 10, y: 10, z: 10 } });
+    expect(Object.keys(snapshot.cores[0]).sort()).toEqual(['bounds', 'buildings', 'id', 'level', 'name', 'position', 'powerNetworkId', 'spawnTimeSeconds']);
+    expect(Object.keys(snapshot.cores[0].buildings[0]).sort()).toEqual(['buildingTypeId', 'configuration', 'id', 'name', 'position', 'powerNetworkId']);
 });
 it.each([undefined, null, -1, 1.5, '3', NaN, 4294967295])('leaves an unreadable Core upgrade level unknown: %s', level => {
     const save = saveFixture();
@@ -62,7 +63,7 @@ it('keeps exact production selections but discards running state and unknown rec
     expect(buildings.find(building => building.id === 201)?.configuration).toEqual({ kind: 'production', recipeId: 'craftertier2:5' });
     expect(buildings.find(building => building.id === 202)?.configuration).toEqual({ kind: 'production', recipeId: 'craftertier2:tube_v2' });
     for (const id of [203, 204, 205, 206]) expect(buildings.find(building => building.id === id)?.configuration).toEqual({ kind: 'production', recipeId: null });
-    expect(JSON.stringify(buildings)).not.toMatch(/Disabled|disabled|CraftingSpeed|\/Game\/|\/Script\/|position|source/);
+    expect(JSON.stringify(buildings)).not.toMatch(/Disabled|disabled|CraftingSpeed|\/Game\/|\/Script\/|source/);
 });
 it('preserves individual network IDs and leaves conflicting evidence unknown', () => {
     const save = saveFixture();
@@ -71,4 +72,16 @@ it('preserves individual network IDs and leaves conflicting evidence unknown', (
         invalid: { handle: { iD: 11 }, subGraph: { subGraphId: 4294967295 } },
     });
     expect(analyzeSave(save, extractionContext).cores.flatMap(core => core.buildings).map(building => building.powerNetworkId)).toEqual([null, null]);
+});
+
+it('retains detached XYZ positions for Cores and buildings, including negative and elevated coordinates', () => {
+    const save = saveFixture();
+    const point = { x: -125.75, y: 99.25, z: 800.5 };
+    save.itemData.Mass.entities['(ID=10)'].spawnData.transform.translation = point;
+    const snapshot = analyzeSave(save, extractionContext);
+    const building = snapshot.cores.flatMap(core => core.buildings).find(building => building.id === 10)!;
+    expect(building.position).toEqual(point);
+    expect(snapshot.cores[1].position).toEqual({ x: 30, y: 0, z: 0 });
+    point.x = 1000;
+    expect(building.position.x).toBe(-125.75);
 });

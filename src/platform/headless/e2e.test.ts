@@ -308,6 +308,7 @@ describe('headless application E2E', () => {
         const view = mountView(scenario, 'Version-aware Saves', {
             workspace: [appIds.subscriptions.SAVES_WORKSPACE_BY_ID, 'one'],
             overview: [appIds.subscriptions.SAVES_OVERVIEW, 'one'],
+            map: [appIds.subscriptions.SAVES_MAP, 'one'],
             candidate: [appIds.subscriptions.SAVES_IMPORT],
         } as const);
         await dispatch(scenario, [appIds.events.SAVES_IMPORT_OPEN, 'one']);
@@ -315,6 +316,9 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, view.value('candidate').requestId, analyzeSave(snapshotFixture(), extractionContext)]);
         const stored = view.value('workspace');
         const original = view.value('overview')!;
+        const originalMap = view.value('map')!;
+        expect(originalMap.links).toHaveLength(2);
+        expect(originalMap.entities.find(entity => entity.id === 200)?.inputs.length).toBeGreaterThan(0);
         const selected = structuredClone(saveGameData);
         selected.buildings.find(building => building.id === 'smelter')!.name = 'Selected smelter';
         selected.buildings.find(building => building.id === 'smelter')!.heat = 123;
@@ -327,13 +331,17 @@ describe('headless application E2E', () => {
         expect(changed.cores[0].heat).not.toBe(original.cores[0].heat);
         expect(changed.cores.flatMap(core => core.buildingDetails).find(detail => detail.instance.id === 200)!.resources[0].rate).toBe(987);
         expect(changed.cores[0].incoming.find(resource => resource.itemId === 'ore_titanium')).toMatchObject({ name: 'Selected titanium', rate: 3 });
+        expect(view.value('map')!.entities.find(entity => entity.id === 200)?.detail?.resources[0].rate).toBe(987);
+        expect(view.value('map')!.entities.map(entity => entity.position)).toEqual(originalMap.entities.map(entity => entity.position));
         expect(view.value('workspace')).toEqual(stored);
         await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'earlyaccess', { buildings: [], items: [], corporations: {} }]);
         expect(view.value('overview')!.cores[0].heat).toBeNull();
         expect(view.value('overview')!.cores.flatMap(core => core.buildingDetails).find(detail => detail.instance.id === 10)!.building.name).toBe('smelter');
+        expect(view.value('map')!.links).toEqual([{ source: 20, target: 30, item: null }, { source: 21, target: 31, item: null }]);
         expect(view.value('workspace')).toEqual(stored);
         await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL']);
         expect(view.value('overview')).toEqual(original);
+        expect(view.value('map')).toEqual(originalMap);
         view.unmount();
     });
 

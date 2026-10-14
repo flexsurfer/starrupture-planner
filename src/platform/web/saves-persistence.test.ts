@@ -72,6 +72,7 @@ it('round-trips Saves through the standard localStorage adapter alongside existi
     const restored = await setup(storage);
     expect(restored.view.value('active')).toEqual(expected);
     expect(restored.view.value('selection')?.core.id).toBe(1);
+    expect(restored.view.value('selection')?.core.bounds).toEqual({ min: { x: -10, y: -10, z: -10 }, max: { x: 10, y: 10, z: 10 } });
     expect(restored.view.value('one')?.coreSettings['1:10.5']?.objective).toEqual({ kind: 'mission', name: 'Next mission', itemIds: ['tube'] });
     expect(restored.view.value('candidate').phase).toBe('closed');
     await restored.dispatch([appIds.events.SAVES_REMOVE_WORKSPACE, 'one']);
@@ -79,6 +80,22 @@ it('round-trips Saves through the standard localStorage adapter alongside existi
     const reopened = await setup(storage);
     expect(reopened.view.value('tabs')).toEqual([{ id: 'two', name: 'two' }]);
     expect(reopened.view.value('active')?.id).toBe('two');
+});
+
+it('hydrates older v4 workspaces without bounds without rewriting stored data', async () => {
+    const storage = memoryStorageAdapter();
+    const app = await setup(storage);
+    await app.adopt();
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const envelope = JSON.parse(storage.getItem(key(stateKeys.savesWorkspaces))!);
+    for (const core of envelope.data.one.snapshot.cores) delete core.bounds;
+    const legacy = JSON.stringify(envelope);
+    storage.setItem(key(stateKeys.savesWorkspaces), legacy);
+    const restored = await setup(storage);
+    expect(restored.view.value('persistence')).toBeNull();
+    expect(restored.view.value('one')?.snapshot.cores.map(core => core.bounds)).toEqual([null, null]);
+    expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(legacy);
 });
 
 it('commits consecutive edits synchronously without a storage queue or flush barrier', async () => {
@@ -154,5 +171,5 @@ it('starts fresh instead of migrating experimental schemas', async () => {
     expect(app.view.value('tabs')).toEqual([]);
     await app.adopt();
     expect(app.view.value('tabs')).toEqual([{ id: 'one', name: 'one' }]);
-    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.schemaVersion).toBe(3);
+    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.schemaVersion).toBe(4);
 });

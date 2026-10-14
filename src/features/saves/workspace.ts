@@ -6,7 +6,7 @@ import { normalizeSaveWorkspace } from './storage-schema';
 export function createSaveWorkspace(id: string, name: string, snapshot: SaveSnapshot, previous?: SaveWorkspace): SaveWorkspace {
     const keys = new Set(snapshot.cores.map(coreKey));
     const coreSettings = Object.fromEntries(Object.entries(previous?.id === id ? previous.coreSettings : {}).filter(([key]) => keys.has(key)));
-    return normalizeSaveWorkspace({ schemaVersion: 3, id, name, snapshot, coreSettings });
+    return normalizeSaveWorkspace({ schemaVersion: 4, id, name, snapshot, coreSettings });
 }
 
 export function workspaceIds(workspaces: Record<string, SaveWorkspace>, order: string[]) {

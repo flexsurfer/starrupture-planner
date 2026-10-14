@@ -27,7 +27,7 @@ it('derives rates and counts without combining individual extractors or transpor
     expect(overview.cores[0].buildingDetails.filter(building => building.instance.configuration.kind === 'extractor')).toHaveLength(3);
     expect(overview.cores[1].buildingDetails.filter(building => building.instance.configuration.kind === 'receiver')).toHaveLength(2);
     expect(overview.cores[0].outgoing[0].buildings.map(building => building.relatedBuilding?.id)).toEqual([30, 31]);
-    expect(JSON.stringify(workspace)).not.toMatch(/rate|capacity|catalog|position|disabled|fragment|interpretation/);
+    expect(JSON.stringify(workspace)).not.toMatch(/rate|capacity|catalog|disabled|fragment|interpretation/);
 });
 it('uses nominal recipes independent of running state and retains same-item alternatives', () => {
     const snapshot = analyzeSave(snapshotFixture(), extractionContext);
@@ -43,8 +43,8 @@ it('never merges different power networks just because they belong to one Core',
     snapshot.cores[0].powerNetworkId = 1;
     snapshot.cores[1].powerNetworkId = 1;
     snapshot.cores[0].buildings = [
-        { id: 10, name: null, buildingTypeId: 'smelter', powerNetworkId: 1, configuration: { kind: 'production', recipeId: null } },
-        { id: 11, name: null, buildingTypeId: 'solar_generator_v2', powerNetworkId: 2, configuration: { kind: 'other' } },
+        { id: 10, name: null, position: { x: 0, y: 0, z: 0 }, buildingTypeId: 'smelter', powerNetworkId: 1, configuration: { kind: 'production', recipeId: null } },
+        { id: 11, name: null, position: { x: 0, y: 0, z: 0 }, buildingTypeId: 'solar_generator_v2', powerNetworkId: 2, configuration: { kind: 'other' } },
     ];
     snapshot.cores[1].buildings = [];
     const overview = buildSaveOverview(createSaveWorkspace('one', 'World', snapshot), saveLookups);
@@ -58,8 +58,8 @@ it('never merges different power networks just because they belong to one Core',
 it('derives heat capacity from each persisted Core level and its own individual amplifiers', () => {
     const snapshot = analyzeSave(saveFixture(), extractionContext);
     snapshot.cores[0].buildings.push(
-        { id: 90, name: null, buildingTypeId: 'base_core_amplifier_v1', powerNetworkId: null, configuration: { kind: 'other' } },
-        { id: 91, name: null, buildingTypeId: 'base_core_amplifier_v2', powerNetworkId: null, configuration: { kind: 'other' } },
+        { id: 90, name: null, position: { x: 0, y: 0, z: 0 }, buildingTypeId: 'base_core_amplifier_v1', powerNetworkId: null, configuration: { kind: 'other' } },
+        { id: 91, name: null, position: { x: 0, y: 0, z: 0 }, buildingTypeId: 'base_core_amplifier_v2', powerNetworkId: null, configuration: { kind: 'other' } },
     );
     const workspace = normalizeSaveWorkspace(JSON.parse(JSON.stringify(createSaveWorkspace('one', 'World', snapshot))));
     const overview = buildSaveOverview(workspace, saveLookups);

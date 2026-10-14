@@ -8,7 +8,9 @@ export function SaveCoreHeat({ heat, capacity }: { heat: number | null; capacity
     const percentage = !known ? null : capacity > 0 ? Math.min(100, heat / capacity * 100) : heat > 0 ? 100 : 0;
     return <div className="text-[11px]">
         <div className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 ${overCapacity ? 'text-error' : 'text-base-content/50'}`}>
-            <span>{t('Heat{value}', { value: overCapacity ? t(' · Over capacity') : '' })}</span>
+            <span title={t('Heat{value}', { value: overCapacity ? t(' · Over capacity') : '' })}>
+                {t('Heat{value}', { value: overCapacity ? t(' · Over capacity') : '' })}
+            </span>
             <span className="font-mono tabular-nums">{format(heat)} / {format(capacity)}</span>
         </div>
         {percentage === null ? <div aria-hidden="true" className="mt-1 h-1 rounded-full bg-base-content/10" />

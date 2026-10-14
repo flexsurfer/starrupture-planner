@@ -1,4 +1,5 @@
 import type { SaveGameData } from '@/features/saves/game-data';
+import type { SaveMap } from '@/features/saves/map';
 import type { UiText } from '@/shared/i18n/core';
 import type { RecipePresetState } from '@/features/planner/recipe-presets';
 import type { ArchiveSelection, PlannerArchive, TransferStatus } from '@/features/data-transfer/archive';
@@ -273,6 +274,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE]: { params: []; result: SaveWorkspace | null };
         [appIds.subscriptions.SAVES_WORKSPACE_BY_ID]: { params: [workspaceId: string]; result: SaveWorkspace | null };
         [appIds.subscriptions.SAVES_OVERVIEW]: { params: [workspaceId: string]; result: SaveOverview | null };
+        [appIds.subscriptions.SAVES_MAP]: { params: [workspaceId: string]; result: SaveMap | null };
         [appIds.subscriptions.SAVES_CORE_BY_ID]: { params: [workspaceId: string, coreId: number]; result: SaveCoreOverview | null };
         [appIds.subscriptions.SAVES_SELECTED_CORE]: { params: [workspaceId: string]; result: SaveCoreOverview | null };
         [appIds.subscriptions.PRODUCTION_PLAN_LINKABLE_OUTPUTS]: { params: [baseId: string | null, planId: string | null, itemId: string | null]; result: LinkableOutputItem[] };

@@ -20,6 +20,16 @@ const errors: Record<NonNullable<SaveImportState['error']>, MessageKey> = {
 };
 
 
+export function SaveImportCompatibility() {
+    const { t } = useTranslation();
+    return <div className="mb-4 rounded-lg border border-warning/25 bg-warning/5 px-4 py-3 text-center">
+        <p className="text-xs font-semibold text-warning">{t('Experimental functionality')}</p>
+        <p className="mt-1 text-xs leading-relaxed text-base-content/60">{t('Only tested with {dataVersion} game data and .sav files from StarRupture {gameVersion}.', {
+            dataVersion: 'Update 2 QoL', gameVersion: '0.3.5',
+        })}</p>
+    </div>;
+}
+
 export function SaveFileDropZone({ onFile, busy = false, disabled = false, fileName }: {
     onFile: (file: File) => void; busy?: boolean; disabled?: boolean; fileName?: string | null;
 }) {
@@ -76,6 +86,7 @@ export function SaveImportDialog() {
         <div className="modal-box max-w-xl p-0">
             <header className="border-b border-base-300 px-5 py-4"><h2 id={`${id}-title`} className="text-xl font-semibold">{t(existing ? 'Update save' : 'Import save')}</h2></header>
             <div className="p-5 sm:p-6">
+                <SaveImportCompatibility />
                 <p className="mb-4 text-sm text-base-content/60">{t('The save is decoded locally in your browser. Maximum file size: 32 MiB.')}</p>
                 <SaveFileDropZone busy={candidate.phase === 'reading'} fileName={candidate.fileName}
                     onFile={file => runtime.dispatch([appIds.events.SAVES_IMPORT_READ, file])} />
