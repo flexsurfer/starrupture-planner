@@ -18,6 +18,9 @@ export const registerItemsSubscriptions: UkladModule<UkladRegistrar<AppContracts
         () => [[appIds.subscriptions.BUILDINGS_LIST]],
         ([buildings], itemId) => findItemRecipes(itemId, buildings),
     );
+    registrar.regRootSub(appIds.subscriptions.ITEMS_CODEX_SELECTED_CATEGORY, stateKeys.itemsCodexSelectedCategory);
+    registrar.regRootSub(appIds.subscriptions.ITEMS_CODEX_SELECTED_BUILDING, stateKeys.itemsCodexSelectedBuilding);
+    registrar.regRootSub(appIds.subscriptions.ITEMS_CODEX_SEARCH_TERM, stateKeys.itemsCodexSearchTerm);
     registrar.regRootSub(appIds.subscriptions.ITEMS_LIST, stateKeys.itemsList);
     registrar.regRootSub(appIds.subscriptions.ITEMS_BY_ID_MAP, stateKeys.itemsById);
     registrar.regRootSub(appIds.subscriptions.ITEMS_SELECTED_CATEGORY, stateKeys.itemsSelectedCategory);
@@ -39,92 +42,95 @@ export const registerItemsSubscriptions: UkladModule<UkladRegistrar<AppContracts
         },
     );
 
-    registrar.regSub(
-        appIds.subscriptions.ITEMS_FILTERED_LIST,
-        () => [
-            [appIds.subscriptions.ITEMS_SELECTED_CATEGORY],
-            [appIds.subscriptions.ITEMS_SELECTED_BUILDING],
-            [appIds.subscriptions.ITEMS_SEARCH_TERM],
-            [appIds.subscriptions.ITEMS_LIST],
-            [appIds.subscriptions.BUILDINGS_LIST],
-        ],
-        ([category, selectedBuilding, searchTerm, items, buildings], ..._params) => {
-            void _params;
-            let filtered = category === 'all'
-                ? items
-                : items.filter((item) => item.type === category);
+    // Codex shares game data, but never the standalone page's filters.
+    for (const codex of [false, true]) {
+        registrar.regSub(
+            codex ? appIds.subscriptions.ITEMS_CODEX_FILTERED_LIST : appIds.subscriptions.ITEMS_FILTERED_LIST,
+            () => [
+                [codex ? appIds.subscriptions.ITEMS_CODEX_SELECTED_CATEGORY : appIds.subscriptions.ITEMS_SELECTED_CATEGORY],
+                [codex ? appIds.subscriptions.ITEMS_CODEX_SELECTED_BUILDING : appIds.subscriptions.ITEMS_SELECTED_BUILDING],
+                [codex ? appIds.subscriptions.ITEMS_CODEX_SEARCH_TERM : appIds.subscriptions.ITEMS_SEARCH_TERM],
+                [appIds.subscriptions.ITEMS_LIST],
+                [appIds.subscriptions.BUILDINGS_LIST],
+            ],
+            ([category, selectedBuilding, searchTerm, items, buildings], ..._params) => {
+                void _params;
+                let filtered = category === 'all'
+                    ? items
+                    : items.filter((item) => item.type === category);
 
-            if (selectedBuilding !== 'all') {
-                const itemsProducedByBuilding = new Set<string>();
-                for (const building of buildings) {
-                    if (building.name === selectedBuilding) {
-                        building.recipes?.forEach((recipe) => itemsProducedByBuilding.add(recipe.output.id));
-                    }
-                }
-                filtered = filtered.filter((item) => itemsProducedByBuilding.has(item.id));
-            }
-
-            if (searchTerm) {
-                const searchLower = searchTerm.toLowerCase();
-                filtered = filtered.filter((item) => (
-                    item.name.toLowerCase().includes(searchLower)
-                    || item.id.toLowerCase().includes(searchLower)
-                ));
-            }
-
-            return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
-        },
-    );
-
-    registrar.regSub(
-        appIds.subscriptions.ITEMS_TABLE_ROWS,
-        () => [
-            [appIds.subscriptions.ITEMS_FILTERED_LIST],
-            [appIds.subscriptions.BUILDINGS_LIST],
-            [appIds.subscriptions.CORPORATIONS_LIST],
-        ],
-        ([filteredItems, buildings, corporations], ..._params) => {
-            void _params;
-            const producingBuildingsMap = new Map<string, Map<string, number>>();
-            for (const building of buildings) {
-                for (const recipe of building.recipes || []) {
-                    if (!producingBuildingsMap.has(recipe.output.id)) {
-                        producingBuildingsMap.set(recipe.output.id, new Map<string, number>());
-                    }
-                    const buildingRates = producingBuildingsMap.get(recipe.output.id)!;
-                    const existingRate = buildingRates.get(building.name);
-                    if (existingRate === undefined || recipe.output.amount_per_minute < existingRate) {
-                        buildingRates.set(building.name, recipe.output.amount_per_minute);
-                    }
-                }
-            }
-
-            const corporationUsageMap = new Map<string, CorporationUsage[]>();
-            for (const corporation of corporations) {
-                for (const level of corporation.levels) {
-                    for (const component of level.components) {
-                        if (!corporationUsageMap.has(component.id)) {
-                            corporationUsageMap.set(component.id, []);
+                if (selectedBuilding !== 'all') {
+                    const itemsProducedByBuilding = new Set<string>();
+                    for (const building of buildings) {
+                        if (building.name === selectedBuilding) {
+                            building.recipes?.forEach((recipe) => itemsProducedByBuilding.add(recipe.output.id));
                         }
-                        corporationUsageMap.get(component.id)!.push({
-                            corporation: corporation.name,
-                            level: level.level,
-                        });
+                    }
+                    filtered = filtered.filter((item) => itemsProducedByBuilding.has(item.id));
+                }
+
+                if (searchTerm) {
+                    const searchLower = searchTerm.toLowerCase();
+                    filtered = filtered.filter((item) => (
+                        item.name.toLowerCase().includes(searchLower)
+                        || item.id.toLowerCase().includes(searchLower)
+                    ));
+                }
+
+                return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+            },
+        );
+
+        registrar.regSub(
+            codex ? appIds.subscriptions.ITEMS_CODEX_TABLE_ROWS : appIds.subscriptions.ITEMS_TABLE_ROWS,
+            () => [
+                [codex ? appIds.subscriptions.ITEMS_CODEX_FILTERED_LIST : appIds.subscriptions.ITEMS_FILTERED_LIST],
+                [appIds.subscriptions.BUILDINGS_LIST],
+                [appIds.subscriptions.CORPORATIONS_LIST],
+            ],
+            ([filteredItems, buildings, corporations], ..._params) => {
+                void _params;
+                const producingBuildingsMap = new Map<string, Map<string, number>>();
+                for (const building of buildings) {
+                    for (const recipe of building.recipes || []) {
+                        if (!producingBuildingsMap.has(recipe.output.id)) {
+                            producingBuildingsMap.set(recipe.output.id, new Map<string, number>());
+                        }
+                        const buildingRates = producingBuildingsMap.get(recipe.output.id)!;
+                        const existingRate = buildingRates.get(building.name);
+                        if (existingRate === undefined || recipe.output.amount_per_minute < existingRate) {
+                            buildingRates.set(building.name, recipe.output.amount_per_minute);
+                        }
                     }
                 }
-            }
 
-            return filteredItems.map((item) => ({
-                item,
-                producingBuildings: Array.from(
-                    (producingBuildingsMap.get(item.id) || new Map<string, number>()).entries(),
-                )
-                    .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
-                    .map(([buildingName]) => buildingName),
-                corporationUsage: corporationUsageMap.get(item.id) || [],
-            }));
-        },
-    );
+                const corporationUsageMap = new Map<string, CorporationUsage[]>();
+                for (const corporation of corporations) {
+                    for (const level of corporation.levels) {
+                        for (const component of level.components) {
+                            if (!corporationUsageMap.has(component.id)) {
+                                corporationUsageMap.set(component.id, []);
+                            }
+                            corporationUsageMap.get(component.id)!.push({
+                                corporation: corporation.name,
+                                level: level.level,
+                            });
+                        }
+                    }
+                }
+
+                return filteredItems.map((item) => ({
+                    item,
+                    producingBuildings: Array.from(
+                        (producingBuildingsMap.get(item.id) || new Map<string, number>()).entries(),
+                    )
+                        .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+                        .map(([buildingName]) => buildingName),
+                    corporationUsage: corporationUsageMap.get(item.id) || [],
+                }));
+            },
+        );
+    }
 
     registrar.regSub(
         appIds.subscriptions.ITEMS_HELPER_LOOKUPS,

@@ -1,3 +1,4 @@
+import { useCodexView } from '@/shared/ui/CodexViewContext';
 import { useTranslation } from '@/shared/i18n';
 import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
@@ -21,6 +22,7 @@ export const ItemsTable = ({
 }: ItemsTableProps) => {
     const { t } = useTranslation();
   const runtime = useRuntime();
+  const codex = useCodexView();
 
   if (itemsTableData.length === 0) {
     return (
@@ -91,7 +93,7 @@ export const ItemsTable = ({
               onClick={() => openRecipeModal(item)}
             >{t("Recipe")}</button>
           )}
-          {item.type !== 'raw' && (
+          {!codex && item.type !== 'raw' && (
             <button
               className="btn btn-sm btn-primary flex-1"
               onClick={() => {

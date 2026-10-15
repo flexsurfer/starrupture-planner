@@ -705,7 +705,7 @@
   "Rename \"{name}\"": "Zmień nazwę „{name}”",
   "A preset with this name already exists.": "Zestaw o tej nazwie już istnieje.",
   "New plans will use \"{name}\".": "Nowe plany będą używać zestawu „{name}”.",
-  "My Saves": "Moje zapisy",
+  "Factory Map": "Mapa fabryki",
   "Import save": "Importuj zapis",
   "Save tabs": "Karty zapisów",
   "Save name": "Nazwa zapisu",
@@ -732,7 +732,7 @@
   "Local extraction": "Lokalne wydobycie",
   "Sent to corporations": "Wysyłane do korporacji",
   "Configured production": "Skonfigurowana produkcja",
-  "Configured capacity": "Skonfigurowana wydajność",
+  "Max capacity": "Maksymalna wydajność",
   "Rate unavailable": "Tempo niedostępne",
   "No buildings in this section.": "Brak budynków w tej sekcji.",
   "Drop a .sav file here, or choose one from your computer.": "Upuść tutaj plik .sav lub wybierz go z komputera.",
@@ -754,7 +754,7 @@
   "Core {number}": "Core {number}",
   "Open Core {name}": "Otwórz Core {name}",
   "No Cores found in this save.": "Nie znaleziono Core w tym zapisie.",
-  "Import a StarRupture save to see your Cores, buildings and resources.": "Importuj zapis StarRupture, aby zobaczyć swoje Core, budynki i zasoby.",
+  "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Odkrywaj swoją fabrykę na interaktywnej mapie StarRupture. Importuj zapis, by znaleźć budynki, śledzić połączenia ładunkowe i sprawdzić sieci energetyczne oraz ciepło Core.",
   "This removes this save and its Core settings from this browser.": "Spowoduje to usunięcie tego zapisu i jego ustawień Core z tej przeglądarki.",
   "Available resources": "Dostępne zasoby",
   "Imported from other Cores": "Importowane z innych Core",
@@ -826,5 +826,20 @@
   "Core": "Core",
   "No power networks found in this save.": "Nie znaleziono sieci energetycznych w tym zapisie.",
   "Where to find .sav files": "Gdzie znaleźć pliki .sav",
-  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Otwórz ten folder w Eksploratorze plików, zastępując [SteamNumber] numerem folderu swojego konta Steam. Jeśli Steam jest zainstalowany w innym miejscu, użyj jego folderu instalacyjnego."
+  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Otwórz ten folder w Eksploratorze plików, zastępując [SteamNumber] numerem folderu swojego konta Steam. Jeśli Steam jest zainstalowany w innym miejscu, użyj jego folderu instalacyjnego.",
+  "Codex": "Kodeks",
+  "Main navigation": "Nawigacja główna",
+  "Open in new tab": "Otwórz w nowej karcie",
+  "Open {name} in a new tab": "Otwórz {name} w nowej karcie",
+  "Supply options": "Opcje dostaw",
+  "Open Factory Map": "Otwórz Mapę fabryki",
+  "My Bases is deprecated and will not be supported in future versions. Use Factory Map instead.": "Sekcja Moje bazy jest przestarzała i nie będzie obsługiwana w przyszłych wersjach. Korzystaj zamiast niej z Mapy fabryki.",
+  "Deprecated": "Przestarzałe",
+  "Hide this notice for this session": "Ukryj ten komunikat na czas tej sesji",
+  "{count} launchers": {
+    "one": "{count} wyrzutnia",
+    "few": "{count} wyrzutnie",
+    "many": "{count} wyrzutni",
+    "other": "{count} wyrzutni"
+  }
 }

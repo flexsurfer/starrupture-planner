@@ -7,6 +7,7 @@ import { ItemsPage } from '@/features/items/ui';
 import { BuildingsPage } from '@/features/buildings/ui';
 import { CorporationsPage } from '@/features/corporations/ui';
 import { MyBasesPage } from '@/features/bases/ui';
+import { MyBasesDeprecationNotice } from '@/features/bases/ui/MyBasesDeprecationNotice';
 import { PlannerPage } from '@/features/planner/ui';
 import { MySavesPage } from '@/features/saves/ui/MySavesPage';
 import {
@@ -22,27 +23,30 @@ import type { TabType } from '@/app/uklad/model';
 import { SectionIcon, type SectionIconName } from '@/shared/ui';
 import { DEFAULT_TOOL_PATH, findToolTab, toolPaths } from '@/shared/navigation/toolPaths';
 import type { ToolShellOptions } from './ToolShellOptions';
+import { AppBrand } from './AppBrand';
+import { CodexMenu } from './CodexMenu';
+import type { CodexSection } from './codex-sections';
+import { CodexDialog } from './CodexDialog';
 
 const tabs: { id: TabType; label: MessageKey; icon: SectionIconName }[] = [
-  { id: 'mysaves', label: 'My Saves', icon: 'saves' },
-  { id: 'mybases', label: 'My Bases', icon: 'bases' },
-  { id: 'items', label: 'Items', icon: 'items' },
-  { id: 'recipes', label: 'Buildings', icon: 'buildings' },
-  { id: 'corporations', label: 'Corporations', icon: 'corporations' },
   { id: 'planner', label: 'Planner', icon: 'planner' },
+  { id: 'mysaves', label: 'Factory Map', icon: 'map' },
+  { id: 'mybases', label: 'My Bases', icon: 'bases' },
 ];
 
 const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) => {
   const { t } = useTranslation();
   const runtime = useRuntime();
   const [showSettings, setShowSettings] = useState(false);
+  const [codexSection, setCodexSection] = useState<CodexSection | null>(null);
   const activeTab = useSubscription([appIds.subscriptions.UI_ACTIVE_TAB]);
   const location = useLocation();
   const headerRef = useRef<HTMLDivElement>(null);
   const desktopBrandRef = useRef<HTMLDivElement>(null);
-  const desktopTabsRef = useRef<HTMLDivElement>(null);
+  const desktopTabsRef = useRef<HTMLElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
   const [tabsFitHeader, setTabsFitHeader] = useState(false);
+  const codexActive = activeTab === 'items' || activeTab === 'recipes' || activeTab === 'corporations';
 
   useLayoutEffect(() => {
     const header = headerRef.current!;
@@ -101,7 +105,10 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
       case 'planner':
         return <PlannerPage />;
       case 'mybases':
-        return <MyBasesPage />;
+        return <div className="flex h-full min-h-0 flex-col">
+          <MyBasesDeprecationNotice />
+          <div className="min-h-0 flex-1"><MyBasesPage /></div>
+        </div>;
       case 'mysaves':
         return <MySavesPage />;
       default:
@@ -110,9 +117,9 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
   };
 
   return (
-      <div className="h-screen flex flex-col bg-base-100">
+      <div className="h-dvh flex flex-col bg-base-100">
         {/* Header */}
-        <div className="relative flex-shrink-0 bg-base-200 shadow-lg">
+        <div className="relative z-20 flex-shrink-0 bg-base-200 shadow-lg">
           <div
             ref={headerRef}
             inert={!tabsFitHeader}
@@ -121,27 +128,13 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
           >
             {/* Desktop Layout */}
             <div ref={desktopBrandRef} className="flex w-max items-center gap-3 col-start-1 row-start-1">
-              <img
-                src="/logo_black_bg.webp"
-                alt={t("Rupture Planner Logo")}
-                className="h-8 w-auto shrink-0 rounded shadow-sm"
-                width={32}
-                height={32}
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
-              <Link to={homePath} className="text-xl font-bold whitespace-nowrap">Rupture Planner</Link>
+              <AppBrand homePath={homePath} />
               <VersionSelector className="shrink-0" />
             </div>
 
             {/* Desktop Tab Navigation */}
             <div className="flex justify-center col-start-2 row-start-1">
-              <div ref={desktopTabsRef} className="tabs tabs-bordered tabs-lg w-max flex-nowrap justify-center">
+              <nav ref={desktopTabsRef} aria-label={t('Main navigation')} className="tabs tabs-bordered tabs-lg w-max flex-nowrap justify-center">
                 {tabs.map((tab) => (
                   <Link
                     key={tab.id}
@@ -154,7 +147,8 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
                     {t(tab.label)}
                   </Link>
                 ))}
-              </div>
+                <CodexMenu active={codexActive} visible={tabsFitHeader} onOpen={setCodexSection} />
+              </nav>
             </div>
 
             {/* Desktop Controls */}
@@ -170,24 +164,8 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
 
           {/* Compact Layout */}
           <div className={`${tabsFitHeader ? 'hidden' : 'flex'} items-center gap-2 px-2 py-0.5`}>
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <Link to={homePath} className="shrink-0 rounded focus-visible:outline-2 focus-visible:outline-primary">
-                <span className="sr-only">Rupture Planner</span>
-                <img
-                  src="/logo_black_bg.webp"
-                  alt=""
-                  className="h-9 w-9 rounded shadow-sm"
-                  width={36}
-                  height={36}
-                  loading="eager"
-                  decoding="async"
-                  fetchPriority="high"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
-              </Link>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+              <AppBrand homePath={homePath} compact />
               <VersionSelector className="min-w-0 max-w-full" />
             </div>
             <div className="ml-auto flex shrink-0 items-center justify-end gap-1">
@@ -202,29 +180,28 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
         </div>
 
         {/* Compact Tab Navigation - Below header */}
-        <div className={`${tabsFitHeader ? 'hidden' : ''} bg-base-200 border-t border-base-300`}>
-          <div className="flex overflow-x-auto">
-            <div className="flex min-w-full justify-center px-1">
+        <div className={`${tabsFitHeader ? 'hidden' : ''} relative z-20 bg-base-200 border-t border-base-300`}>
+            <nav aria-label={t('Main navigation')} className="flex min-w-full justify-center px-1">
               {tabs.map((tab) => (
                 <Link
                   key={tab.id}
                   to={toolPaths[tab.id]}
                   aria-current={activeTab === tab.id ? 'page' : undefined}
-                  className={`flex-1 min-w-0 py-1.5 px-1.5 text-xs font-medium transition-colors border-b-2 ${
+                  className={`flex flex-1 min-w-0 flex-col items-center gap-1 py-2 px-1.5 text-xs font-medium transition-colors border-b-2 ${
                     activeTab === tab.id 
                       ? 'border-primary text-primary' 
                       : 'border-transparent text-base-content/70 hover:text-base-content'
                   }`}
                   onClick={event => handleTabClick(event, tab.id)}
                 >
-                  <div className="flex flex-row items-center gap-1">
-                    <SectionIcon name={tab.icon} className="h-4 w-4" />
-                    <span className="text-xs leading-none truncate">{t(tab.label)}</span>
+                  <div className="flex flex-row items-center justify-center gap-1">
+                    <SectionIcon name={tab.icon} className="hidden h-4 w-4 min-[360px]:block" />
+                    <span className="text-center text-xs leading-tight">{t(tab.label)}</span>
                   </div>
                 </Link>
               ))}
-            </div>
-          </div>
+              <CodexMenu active={codexActive} visible={!tabsFitHeader} compact onOpen={setCodexSection} />
+            </nav>
         </div>
 
         {/* Tab Content */}
@@ -235,6 +212,7 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
         {footer}
 
         {/* Global Modals */}
+        {codexSection && <CodexDialog initialSection={codexSection} onClose={() => setCodexSection(null)} />}
         <ConfirmationDialog />
         {!showSettings && <TransferNotification />}
         {showSettings && <GlobalSettings onClose={() => setShowSettings(false)} />}

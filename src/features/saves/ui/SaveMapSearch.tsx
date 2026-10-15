@@ -4,7 +4,7 @@ import { useTranslation } from '@/shared/i18n';
 import type { SaveMapEntity } from '../map';
 import { SaveMapIcon } from './SaveMapIcon';
 
-const resultLimit = 40;
+const resultLimit = 100;
 
 export function SaveMapSearch({ entities, entityName, coreName, onSelect }: {
     entities: SaveMapEntity[]; entityName: (entity: SaveMapEntity) => string;

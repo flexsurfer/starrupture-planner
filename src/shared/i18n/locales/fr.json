@@ -705,7 +705,7 @@
   "Rename \"{name}\"": "Renommer « {name} »",
   "A preset with this name already exists.": "Un préréglage portant ce nom existe déjà.",
   "New plans will use \"{name}\".": "Les nouveaux plans utiliseront « {name} ».",
-  "My Saves": "Mes sauvegardes",
+  "Factory Map": "Carte d’usine",
   "Import save": "Importer une sauvegarde",
   "Save tabs": "Onglets de sauvegarde",
   "Save name": "Nom de la sauvegarde",
@@ -732,7 +732,7 @@
   "Local extraction": "Extraction locale",
   "Sent to corporations": "Envoyé aux corporations",
   "Configured production": "Production configurée",
-  "Configured capacity": "Capacité configurée",
+  "Max capacity": "Capacité maximale",
   "Rate unavailable": "Débit indisponible",
   "No buildings in this section.": "Aucun bâtiment dans cette section.",
   "Drop a .sav file here, or choose one from your computer.": "Déposez un fichier .sav ici ou choisissez-en un sur votre ordinateur.",
@@ -754,7 +754,7 @@
   "Core {number}": "Core {number}",
   "Open Core {name}": "Ouvrir le Core {name}",
   "No Cores found in this save.": "Aucun Core trouvé dans cette sauvegarde.",
-  "Import a StarRupture save to see your Cores, buildings and resources.": "Importez une sauvegarde StarRupture pour voir vos Cores, bâtiments et ressources.",
+  "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Explorez votre usine sur une carte StarRupture interactive. Importez une sauvegarde pour localiser vos bâtiments, suivre le fret et examiner les réseaux électriques et la chaleur des Core.",
   "This removes this save and its Core settings from this browser.": "Cela supprime cette sauvegarde et ses paramètres de Core de ce navigateur.",
   "Available resources": "Ressources disponibles",
   "Imported from other Cores": "Importées depuis d’autres Cores",
@@ -824,5 +824,18 @@
   "Core": "Core",
   "No power networks found in this save.": "Aucun réseau électrique trouvé dans cette sauvegarde.",
   "Where to find .sav files": "Où trouver les fichiers .sav",
-  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Ouvrez ce dossier dans l’Explorateur de fichiers en remplaçant [SteamNumber] par le numéro du dossier de votre compte Steam. Si Steam est installé ailleurs, utilisez plutôt ce dossier d’installation."
+  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Ouvrez ce dossier dans l’Explorateur de fichiers en remplaçant [SteamNumber] par le numéro du dossier de votre compte Steam. Si Steam est installé ailleurs, utilisez plutôt ce dossier d’installation.",
+  "Codex": "Codex",
+  "Main navigation": "Navigation principale",
+  "Open in new tab": "Ouvrir dans un nouvel onglet",
+  "Open {name} in a new tab": "Ouvrir {name} dans un nouvel onglet",
+  "Supply options": "Options de livraison",
+  "Open Factory Map": "Ouvrir la Carte d’usine",
+  "My Bases is deprecated and will not be supported in future versions. Use Factory Map instead.": "La section Mes bases est obsolète et ne sera plus prise en charge dans les prochaines versions. Utilisez plutôt la Carte d’usine.",
+  "Deprecated": "Obsolète",
+  "Hide this notice for this session": "Masquer cet avis pour cette session",
+  "{count} launchers": {
+    "one": "{count} lanceur",
+    "other": "{count} lanceurs"
+  }
 }

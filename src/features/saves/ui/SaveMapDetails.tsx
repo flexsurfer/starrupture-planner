@@ -5,9 +5,9 @@ import { SaveCoreHeat } from './SaveCoreHeat';
 import { SaveCoreResources } from './SaveCoreResources';
 import { SaveMapIcon } from './SaveMapIcon';
 
-export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect, onOpenCore }: {
+export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect, onFocusCore, onOpenCore }: {
     entity: SaveMapEntity; coreName: string; connected?: SaveMapEntity;
-    onClose: () => void; onSelect: (id: number) => void; onOpenCore: (id: number) => void;
+    onClose: () => void; onSelect: (id: number) => void; onOpenCore: (id: number) => void; onFocusCore: (id: number) => void;
 }) {
     const { t, formatNumber } = useTranslation();
     const detail = entity.detail;
@@ -45,7 +45,7 @@ export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect,
                 </li>)}</ul>
             </div>}
             {detail.resources.length > 0 && <div className="save-map-detail-section">
-                <h5>{t('Configured capacity')}</h5>
+                <h5>{t('Max capacity')}</h5>
                 <ul className="save-map-resource-list">{detail.resources.map(resource => <li key={`${resource.source}:${resource.itemId}`}>
                     <ItemImage itemId={resource.itemId} item={{ name: resource.name }} size="xsmall" />
                     <span>{resource.name}</span>
@@ -70,8 +70,11 @@ export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect,
             <div className="save-map-detail-section"><SaveCoreHeat heat={entity.core.heat} capacity={entity.core.heatCapacity} /></div>
             <div className="mt-3"><SaveCoreResources coreOverview={entity.core} /></div>
         </>}
-        <button type="button" className="save-map-detail-action save-map-open-core" onClick={() => onOpenCore(entity.core.core.id)}>
+        {!detail && <button type="button" className="save-map-detail-action save-map-open-core" onClick={() => onOpenCore(entity.core.core.id)}>
             <span>{t('View details')}</span><SaveMapIcon name="arrow" />
-        </button>
+        </button>}
+        {!detail && <button type="button" className="save-map-detail-action mt-2" onClick={() => onFocusCore(entity.id)}>
+            <span>{t('Focus Core')}</span><SaveMapIcon name="focus" />
+        </button>}
     </section>;
 }

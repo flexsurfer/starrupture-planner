@@ -1,3 +1,4 @@
+import { useCodexView } from '@/shared/ui/CodexViewContext';
 import { useTranslation } from '@/shared/i18n';
 import { useRuntime, useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
@@ -7,12 +8,13 @@ interface ItemsSearchProps {
 }
 
 export const ItemsSearch = ({ className = "" }: ItemsSearchProps) => {
+  const codex = useCodexView();
     const { t } = useTranslation();
   const runtime = useRuntime();
-  const searchTerm = useSubscription([appIds.subscriptions.ITEMS_SEARCH_TERM]);
+  const searchTerm = useSubscription([codex ? appIds.subscriptions.ITEMS_CODEX_SEARCH_TERM : appIds.subscriptions.ITEMS_SEARCH_TERM]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    runtime.dispatch([appIds.events.ITEMS_SET_SEARCH_TERM, event.target.value]);
+    runtime.dispatch([codex ? appIds.events.ITEMS_CODEX_SET_SEARCH_TERM : appIds.events.ITEMS_SET_SEARCH_TERM, event.target.value]);
   };
 
   return (

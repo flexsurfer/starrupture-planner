@@ -1,16 +1,6 @@
 import type { SavePosition } from '../snapshot';
 
-export interface MapDisplaySettings {
-    buildingSize: number;
-    showNames: boolean;
-    showResources: boolean;
-    showGrid: boolean;
-    animateCargo: boolean;
-}
-
-export const defaultMapDisplay: MapDisplaySettings = {
-    buildingSize: 72, showNames: false, showResources: true, showGrid: true, animateCargo: true,
-};
+export { defaultMapDisplay, type MapDisplaySettings } from '../map-preferences';
 
 export interface CoreLabelPeer {
     id: number;

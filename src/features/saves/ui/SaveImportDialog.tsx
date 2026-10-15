@@ -64,6 +64,16 @@ export function SaveFileDropZone({ onFile, busy = false, disabled = false, fileN
     </div>;
 }
 
+export function SaveFileLocation() {
+    const { t } = useTranslation();
+    const id = useId();
+    return <section className="mt-4 rounded-lg bg-base-200 p-4" aria-labelledby={`${id}-location`}>
+        <h3 id={`${id}-location`} className="text-sm font-semibold">{t('Where to find .sav files')}</h3>
+        <code className="mt-2 block break-all select-text text-xs">{'C:\\Program Files (x86)\\Steam\\userdata\\[SteamNumber]\\1631270\\remote\\Saved\\SaveGames'}</code>
+        <p className="mt-2 text-xs leading-relaxed text-base-content/60">{t('Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.')}</p>
+    </section>;
+}
+
 export function SaveImportDialog() {
     const { t } = useTranslation();
     const runtime = useRuntime();
@@ -90,11 +100,7 @@ export function SaveImportDialog() {
                 <p className="mb-4 text-sm text-base-content/60">{t('The save is decoded locally in your browser. Maximum file size: 32 MiB.')}</p>
                 <SaveFileDropZone busy={candidate.phase === 'reading'} fileName={candidate.fileName}
                     onFile={file => runtime.dispatch([appIds.events.SAVES_IMPORT_READ, file])} />
-                <section className="mt-4 rounded-lg bg-base-200 p-4" aria-labelledby={`${id}-location`}>
-                    <h3 id={`${id}-location`} className="text-sm font-semibold">{t('Where to find .sav files')}</h3>
-                    <code className="mt-2 block break-all select-text text-xs">{'C:\\Program Files (x86)\\Steam\\userdata\\[SteamNumber]\\1631270\\remote\\Saved\\SaveGames'}</code>
-                    <p className="mt-2 text-xs leading-relaxed text-base-content/60">{t('Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.')}</p>
-                </section>
+                <SaveFileLocation />
                 {candidate.error && <p role="alert" className="mt-4 text-sm text-error">{t(errors[candidate.error])}</p>}
             </div>
             <footer className="flex justify-end border-t border-base-300 px-5 py-3"><button type="button" className="btn btn-ghost btn-sm" onClick={close}>{t('Cancel import')}</button></footer>

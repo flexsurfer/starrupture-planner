@@ -1,9 +1,10 @@
+import type { MapDisplaySettings, MapLayers } from '@/features/saves/map-preferences';
 import type { SaveGameData } from '@/features/saves/game-data';
 import type { SaveMap } from '@/features/saves/map';
 import type { UiText } from '@/shared/i18n/core';
 import type { RecipePresetState } from '@/features/planner/recipe-presets';
 import type { ArchiveSelection, PlannerArchive, TransferStatus } from '@/features/data-transfer/archive';
-import type { PlannerTab, PlannerMode, PlannerView } from '@/features/planner/state';
+import type { PlannerViewport, PlannerTab, PlannerMode, PlannerView } from '@/features/planner/state';
 import type { UkladContracts } from '@ukladjs/core/vanilla';
 import type { BuildingConnection, ConnectionReference, LinkedInputReference } from '@/features/bases/types';
 import type {
@@ -55,7 +56,7 @@ import { appIds, stateKeys } from './catalog';
 import type { SaveFileSource } from '@/features/saves/reader';
 import type { SaveSnapshot } from '@/features/saves/snapshot';
 import type { SaveImportErrorCode } from '@/features/saves/import-error';
-import type { SaveCoreObjective, SaveImportRequest, SaveImportState, SaveWorkspace, SaveWorkspaceSelection, SaveStorageError } from '@/features/saves/types';
+import type { SaveMapViewport, SaveView, SaveCoreObjective, SaveImportRequest, SaveImportState, SaveWorkspace, SaveWorkspaceSelection, SaveStorageError } from '@/features/saves/types';
 import type { SaveCoreOverview, SaveOverview } from '@/features/saves/overview';
 
 export interface ConfirmationDialogOptions {
@@ -116,6 +117,11 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.savesWorkspaces]: Record<string, SaveWorkspace>;
         [stateKeys.savesWorkspaceOrder]: string[];
         [stateKeys.savesActiveWorkspaceId]: string | null;
+        [stateKeys.savesSelectedView]: SaveView;
+        [stateKeys.savesMapSelectedNodes]: Record<string, number>;
+        [stateKeys.savesMapDisplay]: MapDisplaySettings;
+        [stateKeys.savesMapLayers]: MapLayers;
+        [stateKeys.savesMapViewports]: Record<string, SaveMapViewport>;
         [stateKeys.savesSelections]: Record<string, SaveWorkspaceSelection>;
         [stateKeys.savesStorageError]: SaveStorageError;
         [stateKeys.dataTransferPreview]: PlannerArchive | null;
@@ -126,8 +132,11 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.itemsList]: AppState['itemsList'];
         [stateKeys.itemsById]: AppState['itemsById'];
         [stateKeys.itemsSelectedCategory]: AppState['itemsSelectedCategory'];
+        [stateKeys.itemsCodexSelectedCategory]: AppState['itemsCodexSelectedCategory'];
         [stateKeys.itemsSelectedBuilding]: AppState['itemsSelectedBuilding'];
+        [stateKeys.itemsCodexSelectedBuilding]: AppState['itemsCodexSelectedBuilding'];
         [stateKeys.itemsSearchTerm]: AppState['itemsSearchTerm'];
+        [stateKeys.itemsCodexSearchTerm]: AppState['itemsCodexSearchTerm'];
         [stateKeys.itemsCategories]: AppState['itemsCategories'];
         [stateKeys.buildingsList]: AppState['buildingsList'];
         [stateKeys.corporationsList]: AppState['corporationsList'];
@@ -136,6 +145,8 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.uiGameDataLoadPending]: AppState['uiGameDataLoadPending'];
         [stateKeys.uiActiveTab]: AppState['uiActiveTab'];
         [stateKeys.uiConfirmationDialog]: AppState['uiConfirmationDialog'];
+        [stateKeys.plannerPinnedNodes]: Record<string, string>;
+        [stateKeys.plannerViewports]: Record<string, PlannerViewport>;
         [stateKeys.plannerTabs]: AppState['plannerTabs'];
         [stateKeys.plannerActiveTabId]: AppState['plannerActiveTabId'];
         [stateKeys.plannerTabCreation]: AppState['plannerTabCreation'];
@@ -161,6 +172,11 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.SAVES_SELECT_WORKSPACE]: [workspaceId: string];
         [appIds.events.SAVES_RENAME_WORKSPACE]: [workspaceId: string, name: string];
         [appIds.events.SAVES_REMOVE_WORKSPACE]: [workspaceId: string];
+        [appIds.events.SAVES_SELECT_MAP_NODE]: [workspaceId: string, nodeId: number | null];
+        [appIds.events.SAVES_SET_MAP_DISPLAY]: [display: MapDisplaySettings];
+        [appIds.events.SAVES_SET_MAP_LAYERS]: [layers: MapLayers];
+        [appIds.events.SAVES_SELECT_VIEW]: [view: SaveView];
+        [appIds.events.SAVES_SET_MAP_VIEWPORT]: [workspaceId: string, x: number, y: number, zoom: number];
         [appIds.events.SAVES_SELECT_CORE]: [workspaceId: string, coreId: number | null];
         [appIds.events.SAVES_SET_CORE_OBJECTIVE]: [workspaceId: string, coreId: number, objective: SaveCoreObjective | null];
         [appIds.events.PLANNER_SET_EXTERNAL_INPUT]: [itemId: string, amount: number];
@@ -185,6 +201,9 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.UI_SET_ACTIVE_TAB]: [tab: TabType];
         [appIds.events.UI_SHOW_CONFIRMATION_DIALOG]: [title: UiText, message: UiText, onConfirm: () => void, options?: ConfirmationDialogOptions];
         [appIds.events.UI_CLOSE_CONFIRMATION_DIALOG]: [];
+        [appIds.events.ITEMS_CODEX_SET_SELECTED_CATEGORY]: [value: string];
+        [appIds.events.ITEMS_CODEX_SET_SELECTED_BUILDING]: [value: string];
+        [appIds.events.ITEMS_CODEX_SET_SEARCH_TERM]: [value: string];
         [appIds.events.ITEMS_SET_SELECTED_CATEGORY]: [category: string];
         [appIds.events.ITEMS_SET_SELECTED_BUILDING]: [building: string];
         [appIds.events.ITEMS_SET_SEARCH_TERM]: [searchTerm: string];
@@ -195,6 +214,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PLANNER_CREATE_TAB]: [id: string, name: string, mode: PlannerMode, view?: PlannerView];
         [appIds.events.PLANNER_SELECT_TAB]: [id: string];
         [appIds.events.PLANNER_CLOSE_TAB]: [id: string];
+        [appIds.events.PLANNER_SET_PINNED_NODE]: [tabId: string, nodeId: string | null];
+        [appIds.events.PLANNER_SET_VIEWPORT]: [tabId: string, x: number, y: number, zoom: number];
         [appIds.events.PLANNER_SET_ACTIVE_VIEW]: [view: PlannerView];
         [appIds.events.PLANNER_DISMISS_TARGET_WARNING]: [];
         [appIds.events.PLANNER_ADD_TARGET]: [itemId: string];
@@ -268,6 +289,12 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.SAVES_WORKSPACES]: { params: []; result: Record<string, SaveWorkspace> };
         [appIds.subscriptions.SAVES_WORKSPACE_ORDER]: { params: []; result: string[] };
         [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE_ID]: { params: []; result: string | null };
+        [appIds.subscriptions.SAVES_SELECTED_VIEW]: { params: []; result: SaveView };
+        [appIds.subscriptions.SAVES_MAP_SELECTED_NODES]: { params: []; result: Record<string, number> };
+        [appIds.subscriptions.SAVES_MAP_DISPLAY]: { params: []; result: MapDisplaySettings };
+        [appIds.subscriptions.SAVES_MAP_LAYERS]: { params: []; result: MapLayers };
+        [appIds.subscriptions.SAVES_MAP_VIEWPORTS]: { params: []; result: Record<string, SaveMapViewport> };
+        [appIds.subscriptions.SAVES_MAP_VIEWPORT]: { params: [workspaceId: string]; result: SaveMapViewport | null };
         [appIds.subscriptions.SAVES_SELECTIONS]: { params: []; result: Record<string, SaveWorkspaceSelection> };
         [appIds.subscriptions.SAVES_STORAGE_ERROR]: { params: []; result: SaveStorageError };
         [appIds.subscriptions.SAVES_TABS]: { params: []; result: { id: string; name: string }[] };
@@ -288,6 +315,11 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]: { params: []; result: boolean };
         [appIds.subscriptions.UI_ACTIVE_TAB]: { params: []; result: TabType };
         [appIds.subscriptions.UI_CONFIRMATION_DIALOG]: { params: []; result: AppState['uiConfirmationDialog'] };
+        [appIds.subscriptions.ITEMS_CODEX_SELECTED_CATEGORY]: { params: []; result: string };
+        [appIds.subscriptions.ITEMS_CODEX_SELECTED_BUILDING]: { params: []; result: string };
+        [appIds.subscriptions.ITEMS_CODEX_SEARCH_TERM]: { params: []; result: string };
+        [appIds.subscriptions.ITEMS_CODEX_FILTERED_LIST]: { params: []; result: AppState['itemsList'] };
+        [appIds.subscriptions.ITEMS_CODEX_TABLE_ROWS]: { params: []; result: ItemTableData[] };
         [appIds.subscriptions.ITEMS_LIST]: { params: []; result: AppState['itemsList'] };
         [appIds.subscriptions.ITEMS_BY_ID_MAP]: { params: []; result: AppState['itemsById'] };
         [appIds.subscriptions.ITEMS_SELECTED_CATEGORY]: { params: []; result: string };
@@ -315,6 +347,10 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.PLANNER_ACTIVE_TAB]: { params: []; result: PlannerTab | null };
         [appIds.subscriptions.PLANNER_ACTIVE_TAB_ID]: { params: []; result: string | null };
         [appIds.subscriptions.PLANNER_TAB_CREATION]: { params: []; result: AppState['plannerTabCreation'] };
+        [appIds.subscriptions.PLANNER_PINNED_NODES]: { params: []; result: Record<string, string> };
+        [appIds.subscriptions.PLANNER_ACTIVE_PINNED_NODE]: { params: []; result: string | null };
+        [appIds.subscriptions.PLANNER_VIEWPORTS]: { params: []; result: Record<string, PlannerViewport> };
+        [appIds.subscriptions.PLANNER_ACTIVE_VIEWPORT]: { params: []; result: PlannerViewport | null };
         [appIds.subscriptions.PLANNER_ACTIVE_VIEW]: { params: []; result: PlannerView };
         [appIds.subscriptions.PLANNER_MODE]: { params: []; result: PlannerTab['mode'] };
         [appIds.subscriptions.PLANNER_MULTI_TARGETS]: { params: []; result: PlannerTab['multiTargets'] };

@@ -786,6 +786,41 @@ describe('headless application E2E', () => {
         expect(shell.value('pending')).toBe(false);
     });
 
+    it('browses Codex independently of the open catalog and planner', async () => {
+        const scenario = await createSeededScenario();
+        const workspace = mountView(scenario, 'workspace beneath Codex', {
+            tab: [appIds.subscriptions.UI_ACTIVE_TAB],
+            plans: [appIds.subscriptions.PLANNER_TABS],
+            items: [appIds.subscriptions.ITEMS_FILTERED_LIST],
+        } as const);
+        await dispatchAll(scenario, [
+            [appIds.events.PLANNER_CREATE_TAB, 'existing', 'Existing plan', 'single'],
+            [appIds.events.PLANNER_SET_SELECTED_ITEM, 'steel-plate'],
+            [appIds.events.PLANNER_SET_TARGET_AMOUNT, 90],
+            [appIds.events.UI_SET_ACTIVE_TAB, 'items'],
+            [appIds.events.ITEMS_SET_SELECTED_CATEGORY, 'raw'],
+        ]);
+        const before = workspace.current();
+        const codex = mountView(scenario, 'Codex items', {
+            category: [appIds.subscriptions.ITEMS_CODEX_SELECTED_CATEGORY],
+            building: [appIds.subscriptions.ITEMS_CODEX_SELECTED_BUILDING],
+            search: [appIds.subscriptions.ITEMS_CODEX_SEARCH_TERM],
+            items: [appIds.subscriptions.ITEMS_CODEX_FILTERED_LIST],
+            rows: [appIds.subscriptions.ITEMS_CODEX_TABLE_ROWS],
+        } as const);
+        await dispatchAll(scenario, [
+            [appIds.events.ITEMS_CODEX_SET_SELECTED_CATEGORY, 'processed'],
+            [appIds.events.ITEMS_CODEX_SET_SELECTED_BUILDING, 'Smelter'],
+            [appIds.events.ITEMS_CODEX_SET_SEARCH_TERM, 'plate'],
+        ]);
+        expect(codex.current()).toMatchObject({ category: 'processed', building: 'Smelter', search: 'plate' });
+        expect(codex.value('items').map(item => item.id)).toEqual(['iron-plate']);
+        expect(codex.value('rows')).toMatchObject([{ item: { id: 'iron-plate' }, producingBuildings: ['Smelter', 'Smelter Mk.2'] }]);
+        expect(workspace.current()).toEqual(before);
+        codex.unmount();
+        expect(workspace.current()).toEqual(before);
+    });
+
     it('filters the catalog and runs the complete planner workflow', async () => {
         const scenario = await createSeededScenario();
         const catalog = mountView(scenario, 'catalog and planner', {

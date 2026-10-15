@@ -1,3 +1,4 @@
+import { normalizeMapDisplay, normalizeMapLayers } from '@/features/saves/map-preferences';
 import { normalizeLocale } from '@/shared/i18n/locales';
 import type { PersistData, PersistKey } from '@ukladjs/persist';
 import type { AppState } from '@/app/uklad/model';
@@ -12,6 +13,8 @@ export const SAVES_PERSIST_ROOTS = [stateKeys.savesWorkspaces, stateKeys.savesWo
 
 /** Durable roots and their boundary validation for Uklad persistence. */
 export const PERSIST_KEYS = [
+    { key: stateKeys.savesMapDisplay, deserialize: normalizeMapDisplay },
+    { key: stateKeys.savesMapLayers, deserialize: normalizeMapLayers },
     { key: stateKeys.savesWorkspaces, deserialize: normalizeSaveWorkspaces, serialize: value => {
         assertSaveStorageLimits(value);
         return value as unknown as PersistData;

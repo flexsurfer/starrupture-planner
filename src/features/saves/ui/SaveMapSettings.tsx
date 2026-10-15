@@ -3,7 +3,7 @@ import { useTranslation } from '@/shared/i18n';
 import { SaveMapIcon } from './SaveMapIcon';
 import type { MapDisplaySettings } from './map-display';
 
-export interface MapLayers { showLinks: boolean; showBounds: boolean; showPowerNetworks: boolean }
+import type { MapLayers } from '../map-preferences';
 
 export function SaveMapSettings({ value, onChange, layers, onLayersChange }: {
     value: MapDisplaySettings; onChange: (value: MapDisplaySettings) => void;

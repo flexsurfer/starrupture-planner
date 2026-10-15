@@ -4,6 +4,7 @@ import type { Item } from '@/app/uklad/model';
 import { RecipeCard } from './RecipeCard';
 import { UsedInRecipes } from './UsedInRecipes';
 import type { ItemRecipe } from '../recipe-utils';
+import { useModalDialog } from '@/shared/ui/useModalDialog';
 
 interface RecipeModalProps {
   isOpen: boolean;
@@ -14,13 +15,16 @@ interface RecipeModalProps {
 
 export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item, itemRecipes }) => {
     const { t } = useTranslation();
+  const dialog = useModalDialog(isOpen && !!item && itemRecipes.length > 0);
 
   if (!isOpen || !item || itemRecipes.length === 0) {
     return null;
   }
 
   return (
-    <div className="modal modal-open p-1 sm:p-4" role="dialog" aria-modal="true" aria-label={t("Recipes for {name}", { name: item.name })}>
+    <dialog ref={dialog} className="modal p-1 sm:p-4" aria-label={t("Recipes for {name}", { name: item.name })}
+      onCancel={event => { event.preventDefault(); event.stopPropagation(); onClose(); }}
+      onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
       <div className="modal-box flex max-h-[calc(100dvh-0.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg p-0 sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl">
         {/* Modal Header */}
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-base-300 px-3 py-2 sm:px-4 sm:py-3">
@@ -30,6 +34,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item,
           </div>
           <button
             type="button"
+            data-dialog-autofocus
             className="btn btn-sm btn-circle btn-ghost size-9 shrink-0"
             onClick={onClose}
             aria-label={t("Close modal")}
@@ -51,8 +56,6 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ isOpen, onClose, item,
           <UsedInRecipes itemId={item.id} itemName={item.name} />
         </div>
       </div>
-      {/* Backdrop */}
-      <div className="modal-backdrop" onClick={onClose}></div>
-    </div>
+    </dialog>
   );
 };

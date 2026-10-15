@@ -1,3 +1,4 @@
+import { useCodexView } from '@/shared/ui/CodexViewContext';
 import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import type { ReactNode } from 'react';
@@ -48,6 +49,7 @@ interface RecipeCardProps {
 export const RecipeCard = ({ recipe, recipeType = 'standard', className = "", showPlannerButton = true, building, selected = false, action, highlightedItemId = recipe.output.id }: RecipeCardProps) => {
     const { t } = useTranslation();
   const runtime = useRuntime();
+  const codex = useCodexView();
   const itemsMap = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
   const outputItem = itemsMap[recipe.output.id];
   const typeLabel = recipeType === 'alternative' ? t("Alternative") : recipeType === 'upgrade' ? 'V2' : t("Standard");
@@ -63,7 +65,7 @@ export const RecipeCard = ({ recipe, recipeType = 'standard', className = "", sh
           </div>
           {selected && <span className="sr-only">{t("Used in this node")}</span>}
         </div>
-        {action ?? (showPlannerButton && outputItem?.type !== 'raw' && (
+        {action ?? (!codex && showPlannerButton && outputItem?.type !== 'raw' && (
           <button
             type="button"
             className="btn btn-sm btn-primary btn-outline h-8 min-h-8 shrink-0 px-2 text-xs"

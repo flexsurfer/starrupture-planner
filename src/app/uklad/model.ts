@@ -224,8 +224,11 @@ export interface AppState extends PlannerFeatureState, DataTransferState, SavesF
     itemsList: Item[];
     itemsById: Record<string, Item>;
     itemsSelectedCategory: string;
+    itemsCodexSelectedCategory: string;
     itemsSelectedBuilding: string;
+    itemsCodexSelectedBuilding: string;
     itemsSearchTerm: string;
+    itemsCodexSearchTerm: string;
     itemsCategories: string[];
     buildingsList: Building[];
     corporationsList: Corporation[];

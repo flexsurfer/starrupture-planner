@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterAll, expect, it, vi } from 'vitest';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import App from '@/App';
@@ -14,7 +14,7 @@ vi.mock('@/platform/web/game-data-loader', async importOriginal => ({
 }));
 vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 
-afterAll(() => { cleanup(); persistence.dispose(); runtime.dispose(); vi.unstubAllGlobals(); });
+afterAll(() => { cleanup(); sessionStorage.clear(); persistence.dispose(); runtime.dispose(); vi.unstubAllGlobals(); });
 
 it('opens tools directly and preserves URL, runtime and language across navigation and remounts', async () => {
     window.history.replaceState(null, '', '/');
@@ -28,9 +28,9 @@ it('opens tools directly and preserves URL, runtime and language across navigati
     expect(document.querySelector('[data-seo]')).toBeNull();
 
     const historyLength = window.history.length;
-    fireEvent.click(screen.getAllByRole('link', { name: 'Items' })[0]);
-    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('items'));
-    expect(window.location.pathname).toBe('/items/');
+    fireEvent.click(screen.getAllByRole('link', { name: 'Factory Map' })[0]);
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('mysaves'));
+    expect(window.location.pathname).toBe('/map/');
     expect(window.history.length).toBe(historyLength + 1);
     act(() => window.history.back());
     await waitFor(() => expect(window.location.pathname).toBe('/planner/'));
@@ -49,13 +49,28 @@ it('opens tools directly and preserves URL, runtime and language across navigati
     expect(loadGameDataVersion).toHaveBeenCalledTimes(1);
     expect(harness.getSubscriptionValue([appIds.subscriptions.UI_THEME])).toBe('light');
 
-    fireEvent.click(screen.getAllByRole('link', { name: 'My Saves' })[0]);
+    act(() => harness.dispatchSync([appIds.events.BASES_SET_MODE, 'planning']));
+    fireEvent.click(screen.getAllByRole('link', { name: 'My Bases' })[0]);
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('mybases'));
+    const notice = screen.getByRole('note');
+    expect(notice).toHaveTextContent('My Bases is deprecated and will not be supported in future versions. Use Factory Map instead.');
+    fireEvent.click(within(notice).getByRole('button', { name: 'Hide this notice for this session' }));
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('link', { name: 'Factory Map' })[0]);
     await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('mysaves'));
-    expect(window.location.pathname).toBe('/mysaves/');
+    expect(window.location.pathname).toBe('/map/');
     expect(await screen.findByRole('heading', { name: 'Import your first save' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Import save' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Choose save file' })).toBeEnabled();
+
+    fireEvent.click(screen.getAllByRole('link', { name: 'My Bases' })[0]);
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('mybases'));
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('link', { name: 'Factory Map' })[0]);
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('mysaves'));
 
     await act(async () => { runtime.dispatch([appIds.events.UI_SET_LOCALE, 'de']); });
     await waitFor(() => expect(document.documentElement.lang).toBe('de'));
-    expect(window.location.pathname).toBe('/mysaves/');
+    expect((await screen.findAllByRole('link', { name: 'Fabrikkarte' })).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Meine Basen' }).length).toBeGreaterThan(0);
+    expect(window.location.pathname).toBe('/map/');
 });

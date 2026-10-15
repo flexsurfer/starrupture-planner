@@ -39,7 +39,7 @@ export function ResourceRows({ resources, empty, expandable = true, showSourceLa
                 {(hasRoute || showSourceLabel) && <span className="mt-0.5 block text-[11px] text-base-content/45">{hasRoute ? routes.join(' · ') : t(resourceSources[resource.source])}</span>}
             </span>
             <span className="shrink-0 text-right text-base font-semibold tabular-nums" style={{ color: getItemCategoryColor(resource.type) }}
-                title={t(resource.rate === null ? 'Rate unavailable' : 'Configured capacity')}>{rate(resource.rate)}</span>
+                title={t(resource.rate === null ? 'Rate unavailable' : 'Max capacity')}>{rate(resource.rate)}</span>
         </>;
         return expandable ? <details key={`${resource.source}:${resource.itemId}`} className="group/resource">
             <summary className="flex min-w-0 cursor-pointer list-none items-center gap-2.5 rounded py-2.5 focus-visible:outline-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">

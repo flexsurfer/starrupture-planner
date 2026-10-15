@@ -705,7 +705,7 @@
   "Rename \"{name}\"": "Rename \"{name}\"",
   "A preset with this name already exists.": "A preset with this name already exists.",
   "New plans will use \"{name}\".": "New plans will use \"{name}\".",
-  "My Saves": "My Saves",
+  "Factory Map": "Factory Map",
   "Import save": "Import save",
   "Save tabs": "Save tabs",
   "Save name": "Save name",
@@ -732,7 +732,7 @@
   "Local extraction": "Local extraction",
   "Sent to corporations": "Sent to corporations",
   "Configured production": "Configured production",
-  "Configured capacity": "Configured capacity",
+  "Max capacity": "Max capacity",
   "Rate unavailable": "Rate unavailable",
   "No buildings in this section.": "No buildings in this section.",
   "Drop a .sav file here, or choose one from your computer.": "Drop a .sav file here, or choose one from your computer.",
@@ -754,7 +754,7 @@
   "Core {number}": "Core {number}",
   "Open Core {name}": "Open Core {name}",
   "No Cores found in this save.": "No Cores found in this save.",
-  "Import a StarRupture save to see your Cores, buildings and resources.": "Import a StarRupture save to see your Cores, buildings and resources.",
+  "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.",
   "This removes this save and its Core settings from this browser.": "This removes this save and its Core settings from this browser.",
   "Available resources": "Available resources",
   "Imported from other Cores": "Imported from other Cores",
@@ -824,5 +824,18 @@
   "Core": "Core",
   "No power networks found in this save.": "No power networks found in this save.",
   "Where to find .sav files": "Where to find .sav files",
-  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead."
+  "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.": "Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.",
+  "Codex": "Codex",
+  "Main navigation": "Main navigation",
+  "Open in new tab": "Open in new tab",
+  "Open {name} in a new tab": "Open {name} in a new tab",
+  "Supply options": "Supply options",
+  "Open Factory Map": "Open Factory Map",
+  "My Bases is deprecated and will not be supported in future versions. Use Factory Map instead.": "My Bases is deprecated and will not be supported in future versions. Use Factory Map instead.",
+  "Deprecated": "Deprecated",
+  "Hide this notice for this session": "Hide this notice for this session",
+  "{count} launchers": {
+    "one": "{count} launcher",
+    "other": "{count} launchers"
+  }
 }

@@ -18,6 +18,14 @@ import { getPlannerInputBuildings } from './external-inputs';
 
 export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regRootSub(appIds.subscriptions.PLANNER_TABS, stateKeys.plannerTabs);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_PINNED_NODES, stateKeys.plannerPinnedNodes);
+    registrar.regSub(appIds.subscriptions.PLANNER_ACTIVE_PINNED_NODE,
+        () => [[appIds.subscriptions.PLANNER_PINNED_NODES], [appIds.subscriptions.PLANNER_ACTIVE_TAB]],
+        ([pins, tab]) => tab ? pins[tab.id] ?? null : null);
+    registrar.regRootSub(appIds.subscriptions.PLANNER_VIEWPORTS, stateKeys.plannerViewports);
+    registrar.regSub(appIds.subscriptions.PLANNER_ACTIVE_VIEWPORT,
+        () => [[appIds.subscriptions.PLANNER_VIEWPORTS], [appIds.subscriptions.PLANNER_ACTIVE_TAB]],
+        ([viewports, tab]) => tab ? viewports[tab.id] ?? null : null);
     registrar.regRootSub(appIds.subscriptions.PLANNER_ACTIVE_TAB_ID, stateKeys.plannerActiveTabId);
     registrar.regRootSub(appIds.subscriptions.PLANNER_TAB_CREATION, stateKeys.plannerTabCreation);
     registrar.regSub(
