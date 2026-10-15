@@ -1,3 +1,4 @@
+import { useCodexView } from '@/shared/ui/CodexViewContext';
 import { useSubscription } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
 import type { CorporationUsage } from '@/features/items/types';
@@ -7,8 +8,9 @@ import type { CorporationUsage } from '@/features/items/types';
  * All computations are done in subscriptions, this hook just returns ready-to-use data
  */
 export const useItemsData = () => {
-  const itemsTableData = useSubscription([appIds.subscriptions.ITEMS_TABLE_ROWS]);
-  const selectedCategory = useSubscription([appIds.subscriptions.ITEMS_SELECTED_CATEGORY]);
+  const codex = useCodexView();
+  const itemsTableData = useSubscription([codex ? appIds.subscriptions.ITEMS_CODEX_TABLE_ROWS : appIds.subscriptions.ITEMS_TABLE_ROWS]);
+  const selectedCategory = useSubscription([codex ? appIds.subscriptions.ITEMS_CODEX_SELECTED_CATEGORY : appIds.subscriptions.ITEMS_SELECTED_CATEGORY]);
   const categories = useSubscription([appIds.subscriptions.ITEMS_CATEGORIES]);
   const helperMaps = useSubscription([appIds.subscriptions.ITEMS_HELPER_LOOKUPS]);
 

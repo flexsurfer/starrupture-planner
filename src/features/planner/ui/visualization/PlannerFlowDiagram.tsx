@@ -1,7 +1,7 @@
 import { useFlowLabels } from '@/shared/i18n/useFlowLabels';
 import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     ReactFlow,
     type Node,
@@ -38,6 +38,16 @@ export const PlannerFlowDiagram: React.FC = () => {
     }, [runtime]);
     const flowLabels = useFlowLabels();
     const { fitView } = useReactFlow();
+    const tabId = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TAB])?.id;
+    const viewport = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_VIEWPORT]);
+    const rememberViewport = useCallback((_event: unknown, next: { x: number; y: number; zoom: number }) => {
+        if (tabId) runtime.dispatch([appIds.events.PLANNER_SET_VIEWPORT, tabId, next.x, next.y, next.zoom]);
+    }, [runtime, tabId]);
+    const pinnedNodeId = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_PINNED_NODE]);
+    const onPinnedNodeChange = useCallback((nodeId: string | null) => {
+        if (tabId) runtime.dispatch([appIds.events.PLANNER_SET_PINNED_NODE, tabId, nodeId]);
+    }, [runtime, tabId]);
+    const previousLayout = useRef<string | null>(null);
 
     // State subscriptions
     const selectedItemId = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]);
@@ -64,15 +74,12 @@ export const PlannerFlowDiagram: React.FC = () => {
     const {
         nodes: highlightedNodes,
         edges: highlightedEdges,
-        resetHighlight,
         onNodeDragStart,
         onNodeDragStop,
-    } = usePinnableNodeHighlight(nodes, edges);
+    } = usePinnableNodeHighlight(nodes, edges, true, { pinnedNodeId, onPinnedNodeChange });
 
     // Update React Flow nodes and edges when subscription data changes
     useEffect(() => {
-        // Pins belong only to the current calculation, even if node IDs survive.
-        resetHighlight();
         if (flowGraph) {
             setNodes(renderedNodes);
             setEdges(flowGraph.edges);
@@ -80,14 +87,24 @@ export const PlannerFlowDiagram: React.FC = () => {
             setNodes([]);
             setEdges([]);
         }
-    }, [flowGraph, renderedNodes, setNodes, setEdges, resetHighlight]);
+    }, [flowGraph, renderedNodes, setNodes, setEdges]);
 
-    // Auto-fit view when item changes
     useEffect(() => {
+        // Validate against the calculated graph, not the initially empty React Flow nodes.
+        if (pinnedNodeId && !flowGraph.nodes.some(node => node.id === pinnedNodeId)) onPinnedNodeChange(null);
+    }, [flowGraph, pinnedNodeId, onPinnedNodeChange]);
+
+    const layoutKey = JSON.stringify([selectedItemId, direction, groupByStage, nodes.length]);
+    // Restore the session camera on mount; still fit when the actual layout changes.
+    useEffect(() => {
+        if (!nodes.length) return;
+        const layoutChanged = previousLayout.current !== null && previousLayout.current !== layoutKey;
+        previousLayout.current = layoutKey;
+        if (viewport && !layoutChanged) return;
         // Small delay to ensure DOM is updated
         const timer = setTimeout(() => { if (nodes.length > 0) { fitView({ duration: 300, padding: 0.1 }); } }, 10);
         return () => clearTimeout(timer);
-    }, [selectedItemId, direction, groupByStage, nodes.length, fitView]);
+    }, [layoutKey, nodes.length, viewport, fitView]);
 
     if (!selectedItemId.length) {
         return (
@@ -115,6 +132,9 @@ export const PlannerFlowDiagram: React.FC = () => {
                 edgeTypes={edgeTypes}
                 attributionPosition="bottom-left"
                 minZoom={0.1}
+                maxZoom={2}
+                defaultViewport={viewport ?? undefined}
+                onMove={rememberViewport}
                 selectNodesOnDrag={false}
                 onNodeDragStart={onNodeDragStart}
                 onNodeDragStop={onNodeDragStop}

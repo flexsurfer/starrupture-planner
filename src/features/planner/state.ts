@@ -4,6 +4,8 @@ import type { CorporationLevelSelection, RecipeAlternativePreset } from '@/app/u
 import { createStandardRecipePreset, createV2RecipePreset } from './recipe-presets';
 
 export type PlannerMode = 'single' | 'multi';
+export interface PlannerViewport { x: number; y: number; zoom: number }
+
 export type PlannerView = 'graph' | 'table';
 
 /** One independently saved planner document. Mode is chosen only at creation. */
@@ -24,6 +26,9 @@ export interface PlannerTab {
 
 export interface PlannerFeatureState {
     plannerTabs: PlannerTab[];
+    /** Camera positions belong to the current runtime session, not saved plans. */
+    plannerViewports: Record<string, PlannerViewport>;
+    plannerPinnedNodes: Record<string, string>;
     plannerActiveTabId: string | null;
     plannerTabCreation: { itemId?: string; corporationLevel?: CorporationLevelSelection } | null;
     plannerTargetWarning: UiText | null;
@@ -53,6 +58,8 @@ export function getActivePlannerTab(state: Pick<PlannerFeatureState, 'plannerTab
 export function createPlannerFeatureState(): PlannerFeatureState {
     return {
         plannerTabs: [],
+        plannerViewports: {},
+        plannerPinnedNodes: {},
         plannerActiveTabId: null,
         plannerTabCreation: null,
         plannerTargetWarning: null,

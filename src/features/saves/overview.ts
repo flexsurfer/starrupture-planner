@@ -40,6 +40,7 @@ export interface SaveCoreOverview {
     core: SaveCore;
     buildings: SaveBuilding[];
     buildingDetails: SaveBuildingView[];
+    buildingSections: Record<SaveBuildingSection, { detail: SaveBuildingView; count: number; resources: SaveResource[] }[]>;
     incoming: SaveResource[];
     outgoing: SaveResource[];
     corporationShipments: SaveResource[];
@@ -123,11 +124,25 @@ export function buildSaveOverview(workspace: SaveWorkspace, data: SaveGameData) 
                     : config.kind === 'production' ? 'production' : 'infrastructure';
             return { building, instance, section, resources: resourcesFor(instance), nodePurity: config.kind === 'extractor' ? config.nodePurity : null };
         }).sort((a, b) => a.building.name.localeCompare(b.building.name) || a.instance.id - b.instance.id);
+        const buildingSections: SaveCoreOverview['buildingSections'] = { incoming: [], outgoing: [], production: [], energy: [], infrastructure: [] };
+        for (const detail of buildingDetails) {
+            const entries = buildingSections[detail.section];
+            const grouped = detail.section !== 'incoming' && detail.section !== 'outgoing';
+            const config = detail.instance.configuration;
+            const existing = config.kind === 'launcher'
+                ? entries.find(entry => entry.detail.instance.configuration.kind === 'launcher'
+                    && entry.detail.instance.configuration.itemId === config.itemId)
+                : grouped ? entries.find(entry => entry.detail.building.id === detail.building.id) : undefined;
+            if (existing) {
+                existing.count++;
+                if (config.kind === 'launcher') existing.resources = combineResources([...existing.resources, ...detail.resources]);
+            } else entries.push({ detail, count: 1, resources: detail.resources });
+        }
         const allResources = buildingDetails.flatMap(detail => detail.resources);
         const interCore = (resource: SaveResource) => resource.buildings.some(building => building.relatedCore && building.relatedCore.id !== core.id);
         const coreNetworks = new Set([core.powerNetworkId, ...core.buildings.map(building => building.powerNetworkId)]);
         const baseHeatCapacity = saveBuildings.get('base_core')?.levels?.find(level => level.level === core.level)?.heatCapacity;
-        return { core, buildings: core.buildings, buildingDetails,
+        return { core, buildings: core.buildings, buildingDetails, buildingSections,
             incoming: combineResources(allResources.filter(resource => resource.source === 'extraction' || resource.source === 'delivery' && interCore(resource))),
             outgoing: combineResources(allResources.filter(resource => resource.source === 'shipment' && interCore(resource))),
             corporationShipments: combineResources(allResources.filter(resource => resource.source === 'corporation')),

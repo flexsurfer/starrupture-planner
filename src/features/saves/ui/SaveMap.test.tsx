@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import type { ReactFlowProps, NodeProps, ControlProps } from '@xyflow/react';
 import type { ReactNode } from 'react';
 import { appIds } from '@/app/uklad/catalog';
+import { PERSIST_KEYS } from '@/platform/web/persistence';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { UkladProvider } from '@/app/uklad/bindings';
 import { registerHeadlessApplication } from '@/platform/headless/register';
@@ -56,14 +57,69 @@ function setup({ withBounds = true, networkIds = {} }: { withBounds?: boolean; n
     harness.restoreState({ ...harness.getState(), savesWorkspaces: { one: workspace }, savesWorkspaceOrder: ['one'], savesActiveWorkspaceId: 'one' });
     const onOpenCore = vi.fn();
     const view = () => <UkladProvider runtime={runtime}><SaveMap workspace={workspace} initialCoreId={1} onOpenCore={onOpenCore} /></UkladProvider>;
-    const result = render(view());
-    return { onOpenCore, replaceSnapshot: async () => {
+    let result = render(view());
+    return { onOpenCore, harness, remount: () => { result.unmount(); result = render(view()); }, replaceSnapshot: async () => {
         workspace = createSaveWorkspace('one', 'World', analyzeSave(snapshotFixture(), extractionContext));
         await act(async () => {
-            harness.restoreState({ ...harness.getState(), savesWorkspaces: { one: workspace } });
+            harness.restoreState({ ...harness.getState(), savesImport: { requestId: 50, targetWorkspaceId: 'one', phase: 'reading', fileName: 'World.sav', error: null } });
+            harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, 50, workspace.snapshot]);
+            workspace = harness.getState().savesWorkspaces.one;
             result.rerender(view());
         });
     } };
+}
+
+it('restores zoom and pan after remounting without fitting over the session viewport', async () => {
+    const { harness, remount, replaceSnapshot } = setup();
+    expect(flowProps.fitView).toBe(true);
+    expect(flowProps.defaultViewport).toBeUndefined();
+    const position = { x: -480, y: 235, zoom: 0.4 };
+    await act(async () => {
+        flowProps.onMove?.(new MouseEvent('mousemove'), position);
+        await harness.flush();
+    });
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_VIEWPORT, 'one'])).toEqual(position);
+    remount();
+    expect(flowProps.defaultViewport).toEqual(position);
+    expect(flowProps.fitView).toBe(false);
+    // Search, Core focus and Fit view move the camera programmatically (null event).
+    const focused = { x: 100, y: -50, zoom: 1.2 };
+    await act(async () => {
+        flowProps.onMove?.(null, focused);
+        await harness.flush();
+    });
+    await replaceSnapshot();
+    expect(flowProps.defaultViewport).toEqual(focused);
+    expect(PERSIST_KEYS.map(entry => typeof entry === 'string' ? entry : entry.key)).not.toContain('savesMapViewports');
+    const nextSession = createAppRuntime();
+    try {
+        expect(createUkladTestHarness(nextSession).getState().savesMapViewports).toEqual({});
+    } finally { nextSession.dispose(); }
+});
+
+it('scopes viewports to existing saves, rejects invalid positions and removes them with the save', async () => {
+    const { harness } = setup();
+    act(() => { harness.dispatchSync([appIds.events.SAVES_SET_MAP_VIEWPORT, 'one', 10, 20, 0.5]); });
+    for (const [x, y, zoom] of [[NaN, 0, 1], [0, Infinity, 1], [0, 0, 0], [0, 0, 4]]) {
+        harness.dispatchSync([appIds.events.SAVES_SET_MAP_VIEWPORT, 'one', x, y, zoom]);
+    }
+    harness.dispatchSync([appIds.events.SAVES_SET_MAP_VIEWPORT, 'missing', 1, 2, 1]);
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_VIEWPORT, 'one'])).toEqual({ x: 10, y: 20, zoom: 0.5 });
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_VIEWPORT, 'missing'])).toBeNull();
+    act(() => { harness.dispatchSync([appIds.events.SAVES_REMOVE_WORKSPACE, 'one']); });
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_VIEWPORT, 'one'])).toBeNull();
+});
+
+async function interact(action: () => void) {
+    await act(async () => {
+        action();
+        for (const runtime of runtimes) await createUkladTestHarness(runtime).flush();
+    });
+}
+
+async function toggleLayer(name: string) {
+    const checkbox = layerCheckbox(name);
+    await interact(() => { fireEvent.click(checkbox); });
 }
 
 function layerCheckbox(name: string) {
@@ -72,7 +128,23 @@ function layerCheckbox(name: string) {
     return screen.getByRole('checkbox', { name });
 }
 
-it('opens building details, follows cargo endpoints and keeps positions read-only', () => {
+it('keeps the selected node, display settings and layers when returning to the map', async () => {
+    const { remount } = setup();
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' })); });
+    await toggleLayer('Cargo links');
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Large' })); });
+    remount();
+    expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent('Ore dispatch');
+    expect(flowProps.nodes!.find(node => node.id === '20')?.data.selected).toBe(true);
+    expect(flowProps.nodes!.find(node => node.id === '20')?.width).toBe(88);
+    expect(flowProps.edges).toEqual([]);
+    expect(layerCheckbox('Cargo links')).not.toBeChecked();
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Close' })); });
+    remount();
+    expect(screen.queryByRole('region', { name: 'Building details' })).toBeNull();
+});
+
+it('opens building details, follows cargo endpoints and keeps positions read-only', async () => {
     const { onOpenCore } = setup();
     const node = flowProps.nodes!.find(node => node.id === '20')!;
     expect(node.position).toEqual({ x: -10, y: 25 });
@@ -84,7 +156,7 @@ it('opens building details, follows cargo endpoints and keeps positions read-onl
     expect(screen.queryByRole('checkbox', { name: 'Cargo links' })).toBeNull();
     expect(flowProps.fitViewOptions?.nodes).toContainEqual({ id: '1' });
     expect(flowProps.fitViewOptions?.nodes).not.toContainEqual({ id: '2' });
-    fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' }));
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' })); });
     const panel = screen.getByRole('region', { name: 'Building details' });
     expect(within(panel).queryByRole('heading', { name: 'Building details' })).toBeNull();
     expect(panel).not.toHaveTextContent('Power network');
@@ -95,22 +167,24 @@ it('opens building details, follows cargo endpoints and keeps positions read-onl
     expect(screen.queryByRole('heading', { name: 'Save map' })).toBeNull();
     expect(screen.queryByText('Saved positions')).toBeNull();
     expect(flowProps.edges!.find(edge => edge.source === '20')?.label).toBe('Helium-3');
-    fireEvent.click(within(panel).getByRole('button', { name: 'Show connected building' }));
+    expect(within(panel).queryByRole('button', { name: 'Focus Core' })).toBeNull();
+    expect(flowProps.nodes!.find(node => node.id === '20')?.data.selected).toBe(true);
+    await interact(() => { fireEvent.click(within(panel).getByRole('button', { name: 'Show connected building' })); });
     expect(flowProps.nodes!.find(node => node.id === '30')?.data.selected).toBe(true);
     expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent('Cargo Receiver');
     expect(setCenter).toHaveBeenCalledWith(3, 0, { zoom: 1.2, duration: 300 });
-    fireEvent.click(screen.getByRole('button', { name: 'View details' }));
-    expect(onOpenCore).toHaveBeenCalledWith(2);
-    fireEvent.click(layerCheckbox('Cargo links'));
+    expect(screen.queryByRole('button', { name: 'View details' })).toBeNull();
+    expect(onOpenCore).not.toHaveBeenCalled();
+    await toggleLayer('Cargo links');
     expect(flowProps.edges).toEqual([]);
 });
 
 it('focuses a Core, selects stacked buildings through the selector, and clears selection after snapshot replacement', async () => {
     const { replaceSnapshot } = setup();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Focus Core' }), { target: { value: '2' } });
+    await interact(() => { fireEvent.change(screen.getByRole('combobox', { name: 'Focus Core' }), { target: { value: '2' } }); });
     expect(fitView).toHaveBeenCalledWith(expect.objectContaining({ nodes: expect.arrayContaining([expect.objectContaining({ id: '2' })]) }));
-    fireEvent.change(screen.getByRole('combobox', { name: 'Find a building' }), { target: { value: '#200' } });
-    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Find a building' }), { key: 'Enter' });
+    await interact(() => { fireEvent.change(screen.getByRole('combobox', { name: 'Find a building' }), { target: { value: '#200' } }); });
+    await interact(() => { fireEvent.keyDown(screen.getByRole('combobox', { name: 'Find a building' }), { key: 'Enter' }); });
     expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent('Tube');
     expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent('Inputs');
     await replaceSnapshot();
@@ -118,43 +192,61 @@ it('focuses a Core, selects stacked buildings through the selector, and clears s
     expect(screen.getByRole('combobox', { name: 'Find a building' })).toHaveValue('');
 });
 
-it('searches building IDs and resources with the keyboard, closes results independently, and dismisses the inspector', () => {
+it('searches building IDs and resources with the keyboard, closes results independently, and dismisses the inspector', async () => {
     setup();
     const search = screen.getByRole('combobox', { name: 'Find a building' });
     const positions = flowProps.nodes!.map(({ id, position }) => ({ id, position }));
     expect(screen.queryByRole('region', { name: 'Building details' })).toBeNull();
-    fireEvent.focus(search);
-    fireEvent.change(search, { target: { value: 'helium' } });
+    await interact(() => { fireEvent.focus(search); });
+    await interact(() => { fireEvent.change(search, { target: { value: 'helium' } }); });
     expect(screen.getAllByRole('option').some(option => option.textContent?.includes('Ore dispatch'))).toBe(true);
-    fireEvent.change(search, { target: { value: '#200' } });
+    await interact(() => { fireEvent.change(search, { target: { value: '#200' } }); });
     expect(screen.getByRole('listbox', { name: 'Buildings' })).toHaveTextContent('#200');
     expect(document.getElementById(search.getAttribute('aria-activedescendant')!)).toHaveAttribute('aria-selected', 'true');
-    fireEvent.keyDown(search, { key: 'ArrowDown' });
-    fireEvent.keyDown(search, { key: 'Enter' });
+    await interact(() => { fireEvent.keyDown(search, { key: 'ArrowDown' }); });
+    await interact(() => { fireEvent.keyDown(search, { key: 'Enter' }); });
     expect(search).toHaveAttribute('aria-expanded', 'false');
     expect(flowProps.nodes!.find(node => node.id === '200')?.data.selected).toBe(true);
     expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent('Tube');
     expect(flowProps.nodes!.map(({ id, position }) => ({ id, position }))).toEqual(positions);
 
-    fireEvent.change(search, { target: { value: 'no matching building' } });
+    await interact(() => { fireEvent.change(search, { target: { value: 'no matching building' } }); });
     expect(screen.getByText('No buildings found.')).toBeInTheDocument();
-    fireEvent.keyDown(search, { key: 'Escape' });
+    await interact(() => { fireEvent.keyDown(search, { key: 'Escape' }); });
     expect(search).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('region', { name: 'Building details' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Close' })); });
     expect(screen.queryByRole('region', { name: 'Building details' })).toBeNull();
 });
 
-it('resets the Core picker when fitting the entire map', () => {
+it('shows only Core focus actions and keeps them in sync with the Core picker', async () => {
+    const { onOpenCore } = setup();
+    const picker = screen.getByRole('combobox', { name: 'Focus Core' });
+    await interact(() => { fireEvent.change(picker, { target: { value: '2' } }); });
+    const expectedFocus = fitView.mock.calls.at(-1)![0];
+    await interact(() => { fireEvent.change(picker, { target: { value: '' } }); });
+    await interact(() => { flowProps.nodes!.find(node => node.id === '2')!.data.onSelect(2); });
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Focus Core' })); });
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'View details' })); });
+    expect(onOpenCore).toHaveBeenCalledWith(2);
+    expect(picker).toHaveValue('2');
+    const actualFocus = fitView.mock.calls.at(-1)![0];
+    expect({ ...actualFocus, nodes: actualFocus.nodes.map((node: MapNode) => node.id) })
+        .toEqual({ ...expectedFocus, nodes: expectedFocus.nodes.map((node: MapNode) => node.id) });
+    expect(setCenter).not.toHaveBeenCalled();
+    expect(flowProps.nodes!.find(node => node.id === '2')?.data.selected).toBe(true);
+});
+
+it('resets the Core picker when fitting the entire map', async () => {
     setup();
     const picker = screen.getByRole('combobox', { name: 'Focus Core' });
     expect(picker).toHaveValue('1');
-    fireEvent.click(screen.getByRole('button', { name: 'Fit view' }));
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Fit view' })); });
     expect(picker).toHaveValue('');
     expect(fitView).toHaveBeenCalledWith({ padding: 0.2, minZoom: 0.005, maxZoom: 1.5, duration: 300 });
 });
 
-it('shows saved Core bounds behind buildings, includes them in fitting, and toggles them independently', () => {
+it('shows saved Core bounds behind buildings, includes them in fitting, and toggles them independently', async () => {
     setup();
     const bounds = () => flowProps.nodes!.find(node => node.id === 'bounds-1');
     const markers = flowProps.nodes!.filter(node => node.type === 'saveBuilding').map(node => ({ id: node.id, position: node.position }));
@@ -165,33 +257,33 @@ it('shows saved Core bounds behind buildings, includes them in fitting, and togg
     const rect = screen.getByTestId('rf-node-bounds-1').querySelector('rect')!;
     expect(rect).toHaveAttribute('vector-effect', 'non-scaling-stroke');
     expect(rect).toHaveAttribute('stroke-width', '1');
-    fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' }));
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' })); });
     expect(screen.getByRole('region', { name: 'Building details' })).toBeInTheDocument();
     expect(rect).toHaveAttribute('stroke-width', '2');
     const edges = flowProps.edges;
-    fireEvent.click(layerCheckbox('Core bounds'));
+    await toggleLayer('Core bounds');
     expect(screen.queryByTestId('rf-node-bounds-1')).toBeNull();
     expect(flowProps.nodes!.some(node => node.type === 'saveCoreBounds')).toBe(false);
     expect(flowProps.nodes!.map(node => ({ id: node.id, position: node.position }))).toEqual(markers);
     expect(flowProps.edges).toEqual(edges);
     expect(flowProps.nodes!.find(node => node.id === '20')?.data.selected).toBe(true);
-    fireEvent.click(layerCheckbox('Core bounds'));
+    await toggleLayer('Core bounds');
     expect(bounds()?.data.selected).toBe(true);
-    fireEvent.change(screen.getByRole('combobox', { name: 'Focus Core' }), { target: { value: '1' } });
+    await interact(() => { fireEvent.change(screen.getByRole('combobox', { name: 'Focus Core' }), { target: { value: '1' } }); });
     expect(fitView).toHaveBeenCalledWith(expect.objectContaining({ nodes: expect.arrayContaining([expect.objectContaining({ id: 'bounds-1' })]) }));
 });
 
-it('keeps maps usable without Core bounds and explains how to refresh older imports', () => {
+it('keeps maps usable without Core bounds and explains how to refresh older imports', async () => {
     setup({ withBounds: false });
     expect(flowProps.nodes!.every(node => node.type === 'saveBuilding')).toBe(true);
     expect(screen.getByText('Some Core bounds are unavailable. Try re-importing the save.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' }));
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' })); });
     expect(screen.getByRole('region', { name: 'Building details' })).toBeInTheDocument();
-    fireEvent.click(layerCheckbox('Core bounds'));
+    await toggleLayer('Core bounds');
     expect(screen.queryByText('Some Core bounds are unavailable. Try re-importing the save.')).toBeNull();
 });
 
-it('toggles stable network colors across Cores and buildings without changing other map layers', () => {
+it('toggles stable network colors across Cores and buildings without changing other map layers', async () => {
     setup({ networkIds: { 1: 0, 20: 0, 30: 0, 2: 8, 22: null } });
     const toggle = layerCheckbox('Power networks');
     const node = (id: number) => flowProps.nodes!.find(node => node.id === String(id))!;
@@ -201,7 +293,7 @@ it('toggles stable network colors across Cores and buildings without changing ot
     const originalEdges = flowProps.edges;
     expect(toggle).not.toBeChecked();
     expect(node(20).data.powerColor).toBeUndefined();
-    fireEvent.click(layerCheckbox('Power networks'));
+    await toggleLayer('Power networks');
     const color = node(20).data.powerColor;
     expect(color).toBeTruthy();
     expect(node(1).data.powerColor).toBe(color);
@@ -224,26 +316,26 @@ it('toggles stable network colors across Cores and buildings without changing ot
     expect(button(20)).toHaveAttribute('title', expect.stringContaining('Power network 0'));
     expect(geometry()).toEqual(originalGeometry);
     expect(flowProps.edges).toEqual(originalEdges);
-    fireEvent.click(button(20));
+    await interact(() => { fireEvent.click(button(20)); });
     expect(button(20)).toHaveAttribute('aria-pressed', 'true');
     expect(button(20)).toHaveClass('is-selected');
     expect(node(20).data.powerColor).toBe(color);
-    fireEvent.click(layerCheckbox('Power networks'));
+    await toggleLayer('Power networks');
     expect(button(20).style.getPropertyValue('--save-map-network-color')).toBe('');
     expect(button(1)).not.toHaveClass('has-power-network');
     expect(button(20).querySelector('.save-map-network-badge')).toBeNull();
     expect(button(20)).not.toHaveAttribute('aria-description');
     expect(button(20)).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(layerCheckbox('Core bounds'));
-    fireEvent.click(layerCheckbox('Cargo links'));
-    fireEvent.click(layerCheckbox('Power networks'));
+    await toggleLayer('Core bounds');
+    await toggleLayer('Cargo links');
+    await toggleLayer('Power networks');
     expect(node(20).data.powerColor).toBe(color);
     expect(node(30).data.powerColor).toBe(color);
     expect(flowProps.edges).toEqual([]);
     expect(flowProps.nodes!.every(node => node.type === 'saveBuilding')).toBe(true);
 });
 
-it('uses uniform building sizes without moving saved positions, resizing Cores or changing cargo destinations', () => {
+it('uses uniform building sizes without moving saved positions, resizing Cores or changing cargo destinations', async () => {
     setup();
     const geometry = () => flowProps.nodes!.map(({ id, position }) => ({ id, position }));
     const initialGeometry = geometry();
@@ -255,28 +347,28 @@ it('uses uniform building sizes without moving saved positions, resizing Cores o
     expect(links!.find(edge => edge.source === '20')).toMatchObject({
         type: 'saveCargo', target: '30', sourceHandle: 'source-top', targetHandle: 'target-bottom',
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Map settings' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Large' }));
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Ore dispatch' })); });
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Map settings' })); });
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Large' })); });
     expect(building().width).toBe(88);
     expect(flowProps.nodes!.filter(node => node.type === 'saveBuilding' && node.data.entity.detail).every(node => node.width === 88 && node.height === 88)).toBe(true);
     expect(building().data.selected).toBe(true);
     expect(flowProps.nodes!.find(node => node.id === '1')?.width).toBe(48);
     expect(flowProps.nodes!.find(node => node.id === 'bounds-1')).toMatchObject({ width: bounds!.width, height: bounds!.height });
     expect(geometry()).toEqual(initialGeometry);
-    fireEvent.click(screen.getByRole('button', { name: 'Compact' }));
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Compact' })); });
     expect(building().width).toBe(56);
     expect(geometry()).toEqual(initialGeometry);
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Compact' }), { key: 'Escape' });
+    await interact(() => { fireEvent.keyDown(screen.getByRole('button', { name: 'Compact' }), { key: 'Escape' }); });
     expect(screen.getByRole('button', { name: 'Map settings' })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('button', { name: 'Map settings' })).toHaveFocus();
     expect(screen.getByRole('region', { name: 'Building details' })).toBeInTheDocument();
 });
 
-it('keeps network identities on Cores at overview zoom without crowding small buildings with badges', () => {
+it('keeps network identities on Cores at overview zoom without crowding small buildings with badges', async () => {
     viewport.zoom = 0.2;
     setup({ networkIds: { 1: 0, 20: 0 } });
-    fireEvent.click(layerCheckbox('Power networks'));
+    await toggleLayer('Power networks');
     const core = screen.getByTestId('rf-node-1');
     const building = screen.getByTestId('rf-node-20');
     expect(core.querySelector('.save-map-network-badge')).toHaveTextContent('#0');
@@ -285,7 +377,7 @@ it('keeps network identities on Cores at overview zoom without crowding small bu
     expect(within(building).getByRole('button')).toHaveAttribute('aria-description', 'Power network 0');
 });
 
-it('keeps nearby Core names visible and shows building counts at overview zoom', () => {
+it('keeps nearby Core names visible and shows building counts at overview zoom', async () => {
     viewport.zoom = 0.03;
     setup();
     for (const id of [1, 2]) {
@@ -298,7 +390,7 @@ it('keeps nearby Core names visible and shows building counts at overview zoom',
     expect(labels[0].style.top).not.toBe(labels[1].style.top);
 });
 
-it('omits Core building counts at closer zoom', () => {
+it('omits Core building counts at closer zoom', async () => {
     setup();
     for (const id of [1, 2]) {
         const label = screen.getByTestId(`rf-node-${id}`).querySelector('.save-map-core-label')!;
@@ -306,36 +398,36 @@ it('omits Core building counts at closer zoom', () => {
     }
 });
 
-it('enables cargo movement by default and controls map detail and transport motion independently', () => {
+it('enables cargo movement by default and controls map detail and transport motion independently', async () => {
     setup();
     const marker = screen.getByTestId('rf-node-20');
     const initialLinks = flowProps.edges!.map(({ source, target }) => ({ source, target }));
     expect(flowProps.edges!.every(edge => edge.data?.animate)).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Map settings' }));
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Map settings' })); });
     expect(marker.querySelector('.save-map-resource-marker')).not.toBeNull();
     expect(marker.querySelector('.save-map-building-label')).not.toHaveClass('is-visible');
-    fireEvent.blur(screen.getByRole('button', { name: 'Map settings' }), { relatedTarget: null });
-    fireEvent.blur(screen.getByRole('button', { name: 'Map settings' }), { relatedTarget: document.body });
-    fireEvent.click(screen.getByText('Building names'));
+    await interact(() => { fireEvent.blur(screen.getByRole('button', { name: 'Map settings' }), { relatedTarget: null }); });
+    await interact(() => { fireEvent.blur(screen.getByRole('button', { name: 'Map settings' }), { relatedTarget: document.body }); });
+    await interact(() => { fireEvent.click(screen.getByText('Building names')); });
     expect(marker.querySelector('.save-map-building-label')).toHaveClass('is-visible');
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Resource icons' }));
+    await interact(() => { fireEvent.click(screen.getByRole('checkbox', { name: 'Resource icons' })); });
     expect(marker.querySelector('.save-map-resource-marker')).toBeNull();
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Grid' }));
+    await interact(() => { fireEvent.click(screen.getByRole('checkbox', { name: 'Grid' })); });
     expect(screen.queryByTestId('map-grid')).toBeNull();
     expect(screen.getByRole('checkbox', { name: 'Cargo movement' })).toBeChecked();
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Cargo movement' }));
+    await interact(() => { fireEvent.click(screen.getByRole('checkbox', { name: 'Cargo movement' })); });
     expect(flowProps.edges!.every(edge => !edge.data?.animate)).toBe(true);
     expect(flowProps.edges!.map(({ source, target }) => ({ source, target }))).toEqual(initialLinks);
     expect(screen.queryByRole('button', { name: 'Reset display' })).toBeNull();
     expect(screen.queryByText('Labels appear as you zoom in.')).toBeNull();
     expect(layerCheckbox('Core bounds')).toBeChecked();
-    fireEvent.pointerDown(screen.getByRole('region', { name: 'Snapshot map' }));
+    await interact(() => { fireEvent.pointerDown(screen.getByRole('region', { name: 'Snapshot map' })); });
     expect(screen.getByRole('button', { name: 'Map settings' })).toHaveAttribute('aria-expanded', 'false');
 });
 
-it('shows overview resource information in the Core inspector', () => {
+it('shows overview resource information in the Core inspector', async () => {
     setup();
-    fireEvent.click(within(screen.getByTestId('rf-node-1')).getByRole('button'));
+    await interact(() => { fireEvent.click(within(screen.getByTestId('rf-node-1')).getByRole('button')); });
     const panel = screen.getByRole('region', { name: 'Building details' });
     const incoming = within(panel).getByRole('region', { name: 'Available resources' });
     expect(incoming).toHaveTextContent('Titanium Ore');

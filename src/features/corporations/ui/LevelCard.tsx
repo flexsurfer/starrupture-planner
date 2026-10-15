@@ -3,6 +3,7 @@ import { useRuntime } from '@/app/uklad/bindings';
 import { appIds } from '@/app/uklad/catalog';
 import { ComponentIcon } from './ComponentIcon';
 import type { CorporationComponent, Item, Reward } from '@/app/uklad/model';
+import { useCodexView } from '@/shared/ui/CodexViewContext';
 
 type LevelCardProps = {
   level: number;
@@ -16,6 +17,7 @@ type LevelCardProps = {
 export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporationId }: LevelCardProps) => {
     const { t , locale } = useTranslation();
   const runtime = useRuntime();
+  const codex = useCodexView();
 
   return (
     <section aria-label={t("Level {level}", { level: level })} className="min-w-0 overflow-hidden rounded-lg border border-base-300 bg-base-200">
@@ -26,11 +28,13 @@ export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporatio
 
       {components.length > 0 && <div className="p-2 sm:p-3">
         <p className="mb-1.5 text-[10px] font-medium text-base-content/60 sm:text-xs">
-          {components.length > 1 ? t("Supply options · choose one to plan") : t("Supply item")}
+          {components.length > 1 ? (codex ? t('Supply options') : t("Supply options · choose one to plan")) : t("Supply item")}
         </p>
         <div className={`grid gap-1.5 ${components.length > 1 ? 'xl:grid-cols-2' : ''}`}>
           {components.map((component, index) => (
-            <button
+            codex ? <div key={`${component.id}-${index}`} className="flex min-w-0 items-center gap-2 rounded-md border border-transparent bg-base-content/5 p-2">
+              <ComponentIcon component={component} itemsMap={itemsMap} />
+            </div> : <button
               key={`${component.id}-${index}`}
               type="button"
               className="flex min-w-0 items-center gap-2 rounded-md border border-transparent bg-base-content/5 p-2 text-left hover:border-base-content/25 hover:bg-base-content/10 focus-visible:outline-2 focus-visible:outline-primary"

@@ -1,12 +1,12 @@
 import { useTranslation } from '@/shared/i18n';
 import { useMemo, type ReactNode } from 'react';
 import type { Edge, Node } from '@xyflow/react';
-import { useConnectedNodeHighlight } from './useConnectedNodeHighlight';
+import { useConnectedNodeHighlight, type ControlledNodePin } from './useConnectedNodeHighlight';
 
 /** Share pin controls and connection highlighting across all production diagrams. */
-export function usePinnableNodeHighlight(nodes: Node[], edges: Edge[], enabled = true) {
+export function usePinnableNodeHighlight(nodes: Node[], edges: Edge[], enabled = true, controlledPin?: ControlledNodePin) {
     const { t } = useTranslation();
-    const highlight = useConnectedNodeHighlight(nodes, edges, enabled);
+    const highlight = useConnectedNodeHighlight(nodes, edges, enabled, controlledPin);
     const { nodes: highlightedNodes, pinnedNodeId, toggleNodePin } = highlight;
     const pinnableNodes = useMemo(() => enabled ? highlightedNodes.map((node) => {
         const isPinned = node.id === pinnedNodeId;

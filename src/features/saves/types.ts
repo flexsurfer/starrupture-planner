@@ -1,3 +1,4 @@
+import type { MapDisplaySettings, MapLayers } from './map-preferences';
 import type { SaveBuildingCatalog } from './game-data';
 import type { SaveDataContext } from './decoder/types';
 import type { SaveImportErrorCode } from './import-error';
@@ -40,6 +41,10 @@ export interface SaveWorkspaceSelection {
     coreId: number | null;
 }
 
+export interface SaveMapViewport { x: number; y: number; zoom: number }
+
+export type SaveView = 'map' | 'overview' | 'power-networks';
+
 export type SaveStorageError = 'load' | 'write' | null;
 
 export interface SavesFeatureState {
@@ -48,6 +53,12 @@ export interface SavesFeatureState {
     savesWorkspaces: Record<string, SaveWorkspace>;
     savesWorkspaceOrder: string[];
     savesActiveWorkspaceId: string | null;
+    /** View selection lasts for this runtime session only. */
+    savesSelectedView: SaveView;
+    savesMapSelectedNodes: Record<string, number>;
+    savesMapDisplay: MapDisplaySettings;
+    savesMapLayers: MapLayers;
+    savesMapViewports: Record<string, SaveMapViewport>;
     savesSelections: Record<string, SaveWorkspaceSelection>;
     savesStorageError: SaveStorageError;
 }

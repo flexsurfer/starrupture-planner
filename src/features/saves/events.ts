@@ -1,3 +1,4 @@
+import { normalizeMapDisplay, normalizeMapLayers } from './map-preferences';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
@@ -61,8 +62,13 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         const selectedId = draftState.savesSelections[workspaceId]?.coreId;
         const selected = previous?.snapshot.cores.find(core => core.id === selectedId);
         const retainedSelection = selected && workspace.snapshot.cores.some(core => coreKey(core) === coreKey(selected)) ? selected.id : null;
+        delete draftState.savesMapSelectedNodes[workspaceId];
         draftState.savesWorkspaces[workspaceId] = workspace;
-        if (!previous) draftState.savesWorkspaceOrder.push(workspaceId);
+        if (!previous) {
+            draftState.savesWorkspaceOrder.push(workspaceId);
+            draftState.savesSelectedView = 'map';
+            delete draftState.savesMapViewports[workspaceId];
+        }
         draftState.savesActiveWorkspaceId = workspaceId;
         draftState.savesSelections[workspaceId] = { coreId: retainedSelection };
         draftState.savesImport = createSaveImportState(requestId + 1);
@@ -88,6 +94,8 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         const index = order.indexOf(id);
         delete draftState.savesWorkspaces[id];
         delete draftState.savesSelections[id];
+        delete draftState.savesMapViewports[id];
+        delete draftState.savesMapSelectedNodes[id];
         draftState.savesWorkspaceOrder = order.filter(entry => entry !== id);
         if (draftState.savesActiveWorkspaceId === id) {
             draftState.savesActiveWorkspaceId = draftState.savesWorkspaceOrder[Math.max(0, index - 1)] ?? draftState.savesWorkspaceOrder[0] ?? null;
@@ -96,6 +104,28 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
             draftState.savesImport = createSaveImportState(draftState.savesImport.requestId + 1);
             return [[appIds.effects.savesCancelImport]];
         }
+    });
+    registrar.regEvent(appIds.events.SAVES_SET_MAP_VIEWPORT, ({ draftState }, id, x, y, zoom) => {
+        if (!Object.hasOwn(draftState.savesWorkspaces, id) || ![x, y, zoom].every(Number.isFinite)
+            || zoom < 0.005 || zoom > 3) return;
+        draftState.savesMapViewports[id] = { x, y, zoom };
+    });
+    registrar.regEvent(appIds.events.SAVES_SELECT_MAP_NODE, ({ draftState }, id, nodeId) => {
+        if (!Object.hasOwn(draftState.savesWorkspaces, id)) return;
+        if (nodeId === null) { delete draftState.savesMapSelectedNodes[id]; return; }
+        const snapshot = draftState.savesWorkspaces[id].snapshot;
+        if (snapshot.cores.some(core => core.id === nodeId || core.buildings.some(building => building.id === nodeId))) {
+            draftState.savesMapSelectedNodes[id] = nodeId;
+        }
+    });
+    registrar.regEvent(appIds.events.SAVES_SET_MAP_DISPLAY, ({ draftState }, display) => {
+        draftState.savesMapDisplay = normalizeMapDisplay(display);
+    });
+    registrar.regEvent(appIds.events.SAVES_SET_MAP_LAYERS, ({ draftState }, layers) => {
+        draftState.savesMapLayers = normalizeMapLayers(layers);
+    });
+    registrar.regEvent(appIds.events.SAVES_SELECT_VIEW, ({ draftState }, view) => {
+        if (view === 'map' || view === 'overview' || view === 'power-networks') draftState.savesSelectedView = view;
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_CORE, ({ draftState }, id, coreId) => {
         const workspace = draftState.savesWorkspaces[id];

@@ -1,8 +1,9 @@
+import type { MapDisplaySettings, MapLayers } from '../map-preferences';
 import { useCallback, useMemo, useState } from 'react';
 import { Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow, useStore } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { appIds } from '@/app/uklad/catalog';
-import { useSubscription } from '@/app/uklad/bindings';
+import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { useTranslation } from '@/shared/i18n';
 import { useFlowLabels } from '@/shared/i18n/useFlowLabels';
 import type { SaveMap as MapData, SaveMapEntity } from '../map';
@@ -13,8 +14,8 @@ import { SaveMapDetails } from './SaveMapDetails';
 import { SaveMapIcon } from './SaveMapIcon';
 import { SaveMapSearch } from './SaveMapSearch';
 import { SaveMapEdge, type CargoEdge } from './SaveMapEdge';
-import { SaveMapSettings, type MapLayers } from './SaveMapSettings';
-import { cargoHandles, defaultMapDisplay } from './map-display';
+import { SaveMapSettings } from './SaveMapSettings';
+import { cargoHandles } from './map-display';
 import { powerNetworkStyles } from './power-network-style';
 import './SaveMap.css';
 
@@ -38,12 +39,19 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
 }) {
     const { t } = useTranslation();
     const flowLabels = useFlowLabels();
+    const runtime = useRuntime();
+    const viewport = useSubscription([appIds.subscriptions.SAVES_MAP_VIEWPORT, workspace.id]);
+    const rememberViewport = useCallback((_event: unknown, next: { x: number; y: number; zoom: number }) => {
+        runtime.dispatch([appIds.events.SAVES_SET_MAP_VIEWPORT, workspace.id, next.x, next.y, next.zoom]);
+    }, [runtime, workspace.id]);
     const theme = useSubscription([appIds.subscriptions.UI_THEME]);
     const { fitView, setCenter } = useReactFlow<MapNode>();
-    const [selection, setSelection] = useState<{ id: number; snapshot: SaveWorkspace['snapshot'] } | null>(null);
-    const [layers, setLayers] = useState<MapLayers>({ showLinks: true, showBounds: true, showPowerNetworks: false });
+    const selections = useSubscription([appIds.subscriptions.SAVES_MAP_SELECTED_NODES]);
+    const layers = useSubscription([appIds.subscriptions.SAVES_MAP_LAYERS]);
+    const setLayers = (value: MapLayers) => runtime.dispatch([appIds.events.SAVES_SET_MAP_LAYERS, value]);
     const { showLinks, showBounds, showPowerNetworks } = layers;
-    const [display, setDisplay] = useState(defaultMapDisplay);
+    const display = useSubscription([appIds.subscriptions.SAVES_MAP_DISPLAY]);
+    const setDisplay = (value: MapDisplaySettings) => runtime.dispatch([appIds.events.SAVES_SET_MAP_DISPLAY, value]);
     const [focusedCore, setFocusedCore] = useState(initialCoreId === null ? '' : String(initialCoreId));
     const powerStyles = useMemo(() => powerNetworkStyles(map.entities.map(entity =>
         (entity.detail?.instance ?? entity.core.core).powerNetworkId)), [map]);
@@ -54,10 +62,10 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     const cores = useMemo(() => map.entities.filter(entity => !entity.detail), [map]);
     const corePositions = useMemo(() => cores.map(core => ({ ...project(core.position), id: core.id, name: coreName(core),
         countLabel: t('{count} buildings', { count: core.core.buildings.length }) })), [cores, coreName, t]);
-    // A building ID is local to its snapshot: re-import must not select an unrelated new building.
-    const selected = selection?.snapshot === workspace.snapshot ? byId.get(selection.id) : undefined;
+    // Import replacement clears session selection because node IDs belong to a snapshot.
+    const selected = byId.get(selections[workspace.id]);
     const selectedCoreId = selected?.core.core.id;
-    const selectEntity = useCallback((id: number) => setSelection({ id, snapshot: workspace.snapshot }), [workspace.snapshot]);
+    const selectEntity = useCallback((id: number | null) => runtime.dispatch([appIds.events.SAVES_SELECT_MAP_NODE, workspace.id, id]), [runtime, workspace.id]);
     const focusEntity = (id: number) => {
         const entity = byId.get(id);
         if (!entity) return;
@@ -103,20 +111,20 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
             labelBgPadding: [8, 5] as [number, number], labelBgBorderRadius: 5,
         };
     }) : [], [map, byId, selected, showLinks, display.animateCargo, t]);
+    const focusCore = (id: string) => {
+        setFocusedCore(id);
+        void fitView({ ...fitOptions, duration: motionDuration(), nodes: id === '' ? nodes : nodes.filter(node => node.data.entity.core.core.id === Number(id)) });
+    };
     const initialFit = useMemo(() => ({ ...fitOptions, ...(initialCoreId === null ? {} : {
         nodes: nodes.filter(node => node.data.entity.core.core.id === initialCoreId).map(node => ({ id: node.id })),
     }) }), [nodes, initialCoreId]);
 
     return <section aria-label={t('Snapshot map')} className="save-map" onKeyDown={event => {
-        if (event.key === 'Escape') setSelection(null);
+        if (event.key === 'Escape') selectEntity(null);
     }}>
         <div className="save-map-toolbar">
             <label className="save-map-focus"><span className="sr-only">{t('Focus Core')}</span><SaveMapIcon name="focus" />
-                <select className="select select-bordered select-sm" value={focusedCore} onChange={event => {
-                    const id = event.target.value;
-                    setFocusedCore(id);
-                    void fitView({ ...fitOptions, duration: motionDuration(), nodes: id === '' ? nodes : nodes.filter(node => node.data.entity.core.core.id === Number(id)) });
-                }}>
+                <select className="select select-bordered select-sm" value={focusedCore} onChange={event => focusCore(event.target.value)}>
                     <option value="">{t('All Cores')}</option>
                     {cores.map(entity => <option key={entity.id} value={entity.id}>{coreName(entity)}</option>)}
                 </select>
@@ -129,11 +137,12 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
         <div className="save-map-content">
             <div className="save-map-canvas">
                 <ReactFlow<MapNode, CargoEdge> nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} nodeOrigin={nodeOrigin}
-                    colorMode={theme} attributionPosition="bottom-left" ariaLabelConfig={flowLabels} fitView fitViewOptions={initialFit} minZoom={0.005} maxZoom={3}
+                    colorMode={theme} attributionPosition="bottom-left" ariaLabelConfig={flowLabels} defaultViewport={viewport ?? undefined} onMove={rememberViewport}
+                    fitView={viewport === null} fitViewOptions={initialFit} minZoom={0.005} maxZoom={3}
                     nodesDraggable={false} nodesConnectable={false} nodesFocusable={false} edgesFocusable={false}
                     elementsSelectable={false} deleteKeyCode={null} onlyRenderVisibleElements
                     onNodeClick={(_event, node) => { if (node.type === 'saveBuilding') selectEntity(node.data.entity.id); }}
-                    onPaneClick={() => setSelection(null)} onEdgeClick={(_event, edge) => selectEntity(Number(edge.source))}>
+                    onPaneClick={() => selectEntity(null)} onEdgeClick={(_event, edge) => selectEntity(Number(edge.source))}>
                     {display.showGrid && <MapGrid />}
                     <Controls position="bottom-left" showInteractive={false} fitViewOptions={{ ...fitOptions, duration: motionDuration() }}
                         onFitView={() => setFocusedCore('')} />
@@ -143,7 +152,7 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
             {selected && <aside className="save-map-inspector">
                 <SaveMapDetails entity={selected} coreName={coreName(selected)}
                     connected={selected.connectedBuildingId === null ? undefined : byId.get(selected.connectedBuildingId)}
-                    onClose={() => setSelection(null)} onSelect={focusEntity} onOpenCore={onOpenCore} />
+                    onClose={() => selectEntity(null)} onSelect={focusEntity} onFocusCore={id => focusCore(String(id))} onOpenCore={onOpenCore} />
             </aside>}
         </div>
     </section>;

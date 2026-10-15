@@ -5,6 +5,11 @@ const HIGHLIGHT_COLOR = '#f59e0b';
 const DIMMED_OPACITY = 0.35;
 const HIGHLIGHT_Z_INDEX = 1000;
 
+export interface ControlledNodePin {
+    pinnedNodeId: string | null;
+    onPinnedNodeChange: (nodeId: string | null) => void;
+}
+
 interface ConnectedNodeHighlightResult {
     nodes: Node[];
     edges: Edge[];
@@ -23,26 +28,29 @@ export const useConnectedNodeHighlight = (
     nodes: Node[],
     edges: Edge[],
     enabled = true,
+    controlledPin?: ControlledNodePin,
 ): ConnectedNodeHighlightResult => {
     const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
-    const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
+    const [localPinnedNodeId, setLocalPinnedNodeId] = useState<string | null>(null);
+    const pinnedNodeId = controlledPin ? controlledPin.pinnedNodeId : localPinnedNodeId;
+    const setPinnedNodeId = controlledPin?.onPinnedNodeChange ?? setLocalPinnedNodeId;
     const visiblePinnedNodeId = enabled && nodes.some((node) => node.id === pinnedNodeId)
         ? pinnedNodeId : null;
     const highlightedNodeId = enabled ? visiblePinnedNodeId ?? activeNodeId : null;
 
-    if (pinnedNodeId !== null && !nodes.some(node => node.id === pinnedNodeId)) {
+    if (!controlledPin && pinnedNodeId !== null && !nodes.some(node => node.id === pinnedNodeId)) {
         setPinnedNodeId(null);
     }
 
     const toggleNodePin = useCallback((nodeId: string) => {
-        setPinnedNodeId((current) => current === nodeId ? null : nodeId);
+        setPinnedNodeId(pinnedNodeId === nodeId ? null : nodeId);
         setActiveNodeId(null);
-    }, []);
+    }, [pinnedNodeId, setPinnedNodeId]);
 
     const resetHighlight = useCallback(() => {
         setPinnedNodeId(null);
         setActiveNodeId(null);
-    }, []);
+    }, [setPinnedNodeId]);
 
     const connectedNodeIds = useMemo(() => {
         if (!highlightedNodeId) {

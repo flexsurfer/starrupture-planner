@@ -117,10 +117,22 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         if (index < 0) return;
         const activeId = getActivePlannerTab(draftState)?.id;
         draftState.plannerTabs.splice(index, 1);
+        delete draftState.plannerViewports[id];
+        delete draftState.plannerPinnedNodes[id];
         if (id === activeId) {
             draftState.plannerActiveTabId = draftState.plannerTabs[Math.min(index, draftState.plannerTabs.length - 1)]?.id ?? null;
             draftState.plannerTargetWarning = null;
         }
+    });
+    registrar.regEvent(appIds.events.PLANNER_SET_PINNED_NODE, ({ draftState }, id, nodeId) => {
+        if (!draftState.plannerTabs.some(tab => tab.id === id)) return;
+        if (nodeId === null) delete draftState.plannerPinnedNodes[id];
+        else if (typeof nodeId === 'string' && nodeId.trim()) draftState.plannerPinnedNodes[id] = nodeId;
+    });
+    registrar.regEvent(appIds.events.PLANNER_SET_VIEWPORT, ({ draftState }, id, x, y, zoom) => {
+        if (!draftState.plannerTabs.some(tab => tab.id === id) || ![x, y, zoom].every(Number.isFinite)
+            || zoom < 0.1 || zoom > 2) return;
+        draftState.plannerViewports[id] = { x, y, zoom };
     });
     registrar.regEvent(appIds.events.PLANNER_SET_ACTIVE_VIEW, ({ draftState }, view) => {
         const tab = getActivePlannerTab(draftState);

@@ -16,6 +16,14 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
     registrar.regRootSub(appIds.subscriptions.SAVES_WORKSPACE_ORDER, stateKeys.savesWorkspaceOrder);
     registrar.regRootSub(appIds.subscriptions.SAVES_ACTIVE_WORKSPACE_ID, stateKeys.savesActiveWorkspaceId);
     registrar.regRootSub(appIds.subscriptions.SAVES_SELECTIONS, stateKeys.savesSelections);
+    registrar.regRootSub(appIds.subscriptions.SAVES_SELECTED_VIEW, stateKeys.savesSelectedView);
+    registrar.regRootSub(appIds.subscriptions.SAVES_MAP_SELECTED_NODES, stateKeys.savesMapSelectedNodes);
+    registrar.regRootSub(appIds.subscriptions.SAVES_MAP_DISPLAY, stateKeys.savesMapDisplay);
+    registrar.regRootSub(appIds.subscriptions.SAVES_MAP_LAYERS, stateKeys.savesMapLayers);
+    registrar.regRootSub(appIds.subscriptions.SAVES_MAP_VIEWPORTS, stateKeys.savesMapViewports);
+    registrar.regSub(appIds.subscriptions.SAVES_MAP_VIEWPORT,
+        () => [[appIds.subscriptions.SAVES_MAP_VIEWPORTS]],
+        ([viewports], id) => viewports[id] ?? null);
     registrar.regRootSub(appIds.subscriptions.SAVES_STORAGE_ERROR, stateKeys.savesStorageError);
     registrar.regSub(appIds.subscriptions.SAVES_TABS,
         () => [[appIds.subscriptions.SAVES_WORKSPACES], [appIds.subscriptions.SAVES_WORKSPACE_ORDER]],

@@ -82,6 +82,37 @@ it('round-trips Saves through the standard localStorage adapter alongside existi
     expect(reopened.view.value('active')?.id).toBe('two');
 });
 
+it('persists map preferences but resets selected nodes and the camera for a new session', async () => {
+    const storage = memoryStorageAdapter();
+    const app = await setup(storage);
+    await app.adopt();
+    const display = { buildingSize: 88, showNames: true, showResources: false, showGrid: false, animateCargo: false };
+    const layers = { showLinks: false, showBounds: false, showPowerNetworks: true };
+    await app.dispatch([appIds.events.SAVES_SET_MAP_DISPLAY, display]);
+    await app.dispatch([appIds.events.SAVES_SET_MAP_LAYERS, layers]);
+    await app.dispatch([appIds.events.SAVES_SELECT_MAP_NODE, 'one', 20]);
+    await app.dispatch([appIds.events.SAVES_SET_MAP_VIEWPORT, 'one', 100, 200, 0.5]);
+    expect(app.harness.getState().savesMapSelectedNodes.one).toBe(20);
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const restored = await setup(storage);
+    expect(restored.harness.getState().savesMapDisplay).toEqual(display);
+    expect(restored.harness.getState().savesMapLayers).toEqual(layers);
+    expect(restored.harness.getState().savesMapSelectedNodes).toEqual({});
+    expect(restored.harness.getState().savesMapViewports).toEqual({});
+});
+
+it('normalizes partial or invalid stored map preferences without failing save hydration', async () => {
+    localStorage.setItem(`${prefix}/${stateKeys.savesMapDisplay}`, JSON.stringify({ v: 1, data: {
+        buildingSize: -5, showNames: true, showGrid: 'false', animateCargo: false,
+    } }));
+    localStorage.setItem(`${prefix}/${stateKeys.savesMapLayers}`, JSON.stringify({ v: 1, data: { showLinks: false, showBounds: null } }));
+    const app = await setup(localStorageAdapter());
+    expect(app.harness.getState().savesMapDisplay).toEqual({ buildingSize: 72, showNames: true, showResources: true, showGrid: true, animateCargo: false });
+    expect(app.harness.getState().savesMapLayers).toEqual({ showLinks: false, showBounds: true, showPowerNetworks: false });
+    expect(app.view.value('persistence')).toBeNull();
+});
+
 it('hydrates older v4 workspaces without bounds without rewriting stored data', async () => {
     const storage = memoryStorageAdapter();
     const app = await setup(storage);

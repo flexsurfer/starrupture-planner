@@ -1,3 +1,4 @@
+import { useCodexView } from '@/shared/ui/CodexViewContext';
 import { useTranslation } from '@/shared/i18n';
 import { useRuntime } from "@/app/uklad/bindings";
 import { appIds } from "@/app/uklad/catalog";
@@ -10,6 +11,7 @@ interface ItemsFilterProps {
 }
 
 export const ItemsFilter = ({ categories, selectedCategory }: ItemsFilterProps) => {
+  const codex = useCodexView();
   const { t } = useTranslation();
   const runtime = useRuntime();
 
@@ -23,7 +25,7 @@ export const ItemsFilter = ({ categories, selectedCategory }: ItemsFilterProps) 
           } ${selectedCategory === category && category !== 'all' ? 'ring-1 ring-current' : ''}`}
           style={category === 'all' ? undefined : getItemCategoryStyle(category)}
           aria-pressed={selectedCategory === category}
-          onClick={() => runtime.dispatch([appIds.events.ITEMS_SET_SELECTED_CATEGORY, category])}
+          onClick={() => runtime.dispatch([codex ? appIds.events.ITEMS_CODEX_SET_SELECTED_CATEGORY : appIds.events.ITEMS_SET_SELECTED_CATEGORY, category])}
         >
           {category === 'all' ? t("All Items") : getCategoryDisplayName(category)}
         </button>

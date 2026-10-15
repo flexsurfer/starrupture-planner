@@ -1,8 +1,14 @@
 const iconPaths = {
-    saves: (
+    codex: (
         <>
-            <path d="M5 3h11l4 4v14H5zM15 3v5H8V3M8 21v-8h9v8" />
-            <path d="M2 6v15" />
+            <path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15" />
+            <path d="M6 8h3m6 0h3M6 12h3m6 0h3" />
+        </>
+    ),
+    map: (
+        <>
+            <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" />
+            <path d="M9 3v15M15 6v15" />
         </>
     ),
     bases: (
