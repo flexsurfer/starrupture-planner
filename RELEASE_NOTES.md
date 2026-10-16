@@ -1,3 +1,21 @@
+# Release Notes — 2026-10-16
+
+## What's New
+
+### 🗺️ Explore Your Factory with Factory Map
+- Import a StarRupture `.sav` file to inspect Core locations, buildings, configured resource capacities, cargo connections, power networks, and Core heat.
+- Switch between the saved-position map, a Core-by-Core overview, and power-network details. Search for buildings, adjust map layers, and inspect building configurations and cargo links.
+- Update an imported save with a newer file or remove it from this browser. Save files are decoded locally.
+- Save import is experimental and has been tested with StarRupture 0.3.5 saves and Update 2 QoL game data. **My Bases** is deprecated; use **Factory Map** for save-based factory views.
+
+### 🎯 Manage Resources in the Planner
+- Manage plan resources from the new **Resources** panel: add manual rates, adjust or disable individual resources, and see how much of each available supply the plan uses.
+- Add resources from extractors and linked deliveries in Cores from an imported save.
+- Use **Fit target** to set a single-item plan's output to the maximum supported by its available resources.
+
+### 🏭 Compare Planned Buildings with Your Cores
+- Select Cores from an imported save to compare the plan's production-building requirements with buildings already in your factory and see how many more you need to build.
+
 # Release Notes — 2026-10-08
 
 ## What's New
