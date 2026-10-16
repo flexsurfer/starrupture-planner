@@ -161,6 +161,6 @@ export function analyzeSave(value: unknown, context: SaveDecodeContext): SaveSna
         nearest.buildings.push(entry);
     }
     connectTransport(itemData, buildings, context);
-    return { schemaVersion: 4, gameData: { version: context.dataVersion, revision: context.mappings.mappingRevision },
+    return { schemaVersion: 1, gameData: { version: context.dataVersion, revision: context.mappings.mappingRevision },
         savedAt: text(root.timestamp), cores };
 }

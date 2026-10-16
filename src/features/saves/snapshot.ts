@@ -1,6 +1,6 @@
 /** App data only. Raw fragments and game runtime state never cross this boundary. */
 export interface SaveSnapshot {
-    schemaVersion: 4;
+    schemaVersion: 1;
     gameData: { version: string; revision: string };
     savedAt: string | null;
     cores: SaveCore[];

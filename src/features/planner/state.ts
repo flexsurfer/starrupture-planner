@@ -1,4 +1,4 @@
-import type { PlannerResource, PlannerBuildingBaseline } from './resources';
+import type { PlannerResource } from './resources';
 import type { UiText } from '@/shared/i18n/core';
 import type { PlannerFlowDirection } from './flow-graph';
 import type { CorporationLevelSelection, RecipeAlternativePreset } from '@/app/uklad/model';
@@ -20,7 +20,6 @@ export interface PlannerTab {
     multiTargets: { itemId: string; amount: number }[];
     recipeSelections: Record<string, string>;
     resources: PlannerResource[];
-    buildingBaseline: PlannerBuildingBaseline | null;
     groupByStage: boolean;
     flowDirection: PlannerFlowDirection;
     activeView: PlannerView;
@@ -30,6 +29,8 @@ export interface PlannerFeatureState {
     plannerTabs: PlannerTab[];
     /** Camera positions belong to the current runtime session, not saved plans. */
     plannerViewports: Record<string, PlannerViewport>;
+    /** Retained across statistics modal openings in this runtime; never persisted. */
+    plannerComparisonCoreIds: number[];
     plannerPinnedNodes: Record<string, string>;
     plannerActiveTabId: string | null;
     plannerTabCreation: { itemId?: string; corporationLevel?: CorporationLevelSelection } | null;
@@ -47,7 +48,6 @@ export function createPlannerTab(id: string, name: string, mode: PlannerMode, ac
         multiTargets: [],
         recipeSelections: {},
         resources: [],
-        buildingBaseline: null,
         groupByStage: false,
         flowDirection: 'LR',
     };
@@ -62,6 +62,7 @@ export function createPlannerFeatureState(): PlannerFeatureState {
     return {
         plannerTabs: [],
         plannerViewports: {},
+        plannerComparisonCoreIds: [],
         plannerPinnedNodes: {},
         plannerActiveTabId: null,
         plannerTabCreation: null,

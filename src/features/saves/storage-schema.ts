@@ -1,8 +1,7 @@
 import { isValidDataVersion } from '@/features/app-shell/data-version';
-import type { Corporation } from '@/app/uklad/model';
 import type { SaveGameData } from './game-data';
-import { coreKey, isValidSaveBounds, type SaveBounds, type SaveSnapshot, type SaveBuildingConfiguration } from './snapshot';
-import type { SaveWorkspace, SaveWorkspaceSelection, SaveCoreObjective } from './types';
+import { isValidSaveBounds, type SaveBounds, type SaveSnapshot, type SaveBuildingConfiguration } from './snapshot';
+import type { SaveWorkspace, SaveWorkspaceSelection } from './types';
 
 export const MAX_SAVE_WORKSPACES = 8;
 // UTF-16 budgets leave localStorage space for the Planner, My Bases and settings.
@@ -39,7 +38,7 @@ const itemId = id;
 const coordinate: Parser<number> = value => typeof value === 'number' && Number.isFinite(value) ? value : invalid();
 const position = object({ x: coordinate, y: coordinate, z: coordinate });
 const bounds: Parser<SaveBounds | null> = value => {
-    if (value === undefined || value === null) return null;
+    if (value === null) return null;
     const parsed = object({ min: position, max: position })(value);
     return isValidSaveBounds(parsed) ? parsed : invalid();
 };
@@ -54,12 +53,12 @@ const configuration: Parser<SaveBuildingConfiguration> = value => {
     }
 };
 const snapshotParser: Parser<SaveSnapshot> = object({
-    schemaVersion: oneOf(4),
+    schemaVersion: oneOf(1),
     gameData: object({ version: value => typeof value === 'string' && isValidDataVersion(value) ? value : invalid(),
         revision: value => typeof value === 'string' && /^sha256:[a-f0-9]{64}$/.test(value) ? value : invalid() }),
     savedAt: nullable(text),
     cores: array(object({ id: integer, spawnTimeSeconds: number, name: nullable(text), powerNetworkId: nullable(integer), position, bounds,
-        level: value => value === undefined ? null : nullable(integer)(value),
+        level: nullable(integer),
         buildings: array(object({ id: integer, buildingTypeId: id, name: nullable(text), powerNetworkId: nullable(integer), position, configuration })),
     })),
 });
@@ -83,23 +82,12 @@ export function normalizeSaveSnapshot(value: unknown): SaveSnapshot {
     return snapshot;
 }
 
-export function normalizeSaveObjective(value: unknown): SaveCoreObjective {
-    const kind = object({ kind: text })(value).kind;
-    if (kind === 'corporation') {
-        const objective = object({ kind: oneOf('corporation'), corporationId: id, level: integer })(value);
-        return objective;
-    }
-    if (kind === 'intermediate') return object({ kind: oneOf('intermediate'), itemIds: array(itemId, 1000) })(value);
-    return object({ kind: oneOf('mission'), name: value => text(value).slice(0, 120), itemIds: array(itemId, 1000) })(value);
-}
-
 const workspaceParser: Parser<SaveWorkspace> = object({
-    schemaVersion: oneOf(4), id, name: value => {
+    schemaVersion: oneOf(1), id, name: value => {
         const name = text(value).trim();
         return name.length > 0 && name.length <= 120 ? name : invalid();
     },
     snapshot: normalizeSaveSnapshot,
-    coreSettings: record(object({ objective: nullable(normalizeSaveObjective) }), 100_000, text),
 });
 export const jsonBytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).byteLength;
 export const localStorageBytes = (value: unknown) => JSON.stringify(value).length * 2;
@@ -112,8 +100,6 @@ export function assertSaveStorageLimits(workspaces: Record<string, SaveWorkspace
 export function normalizeSaveWorkspace(value: unknown): SaveWorkspace {
     const workspace = workspaceParser(value);
     if (localStorageBytes(workspace) > MAX_WORKSPACE_BYTES) throw new SaveWorkspaceLimitError();
-    const keys = new Set(workspace.snapshot.cores.map(coreKey));
-    if (Object.keys(workspace.coreSettings).some(key => !keys.has(key))) invalid();
     return workspace;
 }
 export function normalizeSaveWorkspaces(value: unknown): Record<string, SaveWorkspace> {
@@ -135,10 +121,4 @@ export function validateSaveSnapshotCatalog(snapshot: SaveSnapshot, version: str
         if ('itemId' in config && config.itemId !== null && !data.items.has(config.itemId)) invalid();
         if (config.kind === 'production' && config.recipeId !== null && data.recipes.get(config.recipeId)?.buildingId !== building.buildingTypeId) invalid();
     }
-}
-
-export function validateSaveObjectiveCatalog(objective: SaveCoreObjective, items: SaveGameData['items'], corporations: Corporation[]): void {
-    if (objective.kind === 'corporation') {
-        if (!corporations.some(corporation => corporation.id === objective.corporationId && corporation.levels.some(level => level.level === objective.level))) invalid();
-    } else if (objective.itemIds.some(id => !items.has(id))) invalid();
 }

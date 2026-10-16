@@ -4,7 +4,7 @@ import type { AppContracts } from '@/app/uklad/contracts';
 import { createSaveGameData } from './game-data';
 import { buildSaveOverview } from './overview';
 import { buildSaveMap } from './map';
-import { workspaceIds } from './workspace';
+import { getActiveSaveWorkspace, workspaceIds } from './workspace';
 
 export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
     registrar.regRootSub(appIds.subscriptions.SAVES_BUILDING_CATALOG, stateKeys.savesBuildingCatalog);
@@ -33,7 +33,7 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
         ([workspaces], id) => Object.hasOwn(workspaces, id) ? workspaces[id] : null);
     registrar.regSub(appIds.subscriptions.SAVES_ACTIVE_WORKSPACE,
         () => [[appIds.subscriptions.SAVES_WORKSPACES], [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE_ID], [appIds.subscriptions.SAVES_WORKSPACE_ORDER]],
-        ([workspaces, id, order]) => (id && Object.hasOwn(workspaces, id) ? workspaces[id] : workspaces[workspaceIds(workspaces, order)[0]]) ?? null);
+        ([workspaces, id, order]) => getActiveSaveWorkspace({ savesWorkspaces: workspaces, savesActiveWorkspaceId: id, savesWorkspaceOrder: order }));
     registrar.regSub(appIds.subscriptions.SAVES_OVERVIEW,
         id => [[appIds.subscriptions.SAVES_WORKSPACE_BY_ID, id], [appIds.subscriptions.SAVES_GAME_DATA]],
         ([workspace, data]) => workspace ? buildSaveOverview(workspace, data) : null);

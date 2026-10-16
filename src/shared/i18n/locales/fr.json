@@ -747,15 +747,10 @@
   "Your saves could not be loaded. Reload this page to try again.": "Vos sauvegardes n’ont pas pu être chargées. Rechargez cette page pour réessayer.",
   "There is no room for another save. Remove a save and try again.": "Il n’y a plus de place pour une sauvegarde. Supprimez-en une et réessayez.",
   "This save is too large to store in this browser.": "Cette sauvegarde est trop volumineuse pour être enregistrée dans ce navigateur.",
-  "Production objective": "Objectif de production",
-  "No objective selected": "Aucun objectif sélectionné",
-  "Choose an objective": "Choisir un objectif",
-  "Clear objective": "Effacer l’objectif",
   "Core {number}": "Core {number}",
   "Open Core {name}": "Ouvrir le Core {name}",
   "No Cores found in this save.": "Aucun Core trouvé dans cette sauvegarde.",
   "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Explorez votre usine sur une carte StarRupture interactive. Importez une sauvegarde pour localiser vos bâtiments, suivre le fret et examiner les réseaux électriques et la chaleur des Core.",
-  "This removes this save and its Core settings from this browser.": "Cela supprime cette sauvegarde et ses paramètres de Core de ce navigateur.",
   "Available resources": "Ressources disponibles",
   "Imported from other Cores": "Importées depuis d’autres Cores",
   "Sent to other Cores": "Envoyées vers d’autres Cores",
@@ -895,5 +890,7 @@
   "Building comparison is unavailable for this game version.": "La comparaison des bâtiments est indisponible pour cette version du jeu.",
   "Only production buildings are compared, including those already in use.": "Seuls les bâtiments de production sont comparés, y compris ceux déjà utilisés.",
   "Select cores to compare their production buildings with this plan and see how many more you need to build.": "Sélectionnez des Cores pour comparer leurs bâtiments de production avec ce plan et voir combien il vous reste à construire.",
-  "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Importez une sauvegarde dans la Carte d’usine pour comparer ses bâtiments de production avec ce plan et voir combien il vous reste à construire."
+  "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Importez une sauvegarde dans la Carte d’usine pour comparer ses bâtiments de production avec ce plan et voir combien il vous reste à construire.",
+  "This removes this save from this browser.": "Cette sauvegarde sera supprimée de ce navigateur.",
+  "Selected allocations": "Allocations sélectionnées"
 }

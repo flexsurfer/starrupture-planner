@@ -24,18 +24,11 @@ export interface SaveImportState {
 
 /** Snapshot replacement and user intent are scoped to this workspace. */
 export interface SaveWorkspace {
-    schemaVersion: 4;
+    schemaVersion: 1;
     id: string;
     name: string;
     snapshot: SaveSnapshot;
-    /** Keyed by coreKey(), not the Core's ID alone. */
-    coreSettings: Record<string, { objective: SaveCoreObjective | null }>;
 }
-
-export type SaveCoreObjective =
-    | { kind: 'corporation'; corporationId: string; level: number }
-    | { kind: 'intermediate'; itemIds: string[] }
-    | { kind: 'mission'; name: string; itemIds: string[] };
 
 export interface SaveWorkspaceSelection {
     coreId: number | null;

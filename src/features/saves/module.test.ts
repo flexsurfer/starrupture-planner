@@ -125,7 +125,7 @@ it.each(['version', 'revision'] as const)('rejects a snapshot with an unsupporte
     expect(harness.getState().savesImport).toMatchObject({ phase: 'select', error: 'structure' });
 });
 
-it('replaces a workspace atomically, keeps matching Core settings, and drops removed or rebuilt Cores', () => {
+it('replaces a workspace atomically, keeps its name, and clears the selection for removed or rebuilt Cores', () => {
     const { harness } = setup(() => new Promise(() => {}));
     const adopt = (id: string, snapshot: SaveSnapshot) => {
         harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, id]);
@@ -136,7 +136,6 @@ it('replaces a workspace atomically, keeps matching Core settings, and drops rem
     adopt('one', initial);
     adopt('two', initial);
     harness.dispatchSync([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Named world']);
-    for (const id of [1, 2]) harness.dispatchSync([appIds.events.SAVES_SET_CORE_OBJECTIVE, 'one', id, { kind: 'mission', name: 'Goal', itemIds: ['tube'] }]);
     harness.dispatchSync([appIds.events.SAVES_SELECT_CORE, 'one', 2]);
     const updated = structuredClone(initial);
     updated.cores[0].buildings = [];
@@ -145,14 +144,11 @@ it('replaces a workspace atomically, keeps matching Core settings, and drops rem
     const workspace = harness.getState().savesWorkspaces.one;
     expect(workspace.name).toBe('Named world');
     expect(workspace.snapshot).toEqual(updated);
-    expect(Object.keys(workspace.coreSettings)).toEqual(['1:10.5']);
     expect(harness.getState().savesSelections.one.coreId).toBeNull();
     expect(harness.getState().savesWorkspaceOrder).toEqual(['one', 'two']);
-    expect(harness.getState().savesWorkspaces.two.coreSettings).toEqual({});
     expect(harness.getState().savesWorkspaces.two.snapshot).toEqual(initial);
     updated.cores.shift();
     adopt('one', updated);
-    expect(harness.getState().savesWorkspaces.one.coreSettings).toEqual({});
     const before = harness.getState().savesWorkspaces.one;
     harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'one']);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
@@ -213,25 +209,4 @@ it('cancels a read on a catalog switch and ignores its completion even after swi
     harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'update2_QoL']);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, requestId, analyzeSave(saveFixture(), extractionContext)]);
     expect(harness.getState().savesWorkspaces).toEqual({});
-});
-
-it('validates new objectives against the selected state catalogs', () => {
-    const { harness } = setup(() => new Promise(() => {}));
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'one']);
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, harness.getState().savesImport.requestId, analyzeSave(saveFixture(), extractionContext)]);
-    harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'earlyaccess', {
-        buildings: [], items: [{ id: 'selected_item', name: 'Selected item', type: 'resource' }],
-        corporations: { 'Selected corporation': { id: 'selected_corp', levels: [{ level: 7, components: [], rewards: [] }] } },
-    }]);
-    const select = (objective: import('./types').SaveCoreObjective) => harness.dispatchSync([appIds.events.SAVES_SET_CORE_OBJECTIVE, 'one', 1, objective]);
-    const current = () => harness.getState().savesWorkspaces.one.coreSettings['1:10.5']?.objective;
-    select({ kind: 'corporation', corporationId: 'selected_corp', level: 7 });
-    expect(current()).toEqual({ kind: 'corporation', corporationId: 'selected_corp', level: 7 });
-    select({ kind: 'corporation', corporationId: 'selected_corp', level: 2 });
-    expect(current()).toMatchObject({ level: 7 });
-    select({ kind: 'intermediate', itemIds: ['selected_item'] });
-    expect(current()).toEqual({ kind: 'intermediate', itemIds: ['selected_item'] });
-    select({ kind: 'intermediate', itemIds: ['tube'] });
-    expect(current()).toEqual({ kind: 'intermediate', itemIds: ['selected_item'] });
 });

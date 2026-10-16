@@ -46,7 +46,7 @@ async function addSave(harness: ReturnType<typeof setup>['harness']) {
     const revision = `sha256:${'a'.repeat(64)}`;
     const shared = { powerNetworkId: null, position: { x: 0, y: 0, z: 0 } };
     const snapshot: SaveSnapshot = {
-        schemaVersion: 4, gameData: { version: 'playtest', revision }, savedAt: '20261015120000', cores: [
+        schemaVersion: 1, gameData: { version: 'playtest', revision }, savedAt: '20261015120000', cores: [
             { ...shared, id: 1, spawnTimeSeconds: 1, name: 'North', level: 0, bounds: null, buildings: [
                 { ...shared, id: 10, name: 'North drill', buildingTypeId: 'ore_excavator', configuration: { kind: 'extractor', itemId: 'iron-ore', nodePurity: 'normal' } },
                 { ...shared, id: 11, name: 'Spare drill', buildingTypeId: 'ore_excavator', configuration: { kind: 'extractor', itemId: 'iron-ore', nodePurity: 'normal' } },
@@ -226,13 +226,18 @@ it('adds buildings across cores directly without save selection, metadata, or re
     await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_EXTERNAL_INPUTS])).toEqual({ 'iron-ore': 165 }));
     fireEvent.click(screen.getByRole('heading', { name: 'Iron Ore' }));
     expect(screen.getAllByLabelText('Resource amount for Iron Ore')).toHaveLength(3);
-    expect(screen.getByText('North drill')).toBeVisible();
-    expect(screen.getByText('South drill')).toBeVisible();
+    expect(screen.getByText('North')).toBeVisible();
+    expect(screen.queryByText('North drill')).not.toBeInTheDocument();
+    expect(screen.getByText('South')).toBeVisible();
     expect(screen.queryByText('Saved sources')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Replace from save' })).not.toBeInTheDocument();
     expect(screen.queryByText(/Captured/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'or add from Factory Map' }));
-    expect(screen.getByLabelText('Select Iron Ore from North drill')).toBeDisabled();
+    expect(screen.getByLabelText('Select Iron Ore from North drill')).toBeEnabled();
+    fireEvent.click(screen.getByLabelText('Select Iron Ore from North drill'));
+    fireEvent.change(screen.getByLabelText('Amount for Iron Ore from North drill'), { target: { value: '40' } });
+    expect(within(screen.getByRole('group', { name: 'Selected allocations' })).getByText(/Already added/)).toBeVisible();
+    expect(screen.getByRole('button', { name: /Add selected resources/ })).toBeDisabled();
     await act(async () => harness.dispatchSync([appIds.events.SAVES_REMOVE_WORKSPACE, 'world']));
     expect(screen.queryByRole('button', { name: 'or add from Factory Map' })).not.toBeInTheDocument();
     expect(screen.getAllByLabelText('Resource amount for Iron Ore')).toHaveLength(3);
@@ -255,6 +260,63 @@ it('uses the active save instead of the first workspace', async () => {
     expect(screen.queryByText('Another world')).not.toBeInTheDocument();
 });
 
+it('checks already-added totals per core and item while keeping individual buildings selectable', async () => {
+    const { harness } = setup();
+    await addSave(harness);
+    const selectNorth = () => {
+        fireEvent.click(screen.getByLabelText('Select Iron Ore from North drill'));
+        fireEvent.click(screen.getByLabelText('Select Iron Ore from Spare drill'));
+    };
+    fireEvent.click(screen.getByRole('button', { name: 'or add from Factory Map' }));
+    selectNorth();
+    expect(within(screen.getByRole('group', { name: 'Selected allocations' })).getByText('120/min')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: /Add selected resources/ }));
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCES])).toEqual([
+        { id: 'resource-1', coreId: 1, coreName: 'North', itemId: 'iron-ore', ratePerMinute: 120, enabled: true },
+    ]));
+    fireEvent.click(screen.getByRole('button', { name: 'or add from Factory Map' }));
+    selectNorth();
+    expect(screen.getByRole('button', { name: /Add selected resources/ })).toBeDisabled();
+    expect(within(screen.getByRole('group', { name: 'Selected allocations' })).getByText(/Already added/)).toBeVisible();
+    fireEvent.change(screen.getByLabelText('Amount for Iron Ore from North drill'), { target: { value: '50' } });
+    expect(screen.getByRole('button', { name: /Add selected resources/ })).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Amount for Iron Ore from North drill'), { target: { value: '60' } });
+    fireEvent.click(screen.getByLabelText('Select Iron Ore from South drill'));
+    fireEvent.click(screen.getByRole('button', { name: /Add selected resources/ }));
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCES])).toHaveLength(2));
+    expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_EXTERNAL_INPUTS])).toEqual({ 'iron-ore': 240 });
+});
+
+it('retains the applied core selection when the statistics modal is reopened or remounted', async () => {
+    const { harness, runtime, view } = setup();
+    await addSave(harness);
+    const modal = (isOpen: boolean) => <UkladProvider runtime={runtime}><PlannerStatsModal isOpen={isOpen} onClose={() => view.rerender(modal(false))} /></UkladProvider>;
+    view.rerender(modal(true));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare buildings' }));
+    fireEvent.click(screen.getByLabelText('Select South'));
+    fireEvent.click(screen.getByRole('button', { name: 'Use selected cores' }));
+    await screen.findByText('Selected cores: South');
+    const comparison = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]);
+    fireEvent.click(screen.getByRole('button', { name: 'Close modal' }));
+    expect(harness.getState().plannerComparisonCoreIds).toEqual([2]);
+    view.rerender(modal(true));
+    expect(screen.getByText('Selected cores: South')).toBeVisible();
+    expect(screen.getByRole('columnheader', { name: 'In cores' })).toBeVisible();
+    expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON])).toEqual(comparison);
+    view.rerender(<UkladProvider runtime={runtime}><span /></UkladProvider>);
+    expect(harness.getState().plannerComparisonCoreIds).toEqual([2]);
+    view.rerender(modal(true));
+    expect(screen.getByText('Selected cores: South')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Change cores' }));
+    expect(screen.getByLabelText('Select South')).toBeChecked();
+    expect(screen.getByLabelText('Select North')).not.toBeChecked();
+    fireEvent.click(screen.getByLabelText('Select North'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(harness.getState().plannerComparisonCoreIds).toEqual([2]);
+    fireEvent.click(screen.getByRole('button', { name: 'Clear comparison' }));
+    await waitFor(() => expect(harness.getState().plannerComparisonCoreIds).toEqual([]));
+});
+
 it('compares selected cores in the statistics table and clears the comparison independently of resources', async () => {
     const { harness, runtime, view } = setup();
     await addSave(harness);
@@ -268,9 +330,7 @@ it('compares selected cores in the statistics table and clears the comparison in
     expect(screen.getByRole('button', { name: 'Use selected cores' })).toBeDisabled();
     fireEvent.click(screen.getByLabelText('Select South'));
     fireEvent.click(screen.getByRole('button', { name: 'Use selected cores' }));
-    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]).baseline).toEqual({
-        coreNames: ['South'], counts: { smelter: 1 },
-    }));
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]).coreNames).toEqual(['South']));
     expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCES])).toEqual([]);
     expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_STATS_SUMMARY])).toEqual(originalStats);
     expect(screen.getByText('Selected cores: South')).toBeVisible();
@@ -293,11 +353,6 @@ it('compares selected cores in the statistics table and clears the comparison in
         harness.dispatchSync([appIds.events.SAVES_REMOVE_WORKSPACE, 'world']);
         harness.dispatchSync([appIds.events.PLANNER_SET_SELECTED_ITEM, 'copper-wire']);
     });
-    expect(screen.getByText('Selected cores: South')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Change cores' })).not.toBeInTheDocument();
-    expect(within(screen.getByRole('row', { name: /Smelter/ })).getAllByRole('cell').map(cell => cell.textContent))
-        .toEqual(['Smelter', '0', '1', '0', '⚡ 0', '🔥 0']);
-    fireEvent.click(screen.getByRole('button', { name: 'Clear comparison' }));
     await waitFor(() => expect(screen.queryByRole('columnheader', { name: 'In cores' })).not.toBeInTheDocument());
     expect(screen.getByRole('columnheader', { name: 'Count' })).toBeVisible();
     expect(screen.queryByRole('row', { name: /Smelter/ })).not.toBeInTheDocument();

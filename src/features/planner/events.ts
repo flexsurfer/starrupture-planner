@@ -1,4 +1,4 @@
-import { normalizePlannerResources, normalizePlannerBuildingBaseline, nextPlannerResourceId, isValidResourceRate } from './resources';
+import { normalizePlannerResources, nextPlannerResourceId, isValidResourceRate } from './resources';
 import { message } from '@/shared/i18n/core';
 import { createPlannerTab, getActivePlannerTab, type PlannerTab } from './state';
 import { getMultiTargetWarning } from './target-conflicts';
@@ -50,7 +50,7 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         const tab = getActivePlannerTab(draftState);
         if (!tab || !draftState.itemsList.some(item => item.id === itemId) || !isValidResourceRate(amount)) return;
         if (tab.mode === 'multi' ? tab.multiTargets.some(target => target.itemId === itemId) : tab.selectedItemId === itemId) return;
-        const manual = tab.resources.find(row => row.itemId === itemId && !row.origin);
+        const manual = tab.resources.find(row => row.itemId === itemId && row.coreId === undefined);
         if (manual) { manual.ratePerMinute = amount; manual.enabled = true; }
         else if (tab.resources.length < 10000) {
             tab.resources.push({ id: nextPlannerResourceId(tab.resources), itemId, ratePerMinute: amount, enabled: true });
@@ -86,6 +86,7 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
             }
         }
         draftState.plannerTabs.push(tab);
+        draftState.plannerComparisonCoreIds = [];
         draftState.plannerActiveTabId = id;
         draftState.plannerTabCreation = null;
         draftState.plannerTargetWarning = null;
@@ -106,14 +107,15 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
             multiTargets: source.multiTargets.map(target => ({ ...target })),
             recipeSelections: { ...source.recipeSelections },
             resources: normalizePlannerResources(source.resources),
-            buildingBaseline: normalizePlannerBuildingBaseline(source.buildingBaseline),
         });
+        draftState.plannerComparisonCoreIds = [];
         draftState.plannerActiveTabId = id;
         draftState.plannerTabCreation = null;
         draftState.plannerTargetWarning = null;
     });
     registrar.regEvent(appIds.events.PLANNER_SELECT_TAB, ({ draftState }, id) => {
         if (!draftState.plannerTabs.some(tab => tab.id === id)) return;
+        draftState.plannerComparisonCoreIds = [];
         draftState.plannerActiveTabId = id;
         draftState.plannerTargetWarning = null;
     });
@@ -125,6 +127,7 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         delete draftState.plannerViewports[id];
         delete draftState.plannerPinnedNodes[id];
         if (id === activeId) {
+            draftState.plannerComparisonCoreIds = [];
             draftState.plannerActiveTabId = draftState.plannerTabs[Math.min(index, draftState.plannerTabs.length - 1)]?.id ?? null;
             draftState.plannerTargetWarning = null;
         }

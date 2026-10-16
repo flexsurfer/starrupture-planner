@@ -215,7 +215,6 @@ describe('headless application E2E', () => {
         expect(saves.value('viewports')).toEqual({ one: saves.value('viewport') });
         await dispatch(scenario, [appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'First world']);
         await dispatch(scenario, [appIds.events.SAVES_SELECT_CORE, 'one', 1]);
-        await dispatch(scenario, [appIds.events.SAVES_SET_CORE_OBJECTIVE, 'one', 1, { kind: 'intermediate', itemIds: ['tube'] }]);
         const baseline = saves.value('one')!.snapshot;
         await importCandidate('two');
         await dispatch(scenario, [appIds.events.SAVES_SELECT_WORKSPACE, 'one']);
@@ -226,7 +225,6 @@ describe('headless application E2E', () => {
         expect(saves.value('one')!.snapshot).toEqual(baseline);
         expect(saves.value('overview')!.cores).toHaveLength(2);
         expect(saves.value('core')?.buildings.some(building => building.id === 200)).toBe(true);
-        expect(saves.value('one')?.coreSettings['1:10.5']?.objective).toEqual({ kind: 'intermediate', itemIds: ['tube'] });
         expect(saves.value('selected')?.core.id).toBe(1);
         expect({ bases: saves.value('bases'), planner: saves.value('planner') }).toEqual(unrelated);
         failWrites = true;
@@ -259,7 +257,7 @@ describe('headless application E2E', () => {
         expect(reopened.value('active')?.id).toBe('two');
         restoredPersistence.dispose();
     });
-    it('captures resources from several cores, edits allocations, fits output, and keeps comparison after removing a save', async () => {
+    it('captures resources from several cores, edits allocations, fits output, and clears comparison after removing a save', async () => {
         const scenario = createScenario({ effects: { decodeSaveFile: () => new Promise(() => {}) } });
         await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
         const importer = mountView(scenario, 'resource source import', { candidate: [appIds.subscriptions.SAVES_IMPORT] } as const);
@@ -311,34 +309,37 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'resource-world', options.snapshotKey,
             selected.map(building => ({ buildingId: building.buildingId }))]);
         expect(panel.value('rows')).toHaveLength(3);
-        expect(picker.value('options')?.cores.flatMap(core => core.buildings).filter(building => building.alreadyAdded)).toHaveLength(2);
+        await dispatch(scenario, [appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'resource-world', options.snapshotKey,
+            selected.map(building => ({ buildingId: building.buildingId }))]);
+        expect(panel.value('rows')).toHaveLength(3);
         const fittedTarget = panel.value('fit').targetAmount;
         expect(fittedTarget).toBeGreaterThan(0);
         await dispatch(scenario, [appIds.events.PLANNER_APPLY_RESOURCE_FIT]);
         expect(panel.value('target')).toBe(fittedTarget);
         const statistics = mountView(scenario, 'planner building statistics', {
+            selectedCores: [appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS],
             comparison: [appIds.subscriptions.PLANNER_BUILDING_COMPARISON],
             rows: [appIds.subscriptions.PLANNER_STATS_BUILDING_ROWS],
         } as const);
-        await dispatch(scenario, [appIds.events.PLANNER_SET_BUILDING_BASELINE, 'resource-world', options.snapshotKey, options.cores.map(core => core.coreId)]);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_COMPARISON_CORES, 'resource-world', options.snapshotKey, options.cores.map(core => core.coreId)]);
         const comparison = statistics.value('comparison');
-        expect(comparison.baseline?.coreNames).toHaveLength(2);
+        expect(statistics.value('selectedCores')).toEqual(options.cores.map(core => core.coreId));
+        expect(comparison.coreNames).toHaveLength(2);
         expect(comparison.rows.some(row => row.existing > 0)).toBe(true);
         for (const row of comparison.rows) expect(statistics.value('rows')).toContainEqual(expect.objectContaining({
             buildingId: row.buildingTypeId, count: row.planned,
             comparison: { existing: row.existing, additional: row.additional },
         }));
-        const comparedRows = statistics.value('rows');
         const copiedRows = panel.value('rows');
         const production = panel.value('flow');
         picker.unmount();
         await dispatch(scenario, [appIds.events.SAVES_REMOVE_WORKSPACE, 'resource-world']);
         expect(panel.value('rows')).toEqual(copiedRows);
         expect(panel.value('flow')).toEqual(production);
-        expect(statistics.value('comparison')).toEqual(comparison);
-        expect(statistics.value('rows')).toEqual(comparedRows);
-        await dispatch(scenario, [appIds.events.PLANNER_CLEAR_BUILDING_BASELINE]);
-        expect(statistics.value('comparison')).toEqual({ baseline: null, rows: [] });
+        expect(statistics.value('comparison')).toEqual({ coreNames: [], rows: [] });
+        expect(statistics.value('selectedCores')).toEqual([]);
+        await dispatch(scenario, [appIds.events.PLANNER_CLEAR_BUILDING_COMPARISON]);
+        expect(statistics.value('comparison')).toEqual({ coreNames: [], rows: [] });
         expect(statistics.value('rows').every(row => row.comparison === null)).toBe(true);
         statistics.unmount();
         panel.unmount();

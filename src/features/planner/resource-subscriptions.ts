@@ -1,11 +1,12 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
-import { appIds } from '@/app/uklad/catalog';
+import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { coreKey } from '@/features/saves/snapshot';
 import { aggregatePlannerResources, buildPlannerResourceSummary, getPlannerResourceFit, saveResourceSnapshotKey } from './resources';
 import type { PlannerStatsBuildingRow } from './types';
 
 export const registerPlannerResourceSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
+    registrar.regRootSub(appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS, stateKeys.plannerComparisonCoreIds);
     registrar.regSub(appIds.subscriptions.PLANNER_RESOURCES,
         () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.resources ?? []);
     registrar.regSub(appIds.subscriptions.PLANNER_RESOURCE_ITEMS,
@@ -34,30 +35,37 @@ export const registerPlannerResourceSubscriptions: UkladModule<UkladRegistrar<Ap
                 cores: overview.cores.map((core, index) => ({ coreId: core.core.id, coreKey: coreKey(core.core), name: core.core.name?.trim() || `Core ${index + 1}`,
                     buildings: core.incoming.flatMap(resource => resource.buildings.map(building => ({ buildingId: building.buildingId, buildingTypeId: building.buildingTypeId,
                         buildingName: building.name.trim() || core.buildingDetails.find(detail => detail.instance.id === building.buildingId)?.building.name || building.buildingTypeId, itemId: resource.itemId, itemName: resource.name, capacity: building.rate,
-                        source: resource.source === 'extraction' ? 'extraction' as const : 'delivery' as const, isTarget: false, alreadyAdded: false }))) })) };
+                        source: resource.source === 'extraction' ? 'extraction' as const : 'delivery' as const, isTarget: false }))) })) };
         });
     registrar.regSub(appIds.subscriptions.PLANNER_RESOURCE_PICKER,
-        id => [[appIds.subscriptions.PLANNER_RESOURCE_PICKER_SOURCE, id], [appIds.subscriptions.PLANNER_RESOURCES], [appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]],
-        ([picker, resources, targets]) => !picker ? null : { ...picker, cores: picker.cores.map(core => ({ ...core, buildings: core.buildings.map(building => ({ ...building,
-            isTarget: targets.includes(building.itemId), alreadyAdded: resources.some(row => row.origin?.workspaceId === picker.workspaceId
-                && row.origin.coreKey === core.coreKey && row.origin.buildingId === building.buildingId && row.itemId === building.itemId),
+        id => [[appIds.subscriptions.PLANNER_RESOURCE_PICKER_SOURCE, id], [appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]],
+        ([picker, targets]) => !picker ? null : { ...picker, cores: picker.cores.map(core => ({ ...core, buildings: core.buildings.map(building => ({ ...building,
+            isTarget: targets.includes(building.itemId),
         })) })) });
     registrar.regSub(appIds.subscriptions.PLANNER_RESOURCE_FIT,
         () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB], [appIds.subscriptions.BUILDINGS_LIST]],
         ([tab, buildings]) => getPlannerResourceFit(tab, buildings));
     registrar.regSub(appIds.subscriptions.PLANNER_BUILDING_COMPARISON,
-        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB], [appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.BUILDINGS_LIST], [appIds.subscriptions.SAVES_BUILDING_CATALOG]],
-        ([tab, flow, buildings, metadata]) => {
-            const baseline = tab?.buildingBaseline ?? null;
-            if (!baseline) return { baseline, rows: [] };
+        () => [[appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS], [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE],
+            [appIds.subscriptions.APP_DATA_VERSION], [appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.BUILDINGS_LIST], [appIds.subscriptions.SAVES_BUILDING_CATALOG]],
+        ([coreIds, workspace, version, flow, buildings, metadata]) => {
+            if (!coreIds.length || !workspace || workspace.snapshot.gameData.version !== version || workspace.snapshot.gameData.revision !== metadata?.revision) return { coreNames: [], rows: [] };
+            const ordered = [...workspace.snapshot.cores].sort((a, b) => a.spawnTimeSeconds - b.spawnTimeSeconds || a.id - b.id);
+            const cores = ordered.filter(core => coreIds.includes(core.id));
+            if (cores.length !== coreIds.length) return { coreNames: [], rows: [] };
+            const counts = new Map<string, number>();
+            for (const core of cores) for (const building of core.buildings) if (building.configuration.kind === 'production') {
+                counts.set(building.buildingTypeId, (counts.get(building.buildingTypeId) ?? 0) + 1);
+            }
+            const coreNames = cores.map(core => core.name?.trim() || `Core ${ordered.indexOf(core) + 1}`);
             const names = new Map(buildings.map(building => [building.id, building.name]));
             const productionIds = new Set(buildings.filter(building => metadata?.kinds[building.id]
                 ? metadata.kinds[building.id] === 'production' : building.recipes?.some(recipe => recipe.inputs.length > 0)).map(building => building.id));
             const required = new Map<string, number>();
             for (const node of flow.nodes) if (node.nodeType === 'production' && productionIds.has(node.buildingId)) required.set(node.buildingId, (required.get(node.buildingId) ?? 0) + Math.ceil(node.buildingCount));
-            const ids = [...new Set([...Object.keys(baseline.counts), ...required.keys()])];
-            return { baseline, rows: ids.map(buildingTypeId => {
-                const existing = baseline.counts[buildingTypeId] ?? 0;
+            const ids = [...new Set([...counts.keys(), ...required.keys()])];
+            return { coreNames, rows: ids.map(buildingTypeId => {
+                const existing = counts.get(buildingTypeId) ?? 0;
                 const planned = required.get(buildingTypeId) ?? 0;
                 return { buildingTypeId, name: names.get(buildingTypeId) ?? buildingTypeId, existing, planned,
                     additional: Math.max(0, planned - existing), spare: Math.max(0, existing - planned) };

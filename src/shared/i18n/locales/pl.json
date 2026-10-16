@@ -747,15 +747,10 @@
   "Your saves could not be loaded. Reload this page to try again.": "Nie udało się wczytać zapisów. Odśwież stronę, aby spróbować ponownie.",
   "There is no room for another save. Remove a save and try again.": "Brak miejsca na kolejny zapis. Usuń jeden zapis i spróbuj ponownie.",
   "This save is too large to store in this browser.": "Ten zapis jest zbyt duży, aby przechowywać go w tej przeglądarce.",
-  "Production objective": "Cel produkcji",
-  "No objective selected": "Nie wybrano celu",
-  "Choose an objective": "Wybierz cel",
-  "Clear objective": "Wyczyść cel",
   "Core {number}": "Core {number}",
   "Open Core {name}": "Otwórz Core {name}",
   "No Cores found in this save.": "Nie znaleziono Core w tym zapisie.",
   "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Odkrywaj swoją fabrykę na interaktywnej mapie StarRupture. Importuj zapis, by znaleźć budynki, śledzić połączenia ładunkowe i sprawdzić sieci energetyczne oraz ciepło Core.",
-  "This removes this save and its Core settings from this browser.": "Spowoduje to usunięcie tego zapisu i jego ustawień Core z tej przeglądarki.",
   "Available resources": "Dostępne zasoby",
   "Imported from other Cores": "Importowane z innych Core",
   "Sent to other Cores": "Wysyłane do innych Core",
@@ -899,5 +894,7 @@
   "Building comparison is unavailable for this game version.": "Porównanie budynków jest niedostępne w tej wersji gry.",
   "Only production buildings are compared, including those already in use.": "Porównywane są tylko budynki produkcyjne, w tym te już używane.",
   "Select cores to compare their production buildings with this plan and see how many more you need to build.": "Wybierz Cores, aby porównać ich budynki produkcyjne z tym planem i zobaczyć, ile jeszcze trzeba zbudować.",
-  "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Zaimportuj zapis w Mapie fabryki, aby porównać jego budynki produkcyjne z tym planem i zobaczyć, ile jeszcze trzeba zbudować."
+  "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Zaimportuj zapis w Mapie fabryki, aby porównać jego budynki produkcyjne z tym planem i zobaczyć, ile jeszcze trzeba zbudować.",
+  "This removes this save from this browser.": "Ten zapis zostanie usunięty z tej przeglądarki.",
+  "Selected allocations": "Wybrane przydziały"
 }

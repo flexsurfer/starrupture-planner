@@ -32,7 +32,7 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
     const updated = workspace.snapshot.savedAt?.replace(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/, '$1-$2-$3 $4:$5') ?? '—';
     const remove = () => runtime.dispatch([
         appIds.events.UI_SHOW_CONFIRMATION_DIALOG,
-        message('Remove {name}?', { name: workspace.name }), message('This removes this save and its Core settings from this browser.'),
+        message('Remove {name}?', { name: workspace.name }), message('This removes this save from this browser.'),
         () => runtime.dispatch([appIds.events.SAVES_REMOVE_WORKSPACE, workspace.id]),
         { confirmLabel: message('Remove save'), confirmButtonClass: 'btn-error' },
     ]);

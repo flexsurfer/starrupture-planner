@@ -6,7 +6,7 @@ import { expect, it } from 'vitest';
 import { assertSaveStorageLimits, jsonBytes, localStorageBytes, MAX_SAVES_BYTES, MAX_WORKSPACE_BYTES, normalizeSaveWorkspace, normalizeSaveWorkspaces, saveCollectionStorageBytes, SaveWorkspaceLimitError } from './storage-schema';
 import { workspaceAtStorageBytes } from './storage-test-fixture';
 
-it('round-trips detached Core bounds and keeps older workspaces without bounds compatible', () => {
+it('round-trips detached Core bounds and requires explicit nullable bounds', () => {
     const workspace = createSaveWorkspace('one', 'World', analyzeSave(saveFixture(), extractionContext));
     const normalized = normalizeSaveWorkspace(workspace);
     expect(normalized).toEqual(workspace);
@@ -16,7 +16,7 @@ it('round-trips detached Core bounds and keeps older workspaces without bounds c
     const legacy = JSON.parse(JSON.stringify(workspace));
     delete legacy.snapshot.cores[0].bounds;
     legacy.snapshot.cores[1].bounds = null;
-    expect(normalizeSaveWorkspace(legacy).snapshot.cores.map(core => core.bounds)).toEqual([null, null]);
+    expect(() => normalizeSaveWorkspace(legacy)).toThrow();
 });
 
 it.each([
@@ -79,7 +79,6 @@ it('hydrates saved references before catalogs load and preserves a different val
     workspace.snapshot.gameData = { version: 'earlyaccess', revision: `sha256:${'a'.repeat(64)}` };
     workspace.snapshot.cores[0].buildings[0].buildingTypeId = 'unavailable_building';
     workspace.snapshot.cores[0].buildings[0].configuration = { kind: 'production', recipeId: 'unavailable_building:recipe' };
-    workspace.coreSettings['1:10.5'] = { objective: { kind: 'corporation', corporationId: 'unavailable_corporation', level: 7 } };
     expect(normalizeSaveWorkspace(JSON.parse(JSON.stringify(workspace)))).toEqual(workspace);
     workspace.snapshot.gameData.revision = 'invalid';
     expect(() => normalizeSaveWorkspace(workspace)).toThrow();

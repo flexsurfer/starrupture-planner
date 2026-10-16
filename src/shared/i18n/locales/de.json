@@ -747,15 +747,10 @@
   "Your saves could not be loaded. Reload this page to try again.": "Deine Spielstände konnten nicht geladen werden. Lade diese Seite neu, um es erneut zu versuchen.",
   "There is no room for another save. Remove a save and try again.": "Es ist kein Platz für einen weiteren Spielstand. Entferne einen Spielstand und versuche es erneut.",
   "This save is too large to store in this browser.": "Dieser Spielstand ist zu groß, um ihn in diesem Browser zu speichern.",
-  "Production objective": "Produktionsziel",
-  "No objective selected": "Kein Ziel ausgewählt",
-  "Choose an objective": "Ziel auswählen",
-  "Clear objective": "Ziel löschen",
   "Core {number}": "Core {number}",
   "Open Core {name}": "Core {name} öffnen",
   "No Cores found in this save.": "Keine Cores in diesem Spielstand gefunden.",
   "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Erkunde deine Fabrik auf einer interaktiven StarRupture-Karte. Importiere einen Spielstand, finde Gebäude, verfolge Frachtverbindungen und prüfe Stromnetze und Core-Hitze.",
-  "This removes this save and its Core settings from this browser.": "Dies entfernt diesen Spielstand und seine Core-Einstellungen aus diesem Browser.",
   "Available resources": "Verfügbare Ressourcen",
   "Imported from other Cores": "Von anderen Cores importiert",
   "Sent to other Cores": "An andere Cores gesendet",
@@ -895,5 +890,7 @@
   "Building comparison is unavailable for this game version.": "Der Gebäudevergleich ist für diese Spielversion nicht verfügbar.",
   "Only production buildings are compared, including those already in use.": "Es werden nur Produktionsgebäude verglichen, einschließlich bereits genutzter.",
   "Select cores to compare their production buildings with this plan and see how many more you need to build.": "Wähle Cores aus, um ihre Produktionsgebäude mit diesem Plan zu vergleichen und zu sehen, wie viele du noch bauen musst.",
-  "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Importiere einen Spielstand in der Fabrikkarte, um seine Produktionsgebäude mit diesem Plan zu vergleichen und zu sehen, wie viele du noch bauen musst."
+  "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Importiere einen Spielstand in der Fabrikkarte, um seine Produktionsgebäude mit diesem Plan zu vergleichen und zu sehen, wie viele du noch bauen musst.",
+  "This removes this save from this browser.": "Dieser Spielstand wird aus diesem Browser entfernt.",
+  "Selected allocations": "Ausgewählte Zuweisungen"
 }

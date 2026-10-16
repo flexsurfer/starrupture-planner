@@ -58,7 +58,7 @@ import { appIds, stateKeys } from './catalog';
 import type { SaveFileSource } from '@/features/saves/reader';
 import type { SaveSnapshot } from '@/features/saves/snapshot';
 import type { SaveImportErrorCode } from '@/features/saves/import-error';
-import type { SaveMapViewport, SaveView, SaveCoreObjective, SaveImportRequest, SaveImportState, SaveWorkspace, SaveWorkspaceSelection, SaveStorageError } from '@/features/saves/types';
+import type { SaveMapViewport, SaveView, SaveImportRequest, SaveImportState, SaveWorkspace, SaveWorkspaceSelection, SaveStorageError } from '@/features/saves/types';
 import type { SaveCoreOverview, SaveOverview } from '@/features/saves/overview';
 
 export interface ConfirmationDialogOptions {
@@ -147,6 +147,7 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.uiGameDataLoadPending]: AppState['uiGameDataLoadPending'];
         [stateKeys.uiActiveTab]: AppState['uiActiveTab'];
         [stateKeys.uiConfirmationDialog]: AppState['uiConfirmationDialog'];
+        [stateKeys.plannerComparisonCoreIds]: number[];
         [stateKeys.plannerPinnedNodes]: Record<string, string>;
         [stateKeys.plannerViewports]: Record<string, PlannerViewport>;
         [stateKeys.plannerTabs]: AppState['plannerTabs'];
@@ -171,8 +172,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PLANNER_REMOVE_RESOURCE]: [id: string];
         [appIds.events.PLANNER_IMPORT_CORE_RESOURCES]: [workspaceId: string, snapshotKey: string, selections: PlannerResourceSelection[]];
         [appIds.events.PLANNER_APPLY_RESOURCE_FIT]: [];
-        [appIds.events.PLANNER_SET_BUILDING_BASELINE]: [workspaceId: string, snapshotKey: string, coreIds: number[]];
-        [appIds.events.PLANNER_CLEAR_BUILDING_BASELINE]: [];
+        [appIds.events.PLANNER_SET_COMPARISON_CORES]: [workspaceId: string, snapshotKey: string, coreIds: number[]];
+        [appIds.events.PLANNER_CLEAR_BUILDING_COMPARISON]: [];
 
         [appIds.events.SAVES_STORAGE_FAILED]: [error: Exclude<SaveStorageError, null>];
         [appIds.events.SAVES_IMPORT_OPEN]: [workspaceId?: string];
@@ -189,7 +190,6 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.SAVES_SELECT_VIEW]: [view: SaveView];
         [appIds.events.SAVES_SET_MAP_VIEWPORT]: [workspaceId: string, x: number, y: number, zoom: number];
         [appIds.events.SAVES_SELECT_CORE]: [workspaceId: string, coreId: number | null];
-        [appIds.events.SAVES_SET_CORE_OBJECTIVE]: [workspaceId: string, coreId: number, objective: SaveCoreObjective | null];
         [appIds.events.PLANNER_SET_EXTERNAL_INPUT]: [itemId: string, amount: number];
         [appIds.events.PLANNER_REMOVE_EXTERNAL_INPUT]: [itemId: string];
         [appIds.events.PRODUCTION_PLAN_ADD_INPUT]: [baseId: string, planId: string, itemId: string, amount: number, buildingTypeId: string, name?: string, description?: string];
@@ -294,6 +294,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.effects.loadGameData]: DataVersion;
     };
     subscriptions: {
+        [appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS]: { params: []; result: number[] };
         [appIds.subscriptions.PLANNER_RESOURCES]: { params: []; result: PlannerResource[] };
         [appIds.subscriptions.PLANNER_RESOURCE_ITEMS]: { params: []; result: AppState['itemsList'] };
         [appIds.subscriptions.PLANNER_RESOURCE_SUMMARY]: { params: []; result: PlannerResourceSummary[] };

@@ -1,7 +1,7 @@
 import { UiMessageError, type UiText, type MessageKey } from '@/shared/i18n/core';
 import type { AppState, Base, BaseBuilding, EnergyGroup } from '@/app/uklad/model';
-import type { PlannerTab } from '@/features/planner/state';
-import { isValidResourceRate, normalizePlannerBuildingBaseline, normalizePlannerResources, resourcesFromLegacyInputs } from '@/features/planner/resources';
+import { createPlannerTab, type PlannerTab } from '@/features/planner/state';
+import { isValidResourceRate, normalizePlannerResources, resourcesFromLegacyInputs } from '@/features/planner/resources';
 import type { BasesMode } from '@/features/bases/state';
 import { resolveInputBuilding } from '@/utils/productionPlanInputs';
 
@@ -38,6 +38,9 @@ export function createDataTransferState(): DataTransferState {
 }
 
 const copy = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+const planFields = Object.keys(createPlannerTab('', '', 'single'));
+/** Archives contain only document fields, never transient UI or arbitrary imported data. */
+const planDocument = (plan: Record<string, unknown>) => Object.fromEntries(planFields.map(key => [key, plan[key]]));
 
 /** Freeze live logistics values in the file, including links to omitted bases. */
 export function createArchive(state: Pick<AppState, 'basesList' | 'plannerTabs' | 'energyGroups' | 'appDataVersion' | 'basesMode'>, selection: ArchiveSelection): PlannerArchive {
@@ -54,7 +57,8 @@ export function createArchive(state: Pick<AppState, 'basesList' | 'plannerTabs' 
     return {
         format: 'rupture-planner', version: 2, dataVersion: state.appDataVersion, basesMode: state.basesMode,
         bases,
-        plans: copy(state.plannerTabs.filter(plan => selection.planIds === null || selection.planIds.includes(plan.id))),
+        plans: copy(state.plannerTabs.filter(plan => selection.planIds === null || selection.planIds.includes(plan.id))
+            .map(plan => ({ ...planDocument({ ...plan }), resources: normalizePlannerResources(plan.resources, true) }))) as PlannerTab[],
         energyGroups: copy(state.energyGroups.filter(group => groupIds.has(group.id))),
     };
 }
@@ -186,14 +190,12 @@ export function parseArchive(text: string): PlannerArchive {
             object(inputs);
             for (const [itemId, amount] of Object.entries(inputs)) check(string(itemId) && itemId.length <= 512 && isValidResourceRate(amount));
         });
-        // V1 plans used a per-item map. V2 owns resource rows and an optional
-        // historical building baseline, so a missing save never blocks import.
+        // V1 plans used a per-item map. V2 owns independent resource allocations.
         check(value.version === 1 || plan.resources !== undefined);
         try {
             plan.resources = normalizePlannerResources(plan.resources === undefined
                 ? resourcesFromLegacyInputs(plan.externalInputs)
                 : plan.resources, true);
-            plan.buildingBaseline = normalizePlannerBuildingBaseline(plan.buildingBaseline, true);
         } catch {
             check(false);
         }
@@ -209,6 +211,7 @@ export function parseArchive(text: string): PlannerArchive {
             targets.add(target.itemId);
         }
     }
+    value.plans = value.plans.map(planDocument);
     value.version = 2;
     return value as unknown as PlannerArchive;
 }
