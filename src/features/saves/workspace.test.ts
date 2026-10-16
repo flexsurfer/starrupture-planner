@@ -12,7 +12,7 @@ it('stores only the app contract and detaches imported data', () => {
     snapshot.cores[0].name = 'Changed outside the app';
     expect(workspace.snapshot.cores[0].name).toBe('Workshop');
     const normalized = normalizeSaveWorkspace({ ...workspace, catalog: [{ raw: true }], snapshot: { ...workspace.snapshot, raw: { private: true } } });
-    expect(Object.keys(normalized).sort()).toEqual(['coreSettings', 'id', 'name', 'schemaVersion', 'snapshot']);
+    expect(Object.keys(normalized).sort()).toEqual(['id', 'name', 'schemaVersion', 'snapshot']);
     expect(normalized.snapshot).not.toHaveProperty('raw');
     expect(() => normalizeSaveWorkspace({ ...workspace, schemaVersion: 2 })).toThrow();
 });
@@ -97,10 +97,10 @@ it.each([null, 99])('keeps heat capacity unknown for a missing or unsupported le
     const overview = buildSaveOverview(createSaveWorkspace('one', 'World', snapshot), saveLookups);
     expect(overview.cores[0]).toMatchObject({ heat: 3, heatCapacity: null });
 });
-it('loads snapshots without level as unknown and rejects invalid persisted levels', () => {
+it('requires an explicit nullable level and rejects invalid persisted levels', () => {
     const workspace = createSaveWorkspace('one', 'World', analyzeSave(saveFixture(), extractionContext));
     Reflect.deleteProperty(workspace.snapshot.cores[0], 'level');
-    expect(normalizeSaveWorkspace(workspace).snapshot.cores[0].level).toBeNull();
+    expect(() => normalizeSaveWorkspace(workspace)).toThrow();
     for (const level of [-1, 1.5, NaN, '3']) {
         Object.assign(workspace.snapshot.cores[0], { level });
         expect(() => normalizeSaveWorkspace(workspace)).toThrow();
@@ -111,10 +111,4 @@ it('rejects invalid references before replacing the stored snapshot', () => {
     const dispatcher = workspace.snapshot.cores[0].buildings.find(building => building.id === 21)!;
     dispatcher.configuration = { kind: 'dispatcher', itemId: 'helium', receiverId: 30 };
     expect(() => normalizeSaveWorkspace(workspace)).toThrow();
-});
-it('keeps Core settings inside their workspace even if IDs and times coincide', () => {
-    const snapshot = analyzeSave(saveFixture(), extractionContext);
-    const previous = createSaveWorkspace('one', 'World', snapshot);
-    previous.coreSettings['1:10.5'] = { objective: { kind: 'intermediate', itemIds: ['tube'] } };
-    expect(createSaveWorkspace('two', 'Other world', snapshot, previous).coreSettings).toEqual({});
 });

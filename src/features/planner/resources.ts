@@ -5,25 +5,14 @@ import type { PlannerProductionFlowResult } from './types';
 import { getPlannerInputBuildings } from './external-inputs';
 import { calculateMaxTargetFromInputs } from '@/utils/matchInputsCalculation';
 
-/** Copied source information is attribution, never a live dependency of a plan. */
-export interface PlannerResourceOrigin {
-    workspaceId: string;
-    coreKey: string;
-    coreName: string;
-    buildingId: number;
-    buildingTypeId: string;
-    buildingName: string;
-}
 export interface PlannerResource {
     id: string;
     itemId: string;
     ratePerMinute: number;
     enabled: boolean;
-    origin?: PlannerResourceOrigin;
-}
-export interface PlannerBuildingBaseline {
-    coreNames: string[];
-    counts: Record<string, number>;
+    /** Optional attribution only; save replacement/deletion never changes this allocation. */
+    coreId?: number;
+    coreName?: string;
 }
 export interface PlannerResourceSummary {
     itemId: string;
@@ -43,7 +32,6 @@ export interface PlannerResourcePickerBuilding {
     capacity: number | null;
     source: 'extraction' | 'delivery';
     isTarget: boolean;
-    alreadyAdded: boolean;
 }
 export interface PlannerResourcePicker {
     workspaceId: string;
@@ -52,13 +40,14 @@ export interface PlannerResourcePicker {
     cores: { coreId: number; coreKey: string; name: string; buildings: PlannerResourcePickerBuilding[] }[];
 }
 export interface PlannerResourceSelection { buildingId: number; ratePerMinute?: number }
+export interface PlannerCoreAllocation { coreId: number; coreName: string; itemId: string; ratePerMinute: number }
 export interface PlannerResourceFit {
     available: boolean;
     reason: 'multi-target' | 'no-target' | 'no-resources' | 'unrelated-resources' | null;
     targetAmount: number | null;
 }
 export interface PlannerBuildingComparison {
-    baseline: PlannerBuildingBaseline | null;
+    coreNames: string[];
     rows: { buildingTypeId: string; name: string; existing: number; planned: number; additional: number; spare: number }[];
 }
 
@@ -77,31 +66,33 @@ export function normalizePlannerResources(value: unknown, strict = false): Plann
             if (strict) fail(); return [];
         }
         const row: PlannerResource = { id: entry.id, itemId: entry.itemId, ratePerMinute: entry.ratePerMinute, enabled: entry.enabled };
-        if (entry.origin !== undefined) {
-            const origin = entry.origin;
-            if (!isRecord(origin) || !['workspaceId', 'coreKey', 'coreName', 'buildingTypeId', 'buildingName'].every(key => validText(origin[key]))
-                || typeof origin.buildingId !== 'number' || !Number.isSafeInteger(origin.buildingId) || origin.buildingId < 0) {
+        if (entry.coreId !== undefined || entry.coreName !== undefined) {
+            if (typeof entry.coreId !== 'number' || !Number.isSafeInteger(entry.coreId) || entry.coreId < 0 || entry.coreId >= 4294967295
+                || !validText(entry.coreName)) {
                 if (strict) fail(); return [];
             }
-            row.origin = {
-                workspaceId: origin.workspaceId as string,
-                coreKey: origin.coreKey as string, coreName: origin.coreName as string, buildingId: origin.buildingId,
-                buildingTypeId: origin.buildingTypeId as string, buildingName: origin.buildingName as string,
-            };
+            row.coreId = entry.coreId;
+            row.coreName = entry.coreName;
         }
         ids.add(row.id);
         return [row];
     });
 }
-export function normalizePlannerBuildingBaseline(value: unknown, strict = false): PlannerBuildingBaseline | null {
-    if (value === null || value === undefined) return null;
-    if (!isRecord(value)
-        || !Array.isArray(value.coreNames) || value.coreNames.length > 10000 || !value.coreNames.every(validText)
-        || !isRecord(value.counts) || Object.keys(value.counts).length > 10000
-        || !Object.entries(value.counts).every(([key, count]) => validText(key) && typeof count === 'number' && Number.isSafeInteger(count) && count >= 0 && count <= 100000)) {
-        if (strict) fail(); return null;
+/** Sum selected buildings before checking duplicates: identity belongs to the allocation. */
+export function groupPlannerCoreAllocations(rows: PlannerCoreAllocation[]): PlannerCoreAllocation[] {
+    const groups = new Map<string, PlannerCoreAllocation>();
+    for (const row of rows) {
+        const key = JSON.stringify([row.coreId, row.itemId]);
+        const previous = groups.get(key);
+        if (previous) previous.ratePerMinute += row.ratePerMinute;
+        else groups.set(key, { ...row });
     }
-    return { coreNames: [...value.coreNames], counts: Object.fromEntries(Object.entries(value.counts)) as Record<string, number> };
+    return [...groups.values()];
+}
+export function hasPlannerCoreAllocation(resources: PlannerResource[], allocation: PlannerCoreAllocation): boolean {
+    return resources.some(row => row.coreId === allocation.coreId && row.itemId === allocation.itemId
+        // Ignore only floating-point addition noise (e.g. 0.1 + 0.2 vs 0.3).
+        && Math.abs(row.ratePerMinute - allocation.ratePerMinute) <= Number.EPSILON * Math.max(1, row.ratePerMinute, allocation.ratePerMinute) * 8);
 }
 export function resourcesFromLegacyInputs(value: unknown): PlannerResource[] {
     if (!isRecord(value)) return [];

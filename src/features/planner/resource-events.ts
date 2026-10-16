@@ -3,9 +3,9 @@ import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { createSaveGameData } from '@/features/saves/game-data';
 import { buildSaveOverview } from '@/features/saves/overview';
-import { coreKey } from '@/features/saves/snapshot';
+import { getActiveSaveWorkspace } from '@/features/saves/workspace';
 import { getActivePlannerTab } from './state';
-import { getPlannerResourceFit, isValidResourceRate, nextPlannerResourceId, plannerTargetIds, saveResourceSnapshotKey, type PlannerResource } from './resources';
+import { getPlannerResourceFit, groupPlannerCoreAllocations, hasPlannerCoreAllocation, isValidResourceRate, nextPlannerResourceId, plannerTargetIds, saveResourceSnapshotKey, type PlannerCoreAllocation, type PlannerResource } from './resources';
 
 export const registerPlannerResourceEvents: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
     registrar.regEvent(appIds.events.PLANNER_ADD_MANUAL_RESOURCE, ({ draftState }, itemId, ratePerMinute) => {
@@ -33,14 +33,14 @@ export const registerPlannerResourceEvents: UkladModule<UkladRegistrar<AppContra
         const tab = getActivePlannerTab(draftState);
         const workspace = draftState.savesWorkspaces[workspaceId];
         const metadata = draftState.savesBuildingCatalog;
-        if (!tab || !workspace || !metadata || draftState.uiGameDataLoadPending
+        if (!tab || !workspace || workspaceId !== getActiveSaveWorkspace(draftState)?.id || !metadata || draftState.uiGameDataLoadPending
             || workspace.snapshot.gameData.version !== draftState.appDataVersion || workspace.snapshot.gameData.revision !== metadata.revision
             || saveResourceSnapshotKey(workspace.snapshot) !== snapshotKey || !Array.isArray(selections) || !selections.length || selections.length > 10000) return;
         const overview = buildSaveOverview(workspace, createSaveGameData(draftState.buildingsList, draftState.itemsList, metadata));
         const available = new Map(overview.cores.flatMap((core, index) => core.incoming.flatMap(resource => resource.buildings.map(building => [building.buildingId,
             { core, coreName: core.core.name?.trim() || `Core ${index + 1}`, resource, building }] as const))));
         const targets = new Set(plannerTargetIds(tab));
-        const added: PlannerResource[] = [];
+        const allocations: PlannerCoreAllocation[] = [];
         const selected = new Set<number>();
         for (const selection of selections) {
             if (!selection || typeof selection !== 'object' || !Number.isSafeInteger(selection.buildingId)) return;
@@ -51,12 +51,14 @@ export const registerPlannerResourceEvents: UkladModule<UkladRegistrar<AppContra
             const ratePerMinute = selection.ratePerMinute ?? source.building.rate;
             if (!isValidResourceRate(ratePerMinute)) return;
             if (targets.has(source.resource.itemId)) return;
-            if (tab.resources.some(row => row.origin?.workspaceId === workspaceId && row.origin.coreKey === coreKey(source.core.core)
-                && row.origin.buildingId === selection.buildingId && row.itemId === source.resource.itemId)) continue;
-            added.push({ id: nextPlannerResourceId([...tab.resources, ...added]), itemId: source.resource.itemId, ratePerMinute, enabled: true,
-                origin: { workspaceId, coreKey: coreKey(source.core.core), coreName: source.coreName,
-                    buildingId: source.building.buildingId, buildingTypeId: source.building.buildingTypeId, buildingName: source.building.name.trim() || draftState.buildingsList.find(building => building.id === source.building.buildingTypeId)?.name || source.building.buildingTypeId,
-                } });
+            allocations.push({ coreId: source.core.core.id, coreName: source.coreName, itemId: source.resource.itemId, ratePerMinute });
+        }
+        const grouped = groupPlannerCoreAllocations(allocations);
+        if (!grouped.every(row => isValidResourceRate(row.ratePerMinute))) return;
+        const added: PlannerResource[] = [];
+        for (const allocation of grouped) {
+            if (hasPlannerCoreAllocation(tab.resources, allocation)) continue;
+            added.push({ id: nextPlannerResourceId([...tab.resources, ...added]), ...allocation, enabled: true });
         }
         if (added.length && tab.resources.length + added.length <= 10000) tab.resources.push(...added);
     });
@@ -66,24 +68,19 @@ export const registerPlannerResourceEvents: UkladModule<UkladRegistrar<AppContra
         const fit = getPlannerResourceFit(tab, draftState.buildingsList);
         if (fit.available && fit.targetAmount !== null) tab.targetAmount = fit.targetAmount;
     });
-    registrar.regEvent(appIds.events.PLANNER_SET_BUILDING_BASELINE, ({ draftState }, workspaceId, snapshotKey, coreIds) => {
+    registrar.regEvent(appIds.events.PLANNER_SET_COMPARISON_CORES, ({ draftState }, workspaceId, snapshotKey, coreIds) => {
         const tab = getActivePlannerTab(draftState);
         const workspace = draftState.savesWorkspaces[workspaceId];
-        if (!tab || !workspace || !draftState.savesBuildingCatalog || draftState.uiGameDataLoadPending
+        if (!tab || !workspace || workspaceId !== getActiveSaveWorkspace(draftState)?.id || !draftState.savesBuildingCatalog || draftState.uiGameDataLoadPending
             || workspace.snapshot.gameData.version !== draftState.appDataVersion || workspace.snapshot.gameData.revision !== draftState.savesBuildingCatalog.revision
             || saveResourceSnapshotKey(workspace.snapshot) !== snapshotKey || !Array.isArray(coreIds) || !coreIds.length) return;
         const selected = new Set(coreIds);
         const ordered = [...workspace.snapshot.cores].sort((a, b) => a.spawnTimeSeconds - b.spawnTimeSeconds || a.id - b.id);
         const cores = ordered.filter(core => selected.has(core.id));
         if (cores.length !== selected.size) return;
-        const counts = new Map<string, number>();
-        for (const core of cores) for (const building of core.buildings) if (building.configuration.kind === 'production') {
-            counts.set(building.buildingTypeId, (counts.get(building.buildingTypeId) ?? 0) + 1);
-        }
-        tab.buildingBaseline = { coreNames: cores.map(core => core.name?.trim() || `Core ${ordered.indexOf(core) + 1}`), counts: Object.fromEntries(counts) };
+        draftState.plannerComparisonCoreIds = cores.map(core => core.id);
     });
-    registrar.regEvent(appIds.events.PLANNER_CLEAR_BUILDING_BASELINE, ({ draftState }) => {
-        const tab = getActivePlannerTab(draftState);
-        if (tab) tab.buildingBaseline = null;
+    registrar.regEvent(appIds.events.PLANNER_CLEAR_BUILDING_COMPARISON, ({ draftState }) => {
+        draftState.plannerComparisonCoreIds = [];
     });
 };

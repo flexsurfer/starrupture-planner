@@ -10,6 +10,7 @@ import { MAX_WORKSPACE_BYTES } from '@/features/saves/storage-schema';
 import { workspaceAtStorageBytes } from '@/features/saves/storage-test-fixture';
 import { createSavesStorage, savesStorageKey } from './saves-storage';
 import { PERSIST_KEYS } from './persistence';
+import { createArchive, parseArchive } from '@/features/data-transfer/archive';
 
 const owners: { scenario: ReturnType<typeof createUkladHeadlessScenario<import('@/app/uklad/contracts').AppContracts>>; persistence: ReturnType<typeof persist> }[] = [];
 afterEach(async () => {
@@ -55,13 +56,13 @@ it('round-trips Saves through the standard localStorage adapter alongside existi
     await app.adopt();
     await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'My world']);
     await app.dispatch([appIds.events.SAVES_SELECT_CORE, 'one', 1]);
-    await app.dispatch([appIds.events.SAVES_SET_CORE_OBJECTIVE, 'one', 1, { kind: 'mission', name: 'Next mission', itemIds: ['tube'] }]);
     await app.adopt('two');
     await app.dispatch([appIds.events.SAVES_SELECT_CORE, 'two', 2]);
     await app.dispatch([appIds.events.SAVES_SELECT_WORKSPACE, 'one']);
     expect(app.view.value('persistence')).toBeNull();
     const data = JSON.parse(localStorage.getItem(key(stateKeys.savesWorkspaces))!).data;
-    expect(data.one).toMatchObject({ name: 'My world', coreSettings: { '1:10.5': { objective: { kind: 'mission', name: 'Next mission', itemIds: ['tube'] } } } });
+    expect(Object.keys(data.one).sort()).toEqual(['id', 'name', 'schemaVersion', 'snapshot']);
+    expect(data.one.name).toBe('My world');
     expect(data.one.snapshot).not.toHaveProperty('catalog');
     expect(data.one.snapshot).not.toHaveProperty('compressedBytes');
     expect(localStorage.getItem(key(stateKeys.savesImport))).toBeNull();
@@ -73,7 +74,6 @@ it('round-trips Saves through the standard localStorage adapter alongside existi
     expect(restored.view.value('active')).toEqual(expected);
     expect(restored.view.value('selection')?.core.id).toBe(1);
     expect(restored.view.value('selection')?.core.bounds).toEqual({ min: { x: -10, y: -10, z: -10 }, max: { x: 10, y: 10, z: 10 } });
-    expect(restored.view.value('one')?.coreSettings['1:10.5']?.objective).toEqual({ kind: 'mission', name: 'Next mission', itemIds: ['tube'] });
     expect(restored.view.value('candidate').phase).toBe('closed');
     await restored.dispatch([appIds.events.SAVES_REMOVE_WORKSPACE, 'one']);
     restored.persistence.dispose();
@@ -102,6 +102,35 @@ it('persists map preferences but resets selected nodes and the camera for a new 
     expect(restored.harness.getState().savesMapViewports).toEqual({});
 });
 
+it('persists independent planner allocations while comparison selection stays in the runtime', async () => {
+    const storage = memoryStorageAdapter();
+    const app = await setup(storage);
+    await app.adopt();
+    await app.dispatch([appIds.events.PLANNER_CREATE_TAB, 'plan', 'Plan', 'single']);
+    await app.dispatch([appIds.events.PLANNER_SET_SELECTED_ITEM, 'bar_titanium']);
+    const picker = app.harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCE_PICKER, 'one'])!;
+    const core = picker.cores.find(core => core.buildings.length)!;
+    await app.dispatch([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'one', picker.snapshotKey, [{ buildingId: core.buildings[0].buildingId, ratePerMinute: 25 }]]);
+    const original = structuredClone(app.harness.getState().plannerTabs);
+    await app.dispatch([appIds.events.PLANNER_SET_COMPARISON_CORES, 'one', picker.snapshotKey, [core.coreId]]);
+    expect(app.harness.getState().plannerComparisonCoreIds).toEqual([core.coreId]);
+    const persisted = JSON.parse(storage.getItem(key(stateKeys.plannerTabs))!).data;
+    expect(persisted).toEqual(original);
+    expect(persisted[0]).not.toHaveProperty('buildingBaseline');
+    expect(Object.keys(persisted[0].resources[0]).sort()).toEqual(['coreId', 'coreName', 'enabled', 'id', 'itemId', 'ratePerMinute']);
+    expect(storage.getItem(key(stateKeys.plannerComparisonCoreIds))).toBeNull();
+    const archive = createArchive(app.harness.getState(), { baseIds: [], planIds: null });
+    expect(parseArchive(JSON.stringify(archive)).plans).toEqual(original);
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const restored = await setup(storage);
+    expect(restored.harness.getState().plannerTabs).toEqual(original);
+    expect(restored.harness.getState().plannerComparisonCoreIds).toEqual([]);
+    expect(restored.harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON])).toEqual({ coreNames: [], rows: [] });
+    await restored.dispatch([appIds.events.SAVES_REMOVE_WORKSPACE, 'one']);
+    expect(restored.harness.getState().plannerTabs).toEqual(original);
+});
+
 it('normalizes partial or invalid stored map preferences without failing save hydration', async () => {
     localStorage.setItem(`${prefix}/${stateKeys.savesMapDisplay}`, JSON.stringify({ v: 1, data: {
         buildingSize: -5, showNames: true, showGrid: 'false', animateCargo: false,
@@ -113,7 +142,7 @@ it('normalizes partial or invalid stored map preferences without failing save hy
     expect(app.view.value('persistence')).toBeNull();
 });
 
-it('hydrates older v4 workspaces without bounds without rewriting stored data', async () => {
+it('rejects incomplete workspaces without rewriting stored data', async () => {
     const storage = memoryStorageAdapter();
     const app = await setup(storage);
     await app.adopt();
@@ -124,8 +153,8 @@ it('hydrates older v4 workspaces without bounds without rewriting stored data', 
     const legacy = JSON.stringify(envelope);
     storage.setItem(key(stateKeys.savesWorkspaces), legacy);
     const restored = await setup(storage);
-    expect(restored.view.value('persistence')).toBeNull();
-    expect(restored.view.value('one')?.snapshot.cores.map(core => core.bounds)).toEqual([null, null]);
+    expect(restored.view.value('persistence')).toBe('load');
+    expect(restored.view.value('one')).toBeNull();
     expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(legacy);
 });
 
@@ -186,21 +215,21 @@ it('keeps the last stored snapshot when an edit exceeds its budget and recovers 
     memory.setItem(key(stateKeys.savesWorkspaces), original);
     const app = await setup(memory);
     expect(app.view.value('persistence')).toBeNull();
-    await app.dispatch([appIds.events.SAVES_SET_CORE_OBJECTIVE, 'one', 1, { kind: 'mission', name: 'x'.repeat(120), itemIds: ['tube'] }]);
+    await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'x'.repeat(120)]);
     expect(app.view.value('persistence')).toBe('write');
     expect(memory.getItem(key(stateKeys.savesWorkspaces))).toBe(original);
-    await app.dispatch([appIds.events.SAVES_SET_CORE_OBJECTIVE, 'one', 1, null]);
-    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.coreSettings).toEqual({});
+    await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'one']);
+    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.name).toBe('one');
 });
 
 it('starts fresh instead of migrating experimental schemas', async () => {
     const memory = memoryStorageAdapter();
-    memory.setItem(`${prefix}/${stateKeys.savesWorkspaces}`, JSON.stringify({ v: 1, data: { old: { schemaVersion: 2 } } }));
-    memory.setItem(`${prefix}/${stateKeys.savesWorkspaceOrder}`, JSON.stringify({ v: 1, data: ['old'] }));
+    memory.setItem(`${prefix}/saves-v4/${stateKeys.savesWorkspaces}`, JSON.stringify({ v: 1, data: { old: { schemaVersion: 4 } } }));
+    memory.setItem(`${prefix}/saves-v4/${stateKeys.savesWorkspaceOrder}`, JSON.stringify({ v: 1, data: ['old'] }));
     const app = await setup(memory);
     expect(app.view.value('persistence')).toBeNull();
     expect(app.view.value('tabs')).toEqual([]);
     await app.adopt();
     expect(app.view.value('tabs')).toEqual([{ id: 'one', name: 'one' }]);
-    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.schemaVersion).toBe(4);
+    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.schemaVersion).toBe(1);
 });

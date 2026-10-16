@@ -27,7 +27,7 @@ const data: AppVersionedGameData = {
 };
 function snapshot(): SaveSnapshot {
     const entity = { name: null, powerNetworkId: null, position: { x: 0, y: 0, z: 0 } };
-    return { schemaVersion: 4, gameData: { version: 'playtest', revision }, savedAt: '20261015120000', cores: [
+    return { schemaVersion: 1, gameData: { version: 'playtest', revision }, savedAt: '20261015120000', cores: [
         { ...entity, id: 1, spawnTimeSeconds: 1, name: 'North', level: 0, bounds: null, buildings: [
             { ...entity, id: 10, buildingTypeId: 'drill', configuration: { kind: 'extractor', itemId: 'ore', nodePurity: 'normal' } },
             { ...entity, id: 11, buildingTypeId: 'factory', configuration: { kind: 'production', recipeId: null } },
@@ -59,7 +59,85 @@ function setup() {
     return { runtime, harness, picker, resources, flow };
 }
 
-describe('planner resource snapshots', () => {
+describe('independent planner resources', () => {
+    it('groups identical extractors per core and item, then checks duplicates by allocation amount', () => {
+        const { harness, picker, resources } = setup();
+        const expanded = snapshot();
+        expanded.cores[0].buildings.push({ ...expanded.cores[0].buildings[0], id: 15 });
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'World', expanded) } });
+        const select = (ids: number[], ratePerMinute?: number) => harness.dispatchSync([
+            appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, ids.map(buildingId => ({ buildingId, ratePerMinute })),
+        ]);
+        select([10, 15, 10, 20]);
+        expect(resources()).toEqual([
+            { id: 'resource-1', coreId: 1, coreName: 'North', itemId: 'ore', ratePerMinute: 120, enabled: true },
+            { id: 'resource-2', coreId: 2, coreName: 'South', itemId: 'ore', ratePerMinute: 120, enabled: true },
+        ]);
+        select([15, 10, 20]);
+        expect(resources()).toHaveLength(2);
+        // An edited amount is a different allocation; the original amount can be added again.
+        harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_RATE, 'resource-1', 90]);
+        select([10, 15]);
+        expect(resources()).toHaveLength(3);
+        harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_ENABLED, 'resource-3', false]);
+        select([10, 15]);
+        expect(resources()).toHaveLength(3);
+        // Building identity, core name and save workspace do not participate in matching.
+        expanded.cores[0].name = 'Renamed';
+        expanded.cores[0].spawnTimeSeconds = 99;
+        expanded.cores[0].buildings[0].id = 99;
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'Replacement', expanded) } });
+        select([99, 15]);
+        expect(resources()).toHaveLength(3);
+        // Same core and amount, different item remains independently addable.
+        expanded.cores[0].buildings[0].configuration = { kind: 'extractor', itemId: 'plate', nodePurity: 'normal' };
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'Replacement', expanded) } });
+        select([99], 120);
+        expect(resources()[3]).toMatchObject({ coreId: 1, coreName: 'Renamed', itemId: 'plate', ratePerMinute: 120 });
+        // Reject an invalid aggregate atomically, even when individual amounts are valid.
+        select([15, 20], 1e9);
+        const before = structuredClone(resources());
+        expanded.cores[0].buildings[0].configuration = { kind: 'extractor', itemId: 'ore', nodePurity: 'normal' };
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'Replacement', expanded) } });
+        select([99, 15], 1e9);
+        expect(resources()).toEqual(before);
+    });
+
+    it('matches fractional totals and remains independent of save IDs', () => {
+        const { harness, picker, resources } = setup();
+        const expanded = snapshot();
+        expanded.cores[0].buildings.push({ ...expanded.cores[0].buildings[0], id: 15 });
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'World', expanded) } });
+        harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10, ratePerMinute: 0.1 }, { buildingId: 15, ratePerMinute: 0.2 }]]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_RATE, resources()[0].id, 0.3]);
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { other: createSaveWorkspace('other', 'Another world', expanded) }, savesWorkspaceOrder: ['other'], savesActiveWorkspaceId: 'other' });
+        const other = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCE_PICKER, 'other'])!;
+        harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'other', other.snapshotKey, [{ buildingId: 15, ratePerMinute: 0.2 }, { buildingId: 10, ratePerMinute: 0.1 }]]);
+        expect(resources()).toHaveLength(1);
+    });
+
+    it('clears comparison on save or plan selection and rejects stale or foreign core selections', () => {
+        const { harness, picker } = setup();
+        const key = picker().snapshotKey;
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', key, [1]]);
+        expect(harness.getState().plannerComparisonCoreIds).toEqual([1]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', 'stale', [2]]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', key, [999]]);
+        expect(harness.getState().plannerComparisonCoreIds).toEqual([1]);
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { ...harness.getState().savesWorkspaces, other: createSaveWorkspace('other', 'Other', snapshot()) } });
+        harness.dispatchSync([appIds.events.SAVES_SELECT_WORKSPACE, 'other']);
+        expect(harness.getState().plannerComparisonCoreIds).toEqual([]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', key, [1]]);
+        expect(harness.getState().plannerComparisonCoreIds).toEqual([]);
+        harness.dispatchSync([appIds.events.SAVES_SELECT_WORKSPACE, 'world']);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', key, [1]]);
+        harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'other-plan', 'Other plan', 'single']);
+        expect(harness.getState().plannerComparisonCoreIds).toEqual([]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', key, [1]]);
+        harness.dispatchSync([appIds.events.PLANNER_SELECT_TAB, 'plan']);
+        expect(harness.getState().plannerComparisonCoreIds).toEqual([]);
+    });
+
     it('selects incoming buildings across cores and edits allocations without duplicating sources', () => {
         const { harness, picker, resources } = setup();
         expect(picker().cores.map(core => core.buildings.map(building => building.buildingId))).toEqual([[10], [20, 22]]);
@@ -69,20 +147,20 @@ describe('planner resource snapshots', () => {
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_EXTERNAL_INPUTS])).toEqual({ ore: 185 });
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }]]);
         expect(resources()).toHaveLength(3);
-        const south = resources().find(row => row.origin?.buildingId === 20)!;
+        const south = resources().find(row => row.coreId === 2)!;
         harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_RATE, south.id, 90]);
-        expect(resources().find(row => row.id === south.id)).toMatchObject({ ratePerMinute: 90, origin: { coreName: 'South' } });
-        expect(resources().find(row => !row.origin)?.ratePerMinute).toBe(5);
+        expect(resources().find(row => row.id === south.id)).toMatchObject({ ratePerMinute: 90, coreId: 2, coreName: 'South' });
+        expect(resources().find(row => row.coreId === undefined)?.ratePerMinute).toBe(5);
     });
 
-    it('keeps copied rates and comparison after save replacement/removal and rejects stale picker selection', () => {
+    it('keeps resource rates but clears comparison after save replacement/removal and rejects stale selections', () => {
         const { harness, picker, resources, flow } = setup();
         const key = picker().snapshotKey;
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', key, [{ buildingId: 10 }]]);
-        harness.dispatchSync([appIds.events.PLANNER_SET_BUILDING_BASELINE, 'world', key, [1, 2]]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', key, [1, 2]]);
         const originalResources = structuredClone(resources());
         const originalFlow = structuredClone(flow());
-        const baseline = structuredClone(harness.getState().plannerTabs[0].buildingBaseline);
+        expect(harness.getState().plannerComparisonCoreIds).toEqual([1, 2]);
         const changed = snapshot(); changed.cores.shift(); changed.savedAt = '20261015130000';
         harness.restoreState({ ...harness.getState(), savesImport: { requestId: 10, targetWorkspaceId: 'world', phase: 'reading', fileName: 'new.sav', error: null } });
         harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, 10, changed]);
@@ -91,8 +169,8 @@ describe('planner resource snapshots', () => {
         harness.dispatchSync([appIds.events.SAVES_REMOVE_WORKSPACE, 'world']);
         expect(resources()).toEqual(originalResources);
         expect(flow()).toEqual(originalFlow);
-        expect(harness.getState().plannerTabs[0].buildingBaseline).toEqual(baseline);
-        expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]).rows.find(row => row.buildingTypeId === 'factory')).toMatchObject({ existing: 2, planned: 2, additional: 0, spare: 0 });
+        expect(harness.getState().plannerComparisonCoreIds).toEqual([]);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON])).toEqual({ coreNames: [], rows: [] });
     });
 
     it('adds resources after a save update while preserving previous allocations and rejecting duplicates', () => {
@@ -105,11 +183,14 @@ describe('planner resource snapshots', () => {
         const changed = snapshot(); changed.savedAt = '20261015130000';
         changed.cores[0].buildings[0].configuration = { kind: 'extractor', itemId: 'ore', nodePurity: 'pure' };
         harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'World', changed) } });
-        expect(picker().cores[0].buildings[0]).toMatchObject({ alreadyAdded: true, capacity: 120 });
+        expect(picker().cores[0].buildings[0]).toMatchObject({ capacity: 120 });
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }, { buildingId: 20 }]]);
-        expect(resources()).toHaveLength(2);
+        expect(resources()).toHaveLength(3);
         expect(resources()[0]).toEqual(original[0]);
-        expect(resources()[1]).toMatchObject({ ratePerMinute: 120, origin: { coreName: 'South' } });
+        expect(resources()[1]).toMatchObject({ ratePerMinute: 120, coreId: 1, coreName: 'North' });
+        expect(resources()[2]).toMatchObject({ ratePerMinute: 120, coreId: 2, coreName: 'South' });
+        harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }, { buildingId: 20 }]]);
+        expect(resources()).toHaveLength(3);
     });
 
     it('requires an entered rate for unknown capacity and excludes extractors from building comparison', () => {
@@ -121,8 +202,8 @@ describe('planner resource snapshots', () => {
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }]]);
         expect(resources()).toEqual([]);
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10, ratePerMinute: 5 }]]);
-        expect(resources()[0]).toMatchObject({ ratePerMinute: 5, origin: { buildingId: 10 } });
-        harness.dispatchSync([appIds.events.PLANNER_SET_BUILDING_BASELINE, 'world', picker().snapshotKey, [1]]);
+        expect(resources()[0]).toMatchObject({ ratePerMinute: 5, coreId: 1 });
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', picker().snapshotKey, [1]]);
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]).rows).toEqual([
             { buildingTypeId: 'factory', name: 'Factory', existing: 1, planned: 2, additional: 1, spare: 0 },
         ]);
@@ -146,11 +227,11 @@ describe('planner resource snapshots', () => {
     it('copies duplication deeply and treats game-version mismatch as picker incompatibility', () => {
         const { harness, picker, resources } = setup();
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }]]);
-        harness.dispatchSync([appIds.events.PLANNER_SET_BUILDING_BASELINE, 'world', picker().snapshotKey, [1]]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', picker().snapshotKey, [1]]);
         const first = structuredClone(harness.getState().plannerTabs[0]);
         harness.dispatchSync([appIds.events.PLANNER_DUPLICATE_TAB, 'plan', 'copy']);
         harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_RATE, resources()[0].id, 42]);
-        harness.dispatchSync([appIds.events.PLANNER_CLEAR_BUILDING_BASELINE]);
+        harness.dispatchSync([appIds.events.PLANNER_CLEAR_BUILDING_COMPARISON]);
         expect(harness.getState().plannerTabs[0]).toEqual(first);
         harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'update1', structuredClone(data)]);
         expect(picker().compatible).toBe(false);
@@ -191,29 +272,25 @@ describe('planner resource snapshots', () => {
         harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'World', named) } });
         expect(picker().cores[0]).toMatchObject({ name: 'Core 1', buildings: [{ buildingName: 'Drill' }] });
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }]]);
-        harness.dispatchSync([appIds.events.PLANNER_SET_BUILDING_BASELINE, 'world', picker().snapshotKey, [1]]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', picker().snapshotKey, [1]]);
         const plan = harness.getState().plannerTabs[0];
         expect(normalizePlannerTabs([plan])[0]).toEqual(plan);
-        expect(plan.resources[0].origin).toMatchObject({ coreName: 'Core 1', buildingName: 'Drill' });
-        expect(plan.buildingBaseline?.coreNames).toEqual(['Core 1']);
+        expect(plan.resources[0]).toMatchObject({ coreId: 1, coreName: 'Core 1' });
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]).coreNames).toEqual(['Core 1']);
     });
 
-    it('migrates old resources, preserves explicit empty rows, and detaches durable snapshots', () => {
+    it('migrates released input maps, preserves empty rows, and stores only allocation fields', () => {
         const { harness, picker } = setup();
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }]]);
-        harness.dispatchSync([appIds.events.PLANNER_SET_BUILDING_BASELINE, 'world', picker().snapshotKey, [1]]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', picker().snapshotKey, [1]]);
         const stored = structuredClone(harness.getState().plannerTabs[0]);
-        // Older resource drafts included save metadata; retain their allocations
-        // while dropping the removed source-management fields during hydration.
-        Object.assign(stored.resources[0].origin!, { groupId: 'old-group', workspaceName: 'Old save', savedAt: '20261015120000', snapshotKey: 'old', capacity: 60 });
-        Object.assign(stored.buildingBaseline!, { workspaceId: 'world', workspaceName: 'Old save', savedAt: '20261015120000' });
+        Object.assign(stored.resources[0], { unknownField: 'discard' });
+        Object.assign(stored, { unknownField: 'discard' });
         const normalized = normalizePlannerTabs([stored])[0];
-        expect(normalized.resources[0].origin).not.toHaveProperty('workspaceName');
-        expect(normalized.buildingBaseline).not.toHaveProperty('workspaceId');
-        stored.resources[0].origin!.coreName = 'Mutated';
-        stored.buildingBaseline!.counts.factory = 999;
-        expect(normalized.resources[0].origin!.coreName).toBe('North');
-        expect(normalized.buildingBaseline!.counts.factory).toBe(1);
+        expect(Object.keys(normalized.resources[0]).sort()).toEqual(['coreId', 'coreName', 'enabled', 'id', 'itemId', 'ratePerMinute']);
+        expect(normalized).not.toHaveProperty('unknownField');
+        stored.resources[0].coreName = 'Mutated';
+        expect(normalized.resources[0].coreName).toBe('North');
         const legacy = { ...stored, resources: undefined, externalInputs: { ore: 60, bad: -1 } };
         expect(normalizePlannerTabs([legacy])[0].resources).toEqual([{ id: 'legacy-resource-1', itemId: 'ore', ratePerMinute: 60, enabled: true }]);
         expect(normalizePlannerTabs([{ ...legacy, resources: [] }])[0].resources).toEqual([]);

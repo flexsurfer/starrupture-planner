@@ -42,8 +42,7 @@ export function ResourceItemGroup({ group, focused, color }: { group: PlannerRes
                     aria-label={t('Enable resource {name}', { name: group.name })}
                     onChange={event => runtime.dispatch([appIds.events.PLANNER_SET_RESOURCE_ENABLED, row.id, event.target.checked])} />
                 <div className={`min-w-0 flex-1 ${row.enabled ? '' : 'opacity-45'}`}>
-                    <p className="truncate text-xs font-medium" title={row.origin?.coreName}>{row.origin?.coreName ?? t('Manual')}</p>
-                    {row.origin && <p className="truncate text-xs text-base-content/50" title={row.origin.buildingName}>{row.origin.buildingName}</p>}
+                    <p className="truncate text-xs font-medium" title={row.coreName}>{row.coreName ?? t('Manual')}</p>
                 </div>
                 <ResourceRateField value={row.ratePerMinute} label={t('Resource amount for {name}', { name: group.name })}
                     onChange={amount => runtime.dispatch([appIds.events.PLANNER_SET_RESOURCE_RATE, row.id, amount])} />

@@ -13,7 +13,6 @@ describe('planner archive', () => {
         expect(archive.bases[1].productions[0].inputs?.[0].linkedOutput?.ratePerMinuteSnapshot).toBe(42);
         expect(archive.version).toBe(2);
         expect(archive.plans[0].resources).toEqual(state.plannerTabs[0].resources);
-        expect(archive.plans[0].buildingBaseline).toEqual(state.plannerTabs[0].buildingBaseline);
         expect(JSON.stringify(state)).toBe(before);
     });
 
@@ -23,7 +22,6 @@ describe('planner archive', () => {
         legacy.version = 1;
         for (const plan of legacy.plans) {
             delete plan.resources;
-            delete plan.buildingBaseline;
         }
         legacy.plans[0].externalInputs = { plate: 42, wire: 60 };
         const migrated = parseArchive(JSON.stringify(legacy));
@@ -34,7 +32,6 @@ describe('planner archive', () => {
         ]);
         expect(migrated.plans[1].resources).toEqual([]);
         for (const plan of migrated.plans) {
-            expect(plan.buildingBaseline).toBeNull();
             expect(plan).not.toHaveProperty('externalInputs');
         }
         expect(parseArchive(JSON.stringify(migrated))).toEqual(migrated);
@@ -49,7 +46,23 @@ describe('planner archive', () => {
         expect(plan).not.toHaveProperty('externalInputs');
     });
 
-    it('copies plan resources and comparison baseline independently while keeping historical source identities', () => {
+    it('drops unknown document and allocation fields at archive boundaries', () => {
+        const state = archiveFixture();
+        state.plannerComparisonCoreIds = [100];
+        Object.assign(state.plannerTabs[0], { unknownField: { saveId: 'unused' } });
+        Object.assign(state.plannerTabs[0].resources[1], { unknownField: { buildingId: 42 } });
+        const archive = createArchive(state, { baseIds: [], planIds: ['single'] });
+        expect(archive.plans[0]).not.toHaveProperty('unknownField');
+        expect(archive.plans[0].resources[1]).not.toHaveProperty('unknownField');
+        Object.assign(archive.plans[0], { unknownField: 'discard' });
+        Object.assign(archive.plans[0].resources[1], { unknownField: 'discard' });
+        const imported = parseArchive(JSON.stringify(archive));
+        expect(imported.plans[0]).not.toHaveProperty('unknownField');
+        expect(imported.plans[0].resources[1]).not.toHaveProperty('unknownField');
+        expect(imported).not.toHaveProperty('plannerComparisonCoreIds');
+    });
+
+    it('copies independent resource allocations with core attribution', () => {
         const state = archiveFixture();
         const archive = createArchive(state, { baseIds: [], planIds: ['single'] });
         const imported = prepareArchiveImport(parseArchive(JSON.stringify(archive)), 'copy');
@@ -58,14 +71,11 @@ describe('planner archive', () => {
         const copy = selected.plans[0];
         expect(copy.id).not.toBe(original.id);
         expect(copy.resources).toEqual(original.resources);
-        expect(copy.resources[1].origin).toEqual(original.resources[1].origin);
-        expect(copy.buildingBaseline).toEqual(original.buildingBaseline);
+        expect(copy.resources[1].coreId).toEqual(original.resources[1].coreId);
         copy.resources[1].ratePerMinute = 5;
-        copy.resources[1].origin!.coreName = 'Changed attribution';
-        copy.buildingBaseline!.counts.assembler = 99;
+        copy.resources[1].coreName = 'Changed attribution';
         expect(archive.plans[0]).toEqual(original);
         expect(imported.plans[0].resources).toEqual(original.resources);
-        expect(imported.plans[0].buildingBaseline).toEqual(original.buildingBaseline);
         expect(copy).not.toHaveProperty('externalInputs');
     });
 
@@ -128,10 +138,9 @@ describe('planner archive', () => {
         ['duplicate resource IDs', (archive: ReturnType<typeof createArchive>) => { archive.plans[0].resources.push(archive.plans[0].resources[0]); }],
         ['invalid resource amount', (archive: ReturnType<typeof createArchive>) => { archive.plans[0].resources[0].ratePerMinute = -1; }],
         ['invalid resource enable state', (archive: ReturnType<typeof createArchive>) => { Object.assign(archive.plans[0].resources[0], { enabled: 'yes' }); }],
-        ['invalid resource provenance', (archive: ReturnType<typeof createArchive>) => { Object.assign(archive.plans[0].resources[1].origin!, { buildingId: 2.5 }); }],
-        ['incomplete baseline', (archive: ReturnType<typeof createArchive>) => { Reflect.deleteProperty(archive.plans[0].buildingBaseline!, 'coreNames'); }],
-        ['fractional baseline count', (archive: ReturnType<typeof createArchive>) => { archive.plans[0].buildingBaseline!.counts.assembler = 1.5; }],
-        ['invalid baseline core names', (archive: ReturnType<typeof createArchive>) => { Object.assign(archive.plans[0].buildingBaseline!, { coreNames: 'Northern core' }); }],
+        ['invalid core ID', (archive: ReturnType<typeof createArchive>) => { archive.plans[0].resources[1].coreId = 2.5; }],
+        ['missing core name', (archive: ReturnType<typeof createArchive>) => { delete archive.plans[0].resources[1].coreName; }],
+        ['missing core ID', (archive: ReturnType<typeof createArchive>) => { delete archive.plans[0].resources[1].coreId; }],
         ['invalid production', (archive: ReturnType<typeof createArchive>) => { archive.bases[1].productions[0].targetAmount = Infinity; }],
         ['array-valued production status', (archive: ReturnType<typeof createArchive>) => { Object.assign(archive.bases[1].productions[0], { status: ['active'] }); }],
         ['array-valued flow direction', (archive: ReturnType<typeof createArchive>) => { Object.assign(archive.plans[0], { flowDirection: ['BT'] }); }],

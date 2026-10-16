@@ -24,7 +24,8 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
     // Get detailed stats from subscription
     const stats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
     const buildingRows = useSubscription([appIds.subscriptions.PLANNER_STATS_BUILDING_ROWS]);
-    const { baseline } = useSubscription([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]);
+    const { coreNames } = useSubscription([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]);
+    const comparing = coreNames.length > 0;
     const [activeTab, setActiveTab] = useState<typeof STAT_TABS[number]>('buildings');
     const closeModal = () => {
         setActiveTab('buildings');
@@ -98,15 +99,15 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                             <span className="text-base font-bold">⚡ {stats.totalEnergy.toFixed(0)}</span>
                             <span className="text-base font-bold">🔥 {stats.totalHotness.toFixed(0)}</span>
                         </div>
-                        <PlannerBuildingComparisonControl baseline={baseline} />
+                        <PlannerBuildingComparisonControl coreNames={coreNames} />
                         <div className="border border-base-300 rounded-lg overflow-hidden bg-base-100 shadow-sm">
                             <div className="overflow-y-auto max-h-[60vh] overflow-x-auto">
                                 <table className="table table-zebra w-full">
                                     <thead className="sticky top-0 bg-base-200 z-10">
                                         <tr>
                                             <th>{t("Building")}</th>
-                                            <th className="text-right">{t(baseline ? 'Plan needs' : 'Count')}</th>
-                                            {baseline && <>
+                                            <th className="text-right">{t(comparing ? 'Plan needs' : 'Count')}</th>
+                                            {comparing && <>
                                                 <th className="text-right">{t('In cores')}</th>
                                                 <th className="text-right">{t('To build')}</th>
                                             </>}
@@ -130,7 +131,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                                                 <td className="text-right font-semibold">
                                                     {formatNumber(building.count)}
                                                 </td>
-                                                {baseline && <>
+                                                {comparing && <>
                                                     <td className="text-right tabular-nums">{building.comparison ? formatNumber(building.comparison.existing) : '—'}</td>
                                                     <td className={`text-right tabular-nums ${building.comparison && building.comparison.additional > 0 ? 'font-semibold text-warning' : 'text-base-content/40'}`}>
                                                         {building.comparison ? formatNumber(building.comparison.additional) : '—'}
@@ -148,7 +149,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                                 </table>
                             </div>
                         </div>
-                        {baseline && <p className="mt-2 text-xs text-base-content/50">{t('Only production buildings are compared, including those already in use.')}</p>}
+                        {comparing && <p className="mt-2 text-xs text-base-content/50">{t('Only production buildings are compared, including those already in use.')}</p>}
                     </div>
 
                     {/* Items Used */}

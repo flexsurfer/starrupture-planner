@@ -747,15 +747,10 @@
   "Your saves could not be loaded. Reload this page to try again.": "Your saves could not be loaded. Reload this page to try again.",
   "There is no room for another save. Remove a save and try again.": "There is no room for another save. Remove a save and try again.",
   "This save is too large to store in this browser.": "This save is too large to store in this browser.",
-  "Production objective": "Production objective",
-  "No objective selected": "No objective selected",
-  "Choose an objective": "Choose an objective",
-  "Clear objective": "Clear objective",
   "Core {number}": "Core {number}",
   "Open Core {name}": "Open Core {name}",
   "No Cores found in this save.": "No Cores found in this save.",
   "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.",
-  "This removes this save and its Core settings from this browser.": "This removes this save and its Core settings from this browser.",
   "Available resources": "Available resources",
   "Imported from other Cores": "Imported from other Cores",
   "Sent to other Cores": "Sent to other Cores",
@@ -895,5 +890,7 @@
   "Building comparison is unavailable for this game version.": "Building comparison is unavailable for this game version.",
   "Only production buildings are compared, including those already in use.": "Only production buildings are compared, including those already in use.",
   "Select cores to compare their production buildings with this plan and see how many more you need to build.": "Select cores to compare their production buildings with this plan and see how many more you need to build.",
-  "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build."
+  "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.",
+  "This removes this save from this browser.": "This removes this save from this browser.",
+  "Selected allocations": "Selected allocations"
 }

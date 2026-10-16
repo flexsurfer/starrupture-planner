@@ -6,8 +6,8 @@ import { current } from '@ukladjs/core/vanilla';
 import { createSaveGameData } from './game-data';
 import { coreKey } from './snapshot';
 import { createSaveImportState } from './state';
-import { createSaveWorkspace, workspaceIds } from './workspace';
-import { validateSaveSnapshotCatalog, validateSaveObjectiveCatalog, normalizeSaveObjective, saveCollectionStorageBytes, MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, SaveWorkspaceLimitError } from './storage-schema';
+import { createSaveWorkspace, getActiveSaveWorkspace, workspaceIds } from './workspace';
+import { validateSaveSnapshotCatalog, saveCollectionStorageBytes, MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, SaveWorkspaceLimitError } from './storage-schema';
 
 export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
     registrar.regEvent(appIds.events.SAVES_IMPORT_OPEN, ({ draftState }, workspaceId) => {
@@ -52,7 +52,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         try {
             validateSaveSnapshotCatalog(snapshot, draftState.appDataVersion, createSaveGameData(draftState.buildingsList, draftState.itemsList, draftState.savesBuildingCatalog));
             const name = previous?.name ?? (candidate.fileName!.replace(/\.sav$/i, '').trim().slice(0, 120) || 'Save');
-            workspace = createSaveWorkspace(workspaceId, name, snapshot, previous);
+            workspace = createSaveWorkspace(workspaceId, name, snapshot);
         } catch (error) { candidate.error = error instanceof SaveWorkspaceLimitError ? 'save-storage-limit' : 'structure'; return; }
         if ((!previous && Object.keys(draftState.savesWorkspaces).length >= MAX_SAVE_WORKSPACES)
             || saveCollectionStorageBytes({ ...draftState.savesWorkspaces, [workspaceId]: workspace }) > MAX_SAVES_BYTES) {
@@ -69,6 +69,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
             draftState.savesSelectedView = 'map';
             delete draftState.savesMapViewports[workspaceId];
         }
+        draftState.plannerComparisonCoreIds = [];
         draftState.savesActiveWorkspaceId = workspaceId;
         draftState.savesSelections[workspaceId] = { coreId: retainedSelection };
         draftState.savesImport = createSaveImportState(requestId + 1);
@@ -80,7 +81,10 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         draftState.savesImport.error = error;
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_WORKSPACE, ({ draftState }, id) => {
-        if (draftState.savesStorageError !== 'load' && Object.hasOwn(draftState.savesWorkspaces, id)) draftState.savesActiveWorkspaceId = id;
+        if (draftState.savesStorageError !== 'load' && Object.hasOwn(draftState.savesWorkspaces, id) && draftState.savesActiveWorkspaceId !== id) {
+            draftState.plannerComparisonCoreIds = [];
+            draftState.savesActiveWorkspaceId = id;
+        }
     });
     registrar.regEvent(appIds.events.SAVES_RENAME_WORKSPACE, ({ draftState }, id, name) => {
         const workspace = draftState.savesWorkspaces[id];
@@ -92,12 +96,14 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         if (draftState.savesStorageError === 'load' || !Object.hasOwn(draftState.savesWorkspaces, id)) return;
         const order = workspaceIds(draftState.savesWorkspaces, draftState.savesWorkspaceOrder);
         const index = order.indexOf(id);
+        const wasActive = getActiveSaveWorkspace(draftState)?.id === id;
         delete draftState.savesWorkspaces[id];
         delete draftState.savesSelections[id];
         delete draftState.savesMapViewports[id];
         delete draftState.savesMapSelectedNodes[id];
         draftState.savesWorkspaceOrder = order.filter(entry => entry !== id);
-        if (draftState.savesActiveWorkspaceId === id) {
+        if (wasActive) {
+            draftState.plannerComparisonCoreIds = [];
             draftState.savesActiveWorkspaceId = draftState.savesWorkspaceOrder[Math.max(0, index - 1)] ?? draftState.savesWorkspaceOrder[0] ?? null;
         }
         if (draftState.savesImport.targetWorkspaceId === id) {
@@ -132,19 +138,6 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         if (draftState.savesStorageError === 'load' || !Object.hasOwn(draftState.savesWorkspaces, id)) return;
         if (coreId !== null && !workspace.snapshot.cores.some(core => core.id === coreId)) return;
         draftState.savesSelections[id] = { coreId };
-    });
-    registrar.regEvent(appIds.events.SAVES_SET_CORE_OBJECTIVE, ({ draftState }, id, coreId, value) => {
-        if (draftState.savesStorageError === 'load' || !Object.hasOwn(draftState.savesWorkspaces, id)) return;
-        const workspace = draftState.savesWorkspaces[id];
-        const core = workspace.snapshot.cores.find(core => core.id === coreId);
-        if (!core) return;
-        const key = coreKey(core);
-        if (value === null) { delete workspace.coreSettings[key]; return; }
-        try {
-            const objective = normalizeSaveObjective(value);
-            validateSaveObjectiveCatalog(objective, new Map(draftState.itemsList.map(item => [item.id, item])), draftState.corporationsList);
-            workspace.coreSettings[key] = { objective };
-        } catch { /* Reject malformed external selections without changing saved intent. */ }
     });
     registrar.regEvent(appIds.events.SAVES_STORAGE_FAILED, ({ draftState }, error) => {
         // A later write diagnostic must not hide a failed load.
