@@ -1,3 +1,4 @@
+import type { PlannerResource, PlannerBuildingBaseline } from './resources';
 import type { UiText } from '@/shared/i18n/core';
 import type { PlannerFlowDirection } from './flow-graph';
 import type { CorporationLevelSelection, RecipeAlternativePreset } from '@/app/uklad/model';
@@ -18,7 +19,8 @@ export interface PlannerTab {
     targetAmount: number;
     multiTargets: { itemId: string; amount: number }[];
     recipeSelections: Record<string, string>;
-    externalInputs: Record<string, number>;
+    resources: PlannerResource[];
+    buildingBaseline: PlannerBuildingBaseline | null;
     groupByStage: boolean;
     flowDirection: PlannerFlowDirection;
     activeView: PlannerView;
@@ -44,7 +46,8 @@ export function createPlannerTab(id: string, name: string, mode: PlannerMode, ac
         targetAmount: 60,
         multiTargets: [],
         recipeSelections: {},
-        externalInputs: {},
+        resources: [],
+        buildingBaseline: null,
         groupByStage: false,
         flowDirection: 'LR',
     };

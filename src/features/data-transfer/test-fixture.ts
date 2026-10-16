@@ -28,7 +28,16 @@ export function archiveFixture() {
     }];
     state.plannerTabs = [
         { ...createPlannerTab('single', 'Single plan', 'single', 'table'), selectedItemId: 'frame', targetAmount: 25,
-            recipeSelections: { frame: 'assembler:alt' }, selectedCorporationLevel: { corporationId: 'corp', level: 2 }, flowDirection: 'BT', groupByStage: true },
+            recipeSelections: { frame: 'assembler:alt' }, selectedCorporationLevel: { corporationId: 'corp', level: 2 }, flowDirection: 'BT', groupByStage: true,
+            resources: [
+                { id: 'manual-plate', itemId: 'plate', ratePerMinute: 12, enabled: false },
+                { id: 'saved-wire', itemId: 'wire', ratePerMinute: 45, enabled: true, origin: {
+                    workspaceId: 'historical-save',
+                    coreKey: 'core:100:200:300', coreName: 'Northern core', buildingId: 42,
+                    buildingTypeId: 'receiver', buildingName: 'Cargo receiver',
+                } },
+            ],
+            buildingBaseline: { coreNames: ['Northern core'], counts: { assembler: 3, smelter: 2 } } },
         { ...createPlannerTab('multi', 'Multi plan', 'multi'), multiTargets: [{ itemId: 'frame', amount: 10 }, { itemId: 'wire', amount: 30 }] },
     ];
     return state;

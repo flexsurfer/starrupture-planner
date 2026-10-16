@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import type { PlannerMode, PlannerTab } from '../state';
+import { PlanSettings } from './PlanSettings';
 
 export function PlannerTabs() {
     const { t } = useTranslation();
@@ -12,7 +13,7 @@ export function PlannerTabs() {
     const list = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        list.current?.querySelector('[aria-selected="true"]')?.closest('.planner-tab')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     }, [activeTab?.id]);
 
     const close = (tab: PlannerTab) => runtime.dispatch([
@@ -46,6 +47,7 @@ export function PlannerTabs() {
                     </svg>
                     <span className="truncate">{tab.name}</span>
                 </button>
+                {tab.id === activeTab?.id && <PlanSettings />}
                 <button type="button" className="planner-tab-close" aria-label={t("Close {name}", { name: tab.name })} title={t("Close tab")}
                     onClick={() => close(tab)}>
                     <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor"><path d="m4 4 8 8m0-8-8 8" /></svg>

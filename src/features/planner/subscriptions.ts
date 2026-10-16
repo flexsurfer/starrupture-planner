@@ -35,8 +35,6 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
     );
     registrar.regSub(appIds.subscriptions.PLANNER_ACTIVE_VIEW,
         () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.activeView ?? 'graph');
-    registrar.regSub(appIds.subscriptions.PLANNER_EXTERNAL_INPUTS,
-        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.externalInputs ?? {});
     registrar.regSub(appIds.subscriptions.PLANNER_GROUP_BY_STAGE,
         () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB]], ([tab]) => tab?.groupByStage ?? false);
     registrar.regSub(appIds.subscriptions.PLANNER_FLOW_DIRECTION,

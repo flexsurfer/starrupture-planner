@@ -26,6 +26,7 @@ it('opens tools directly and preserves URL, runtime and language across navigati
     await waitFor(() => expect(loadGameDataVersion).toHaveBeenCalledTimes(1));
     expect(document.querySelector('a[href="/planner/"]')).not.toBeNull();
     expect(document.querySelector('[data-seo]')).toBeNull();
+    expect(screen.queryByText('My Bases')).not.toBeInTheDocument();
 
     const historyLength = window.history.length;
     fireEvent.click(screen.getAllByRole('link', { name: 'Factory Map' })[0]);
@@ -50,6 +51,9 @@ it('opens tools directly and preserves URL, runtime and language across navigati
     expect(harness.getSubscriptionValue([appIds.subscriptions.UI_THEME])).toBe('light');
 
     act(() => harness.dispatchSync([appIds.events.BASES_SET_MODE, 'planning']));
+    expect(screen.queryByText('My Bases')).not.toBeInTheDocument();
+    act(() => harness.dispatchSync([appIds.events.BASES_CREATE_BASE, 'Existing base']));
+    expect(screen.getAllByText('My Bases')).toHaveLength(2);
     fireEvent.click(screen.getAllByRole('link', { name: 'My Bases' })[0]);
     await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('mybases'));
     const notice = screen.getByRole('note');
@@ -73,4 +77,7 @@ it('opens tools directly and preserves URL, runtime and language across navigati
     expect((await screen.findAllByRole('link', { name: 'Fabrikkarte' })).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: 'Meine Basen' }).length).toBeGreaterThan(0);
     expect(window.location.pathname).toBe('/map/');
+    const baseId = harness.getSubscriptionValue([appIds.subscriptions.BASES_LIST])[0].id;
+    act(() => harness.dispatchSync([appIds.events.BASES_DELETE_BASE, baseId]));
+    expect(screen.queryByText('Meine Basen')).not.toBeInTheDocument();
 });

@@ -57,6 +57,15 @@ export const stateKeys = {
 
 export const appIds = {
     events: {
+        PLANNER_ADD_MANUAL_RESOURCE: 'planner/add-manual-resource',
+        PLANNER_SET_RESOURCE_RATE: 'planner/set-resource-rate',
+        PLANNER_SET_RESOURCE_ENABLED: 'planner/set-resource-enabled',
+        PLANNER_REMOVE_RESOURCE: 'planner/remove-resource',
+        PLANNER_IMPORT_CORE_RESOURCES: 'planner/import-core-resources',
+        PLANNER_APPLY_RESOURCE_FIT: 'planner/apply-resource-fit',
+        PLANNER_SET_BUILDING_BASELINE: 'planner/set-building-baseline',
+        PLANNER_CLEAR_BUILDING_BASELINE: 'planner/clear-building-baseline',
+
         SAVES_STORAGE_FAILED: 'saves/storage-failed',
         SAVES_IMPORT_OPEN: 'saves/import-open',
         SAVES_IMPORT_CLOSE: 'saves/import-close',
@@ -121,6 +130,16 @@ export const appIds = {
         PRODUCTION_PLAN_MODAL_OPEN: 'production-plan-modal/open', PRODUCTION_PLAN_MODAL_CLOSE: 'production-plan-modal/close', PRODUCTION_PLAN_MODAL_SET_NAME: 'production-plan-modal/set-name', PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM: 'production-plan-modal/set-selected-item', PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'production-plan-modal/set-target-amount', PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'production-plan-modal/set-selected-corporation-level', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'production-plan-modal/set-recipe-selection', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS: 'production-plan-modal/set-recipe-selections', PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'production-plan-modal/toggle-input', PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'production-plan-modal/link-output-input', PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'production-plan-modal/set-match-inputs', PRODUCTION_PLAN_MODAL_SUBMIT: 'production-plan-modal/submit',
     },
     subscriptions: {
+        PLANNER_RESOURCES: 'planner/resources',
+        PLANNER_RESOURCE_ITEMS: 'planner/resource-items',
+        PLANNER_RESOURCE_SUMMARY: 'planner/resource-summary',
+        PLANNER_FILTERED_RESOURCE_SUMMARY: 'planner/filtered-resource-summary',
+        PLANNER_RESOURCE_PICKER: 'planner/resource-picker',
+        PLANNER_RESOURCE_PICKER_SOURCE: 'planner/resource-picker-source',
+        PLANNER_RESOURCE_FIT: 'planner/resource-fit',
+        PLANNER_BUILDING_COMPARISON: 'planner/building-comparison',
+        PLANNER_STATS_BUILDING_ROWS: 'planner/stats-building-rows',
+
         SAVES_BUILDING_CATALOG: 'saves/building-catalog',
         SAVES_GAME_DATA: 'saves/game-data',
         SAVES_IMPORT: 'saves/import-state',

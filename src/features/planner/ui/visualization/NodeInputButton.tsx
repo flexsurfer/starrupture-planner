@@ -4,27 +4,30 @@ import { createPortal } from 'react-dom';
 import type { FlowNode } from '@/features/planner/types';
 
 export interface NodeInputActions {
+    onManageResources?: (node: FlowNode) => void;
     renderInputDialog?: (node: FlowNode, onClose: () => void) => ReactNode;
     onRevertInput?: (node: FlowNode) => void;
     inputDisabledReason?: string;
 }
 
-export function NodeInputButton({ node, itemName, isExternal, renderInputDialog, onRevertInput, inputDisabledReason }: NodeInputActions & {
+export function NodeInputButton({ node, itemName, isExternal, renderInputDialog, onRevertInput, inputDisabledReason, onManageResources }: NodeInputActions & {
     node: FlowNode;
     itemName: string;
     isExternal: boolean;
 }) {
-    if (node.nodeType === 'launcher' || (isExternal ? !onRevertInput : !renderInputDialog)) return null;
+    if (node.nodeType === 'launcher' || (!onManageResources && (isExternal ? !onRevertInput : !renderInputDialog))) return null;
     return <InputActionButton itemName={itemName} isExternal={isExternal} inputDisabledReason={inputDisabledReason}
+        onManageResources={onManageResources ? () => onManageResources(node) : undefined}
         onRevertInput={() => onRevertInput?.(node)} renderInputDialog={close => renderInputDialog?.(node, close)} />;
 }
 
-export function InputActionButton({ itemName, isExternal, renderInputDialog, onRevertInput, inputDisabledReason, trash = false }: {
+export function InputActionButton({ itemName, isExternal, renderInputDialog, onRevertInput, inputDisabledReason, onManageResources, trash = false }: {
     itemName: string;
     isExternal: boolean;
     renderInputDialog?: (onClose: () => void) => ReactNode;
     onRevertInput?: () => void;
     inputDisabledReason?: string;
+    onManageResources?: () => void;
     trash?: boolean;
 }) {
     const { t } = useTranslation();
@@ -57,17 +60,18 @@ export function InputActionButton({ itemName, isExternal, renderInputDialog, onR
         };
     }, [container]);
 
-    const label = trash ? t("Remove external input for {itemName}", { itemName: itemName }) : isExternal ? t("Revert {itemName} to production", { itemName: itemName }) : t("Use external resource for {itemName}", { itemName: itemName });
+    const label = onManageResources ? t("Manage resources for {itemName}", { itemName }) : trash ? t("Remove resource for {itemName}", { itemName }) : isExternal ? t("Revert {itemName} to production", { itemName }) : t("Use external resource for {itemName}", { itemName });
     return <>
-        <button ref={button} type="button" aria-label={label} aria-haspopup="dialog"
+        <button ref={button} type="button" aria-label={label} aria-haspopup={onManageResources ? undefined : 'dialog'}
             title={inputDisabledReason || label} disabled={!!inputDisabledReason}
             className="nodrag nopan btn btn-xs size-6 min-h-6 shrink-0 rounded border border-base-content/20 bg-base-300 p-0 text-base-content/75 hover:border-primary hover:text-primary"
             onClick={event => {
                 event.stopPropagation();
+                if (onManageResources) { onManageResources(); return; }
                 setContainer(event.currentTarget.closest('dialog') ?? document.body);
             }}>
             <svg aria-hidden="true" className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                {trash ? <path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" /> : isExternal ? <path d="M4 10h10a6 6 0 0 1 0 12M4 10l5-5M4 10l5 5" />
+                {onManageResources ? <><path d="M4 7h16M4 17h16" /><path d="M9 4v6M15 14v6" /></> : trash ? <path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" /> : isExternal ? <path d="M4 10h10a6 6 0 0 1 0 12M4 10l5-5M4 10l5 5" />
                     : <><path d="M14 4h6v16h-6M3 12h12m-4-4 4 4-4 4" /></>}
             </svg>
         </button>
@@ -86,16 +90,16 @@ export function InputActionButton({ itemName, isExternal, renderInputDialog, onR
                 else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
             }}>
             {isExternal ? <div className="modal modal-open">
-                <div role="alertdialog" aria-modal="true" aria-label={t("Remove external input?")}
+                <div role="alertdialog" aria-modal="true" aria-label={t("Remove resource?")}
                     className="modal-box max-w-sm space-y-4">
-                    <h3 className="text-lg font-semibold">{t("Remove external input?")}</h3>
-                    <p>{t("Remove the external input for {itemName} and revert to production?", { itemName: itemName })}</p>
+                    <h3 className="text-lg font-semibold">{t("Remove resource?")}</h3>
+                    <p>{t("Remove the resource for {itemName} and produce it in this plan?", { itemName })}</p>
                     <div className="modal-action">
                         <button type="button" className="btn btn-ghost btn-sm" onClick={close}>{t("Cancel")}</button>
                         <button type="button" className="btn btn-primary btn-sm" onClick={() => {
                             close();
                             onRevertInput?.();
-                        }}>{t("Remove input")}</button>
+                        }}>{t("Remove resource")}</button>
                     </div>
                 </div>
                 <div className="modal-backdrop" onClick={close} />

@@ -1,3 +1,4 @@
+import { normalizePlannerResources, normalizePlannerBuildingBaseline, nextPlannerResourceId, isValidResourceRate } from './resources';
 import { message } from '@/shared/i18n/core';
 import { createPlannerTab, getActivePlannerTab, type PlannerTab } from './state';
 import { getMultiTargetWarning } from './target-conflicts';
@@ -47,14 +48,17 @@ function validateTargets(state: AppState, tab: PlannerTab, ids: string[], select
 export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
     registrar.regEvent(appIds.events.PLANNER_SET_EXTERNAL_INPUT, ({ draftState }, itemId, amount) => {
         const tab = getActivePlannerTab(draftState);
-        if (!tab || !draftState.itemsList.some(item => item.id === itemId) || !Number.isFinite(amount) || amount <= 0) return;
+        if (!tab || !draftState.itemsList.some(item => item.id === itemId) || !isValidResourceRate(amount)) return;
         if (tab.mode === 'multi' ? tab.multiTargets.some(target => target.itemId === itemId) : tab.selectedItemId === itemId) return;
-        tab.externalInputs ??= {};
-        tab.externalInputs[itemId] = amount;
+        const manual = tab.resources.find(row => row.itemId === itemId && !row.origin);
+        if (manual) { manual.ratePerMinute = amount; manual.enabled = true; }
+        else if (tab.resources.length < 10000) {
+            tab.resources.push({ id: nextPlannerResourceId(tab.resources), itemId, ratePerMinute: amount, enabled: true });
+        }
     });
     registrar.regEvent(appIds.events.PLANNER_REMOVE_EXTERNAL_INPUT, ({ draftState }, itemId) => {
         const tab = getActivePlannerTab(draftState);
-        if (tab?.externalInputs) delete tab.externalInputs[itemId];
+        if (tab) tab.resources = tab.resources.filter(row => row.itemId !== itemId);
     });
     registrar.regEvent(appIds.events.PLANNER_REQUEST_TAB_CREATION, ({ draftState }) => {
         draftState.plannerTabCreation = {};
@@ -101,7 +105,8 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
             selectedCorporationLevel: source.selectedCorporationLevel ? { ...source.selectedCorporationLevel } : null,
             multiTargets: source.multiTargets.map(target => ({ ...target })),
             recipeSelections: { ...source.recipeSelections },
-            externalInputs: { ...source.externalInputs },
+            resources: normalizePlannerResources(source.resources),
+            buildingBaseline: normalizePlannerBuildingBaseline(source.buildingBaseline),
         });
         draftState.plannerActiveTabId = id;
         draftState.plannerTabCreation = null;

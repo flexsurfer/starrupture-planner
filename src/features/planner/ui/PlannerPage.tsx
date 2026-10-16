@@ -1,5 +1,5 @@
-import { PlannerExternalInputs } from './controls/PlannerExternalInputs';
-import { PlanSettings } from './PlanSettings';
+import { PlannerResourcesButton } from './controls/PlannerResourcesButton';
+import { PlannerResourcesDock } from './PlannerResourcesDock';
 import { PlannerTabs, PlannerTabCreation } from './PlannerTabs';
 import { appIds } from '@/app/uklad/catalog';
 import { useSubscription } from '@/app/uklad/bindings';
@@ -18,7 +18,7 @@ import { PlannerMultiTargets } from './controls/PlannerMultiTargets';
  * - Building count calculations and material flow rates
  */
 
-import React from 'react';
+import React, { useCallback, useId, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 
 import {
@@ -35,26 +35,35 @@ import { PlannerViews } from './visualization/PlannerViews';
  */
 const PlannerPageInner: React.FC = () => {
     const mode = useSubscription([appIds.subscriptions.PLANNER_MODE]);
+    const [resourceEditor, setResourceEditor] = useState<{ itemId?: string; amount?: number; requestId?: number } | null>(null);
+    const panelId = useId();
+    const openResource = useCallback((itemId: string, amount: number) => setResourceEditor(previous => ({
+        itemId, amount, requestId: (previous?.requestId ?? 0) + 1,
+    })), []);
+    const closeResources = useCallback(() => setResourceEditor(null), []);
+    const clearResourceSelection = useCallback(() => setResourceEditor(previous => previous
+        ? { requestId: previous.requestId } : null), []);
     return (
         <div className="h-full flex flex-col bg-base-100">
             <PlannerTargetAlert />
-            <PlannerViews renderHeader={() => (
+            <PlannerViews onManageResource={openResource}
+                sidebar={resourceEditor && <PlannerResourcesDock id={panelId} focusItemId={resourceEditor.itemId}
+                    initialAmount={resourceEditor.amount} requestId={resourceEditor.requestId} onClose={closeResources}
+                    onClearNodeSelection={clearResourceSelection} />}
+                renderHeader={() => (
                 <div className="flex flex-col gap-2 p-2 sm:p-1 bg-base-200 shadow-lg shrink-0">
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 sm:gap-x-4 lg:gap-x-6">
-                        <div className={mode === 'single' ? 'flex w-full min-w-0 items-center gap-1.5 sm:contents' : 'contents'}>
-                            {mode === 'multi' ? <PlannerMultiTargets /> : <div className="flex min-w-0 flex-1 sm:flex-none items-center gap-2 sm:gap-4">
-                                <PlannerItemSelector className="select-sm w-0 min-w-0 flex-1 sm:w-50 sm:flex-none text-xs sm:text-sm" />
-                                <div className="flex shrink-0 items-center gap-2">
-                                    <PlannerTargetInput className="input-sm text-xs sm:text-sm" />
-                                </div>
-                            </div>}
-                            <div className="shrink-0"><PlannerStatsDisplay /></div>
-                        </div>
-                        {mode === 'single' && <PlannerCorporationLevelSelector className="max-w-full sm:max-w-md" />}
-                        <div className="flex items-center gap-1.5">
+                        {mode === 'multi' ? <PlannerMultiTargets /> : <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:gap-4">
+                            <PlannerItemSelector className="select-sm w-0 min-w-0 flex-1 sm:w-50 sm:flex-none text-xs sm:text-sm" />
+                            <div className="flex shrink-0 items-center gap-2">
+                                <PlannerTargetInput className="input-sm text-xs sm:text-sm" />
+                            </div>
+                        </div>}
+                        <div className="flex max-w-full flex-wrap items-center gap-1.5">
                             <PlannerRecipeSelector />
-                            <PlannerExternalInputs />
-                            <PlanSettings />
+                            <PlannerResourcesButton open={resourceEditor !== null} panelId={panelId} onClick={() => setResourceEditor(value => value ? null : {})} />
+                            <PlannerStatsDisplay />
+                            {mode === 'single' && <PlannerCorporationLevelSelector className="max-w-full sm:max-w-md" />}
                         </div>
                     </div>
                 </div>

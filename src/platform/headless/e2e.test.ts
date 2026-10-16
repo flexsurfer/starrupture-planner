@@ -186,6 +186,9 @@ describe('headless application E2E', () => {
             active: [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE], one: [appIds.subscriptions.SAVES_WORKSPACE_BY_ID, 'one'],
             overview: [appIds.subscriptions.SAVES_OVERVIEW, 'one'], core: [appIds.subscriptions.SAVES_CORE_BY_ID, 'one', 1],
             selected: [appIds.subscriptions.SAVES_SELECTED_CORE, 'one'], candidate: [appIds.subscriptions.SAVES_IMPORT],
+            selectedView: [appIds.subscriptions.SAVES_SELECTED_VIEW], selectedNodes: [appIds.subscriptions.SAVES_MAP_SELECTED_NODES],
+            display: [appIds.subscriptions.SAVES_MAP_DISPLAY], layers: [appIds.subscriptions.SAVES_MAP_LAYERS],
+            viewports: [appIds.subscriptions.SAVES_MAP_VIEWPORTS], viewport: [appIds.subscriptions.SAVES_MAP_VIEWPORT, 'one'],
             bases: [appIds.subscriptions.BASES_LIST], planner: [appIds.subscriptions.PLANNER_TABS],
         } as const);
         await dispatch(scenario, [appIds.events.BASES_CREATE_BASE, 'Keep manual work']);
@@ -197,6 +200,19 @@ describe('headless application E2E', () => {
             await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, saves.value('candidate').requestId, analyzeSave(snapshotFixture(), extractionContext)]);
         };
         await importCandidate('one');
+        await dispatchAll(scenario, [
+            [appIds.events.SAVES_SELECT_MAP_NODE, 'one', 200],
+            [appIds.events.SAVES_SELECT_VIEW, 'overview'],
+            [appIds.events.SAVES_SET_MAP_DISPLAY, { buildingSize: 88, showNames: true, showResources: true, showGrid: false, animateCargo: false }],
+            [appIds.events.SAVES_SET_MAP_LAYERS, { showLinks: true, showBounds: false, showPowerNetworks: true }],
+            [appIds.events.SAVES_SET_MAP_VIEWPORT, 'one', 12, -34, 0.8],
+        ]);
+        expect(saves.value('selectedNodes')).toEqual({ one: 200 });
+        expect(saves.value('selectedView')).toBe('overview');
+        expect(saves.value('display')).toMatchObject({ buildingSize: 88, showNames: true, showGrid: false });
+        expect(saves.value('layers')).toEqual({ showLinks: true, showBounds: false, showPowerNetworks: true });
+        expect(saves.value('viewport')).toEqual({ x: 12, y: -34, zoom: 0.8 });
+        expect(saves.value('viewports')).toEqual({ one: saves.value('viewport') });
         await dispatch(scenario, [appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'First world']);
         await dispatch(scenario, [appIds.events.SAVES_SELECT_CORE, 'one', 1]);
         await dispatch(scenario, [appIds.events.SAVES_SET_CORE_OBJECTIVE, 'one', 1, { kind: 'intermediate', itemIds: ['tube'] }]);
@@ -243,6 +259,91 @@ describe('headless application E2E', () => {
         expect(reopened.value('active')?.id).toBe('two');
         restoredPersistence.dispose();
     });
+    it('captures resources from several cores, edits allocations, fits output, and keeps comparison after removing a save', async () => {
+        const scenario = createScenario({ effects: { decodeSaveFile: () => new Promise(() => {}) } });
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
+        const importer = mountView(scenario, 'resource source import', { candidate: [appIds.subscriptions.SAVES_IMPORT] } as const);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_OPEN, 'resource-world']);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, { name: 'resources.sav', size: 10, arrayBuffer: async () => new ArrayBuffer(10) }]);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, importer.value('candidate').requestId, analyzeSave(snapshotFixture(), extractionContext)]);
+        importer.unmount();
+        await dispatchAll(scenario, [
+            [appIds.events.PLANNER_OPEN_ITEM, 'bar_titanium'],
+            [appIds.events.PLANNER_CREATE_TAB, 'resources', 'Titanium resources', 'single'],
+        ]);
+        const panel = mountView(scenario, 'planner resources panel', {
+            rows: [appIds.subscriptions.PLANNER_RESOURCES], summary: [appIds.subscriptions.PLANNER_RESOURCE_SUMMARY],
+            items: [appIds.subscriptions.PLANNER_RESOURCE_ITEMS],
+            filtered: [appIds.subscriptions.PLANNER_FILTERED_RESOURCE_SUMMARY, 'ore_titanium'],
+            allResources: [appIds.subscriptions.PLANNER_FILTERED_RESOURCE_SUMMARY, null],
+            otherItem: [appIds.subscriptions.PLANNER_FILTERED_RESOURCE_SUMMARY, 'ore_iron'],
+            fit: [appIds.subscriptions.PLANNER_RESOURCE_FIT],
+            target: [appIds.subscriptions.PLANNER_TARGET_AMOUNT],
+            flow: [appIds.subscriptions.PLANNER_PRODUCTION_FLOW],
+        } as const);
+        expect(panel.value('rows')).toEqual([]);
+        expect(panel.value('items').map(item => item.id)).toEqual(['ore_titanium']);
+        expect(panel.value('fit').reason).toBe('no-resources');
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_MANUAL_RESOURCE, 'ore_titanium', 100]);
+        const manualId = panel.value('rows')[0].id;
+        await dispatch(scenario, [appIds.events.PLANNER_SET_RESOURCE_RATE, manualId, 120]);
+        expect(panel.value('summary')[0]).toMatchObject({ itemId: 'ore_titanium', availableRate: 120 });
+        expect(panel.value('filtered')).toEqual(panel.value('summary'));
+        expect(panel.value('allResources')).toEqual(panel.value('summary'));
+        expect(panel.value('otherItem')).toEqual([]);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_RESOURCE_ENABLED, manualId, false]);
+        expect(panel.value('summary')[0]).toMatchObject({ availableRate: 0, usedRate: 0 });
+        await dispatch(scenario, [appIds.events.PLANNER_SET_RESOURCE_ENABLED, manualId, true]);
+        await dispatch(scenario, [appIds.events.PLANNER_REMOVE_RESOURCE, manualId]);
+        expect(panel.value('rows')).toEqual([]);
+        await dispatch(scenario, [appIds.events.PLANNER_ADD_MANUAL_RESOURCE, 'ore_titanium', 120]);
+        expect(panel.value('rows')).toEqual([expect.objectContaining({ id: manualId, ratePerMinute: 120, enabled: true })]);
+
+        const picker = mountView(scenario, 'core resources picker', {
+            options: [appIds.subscriptions.PLANNER_RESOURCE_PICKER, 'resource-world'],
+            source: [appIds.subscriptions.PLANNER_RESOURCE_PICKER_SOURCE, 'resource-world'],
+        } as const);
+        const options = picker.value('options')!;
+        expect(options.compatible).toBe(true);
+        expect(picker.value('source')?.snapshotKey).toBe(options.snapshotKey);
+        const selected = options.cores.flatMap(core => core.buildings.filter(building => building.itemId === 'ore_titanium').slice(0, 1));
+        expect(selected).toHaveLength(2);
+        await dispatch(scenario, [appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'resource-world', options.snapshotKey,
+            selected.map(building => ({ buildingId: building.buildingId }))]);
+        expect(panel.value('rows')).toHaveLength(3);
+        expect(picker.value('options')?.cores.flatMap(core => core.buildings).filter(building => building.alreadyAdded)).toHaveLength(2);
+        const fittedTarget = panel.value('fit').targetAmount;
+        expect(fittedTarget).toBeGreaterThan(0);
+        await dispatch(scenario, [appIds.events.PLANNER_APPLY_RESOURCE_FIT]);
+        expect(panel.value('target')).toBe(fittedTarget);
+        const statistics = mountView(scenario, 'planner building statistics', {
+            comparison: [appIds.subscriptions.PLANNER_BUILDING_COMPARISON],
+            rows: [appIds.subscriptions.PLANNER_STATS_BUILDING_ROWS],
+        } as const);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_BUILDING_BASELINE, 'resource-world', options.snapshotKey, options.cores.map(core => core.coreId)]);
+        const comparison = statistics.value('comparison');
+        expect(comparison.baseline?.coreNames).toHaveLength(2);
+        expect(comparison.rows.some(row => row.existing > 0)).toBe(true);
+        for (const row of comparison.rows) expect(statistics.value('rows')).toContainEqual(expect.objectContaining({
+            buildingId: row.buildingTypeId, count: row.planned,
+            comparison: { existing: row.existing, additional: row.additional },
+        }));
+        const comparedRows = statistics.value('rows');
+        const copiedRows = panel.value('rows');
+        const production = panel.value('flow');
+        picker.unmount();
+        await dispatch(scenario, [appIds.events.SAVES_REMOVE_WORKSPACE, 'resource-world']);
+        expect(panel.value('rows')).toEqual(copiedRows);
+        expect(panel.value('flow')).toEqual(production);
+        expect(statistics.value('comparison')).toEqual(comparison);
+        expect(statistics.value('rows')).toEqual(comparedRows);
+        await dispatch(scenario, [appIds.events.PLANNER_CLEAR_BUILDING_BASELINE]);
+        expect(statistics.value('comparison')).toEqual({ baseline: null, rows: [] });
+        expect(statistics.value('rows').every(row => row.comparison === null)).toBe(true);
+        statistics.unmount();
+        panel.unmount();
+    });
+
     it('keeps imported extraction and individual transport links separate from manually tracked bases', async () => {
         const scenario = createScenario({ effects: { decodeSaveFile: () => new Promise(() => {}) } });
         await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
@@ -466,6 +567,9 @@ describe('headless application E2E', () => {
             activeId: [appIds.subscriptions.PLANNER_ACTIVE_TAB_ID],
             creation: [appIds.subscriptions.PLANNER_TAB_CREATION],
             activeView: [appIds.subscriptions.PLANNER_ACTIVE_VIEW],
+            graph: [appIds.subscriptions.PLANNER_FLOW_GRAPH],
+            pinned: [appIds.subscriptions.PLANNER_PINNED_NODES], activePinned: [appIds.subscriptions.PLANNER_ACTIVE_PINNED_NODE],
+            viewports: [appIds.subscriptions.PLANNER_VIEWPORTS], activeViewport: [appIds.subscriptions.PLANNER_ACTIVE_VIEWPORT],
         } as const);
         expect(view.value('tabs')).toEqual([]);
         expect(view.value('active')).toBeNull();
@@ -483,6 +587,15 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.PLANNER_SET_ACTIVE_VIEW, 'table']);
         await dispatch(scenario, [appIds.events.PLANNER_SET_FLOW_DIRECTION, 'BT']);
         await dispatch(scenario, [appIds.events.PLANNER_SET_GROUP_BY_STAGE, true]);
+        const pinnedNodeId = view.value('graph').nodes[0].id;
+        await dispatchAll(scenario, [
+            [appIds.events.PLANNER_SET_PINNED_NODE, 'single', pinnedNodeId],
+            [appIds.events.PLANNER_SET_VIEWPORT, 'single', 25, -10, 1.2],
+        ]);
+        expect(view.value('pinned')).toEqual({ single: pinnedNodeId });
+        expect(view.value('activePinned')).toBe(pinnedNodeId);
+        expect(view.value('viewports')).toEqual({ single: { x: 25, y: -10, zoom: 1.2 } });
+        expect(view.value('activeViewport')).toEqual({ x: 25, y: -10, zoom: 1.2 });
         const single = view.value('active');
         expect(single).toMatchObject({ name: 'Iron plan', mode: 'single', targetAmount: 150, activeView: 'table' });
         // Duplicate IDs and events belonging to the other mode cannot overwrite the tab.
@@ -498,6 +611,8 @@ describe('headless application E2E', () => {
         expect(view.value('tabs')).toEqual([single]);
         await dispatch(scenario, [appIds.events.PLANNER_DUPLICATE_TAB, 'single', 'copy']);
         expect(view.value('active')).toEqual({ ...single, id: 'copy', name: 'Iron plan (2)' });
+        expect(view.value('activePinned')).toBeNull();
+        expect(view.value('activeViewport')).toBeNull();
         await dispatch(scenario, [appIds.events.PLANNER_SET_TARGET_AMOUNT, 300]);
         expect(view.value('active')?.targetAmount).toBe(300);
         expect(view.value('tabs')[0]).toEqual(single);
@@ -522,6 +637,8 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.PLANNER_CANCEL_TAB_CREATION]);
         await dispatch(scenario, [appIds.events.PLANNER_CLOSE_TAB, 'single']);
         expect(view.value('active')).toEqual(multi);
+        expect(view.value('pinned')).toEqual({});
+        expect(view.value('viewports')).toEqual({});
         expect(view.value('activeId')).toBe('multi');
         await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'third', 'Third plan', 'single']);
         await dispatch(scenario, [appIds.events.PLANNER_CLOSE_TAB, 'multi']);

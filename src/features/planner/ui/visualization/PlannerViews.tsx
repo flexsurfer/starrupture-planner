@@ -7,7 +7,11 @@ import { PlannerProductionTable } from './PlannerProductionTable';
 
 const VIEWS = ['graph', 'table'] as const;
 
-export const PlannerViews = ({ renderHeader }: { renderHeader?: () => ReactNode }) => {
+export const PlannerViews = ({ renderHeader, sidebar, onManageResource }: {
+    renderHeader?: () => ReactNode;
+    sidebar?: ReactNode;
+    onManageResource?: (itemId: string, amount: number) => void;
+}) => {
     const { t } = useTranslation();
     const mode = useSubscription([appIds.subscriptions.PLANNER_MODE]);
     const warning = useSubscription([appIds.subscriptions.PLANNER_MULTI_TARGET_WARNING]);
@@ -47,22 +51,25 @@ export const PlannerViews = ({ renderHeader }: { renderHeader?: () => ReactNode 
     return (
         <div className="h-full min-h-0 flex flex-col">
             {renderHeader?.()}
-            <div className="relative isolate flex-1 min-h-0">
-                <div className="absolute left-2 top-2 z-20 shadow">{viewControl}</div>
-                {/* Keep both panels mounted and sized to preserve viewport and scroll state. */}
-                {VIEWS.map(view => (
-                    <div
-                        key={view}
-                        role="tabpanel"
-                        id={`${id}-${view}-panel`}
-                        aria-labelledby={`${id}-${view}-tab`}
-                        aria-hidden={activeView !== view}
-                        inert={activeView !== view}
-                        className={`absolute inset-0 bg-base-100 ${view === 'table' ? 'pt-14' : ''} ${activeView === view ? 'visible opacity-100 z-10' : 'invisible opacity-0 z-0 pointer-events-none'}`}
-                    >
-                        {calculationPaused ? <div className="flex h-full items-center justify-center p-4 text-base-content/70">{t("Resolve the target warning to calculate production.")}</div> : view === 'graph' ? <PlannerFlowDiagram /> : <PlannerProductionTable />}
-                    </div>
-                ))}
+            <div className="relative flex flex-1 min-h-0 min-w-0">
+                <div className="relative isolate flex-1 min-h-0 min-w-0">
+                    <div className="absolute left-2 top-2 z-20 shadow">{viewControl}</div>
+                    {/* Keep both panels mounted and sized to preserve viewport and scroll state. */}
+                    {VIEWS.map(view => (
+                        <div
+                            key={view}
+                            role="tabpanel"
+                            id={`${id}-${view}-panel`}
+                            aria-labelledby={`${id}-${view}-tab`}
+                            aria-hidden={activeView !== view}
+                            inert={activeView !== view}
+                            className={`absolute inset-0 bg-base-100 ${view === 'table' ? 'pt-14' : ''} ${activeView === view ? 'visible opacity-100 z-10' : 'invisible opacity-0 z-0 pointer-events-none'}`}
+                        >
+                            {calculationPaused ? <div className="flex h-full items-center justify-center p-4 text-base-content/70">{t("Resolve the target warning to calculate production.")}</div> : view === 'graph' ? <PlannerFlowDiagram onManageResource={onManageResource} sidebarOpen={!!sidebar} /> : <PlannerProductionTable onManageResource={onManageResource} />}
+                        </div>
+                    ))}
+                </div>
+                {sidebar}
             </div>
         </div>
     );

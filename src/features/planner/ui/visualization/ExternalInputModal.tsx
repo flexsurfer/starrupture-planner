@@ -46,7 +46,7 @@ export function ExternalInputModal({ item, building, initialAmount, title, child
             </>}
             <div className="modal-action">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>{t("Cancel")}</button>
-                {!targetSelector && <button type="submit" className="btn btn-primary btn-sm" disabled={!valid}>{t("Add input")}</button>}
+                {!targetSelector && <button type="submit" className="btn btn-primary btn-sm" disabled={!valid}>{t("Add resource")}</button>}
             </div>
         </form>
         <div className="modal-backdrop" onClick={onClose} />
