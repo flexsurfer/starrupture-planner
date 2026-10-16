@@ -1,0 +1,341 @@
+{
+  "schemaVersion": 1,
+  "appDataVersion": "update2_QoL",
+  "steamBuildId": "25646882",
+  "mappings": {
+    "/Game/Chimera/Buildings/AcidExtractor/DA_AcidExtractor.DA_AcidExtractor": {
+      "id": "sulfur_extractor",
+      "tier": null,
+      "extractor": {
+        "tier": null,
+        "recipes": {
+          "/Game/Chimera/Crafting/CR_SulphurOre.CR_SulphurOre": {
+            "itemId": "ore_sulfur",
+            "purity": "not-applicable",
+            "ratePerMinute": 240
+          }
+        }
+      }
+    },
+    "/Game/Chimera/Buildings/Assembler/DA_Assembler.DA_Assembler": {
+      "id": "assembler",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/BaseCore/DA_BaseCore.DA_BaseCore": {
+      "id": "base_core",
+      "tier": null,
+      "role": "core"
+    },
+    "/Game/Chimera/Buildings/CombustionPowerGenerator/DA_CombustionPowerGenerator.DA_CombustionPowerGenerator": {
+      "id": "combustionpowergenerator",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Cooler/Active/DA_CoolerActive.DA_CoolerActive": {
+      "id": "base_core_amplifier_v1",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Cooler/Passive/DA_CoolerPassive.DA_CoolerPassive": {
+      "id": "base_core_amplifier_v2",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Crafter/DA_Crafter.DA_Crafter": {
+      "id": "fabricator",
+      "tier": 1
+    },
+    "/Game/Chimera/Buildings/CrafterTier2/DA_CrafterTier2.DA_CrafterTier2": {
+      "id": "craftertier2",
+      "tier": 2
+    },
+    "/Game/Chimera/Buildings/Exporter/DA_Exporter.DA_Exporter": {
+      "id": "orbital_cargo_launcher",
+      "tier": null,
+      "role": "launcher"
+    },
+    "/Game/Chimera/Buildings/ExporterTier2/DA_ExporterTier2.DA_ExporterTier2": {
+      "id": "exportertier2",
+      "tier": null,
+      "role": "launcher"
+    },
+    "/Game/Chimera/Buildings/Factory/DA_Factory.DA_Factory": {
+      "id": "factory",
+      "tier": 1
+    },
+    "/Game/Chimera/Buildings/FactoryTier2/DA_FactoryTier2.DA_FactoryTier2": {
+      "id": "factorytier2",
+      "tier": 2
+    },
+    "/Game/Chimera/Buildings/Forge/DA_Forge.DA_Forge": {
+      "id": "forge",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Furnace/DA_Furnace.DA_Furnace": {
+      "id": "furnace",
+      "tier": 1
+    },
+    "/Game/Chimera/Buildings/FurnaceTier2/DA_FurnaceTier2.DA_FurnaceTier2": {
+      "id": "furnacetier2",
+      "tier": 2
+    },
+    "/Game/Chimera/Buildings/GasExtractor/DA_GasExtractor.DA_GasExtractor": {
+      "id": "helium_extractor",
+      "tier": null,
+      "extractor": {
+        "tier": null,
+        "recipes": {
+          "/Game/Chimera/Crafting/CR_Helium.CR_Helium": {
+            "itemId": "helium",
+            "purity": "not-applicable",
+            "ratePerMinute": 240
+          }
+        }
+      }
+    },
+    "/Game/Chimera/Buildings/Hammer/DA_Hammer.DA_Hammer": {
+      "id": "mega_press",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/LaserDrill/DA_LaserDrill.DA_LaserDrill": {
+      "id": "laserdrill",
+      "tier": null,
+      "extractor": {
+        "tier": null,
+        "recipes": {
+          "/Game/Chimera/Crafting/LaserDrill/CR_GoethiteOre_LaserDrill.CR_GoethiteOre_LaserDrill": {
+            "itemId": "goethiteore",
+            "purity": "not-applicable",
+            "ratePerMinute": 15
+          }
+        }
+      }
+    },
+    "/Game/Chimera/Buildings/LiquidExtractor/DA_LiquidExtractor.DA_LiquidExtractor": {
+      "id": "liquidextractor",
+      "tier": null,
+      "extractor": {
+        "tier": null,
+        "recipes": {
+          "/Game/Chimera/Crafting/CR_MagicOilOre.CR_MagicOilOre": {
+            "itemId": "magicoilore",
+            "purity": "not-applicable",
+            "ratePerMinute": 10
+          }
+        }
+      }
+    },
+    "/Game/Chimera/Buildings/MechanicalDrill/DA_MechanicalDrill.DA_MechanicalDrill": {
+      "id": "ore_excavator",
+      "tier": 1,
+      "extractor": {
+        "tier": 1,
+        "recipes": {
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_CalciumOre_MechanicalDrill.CR_CalciumOre_MechanicalDrill": {
+            "itemId": "ore_calcium",
+            "purity": "normal",
+            "ratePerMinute": 120
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_CalciumOreImpure_MechanicalDrill.CR_CalciumOreImpure_MechanicalDrill": {
+            "itemId": "ore_calcium",
+            "purity": "impure",
+            "ratePerMinute": 60
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_CalciumOrePure_MechanicalDrill.CR_CalciumOrePure_MechanicalDrill": {
+            "itemId": "ore_calcium",
+            "purity": "pure",
+            "ratePerMinute": 240
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_TitaniumOre_MechanicalDrill.CR_TitaniumOre_MechanicalDrill": {
+            "itemId": "ore_titanium",
+            "purity": "normal",
+            "ratePerMinute": 120
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_TitaniumOreImpure_MechanicalDrill.CR_TitaniumOreImpure_MechanicalDrill": {
+            "itemId": "ore_titanium",
+            "purity": "impure",
+            "ratePerMinute": 60
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_TitaniumOrePure_MechanicalDrill.CR_TitaniumOrePure_MechanicalDrill": {
+            "itemId": "ore_titanium",
+            "purity": "pure",
+            "ratePerMinute": 240
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_WolframOre_MechanicalDrill.CR_WolframOre_MechanicalDrill": {
+            "itemId": "ore_wolfram",
+            "purity": "normal",
+            "ratePerMinute": 120
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_WolframOreImpure_MechanicalDrill.CR_WolframOreImpure_MechanicalDrill": {
+            "itemId": "ore_wolfram",
+            "purity": "impure",
+            "ratePerMinute": 60
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_WolframOrePure_MechanicalDrill.CR_WolframOrePure_MechanicalDrill": {
+            "itemId": "ore_wolfram",
+            "purity": "pure",
+            "ratePerMinute": 240
+          }
+        }
+      }
+    },
+    "/Game/Chimera/Buildings/MechanicalDrillTier2/DA_MechanicalDrillTier2.DA_MechanicalDrillTier2": {
+      "id": "mechanicaldrilltier2",
+      "tier": 2,
+      "extractor": {
+        "tier": 2,
+        "recipes": {
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_CalciumOre_MechanicalDrill.CR_CalciumOre_MechanicalDrill": {
+            "itemId": "ore_calcium",
+            "purity": "normal",
+            "ratePerMinute": 300
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_TitaniumOre_MechanicalDrill.CR_TitaniumOre_MechanicalDrill": {
+            "itemId": "ore_titanium",
+            "purity": "normal",
+            "ratePerMinute": 300
+          },
+          "/Game/Chimera/Crafting/MechanicalDrill/CR_WolframOre_MechanicalDrill.CR_WolframOre_MechanicalDrill": {
+            "itemId": "ore_wolfram",
+            "purity": "normal",
+            "ratePerMinute": 300
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_CalciumOre_MechanicalDrillTier2.CR_CalciumOre_MechanicalDrillTier2": {
+            "itemId": "ore_calcium",
+            "purity": "normal",
+            "ratePerMinute": 300
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_CalciumOreImpure_MechanicalDrillTier2.CR_CalciumOreImpure_MechanicalDrillTier2": {
+            "itemId": "ore_calcium",
+            "purity": "impure",
+            "ratePerMinute": 180
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_CalciumOrePure_MechanicalDrillTier2.CR_CalciumOrePure_MechanicalDrillTier2": {
+            "itemId": "ore_calcium",
+            "purity": "pure",
+            "ratePerMinute": 480
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_TitaniumOre_MechanicalDrillTier2.CR_TitaniumOre_MechanicalDrillTier2": {
+            "itemId": "ore_titanium",
+            "purity": "normal",
+            "ratePerMinute": 300
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_TitaniumOreImpure_MechanicalDrillTier2.CR_TitaniumOreImpure_MechanicalDrillTier2": {
+            "itemId": "ore_titanium",
+            "purity": "impure",
+            "ratePerMinute": 180
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_TitaniumOrePure_MechanicalDrillTier2.CR_TitaniumOrePure_MechanicalDrillTier2": {
+            "itemId": "ore_titanium",
+            "purity": "pure",
+            "ratePerMinute": 480
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_WolframOre_MechanicalDrillTier2.CR_WolframOre_MechanicalDrillTier2": {
+            "itemId": "ore_wolfram",
+            "purity": "normal",
+            "ratePerMinute": 300
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_WolframOreImpure_MechanicalDrillTier2.CR_WolframOreImpure_MechanicalDrillTier2": {
+            "itemId": "ore_wolfram",
+            "purity": "impure",
+            "ratePerMinute": 180
+          },
+          "/Game/Chimera/Crafting/MechanicalDrillTier2/CR_WolframOrePure_MechanicalDrillTier2.CR_WolframOrePure_MechanicalDrillTier2": {
+            "itemId": "ore_wolfram",
+            "purity": "pure",
+            "ratePerMinute": 480
+          }
+        }
+      }
+    },
+    "/Game/Chimera/Buildings/MilitaryAssembler/DA_MilitaryAssembler.DA_MilitaryAssembler": {
+      "id": "militaryassembler",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Modular/Habitats/HabitatBig/DA_HabitatBig.DA_HabitatBig": {
+      "id": "habitat_large",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Modular/Habitats/HabitatSmall/DA_HabitatSmall.DA_HabitatSmall": {
+      "id": "habitat",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/PackageStation/PackageReceiver/DA_PackageReceiver.DA_PackageReceiver": {
+      "id": "package_receiver",
+      "tier": null,
+      "role": "receiver"
+    },
+    "/Game/Chimera/Buildings/PackageStation/PackageSender/DA_PackageSender.DA_PackageSender": {
+      "id": "package_dispatcher",
+      "tier": null,
+      "role": "dispatcher"
+    },
+    "/Game/Chimera/Buildings/Pressurizer/DA_Pressurizer.DA_Pressurizer": {
+      "id": "pressurizer",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Refinery/DA_Refinery.DA_Refinery": {
+      "id": "refinery",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/ResourceRedistributor/DA_ResourceRedistributor.DA_ResourceRedistributor": {
+      "id": "storage_depot_v1",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Smelter/DA_Smelter.DA_Smelter": {
+      "id": "smelter",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/SolarPowerGenerator/DA_SolarPowerGenerator.DA_SolarPowerGenerator": {
+      "id": "solar_generator_v1",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/SolarPowerGeneratorTier2/DA_SolarPowerGeneratorTier2.DA_SolarPowerGeneratorTier2": {
+      "id": "solar_generator_v2",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Storage/DA_Storage.DA_Storage": {
+      "id": "storage_depot_v2",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/StorageDepot/DA_StorageDepot.DA_StorageDepot": {
+      "id": "expandable_storage",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/SynthesizerTier2/DA_SynthetizerTier2.DA_SynthetizerTier2": {
+      "id": "synthetizertier2",
+      "tier": 2
+    },
+    "/Game/Chimera/Buildings/Synthetizer/DA_Synthetizer.DA_Synthetizer": {
+      "id": "compounder",
+      "tier": 1
+    },
+    "/Game/Chimera/Buildings/Teleporter/DA_Teleporter.DA_Teleporter": {
+      "id": "teleporter",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Turret_Tier1/DA_TurretTier1.DA_TurretTier1": {
+      "id": "turret_v1",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Turret_Tier2/DA_TurretTier2.DA_TurretTier2": {
+      "id": "turret_v2",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/UniversalStorage/DA_UniversalStorage.DA_UniversalStorage": {
+      "id": "multistorage",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/WindPowerGenerator/DA_WindPowerGenerator.DA_WindPowerGenerator": {
+      "id": "wind_turbine_v1",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/WindPowerGeneratorTier2/DA_WindPowerGeneratorTier2.DA_WindPowerGeneratorTier2": {
+      "id": "wind_turbine_v2",
+      "tier": null
+    },
+    "/Game/Chimera/Buildings/Zipline/DA_Zipline.DA_Zipline": {
+      "id": "zipline",
+      "tier": null
+    }
+  },
+  "mappingRevision": "sha256:251875733baf623147dfa703130203bcb16c54b97dc6f08f0b79c6d36e4e4978",
+  "catalogRevision": "sha256:3869cdb6fee3b0910f45d3ab1dff5502bcb056b8ecb0d475fcef9ec95cc2567f"
+}
