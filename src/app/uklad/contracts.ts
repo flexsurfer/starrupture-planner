@@ -1,3 +1,4 @@
+import type { PlannerResource, PlannerResourceSummary, PlannerResourcePicker, PlannerResourceSelection, PlannerResourceFit, PlannerBuildingComparison } from '@/features/planner/resources';
 import type { MapDisplaySettings, MapLayers } from '@/features/saves/map-preferences';
 import type { SaveGameData } from '@/features/saves/game-data';
 import type { SaveMap } from '@/features/saves/map';
@@ -46,6 +47,7 @@ import type {
 import type {
     CorporationLevelInfo,
     PlannerDetailedStats,
+    PlannerStatsBuildingRow,
     PlannerRecipeOptionsItem,
     ProductionFlowResult,
     PlannerProductionFlowResult,
@@ -163,6 +165,15 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.productionPlanModalState]: AppState['productionPlanModalState'];
     };
     events: {
+        [appIds.events.PLANNER_ADD_MANUAL_RESOURCE]: [itemId: string, ratePerMinute: number];
+        [appIds.events.PLANNER_SET_RESOURCE_RATE]: [id: string, ratePerMinute: number];
+        [appIds.events.PLANNER_SET_RESOURCE_ENABLED]: [id: string, enabled: boolean];
+        [appIds.events.PLANNER_REMOVE_RESOURCE]: [id: string];
+        [appIds.events.PLANNER_IMPORT_CORE_RESOURCES]: [workspaceId: string, snapshotKey: string, selections: PlannerResourceSelection[]];
+        [appIds.events.PLANNER_APPLY_RESOURCE_FIT]: [];
+        [appIds.events.PLANNER_SET_BUILDING_BASELINE]: [workspaceId: string, snapshotKey: string, coreIds: number[]];
+        [appIds.events.PLANNER_CLEAR_BUILDING_BASELINE]: [];
+
         [appIds.events.SAVES_STORAGE_FAILED]: [error: Exclude<SaveStorageError, null>];
         [appIds.events.SAVES_IMPORT_OPEN]: [workspaceId?: string];
         [appIds.events.SAVES_IMPORT_CLOSE]: [];
@@ -283,6 +294,16 @@ export interface AppContracts extends UkladContracts {
         [appIds.effects.loadGameData]: DataVersion;
     };
     subscriptions: {
+        [appIds.subscriptions.PLANNER_RESOURCES]: { params: []; result: PlannerResource[] };
+        [appIds.subscriptions.PLANNER_RESOURCE_ITEMS]: { params: []; result: AppState['itemsList'] };
+        [appIds.subscriptions.PLANNER_RESOURCE_SUMMARY]: { params: []; result: PlannerResourceSummary[] };
+        [appIds.subscriptions.PLANNER_FILTERED_RESOURCE_SUMMARY]: { params: [itemId: string | null]; result: PlannerResourceSummary[] };
+        [appIds.subscriptions.PLANNER_RESOURCE_PICKER]: { params: [workspaceId: string]; result: PlannerResourcePicker | null };
+        [appIds.subscriptions.PLANNER_RESOURCE_PICKER_SOURCE]: { params: [workspaceId: string]; result: PlannerResourcePicker | null };
+        [appIds.subscriptions.PLANNER_RESOURCE_FIT]: { params: []; result: PlannerResourceFit };
+        [appIds.subscriptions.PLANNER_BUILDING_COMPARISON]: { params: []; result: PlannerBuildingComparison };
+        [appIds.subscriptions.PLANNER_STATS_BUILDING_ROWS]: { params: []; result: PlannerStatsBuildingRow[] };
+
         [appIds.subscriptions.SAVES_BUILDING_CATALOG]: { params: []; result: AppState['savesBuildingCatalog'] };
         [appIds.subscriptions.SAVES_GAME_DATA]: { params: []; result: SaveGameData };
         [appIds.subscriptions.SAVES_IMPORT]: { params: []; result: SaveImportState };

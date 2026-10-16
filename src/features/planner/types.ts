@@ -90,6 +90,11 @@ export interface PlannerBuildingStats {
     totalHeat: number;
 }
 
+/** Statistics table row with an optional production-building comparison. */
+export interface PlannerStatsBuildingRow extends PlannerBuildingStats {
+    comparison: { existing: number; additional: number } | null;
+}
+
 /** Item descriptor used in grouped planner detailed stats. */
 export interface PlannerDetailedStatsItem {
     id: string;

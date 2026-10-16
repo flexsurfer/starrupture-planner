@@ -22,10 +22,10 @@
 }
 .planner-tab.is-active { background: var(--color-base-100); border-top-color: #007acc; color: var(--color-base-content); }
 .planner-tab-select { display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; padding: 0 8px 0 12px; font-size: 13px; cursor: pointer; }
-.planner-tab-close { margin-right: 7px; border-radius: 3px; padding: 2px; cursor: pointer; }
-.planner-tab-close:hover, .planner-tab-add:hover { background: color-mix(in srgb, var(--color-base-content) 12%, transparent); }
+.planner-tab-settings, .planner-tab-close { flex-shrink: 0; margin-right: 7px; border-radius: 3px; padding: 2px; cursor: pointer; }
+.planner-tab-settings:hover, .planner-tab-close:hover, .planner-tab-add:hover { background: color-mix(in srgb, var(--color-base-content) 12%, transparent); }
 .planner-tab-add { display: grid; place-items: center; align-self: center; flex-shrink: 0; width: 28px; height: 28px; margin: 0 4px; border-radius: 3px; cursor: pointer; }
-.planner-tab-select:focus-visible, .planner-tab-close:focus-visible, .planner-tab-add:focus-visible { outline: 1px solid #007acc; outline-offset: -2px; }
+.planner-tab-select:focus-visible, .planner-tab-settings:focus-visible, .planner-tab-close:focus-visible, .planner-tab-add:focus-visible { outline: 1px solid #007acc; outline-offset: -2px; }
 @media (hover: hover) {
   .planner-tab:not(.is-active) .planner-tab-close { opacity: 0; }
   .planner-tab:hover .planner-tab-close, .planner-tab:focus-within .planner-tab-close { opacity: 1; }

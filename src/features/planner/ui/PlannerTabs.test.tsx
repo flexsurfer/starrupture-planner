@@ -1,4 +1,3 @@
-import { PlanSettings } from './PlanSettings';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { afterEach, expect, it } from 'vitest';
@@ -22,7 +21,7 @@ afterEach(() => {
 function TabScreen() {
     const active = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TAB]);
     return <>
-        {active && <><PlannerTabs /><PlanSettings /></>}
+        {active && <PlannerTabs />}
         {active?.mode === 'single' && <PlannerTargetInput key={active.id} />}
         <PlannerTabCreation empty={!active} />
         <ConfirmationDialog />
@@ -154,7 +153,7 @@ it.each(['single', 'multi'] as const)('duplicates a %s plan from settings and ke
     const edited = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])!;
     expect(mode === 'single' ? edited.targetAmount : edited.multiTargets[0].amount).toBe(250);
     expect(edited.recipeSelections['iron-plate']).toBe('smelter:0');
-    expect(edited.externalInputs['iron-ore']).toBe(100);
+    expect(edited.resources).toContainEqual(expect.objectContaining({ itemId: 'iron-ore', ratePerMinute: 100 }));
     expect(harness.getState().plannerTabs[0]).toEqual(source);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Iron' }));

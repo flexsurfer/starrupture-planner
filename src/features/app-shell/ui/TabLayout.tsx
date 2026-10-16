@@ -40,6 +40,8 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
   const [showSettings, setShowSettings] = useState(false);
   const [codexSection, setCodexSection] = useState<CodexSection | null>(null);
   const activeTab = useSubscription([appIds.subscriptions.UI_ACTIVE_TAB]);
+  const bases = useSubscription([appIds.subscriptions.BASES_LIST]);
+  const visibleTabs = tabs.filter(tab => tab.id !== 'mybases' || bases.length > 0);
   const location = useLocation();
   const headerRef = useRef<HTMLDivElement>(null);
   const desktopBrandRef = useRef<HTMLDivElement>(null);
@@ -135,7 +137,7 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
             {/* Desktop Tab Navigation */}
             <div className="flex justify-center col-start-2 row-start-1">
               <nav ref={desktopTabsRef} aria-label={t('Main navigation')} className="tabs tabs-bordered tabs-lg w-max flex-nowrap justify-center">
-                {tabs.map((tab) => (
+                {visibleTabs.map((tab) => (
                   <Link
                     key={tab.id}
                     to={toolPaths[tab.id]}
@@ -182,7 +184,7 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
         {/* Compact Tab Navigation - Below header */}
         <div className={`${tabsFitHeader ? 'hidden' : ''} relative z-20 bg-base-200 border-t border-base-300`}>
             <nav aria-label={t('Main navigation')} className="flex min-w-full justify-center px-1">
-              {tabs.map((tab) => (
+              {visibleTabs.map((tab) => (
                 <Link
                   key={tab.id}
                   to={toolPaths[tab.id]}

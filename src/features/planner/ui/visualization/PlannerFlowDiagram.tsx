@@ -29,10 +29,10 @@ const edgeTypes = { production: ProductionFlowEdge };
  * Flow diagram component for the production planner
  * Handles the React Flow visualization with automatic layout
  */
-export const PlannerFlowDiagram: React.FC = () => {
+export const PlannerFlowDiagram: React.FC<{ onManageResource?: (itemId: string, amount: number) => void; sidebarOpen?: boolean }> = ({ onManageResource, sidebarOpen = false }) => {
     const { t } = useTranslation();
     const runtime = useRuntime();
-    const { renderInputDialog, onRevertInput } = usePlannerInputActions();
+    const { onManageResources } = usePlannerInputActions(onManageResource);
     const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
         runtime.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, itemId, recipeKey]);
     }, [runtime]);
@@ -63,10 +63,9 @@ export const PlannerFlowDiagram: React.FC = () => {
         },
         data: {
             label: <NodeCard onSelectRecipe={onSelectRecipe} node={flowNode} items={flowGraph.items!} outputColor={outputColor}
-                renderInputDialog={selectedItemId.includes(flowNode.outputItem) ? undefined : renderInputDialog}
-                onRevertInput={selectedItemId.includes(flowNode.outputItem) ? undefined : onRevertInput} />,
+                onManageResources={selectedItemId.includes(flowNode.outputItem) ? undefined : onManageResources} />,
         },
-    })), [flowGraph, onSelectRecipe, renderInputDialog, onRevertInput, selectedItemId]);
+    })), [flowGraph, onSelectRecipe, onManageResources, selectedItemId]);
 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -94,7 +93,7 @@ export const PlannerFlowDiagram: React.FC = () => {
         if (pinnedNodeId && !flowGraph.nodes.some(node => node.id === pinnedNodeId)) onPinnedNodeChange(null);
     }, [flowGraph, pinnedNodeId, onPinnedNodeChange]);
 
-    const layoutKey = JSON.stringify([selectedItemId, direction, groupByStage, nodes.length]);
+    const layoutKey = JSON.stringify([selectedItemId, direction, groupByStage, nodes.length, sidebarOpen]);
     // Restore the session camera on mount; still fit when the actual layout changes.
     useEffect(() => {
         if (!nodes.length) return;

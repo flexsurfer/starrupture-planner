@@ -98,7 +98,7 @@ describe('saved planner tabs', () => {
         const tab = createPlannerTab('valid', '  Saved plan  ', 'multi');
         const storage = memoryStorageAdapter({
             [`tabs-test/${stateKeys.plannerTabs}`]: JSON.stringify({ v: 1, data: [
-                { ...tab, targetAmount: -20, activeView: 'bad', flowDirection: 'bad',
+                { ...tab, resources: undefined, targetAmount: -20, activeView: 'bad', flowDirection: 'bad',
                     externalInputs: { 'iron-ore': 80, negative: -1, zero: 0, malformed: '20', missing: null },
                     multiTargets: [{ itemId: 'iron-plate', amount: 20 }, { itemId: 'iron-plate', amount: 30 }, { itemId: 'broken', amount: null }],
                     recipeSelections: { 'iron-plate': 'smelter:0', broken: 5 }, selectedCorporationLevel: { corporationId: 5, level: '1' } },
@@ -108,7 +108,7 @@ describe('saved planner tabs', () => {
         });
         const { runtime, harness } = createSavedRuntime(storage);
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_TABS])).toEqual([{
-            ...tab, name: 'Saved plan', externalInputs: { 'iron-ore': 80 }, multiTargets: [{ itemId: 'iron-plate', amount: 20 }], recipeSelections: { 'iron-plate': 'smelter:0' },
+            ...tab, name: 'Saved plan', resources: [{ id: 'legacy-resource-1', itemId: 'iron-ore', ratePerMinute: 80, enabled: true }], multiTargets: [{ itemId: 'iron-plate', amount: 20 }], recipeSelections: { 'iron-plate': 'smelter:0' },
         }]);
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])?.id).toBe('valid');
         runtime.dispose();

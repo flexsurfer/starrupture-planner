@@ -1,6 +1,7 @@
 import { UiMessageError, type UiText, type MessageKey } from '@/shared/i18n/core';
 import type { AppState, Base, BaseBuilding, EnergyGroup } from '@/app/uklad/model';
 import type { PlannerTab } from '@/features/planner/state';
+import { isValidResourceRate, normalizePlannerBuildingBaseline, normalizePlannerResources, resourcesFromLegacyInputs } from '@/features/planner/resources';
 import type { BasesMode } from '@/features/bases/state';
 import { resolveInputBuilding } from '@/utils/productionPlanInputs';
 
@@ -8,7 +9,7 @@ export const MAX_ARCHIVE_BYTES = 20 * 1024 * 1024;
 
 export interface PlannerArchive {
     format: 'rupture-planner';
-    version: 1;
+    version: 2;
     dataVersion: string;
     basesMode: BasesMode | null;
     bases: Base[];
@@ -51,7 +52,7 @@ export function createArchive(state: Pick<AppState, 'basesList' | 'plannerTabs' 
     }
     const groupIds = new Set(bases.map(base => base.energyGroupId));
     return {
-        format: 'rupture-planner', version: 1, dataVersion: state.appDataVersion, basesMode: state.basesMode,
+        format: 'rupture-planner', version: 2, dataVersion: state.appDataVersion, basesMode: state.basesMode,
         bases,
         plans: copy(state.plannerTabs.filter(plan => selection.planIds === null || selection.planIds.includes(plan.id))),
         energyGroups: copy(state.energyGroups.filter(group => groupIds.has(group.id))),
@@ -144,7 +145,7 @@ export function parseArchive(text: string): PlannerArchive {
     }
     object(value);
     check(value.format === 'rupture-planner', 'Choose a file exported from Rupture Planner.');
-    check(value.version === 1, 'This export version is not supported. Update Rupture Planner and try again.');
+    check(value.version === 1 || value.version === 2, 'This export version is not supported. Update Rupture Planner and try again.');
     check(string(value.dataVersion));
     check(value.basesMode === null || value.basesMode === 'planning' || value.basesMode === 'advanced');
     ids(value.bases);
@@ -183,9 +184,20 @@ export function parseArchive(text: string): PlannerArchive {
         recipes(plan.recipeSelections);
         optional(plan, 'externalInputs', inputs => {
             object(inputs);
-            for (const [itemId, amount] of Object.entries(inputs)) check(string(itemId) && positive(amount));
+            for (const [itemId, amount] of Object.entries(inputs)) check(string(itemId) && itemId.length <= 512 && isValidResourceRate(amount));
         });
-        plan.externalInputs ??= {};
+        // V1 plans used a per-item map. V2 owns resource rows and an optional
+        // historical building baseline, so a missing save never blocks import.
+        check(value.version === 1 || plan.resources !== undefined);
+        try {
+            plan.resources = normalizePlannerResources(plan.resources === undefined
+                ? resourcesFromLegacyInputs(plan.externalInputs)
+                : plan.resources, true);
+            plan.buildingBaseline = normalizePlannerBuildingBaseline(plan.buildingBaseline, true);
+        } catch {
+            check(false);
+        }
+        delete plan.externalInputs;
         check(typeof plan.groupByStage === 'boolean');
         check(typeof plan.flowDirection === 'string' && ['LR', 'RL', 'TB', 'BT'].includes(plan.flowDirection));
         check(plan.activeView === 'graph' || plan.activeView === 'table');
@@ -197,6 +209,7 @@ export function parseArchive(text: string): PlannerArchive {
             targets.add(target.itemId);
         }
     }
+    value.version = 2;
     return value as unknown as PlannerArchive;
 }
 

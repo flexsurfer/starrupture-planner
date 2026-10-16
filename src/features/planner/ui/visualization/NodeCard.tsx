@@ -28,6 +28,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     showMissingInput = false,
     renderInputDialog,
     onRevertInput,
+    onManageResources,
     inputDisabledReason,
 }) => {
     const { t } = useTranslation();
@@ -44,7 +45,7 @@ export const NodeCard: React.FC<NodeCardProps> = ({
     const usageDescription = t("{used} of {available}/min used", { used: usedRate.toFixed(1), available: availableRate.toFixed(1) });
     const external = node.nodeType === 'input' && !inputRequirement;
     const inputButton = <NodeInputButton node={node} itemName={getItemName(node.outputItem, items)} isExternal={external}
-        renderInputDialog={renderInputDialog} onRevertInput={onRevertInput} inputDisabledReason={inputDisabledReason} />;
+        renderInputDialog={renderInputDialog} onRevertInput={onRevertInput} onManageResources={onManageResources} inputDisabledReason={inputDisabledReason} />;
 
     return (
         <div className="flex h-full flex-col text-center">
@@ -61,14 +62,14 @@ export const NodeCard: React.FC<NodeCardProps> = ({
                     <div className={`shrink-0 ${compactOnMobile ? 'max-sm:[&>div]:size-10 max-sm:[&_img]:size-10' : ''}`}>
                         <ItemImage itemId={node.outputItem} size="medium" />
                     </div>
-                    <div className={`min-w-0 font-semibold leading-tight break-words tabular-nums ${compactOnMobile ? 'text-lg sm:text-xl' : 'text-xl'}`} style={{ color: outputColor }} aria-label={inputRequirement ? t("Required input per minute") : t("Total output per minute")}>
+                    <div className={`min-w-0 font-semibold leading-tight break-words tabular-nums ${compactOnMobile ? 'text-lg sm:text-xl' : 'text-xl'}`} style={{ color: outputColor }} aria-label={inputRequirement ? t("Required resource per minute") : t("Total output per minute")}>
                         {usedRate.toFixed(1)}<span className="block text-xs font-normal">{inputRequirement ? t("/min needed") : t("/min")}</span>
                     </div>
                 </div>
             </div>
 
             {inputRequirement ? <div className={`mt-auto flex items-center justify-between gap-1 rounded-b bg-base-content/5 p-2 text-xs ${showMissingInput ? 'text-error' : 'text-base-content/60'}`}>
-                <span>{showMissingInput ? inputRequirement.available > 0 ? t("Additional input needed") : t("Input not configured") : t("Required resource")}</span>
+                <span>{showMissingInput ? inputRequirement.available > 0 ? t("Additional resource needed") : t("Resource not configured") : t("Required resource")}</span>
                 {inputButton}
             </div> : <><div
                 className="mt-auto shrink-0"

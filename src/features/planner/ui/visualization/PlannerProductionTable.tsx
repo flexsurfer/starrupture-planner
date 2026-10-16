@@ -8,10 +8,10 @@ import { NodeCard } from './NodeCard';
 import { getFlowNodeId } from '@/features/planner/flow-node';
 import { usePlannerInputActions } from './usePlannerInputActions';
 
-export const PlannerProductionTable = () => {
+export const PlannerProductionTable = ({ onManageResource }: { onManageResource?: (itemId: string, amount: number) => void }) => {
     const { t } = useTranslation();
     const runtime = useRuntime();
-    const inputActions = usePlannerInputActions();
+    const inputActions = usePlannerInputActions(onManageResource);
     const targetIds = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]);
     const onSelectRecipe = useCallback((itemId: string, recipeKey: string) => {
         runtime.dispatch([appIds.events.PLANNER_SET_RECIPE_SELECTION, itemId, recipeKey]);

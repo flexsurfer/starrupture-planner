@@ -1,0 +1,12 @@
+/* Flat square checkboxes for resource rows and core selection. */
+.planner-resources-panel .checkbox {
+  border-radius: 0;
+  border-width: 1px;
+  border-color: color-mix(in oklab, var(--color-base-content) 35%, transparent);
+  background-image: none;
+  box-shadow: none;
+}
+
+.planner-resources-panel .checkbox::before {
+  box-shadow: none;
+}

@@ -59,7 +59,8 @@ export function PlanSettings() {
     const [open, setOpen] = useState(false);
     if (!plan) return null;
     return <>
-        <button type="button" className="btn btn-ghost btn-sm btn-square shrink-0" aria-label={t("Plan settings")} title={t("Plan settings")} onClick={() => setOpen(true)}>
+        <button type="button" className="planner-tab-settings" aria-label={t("Plan settings")} title={t("Plan settings")}
+            aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
             <SettingsIcon />
         </button>
         {open && <PlanSettingsDialog key={plan.id} plan={plan} onClose={() => setOpen(false)} />}

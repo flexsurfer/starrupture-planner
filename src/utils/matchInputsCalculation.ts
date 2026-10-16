@@ -71,7 +71,7 @@ export function calculateMaxTargetFromInputs(params: MatchInputsParams): number 
 
     let low = T_BASE;
     let high = 1;
-    const MAX_TARGET_SEARCH = 1e6;
+    const MAX_TARGET_SEARCH = 1e15;
     let highOverCapacity = isOverCapacity(high);
 
     while (!highOverCapacity && high < MAX_TARGET_SEARCH) {
@@ -83,7 +83,7 @@ export function calculateMaxTargetFromInputs(params: MatchInputsParams): number 
     if (!highOverCapacity) return null;
 
     const SEARCH_PRECISION = 0.005; // Enough for 2-decimal output.
-    const MAX_BINARY_STEPS = 28;
+    const MAX_BINARY_STEPS = 64;
     for (let i = 0; i < MAX_BINARY_STEPS; i++) {
         if (high - low <= SEARCH_PRECISION) break;
         const mid = (low + high) / 2;

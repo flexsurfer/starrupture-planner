@@ -78,7 +78,7 @@ it('uses the corresponding extractor for raw resources in Planning mode', async 
     expect(within(dialog).getByText('Ore Miner')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Select target' })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Available amount / min'), { target: { value: '90' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Add input' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add resource' }));
     await waitFor(() => expect(harness.getState().basesList[0].productions[0].inputs).toMatchObject([
         { buildingTypeId: 'miner', selectedItemId: 'ore', ratePerMinute: 90, planningOwnerPlanId: 'plan' },
     ]));
@@ -90,7 +90,7 @@ it('offers Storage Depot v1 amounts and hides unavailable targets', async () => 
     await act(async () => { harness.dispatchSync([appIds.events.BASES_DELETE_BASE, 'source']); });
     expect(screen.queryByRole('button', { name: 'Select target' })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Available amount / min'), { target: { value: '75' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Add input' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add resource' }));
     await waitFor(() => expect(harness.getState().basesList[0].productions[0].inputs).toMatchObject([
         { buildingTypeId: 'storage_depot_v1', selectedItemId: 'plate', ratePerMinute: 75 },
     ]));

@@ -131,6 +131,14 @@ function verifyNoDeficitsAtResult(
 }
 
 describe('calculateMaxTargetFromInputs', () => {
+    it.each([1_000_000, 1_000_000_000])('finds a finite limit at %i resources per minute', rate => {
+        const oneToOne: Building[] = [{ id: 'factory', name: 'Factory', recipes: [
+            { output: { id: 'product', amount_per_minute: 10 }, inputs: [{ id: 'ore', amount_per_minute: 10 }] },
+        ] }];
+        expect(calculateMaxTargetFromInputs({ selectedItemId: 'product', inputBuildings: [makeInput('source', 'ore', rate)],
+            buildings: oneToOne, includeLauncher: false })).toBe(rate);
+    });
+
     describe('returns null for invalid / empty inputs', () => {
         it('returns null when no item is selected', () => {
             expect(calculateMaxTargetFromInputs({

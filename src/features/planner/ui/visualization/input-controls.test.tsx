@@ -27,6 +27,20 @@ vi.mock('@/app/uklad/bindings', () => ({
 }));
 afterEach(cleanup);
 
+it('opens the shared resource editor for both supplied and produced resources', () => {
+    const manage = vi.fn();
+    const revert = vi.fn();
+    const { rerender } = render(<NodeCard node={node} items={[item]} outputColor="green" onManageResources={manage} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Manage resources for Plate' }));
+    expect(manage).toHaveBeenLastCalledWith(node);
+    const supplied = { ...node, nodeType: 'input' as const, buildingId: 'external-resource', baseBuildingId: 'resource' };
+    rerender(<NodeCard node={supplied} items={[item]} outputColor="green" onManageResources={manage} onRevertInput={revert} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Manage resources for Plate' }));
+    expect(manage).toHaveBeenLastCalledWith(supplied);
+    expect(revert).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+});
+
 it('opens an amount dialog outside the card and prevents invalid amounts', () => {
     const confirm = vi.fn();
     render(<NodeCard node={node} items={[item]} outputColor="green" renderInputDialog={(_, close) =>
@@ -39,9 +53,9 @@ it('opens an amount dialog outside the card and prevents invalid amounts', () =>
     const amount = within(dialog).getByLabelText('Available amount / min');
     expect(amount).toHaveFocus();
     fireEvent.change(amount, { target: { value: '0' } });
-    expect(within(dialog).getByRole('button', { name: 'Add input' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Add resource' })).toBeDisabled();
     fireEvent.change(amount, { target: { value: '75.5' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Add input' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add resource' }));
     expect(confirm).toHaveBeenCalledWith(75.5);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
@@ -66,7 +80,7 @@ it('labels external resources and requires confirmation before reverting', () =>
     expect(screen.queryByTitle('1 buildings required')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Revert Plate to production' }));
     expect(revert).not.toHaveBeenCalled();
-    const dialog = screen.getByRole('alertdialog', { name: 'Remove external input?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Remove resource?' });
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
@@ -78,7 +92,7 @@ it('labels external resources and requires confirmation before reverting', () =>
     expect(trigger).toHaveFocus();
     expect(revert).not.toHaveBeenCalled();
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole('button', { name: 'Remove input' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove resource' }));
     expect(revert).toHaveBeenCalledExactlyOnceWith(input);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 });
