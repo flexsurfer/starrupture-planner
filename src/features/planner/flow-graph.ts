@@ -34,14 +34,15 @@ export function buildPlannerFlowGraph(flowNodes: PlannerFlowNode[], flowEdges: F
     });
     const targetNodeIds = getTargetNodeIds(flowNodes, targetItemIds);
 
-    const nodeIdByFlowKey = new Map<string, string>();
+    // Positional IDs are internal to layout; rendered IDs must follow the flow node.
+    const layoutNodeIdByFlowKey = new Map<string, string>();
     flowNodes.forEach((node, index) => {
-        nodeIdByFlowKey.set(getFlowNodeId(node), `node_${index}`);
+        layoutNodeIdByFlowKey.set(getFlowNodeId(node), `node_${index}`);
     });
 
     flowEdges.forEach((edge) => {
-        const source = nodeIdByFlowKey.get(edge.from);
-        const target = nodeIdByFlowKey.get(edge.to);
+        const source = layoutNodeIdByFlowKey.get(edge.from);
+        const target = layoutNodeIdByFlowKey.get(edge.to);
         if (source && target) graph.setEdge(source, target);
     });
 
@@ -66,7 +67,7 @@ export function buildPlannerFlowGraph(flowNodes: PlannerFlowNode[], flowEdges: F
         const stage = reverse ? maxStage - canonical.x : canonical.x;
         const position = vertical ? { x: canonical.y, y: stage * 0.8 } : { x: stage, y: canonical.y };
         return {
-            id: `node_${index}`,
+            id: getFlowNodeId(flowNode),
             type: flowNode.nodeType === 'target' ? 'output' : 'default',
             position,
             sourcePosition,
@@ -81,9 +82,9 @@ export function buildPlannerFlowGraph(flowNodes: PlannerFlowNode[], flowEdges: F
     const edgeIds = new Set<string>();
     const edges: Edge[] = [];
     flowEdges.forEach((edge) => {
-        const source = nodeIdByFlowKey.get(edge.from);
-        const target = nodeIdByFlowKey.get(edge.to);
-        if (!source || !target) return;
+        const source = edge.from;
+        const target = edge.to;
+        if (!layoutNodeIdByFlowKey.has(source) || !layoutNodeIdByFlowKey.has(target)) return;
 
         const id = `${source}-${target}-${edge.itemId}`;
         if (edgeIds.has(id)) return;

@@ -83,7 +83,7 @@ it('uses the new edge style and lets users pin connections in saved base plans',
     render(<ProductionPlanSection baseId="base" sectionId="plan" />);
     expect(diagramProps.edgeTypes?.production).toBe(ProductionFlowEdge);
     expect(diagramProps.edges?.[0]).toMatchObject({
-        type: 'production', source: 'node_0', target: 'node_1',
+        type: 'production', source: 'cargo_0_ore_input-0', target: 'smelter_0_plate',
         style: { strokeWidth: 1.5, strokeOpacity: 0.4 },
         data: { itemName: 'Ore', rateLabel: '60.0/min' },
     });
@@ -94,8 +94,8 @@ it('uses the new edge style and lets users pin connections in saved base plans',
     expect(diagramProps.zoomOnPinch).toBe(true);
     expect(diagramProps.zoomOnScroll).toBe(false);
     expect(diagramProps.preventScrolling).toBe(false);
-    act(() => diagramProps.onNodesChange?.([{ id: 'node_1', type: 'position', position: { x: 250, y: 120 }, dragging: false }]));
-    expect(diagramProps.nodes?.find(node => node.id === 'node_1')?.position).toEqual({ x: 250, y: 120 });
+    act(() => diagramProps.onNodesChange?.([{ id: 'smelter_0_plate', type: 'position', position: { x: 250, y: 120 }, dragging: false }]));
+    expect(diagramProps.nodes?.find(node => node.id === 'smelter_0_plate')?.position).toEqual({ x: 250, y: 120 });
     fireEvent.click(screen.getAllByRole('button', { name: 'Pin node to highlight connections' })[0]);
     expect(screen.getByRole('button', { name: 'Unpin node' })).toBeInTheDocument();
 });
@@ -178,7 +178,7 @@ it('shows missing inputs connected to their consumers and only marks them red in
     const { rerender } = render(<EmbeddedFlowDiagram productionFlow={flow} />);
     expect(diagramProps.nodes).toHaveLength(2);
     expect(diagramProps.nodes?.[1].style?.borderColor).toBe('var(--color-error)');
-    expect(diagramProps.edges).toEqual([expect.objectContaining({ source: 'node_1', target: 'node_0', data: { itemName: 'Ore', rateLabel: '60.0/min' } })]);
+    expect(diagramProps.edges).toEqual([expect.objectContaining({ source: diagramProps.nodes?.[1].id, target: 'smelter_0_plate', data: { itemName: 'Ore', rateLabel: '60.0/min' } })]);
     basesMode = 'planning';
     rerender(<EmbeddedFlowDiagram productionFlow={flow} />);
     expect(diagramProps.nodes).toHaveLength(2);
