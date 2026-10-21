@@ -8,7 +8,9 @@ export function workspaceAtStorageBytes(bytes: number, id = 'one') {
     const original = createSaveWorkspace(id, id, analyzeSave(saveFixture(), extractionContext));
     const template = original.snapshot.cores[0].buildings[0];
     for (const core of original.snapshot.cores) core.buildings = [];
-    original.snapshot.cores[0].buildings = Array.from({ length: 1000 }, (_, index) => ({ ...template, id: 1000 + index, name: '' }));
+    // Larger budgets need more buildings to stay within the 512-character name limit.
+    const buildingCount = Math.max(1000, Math.ceil(bytes / 1024));
+    original.snapshot.cores[0].buildings = Array.from({ length: buildingCount }, (_, index) => ({ ...template, id: 1000 + index, name: '' }));
     const workspace = normalizeSaveWorkspace(original);
     let remaining = (bytes - localStorageBytes(workspace)) / 2;
     if (remaining < 0 || !Number.isInteger(remaining)) throw new Error('Invalid synthetic storage budget');

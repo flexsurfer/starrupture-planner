@@ -5,8 +5,9 @@ import type { SaveWorkspace, SaveWorkspaceSelection } from './types';
 
 export const MAX_SAVE_WORKSPACES = 8;
 // UTF-16 budgets leave localStorage space for the Planner, My Bases and settings.
-export const MAX_WORKSPACE_BYTES = 1024 * 1024;
 export const MAX_SAVES_BYTES = 3 * 1024 * 1024;
+// A single save can use the shared budget; the collection also counts its Persist envelope.
+export const MAX_WORKSPACE_BYTES = MAX_SAVES_BYTES;
 export class SaveWorkspaceLimitError extends Error {
     constructor() { super('My Saves storage limit exceeded'); }
 }

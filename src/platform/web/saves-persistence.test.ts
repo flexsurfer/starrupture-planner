@@ -6,7 +6,7 @@ import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerHeadlessApplication } from '@/platform/headless/register';
 import { analyzeSave } from '@/features/saves/decoder/analyze';
 import { saveGameData, extractionContext, snapshotFixture } from '@/features/saves/decoder/test-fixture';
-import { MAX_WORKSPACE_BYTES } from '@/features/saves/storage-schema';
+import { localStorageBytes, MAX_SAVES_BYTES, saveCollectionStorageBytes } from '@/features/saves/storage-schema';
 import { workspaceAtStorageBytes } from '@/features/saves/storage-test-fixture';
 import { createSavesStorage, savesStorageKey } from './saves-storage';
 import { PERSIST_KEYS } from './persistence';
@@ -209,17 +209,24 @@ it('keeps corrupt stored schemas untouched and blocks edits instead of replacing
     expect(memory.getItem(key(stateKeys.savesWorkspaces))).toBe(corrupt);
 });
 
-it('keeps the last stored snapshot when an edit exceeds its budget and recovers after reducing the data', async () => {
-    const memory = memoryStorageAdapter();
-    const original = JSON.stringify({ v: 1, data: { one: workspaceAtStorageBytes(MAX_WORKSPACE_BYTES - 40) } });
-    memory.setItem(key(stateKeys.savesWorkspaces), original);
-    const app = await setup(memory);
+it('reloads a save near 3 MiB, preserves it when an edit exceeds the budget, and recovers after reducing the data', async () => {
+    const storage = localStorageAdapter();
+    const envelopeBytes = saveCollectionStorageBytes({ one: null }) - localStorageBytes(null);
+    const original = JSON.stringify({ v: 1, data: { one: workspaceAtStorageBytes(MAX_SAVES_BYTES - envelopeBytes - 40) } });
+    storage.setItem(key(stateKeys.savesWorkspaces), original);
+    const app = await setup(storage);
     expect(app.view.value('persistence')).toBeNull();
+    expect(app.view.value('one')?.name).toBe('one');
     await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'x'.repeat(120)]);
     expect(app.view.value('persistence')).toBe('write');
-    expect(memory.getItem(key(stateKeys.savesWorkspaces))).toBe(original);
+    expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(original);
     await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'one']);
-    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.name).toBe('one');
+    expect(JSON.parse(storage.getItem(key(stateKeys.savesWorkspaces))!).data.one.name).toBe('one');
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const restored = await setup(storage);
+    expect(restored.view.value('persistence')).toBeNull();
+    expect(restored.view.value('one')).toEqual(JSON.parse(original).data.one);
 });
 
 it('starts fresh instead of migrating experimental schemas', async () => {

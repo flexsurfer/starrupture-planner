@@ -56,12 +56,15 @@ it('counts UTF-16 code units for storage, including surrogate pairs, separately 
     expect(jsonBytes('界')).toBe(5);
 });
 
-it('accepts a workspace at 1 MiB and rejects one extra code unit during import and hydration', () => {
-    const workspace = workspaceAtStorageBytes(MAX_WORKSPACE_BYTES);
+it('accepts a single save filling the 3 MiB budget and rejects one extra code unit during import and hydration', () => {
+    const envelopeBytes = saveCollectionStorageBytes({ one: null }) - localStorageBytes(null);
+    const workspace = workspaceAtStorageBytes(3 * 1024 * 1024 - envelopeBytes);
+    expect(saveCollectionStorageBytes({ one: workspace })).toBe(3 * 1024 * 1024);
     expect(normalizeSaveWorkspace(workspace)).toEqual(workspace);
     expect(() => assertSaveStorageLimits({ one: workspace })).not.toThrow();
+    expect(normalizeSaveWorkspaces({ one: workspace })).toEqual({ one: workspace });
     workspace.snapshot.cores[0].buildings.at(-1)!.name += 'x';
-    expect(() => normalizeSaveWorkspace(workspace)).toThrow(SaveWorkspaceLimitError);
+    expect(() => assertSaveStorageLimits({ one: workspace })).toThrow(SaveWorkspaceLimitError);
     expect(() => normalizeSaveWorkspaces({ one: workspace })).toThrow(SaveWorkspaceLimitError);
 });
 

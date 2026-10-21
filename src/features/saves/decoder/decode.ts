@@ -1,4 +1,5 @@
 import { analyzeSave } from './analyze';
+import { createSaveJsonParser } from './stream-json';
 import { SaveImportError } from '../import-error';
 import type { SaveDecodeContext } from './types';
 import type { SaveSnapshot } from '../snapshot';
@@ -8,21 +9,27 @@ export { SaveImportError } from '../import-error';
 export { MAX_DECODED_SAVE_BYTES } from '../import-limits';
 
 /** The observed container is uint32 LE decoded length followed by zlib UTF-8 JSON. */
-export async function decodeSave(bytes: ArrayBuffer, context: SaveDecodeContext, signal?: AbortSignal): Promise<SaveSnapshot> {
+export async function decodeSave(source: ArrayBuffer | Blob, context: SaveDecodeContext, signal?: AbortSignal): Promise<SaveSnapshot> {
     signal?.throwIfAborted();
-    if (bytes.byteLength > MAX_SAVE_BYTES) throw new SaveImportError('file-size');
-    if (bytes.byteLength < 6) throw new SaveImportError('compression');
-    const declaredSize = new DataView(bytes).getUint32(0, true);
+    const size = source instanceof ArrayBuffer ? source.byteLength : source.size;
+    if (size > MAX_SAVE_BYTES) throw new SaveImportError('file-size');
+    if (size < 6) throw new SaveImportError('compression');
+    const blob = source instanceof ArrayBuffer ? new Blob([source]) : source;
+    let header: ArrayBuffer;
+    try { header = await blob.slice(0, 4).arrayBuffer(); }
+    catch { signal?.throwIfAborted(); throw new SaveImportError('read'); }
+    signal?.throwIfAborted();
+    const declaredSize = new DataView(header).getUint32(0, true);
     if (declaredSize > MAX_DECODED_SAVE_BYTES) throw new SaveImportError('decoded-size');
     if (!declaredSize) throw new SaveImportError('compression');
     if (typeof DecompressionStream === 'undefined') throw new SaveImportError('unsupported-browser');
 
-    let text: string;
+    const parser = createSaveJsonParser(context);
     let decodedSize = 0;
     try {
-        const reader = new Blob([bytes.slice(4)]).stream().pipeThrough(new DecompressionStream('deflate')).getReader();
-        const decoder = new TextDecoder('utf-8', { fatal: true });
-        const parts: string[] = [];
+        const reader = blob.slice(4).stream().pipeThrough(new DecompressionStream('deflate')).getReader();
+        const abort = () => { void reader.cancel().catch(() => {}); };
+        signal?.addEventListener('abort', abort, { once: true });
         try {
             while (true) {
                 signal?.throwIfAborted();
@@ -33,22 +40,18 @@ export async function decodeSave(bytes: ArrayBuffer, context: SaveDecodeContext,
                 // Check actual output too: the header is untrusted, not a memory budget.
                 if (decodedSize > MAX_DECODED_SAVE_BYTES) throw new SaveImportError('decoded-size');
                 if (decodedSize > declaredSize) throw new SaveImportError('size-mismatch');
-                parts.push(decoder.decode(chunk.value, { stream: true }));
+                parser.write(chunk.value);
             }
-            parts.push(decoder.decode());
         } finally {
+            signal?.removeEventListener('abort', abort);
             await reader.cancel().catch(() => {});
             reader.releaseLock();
         }
-        text = parts.join('');
     } catch (error) {
         signal?.throwIfAborted();
         throw error instanceof SaveImportError ? error : new SaveImportError('compression');
     }
     if (decodedSize !== declaredSize) throw new SaveImportError('size-mismatch');
     signal?.throwIfAborted();
-    let json: unknown;
-    try { json = JSON.parse(text); }
-    catch { throw new SaveImportError('structure'); }
-    return analyzeSave(json, context);
+    return analyzeSave(parser.end(), context);
 }

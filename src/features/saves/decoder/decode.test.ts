@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { deflateSync } from 'node:zlib';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { decodeSave, MAX_DECODED_SAVE_BYTES } from './decode';
 import { analyzeSave } from './analyze';
 import { extractionContext, saveFixture } from './test-fixture';
@@ -31,4 +31,20 @@ it('rejects truncated zlib data and honors cancellation', async () => {
     const bytes = encode(saveFixture());
     await expect(decodeSave(bytes.slice(0, -5), extractionContext)).rejects.toMatchObject({ code: 'compression' });
     await expect(decodeSave(bytes, extractionContext, AbortSignal.abort())).rejects.toMatchObject({ name: 'AbortError' });
+});
+
+it('streams a Blob without reading the whole file into an ArrayBuffer', async () => {
+    const file = new Blob([encode(saveFixture())]);
+    const read = vi.spyOn(file, 'arrayBuffer').mockRejectedValue(new Error('Whole file must not be read'));
+    expect(await decodeSave(file, extractionContext)).toEqual(analyzeSave(saveFixture(), extractionContext));
+    expect(read).not.toHaveBeenCalled();
+});
+
+it('rejects malformed UTF-8 instead of silently replacing bytes', async () => {
+    const text = Buffer.from(JSON.stringify({ ...saveFixture(), ignored: 'X' }));
+    text[text.lastIndexOf('X')] = 0xff;
+    const header = Buffer.alloc(4);
+    header.writeUInt32LE(text.byteLength);
+    const bytes = Uint8Array.from(Buffer.concat([header, deflateSync(text)])).buffer;
+    await expect(decodeSave(bytes, extractionContext)).rejects.toMatchObject({ code: 'compression' });
 });

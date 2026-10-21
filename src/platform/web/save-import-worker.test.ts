@@ -20,7 +20,8 @@ for (const entity of Object.values(observedWithIdentity.itemData.Mass.entities))
         entity.fragmentValues.push('/Script/AuActorPlacement.AuAPMassFragment(SpawnServerTimeSeconds=10.5)');
     }
 }
-it.each([{ name: 'synthetic', fixture: saveFixture() }, { name: 'observed with synthetic identity', fixture: observedWithIdentity }])('loads selected mappings and normalizes the $name snapshot in the worker', async ({ fixture }) => {
+it.each([{ name: 'synthetic bytes', fixture: saveFixture(), file: false }, { name: 'synthetic file', fixture: saveFixture(), file: true },
+    { name: 'observed with synthetic identity', fixture: observedWithIdentity, file: true }])('loads selected mappings and normalizes the $name snapshot in the worker', async ({ fixture, file }) => {
     const worker = { onmessage: null as unknown as (event: MessageEvent) => Promise<void>, postMessage: vi.fn() };
     vi.stubGlobal('self', worker);
     const fetchJson = vi.fn(async (url: string) => ({ ok: true, json: async () => {
@@ -38,7 +39,7 @@ it.each([{ name: 'synthetic', fixture: saveFixture() }, { name: 'observed with s
     const report = analyzeSave(fixture, extractionContext);
     await import('./save-import-worker');
     const context = saveDataContext;
-    await worker.onmessage({ data: { bytes, context } } as MessageEvent);
+    await worker.onmessage({ data: { ...(file ? { file: new Blob([bytes]) } : { bytes }), context } } as MessageEvent);
     expect(fetchJson.mock.calls.map(([url]) => url)).toEqual([
         `${import.meta.env.BASE_URL}game-data/update2_QoL/save_buildings_mappings.json`,
         `${import.meta.env.BASE_URL}game-data/update2_QoL/save_items_mappings.json`,

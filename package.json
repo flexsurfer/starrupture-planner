@@ -47,6 +47,7 @@
     "site:deploy": "node scripts/site.mjs deploy"
   },
   "dependencies": {
+    "@streamparser/json": "0.0.22",
     "@tailwindcss/vite": "^4.1.11",
     "@types/dagre": "^0.7.53",
     "@ukladjs/core": "^0.2.2",

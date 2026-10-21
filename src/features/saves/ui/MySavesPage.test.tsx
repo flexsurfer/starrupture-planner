@@ -106,6 +106,18 @@ it('shows controlled read errors, cancellation, hydration failure and unsaved ch
     expect(screen.getByRole('button', { name: 'Choose save file' })).toBeDisabled();
 });
 
+it.each([
+    ['file-size', 'Choose a .sav file no larger than 64 MiB.'],
+    ['decoded-size', 'This save expands beyond the 512 MiB import limit when unpacked.'],
+    ['complexity', 'This save contains too many objects or entries that are too large to import.'],
+] as const)('explains the %s limit separately', async (code, message) => {
+    await setup(new SaveImportError(code));
+    fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
+    const dialog = await screen.findByRole('dialog', { name: 'Import save' });
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(message);
+    expect(within(dialog).getByText(/Limits: 64 MiB per file and 512 MiB after unpacking/)).toBeVisible();
+});
+
 it('retains the selected view across page remounts only for the current runtime session', async () => {
     const { runtime } = await setup();
     await importSave('Session world');
