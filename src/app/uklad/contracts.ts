@@ -314,6 +314,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.SAVES_SELECTED_VIEW]: { params: []; result: SaveView };
         [appIds.subscriptions.SAVES_MAP_SELECTED_NODES]: { params: []; result: Record<string, number> };
         [appIds.subscriptions.SAVES_MAP_DISPLAY]: { params: []; result: MapDisplaySettings };
+        [appIds.subscriptions.SAVES_MAP_BUILDING_SIZE]: { params: []; result: number };
         [appIds.subscriptions.SAVES_MAP_LAYERS]: { params: []; result: MapLayers };
         [appIds.subscriptions.SAVES_MAP_VIEWPORTS]: { params: []; result: Record<string, SaveMapViewport> };
         [appIds.subscriptions.SAVES_MAP_VIEWPORT]: { params: [workspaceId: string]; result: SaveMapViewport | null };

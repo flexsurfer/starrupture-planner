@@ -65,6 +65,17 @@ it('accepts a workspace at 1 MiB and rejects one extra code unit during import a
     expect(() => normalizeSaveWorkspaces({ one: workspace })).toThrow(SaveWorkspaceLimitError);
 });
 
+it('drops obsolete geometry metadata before applying the workspace storage limit', () => {
+    const expected = workspaceAtStorageBytes(MAX_WORKSPACE_BYTES);
+    const stored = structuredClone(expected);
+    Object.assign(stored.snapshot.cores[0].buildings[0], {
+        placement: { variant: 'Smelter/DA_Smelter.DA_Smelter', rotation: { x: 0, y: 0, z: 0, w: 1 }, scale: { x: 1, y: 1, z: 1 } },
+        footprint: [{ x: 0, y: 0 }, { x: 500, y: 0 }, { x: 0, y: 500 }],
+    });
+    expect(localStorageBytes(stored)).toBeGreaterThan(MAX_WORKSPACE_BYTES);
+    expect(normalizeSaveWorkspace(JSON.parse(JSON.stringify(stored)))).toStrictEqual(expected);
+});
+
 it('rejects a collection above 3 MiB even when every workspace fits, including the Persist envelope', () => {
     const records = Object.fromEntries(['one', 'two', 'three', 'four'].map(id => [id, workspaceAtStorageBytes(MAX_SAVES_BYTES / 4, id)]));
     expect(Object.values(records).every(workspace => localStorageBytes(workspace) <= MAX_WORKSPACE_BYTES)).toBe(true);

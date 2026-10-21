@@ -1,4 +1,5 @@
 import type { SavePosition } from '../snapshot';
+import { coreMarkerSize } from '../map-coordinates';
 
 export { defaultMapDisplay, type MapDisplaySettings } from '../map-preferences';
 
@@ -15,7 +16,7 @@ export function placeCoreLabels(peers: readonly CoreLabelPeer[], zoom: number) {
     type Rect = { x: number; y: number; width: number; height: number };
     const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.width + 4 && a.x + a.width + 4 > b.x
         && a.y < b.y + b.height + 4 && a.y + a.height + 4 > b.y;
-    const diameter = Math.max(36, 48 * zoom);
+    const diameter = coreMarkerSize(zoom) * zoom;
     const markers = peers.map(peer => ({ x: peer.x * zoom - diameter / 2, y: peer.y * zoom - diameter / 2, width: diameter, height: diameter }));
     const placed: Rect[] = [];
     const positions = new Map<number, { x: number; y: number }>();

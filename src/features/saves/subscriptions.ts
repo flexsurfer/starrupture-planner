@@ -19,6 +19,9 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
     registrar.regRootSub(appIds.subscriptions.SAVES_SELECTED_VIEW, stateKeys.savesSelectedView);
     registrar.regRootSub(appIds.subscriptions.SAVES_MAP_SELECTED_NODES, stateKeys.savesMapSelectedNodes);
     registrar.regRootSub(appIds.subscriptions.SAVES_MAP_DISPLAY, stateKeys.savesMapDisplay);
+    registrar.regSub(appIds.subscriptions.SAVES_MAP_BUILDING_SIZE,
+        () => [[appIds.subscriptions.SAVES_MAP_DISPLAY]],
+        ([display]) => display.buildingSize);
     registrar.regRootSub(appIds.subscriptions.SAVES_MAP_LAYERS, stateKeys.savesMapLayers);
     registrar.regRootSub(appIds.subscriptions.SAVES_MAP_VIEWPORTS, stateKeys.savesMapViewports);
     registrar.regSub(appIds.subscriptions.SAVES_MAP_VIEWPORT,
@@ -38,8 +41,8 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
         id => [[appIds.subscriptions.SAVES_WORKSPACE_BY_ID, id], [appIds.subscriptions.SAVES_GAME_DATA]],
         ([workspace, data]) => workspace ? buildSaveOverview(workspace, data) : null);
     registrar.regSub(appIds.subscriptions.SAVES_MAP,
-        id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA]],
-        ([overview, data]) => overview ? buildSaveMap(overview, data) : null);
+        id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA], [appIds.subscriptions.SAVES_MAP_BUILDING_SIZE]],
+        ([overview, data, buildingSize]) => overview ? buildSaveMap(overview, data, buildingSize) : null);
     registrar.regSub(appIds.subscriptions.SAVES_CORE_BY_ID,
         id => [[appIds.subscriptions.SAVES_OVERVIEW, id]],
         ([overview], _id, coreId) => overview?.cores.find(coreOverview => coreOverview.core.id === coreId) ?? null);

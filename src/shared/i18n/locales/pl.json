@@ -896,5 +896,14 @@
   "Select cores to compare their production buildings with this plan and see how many more you need to build.": "Wybierz Cores, aby porównać ich budynki produkcyjne z tym planem i zobaczyć, ile jeszcze trzeba zbudować.",
   "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Zaimportuj zapis w Mapie fabryki, aby porównać jego budynki produkcyjne z tym planem i zobaczyć, ile jeszcze trzeba zbudować.",
   "This removes this save from this browser.": "Ten zapis zostanie usunięty z tej przeglądarki.",
-  "Selected allocations": "Wybrane przydziały"
+  "Selected allocations": "Wybrane przydziały",
+  "Building layers": "Warstwy budynków",
+  "Below": "Poniżej",
+  "Above": "Powyżej",
+  "Building levels": "Poziomy budynków",
+  "Level {level} of {count}": "Poziom {level} z {count}",
+  "Higher level": "Wyższy poziom",
+  "Lower level": "Niższy poziom",
+  "Shows this level and all levels below.": "Pokazuje ten poziom i wszystkie poziomy poniżej.",
+  "Level {level} · Buildings above or below": "Poziom {level} · Budynki powyżej lub poniżej"
 }

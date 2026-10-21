@@ -892,5 +892,14 @@
   "Select cores to compare their production buildings with this plan and see how many more you need to build.": "Select cores to compare their production buildings with this plan and see how many more you need to build.",
   "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.",
   "This removes this save from this browser.": "This removes this save from this browser.",
-  "Selected allocations": "Selected allocations"
+  "Selected allocations": "Selected allocations",
+  "Building layers": "Building layers",
+  "Below": "Below",
+  "Above": "Above",
+  "Building levels": "Building levels",
+  "Level {level} of {count}": "Level {level} of {count}",
+  "Higher level": "Higher level",
+  "Lower level": "Lower level",
+  "Shows this level and all levels below.": "Shows this level and all levels below.",
+  "Level {level} · Buildings above or below": "Level {level} · Buildings above or below"
 }

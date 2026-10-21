@@ -36,6 +36,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:i18n": "vitest run src/shared/i18n",
+    "fixture:map-overlaps": "vite-node scripts/generate-overlap-save.ts",
     "start": "vite --open --host localhost --port 5173 --strictPort",
     "site:dev": "node scripts/site.mjs dev",
     "site:build": "node scripts/site.mjs build",

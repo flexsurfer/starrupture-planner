@@ -892,5 +892,14 @@
   "Select cores to compare their production buildings with this plan and see how many more you need to build.": "Wähle Cores aus, um ihre Produktionsgebäude mit diesem Plan zu vergleichen und zu sehen, wie viele du noch bauen musst.",
   "Import a save in Factory Map to compare its production buildings with this plan and see how many more you need to build.": "Importiere einen Spielstand in der Fabrikkarte, um seine Produktionsgebäude mit diesem Plan zu vergleichen und zu sehen, wie viele du noch bauen musst.",
   "This removes this save from this browser.": "Dieser Spielstand wird aus diesem Browser entfernt.",
-  "Selected allocations": "Ausgewählte Zuweisungen"
+  "Selected allocations": "Ausgewählte Zuweisungen",
+  "Building layers": "Gebäudeebenen",
+  "Below": "Darunter",
+  "Above": "Darüber",
+  "Building levels": "Gebäudeebenen",
+  "Level {level} of {count}": "Ebene {level} von {count}",
+  "Higher level": "Höhere Ebene",
+  "Lower level": "Niedrigere Ebene",
+  "Shows this level and all levels below.": "Zeigt diese Ebene und alle darunterliegenden Ebenen.",
+  "Level {level} · Buildings above or below": "Ebene {level} · Gebäude darüber oder darunter"
 }

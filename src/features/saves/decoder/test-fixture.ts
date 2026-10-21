@@ -24,7 +24,8 @@ export const saveLookups = createSaveGameData(buildings, items, saveGameData.sav
 
 export function saveEntity(asset: string, x: number, fragments: string[] = []) {
     return {
-        spawnData: { entityConfigDataPath: `/Game/Chimera/Buildings/${asset}`, transform: { translation: { x, y: 0, z: 0 } } },
+        spawnData: { entityConfigDataPath: `/Game/Chimera/Buildings/${asset}`, transform: { translation: { x, y: 0, z: 0 },
+            rotation: { x: 0, y: 0, z: 0, w: 1 }, scale3D: { x: 1, y: 1, z: 1 } } },
         fragmentValues: fragments,
     };
 }

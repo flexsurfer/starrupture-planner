@@ -7,7 +7,7 @@ import { SaveMapIcon } from './SaveMapIcon';
 
 export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect, onFocusCore, onOpenCore }: {
     entity: SaveMapEntity; coreName: string; connected?: SaveMapEntity;
-    onClose: () => void; onSelect: (id: number) => void; onOpenCore: (id: number) => void; onFocusCore: (id: number) => void;
+    onClose?: () => void; onSelect: (id: number) => void; onOpenCore: (id: number) => void; onFocusCore: (id: number) => void;
 }) {
     const { t, formatNumber } = useTranslation();
     const detail = entity.detail;
@@ -26,7 +26,7 @@ export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect,
                     level: entity.core.core.level === null ? '—' : entity.core.core.level + 1, count: entity.core.buildings.length,
                 })}</p>
             </div>
-            <button type="button" className="save-map-icon-button" onClick={onClose} aria-label={t('Close')}><SaveMapIcon name="close" /></button>
+            {onClose && <button type="button" className="save-map-icon-button" onClick={onClose} aria-label={t('Close')}><SaveMapIcon name="close" /></button>}
         </div>
         {detail ? <>
             {(detail.building.power !== undefined || detail.building.heat !== undefined) && <dl className="save-map-properties save-map-detail-section">

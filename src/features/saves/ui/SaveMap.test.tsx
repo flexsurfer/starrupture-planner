@@ -10,20 +10,29 @@ import { UkladProvider } from '@/app/uklad/bindings';
 import { registerHeadlessApplication } from '@/platform/headless/register';
 import { analyzeSave } from '../decoder/analyze';
 import { extractionContext, snapshotFixture, saveGameData } from '../decoder/test-fixture';
+import type { SaveSnapshot } from '../snapshot';
+import { factoryMapOverlapFixture } from '../../../../test/fixtures/factory-map-overlaps';
 import { createSaveWorkspace } from '../workspace';
 import { SaveMap } from './SaveMap';
 import type { MapNode } from './SaveMapNode';
+import { BUILDING_DETAIL_ZOOM } from './map-viewport';
 
-const { fitView, setCenter, viewport } = vi.hoisted(() => ({ fitView: vi.fn(), setCenter: vi.fn(), viewport: { zoom: 1 } }));
+const { fitView, setCenter, getViewport, viewport } = vi.hoisted(() => {
+    const viewport = { x: 0, y: 0, zoom: 1, width: 0, height: 0 };
+    return { fitView: vi.fn(), setCenter: vi.fn(), getViewport: () => viewport, viewport };
+});
 let flowProps: ReactFlowProps<MapNode>;
 vi.mock('@xyflow/react', async importOriginal => ({
     ...await importOriginal<typeof import('@xyflow/react')>(),
     ReactFlowProvider: ({ children }: { children: ReactNode }) => children,
-    useReactFlow: () => ({ fitView, setCenter }),
-    useStore: (selector: (state: { transform: [number, number, number] }) => unknown) => selector({ transform: [0, 0, viewport.zoom] }),
-    Handle: () => null, Background: () => <div data-testid="map-grid" />, Controls: ({ fitViewOptions, onFitView }: ControlProps) => <button aria-label="Fit view" onClick={() => {
-        fitView(fitViewOptions); onFitView?.();
-    }} />,
+    useReactFlow: () => ({ fitView, setCenter, getViewport }),
+    useStore: (selector: (state: { transform: [number, number, number]; width: number; height: number }) => unknown) => selector({
+        transform: [viewport.x, viewport.y, viewport.zoom], width: viewport.width, height: viewport.height,
+    }),
+    Handle: () => null, Background: () => <div data-testid="map-grid" />, Controls: ({ fitViewOptions, onFitView, onZoomIn, onZoomOut }: ControlProps) => <>
+        <button aria-label="Fit view" onClick={() => { fitView(fitViewOptions); onFitView?.(); }} />
+        <button aria-label="Zoom in" onClick={onZoomIn} /><button aria-label="Zoom out" onClick={onZoomOut} />
+    </>,
     ReactFlow: (props: ReactFlowProps<MapNode>) => {
         flowProps = props;
         return <div>{props.nodes?.map(node => {
@@ -36,30 +45,43 @@ vi.mock('@xyflow/react', async importOriginal => ({
 }));
 
 const runtimes: ReturnType<typeof createAppRuntime>[] = [];
-afterEach(() => { cleanup(); runtimes.splice(0).forEach(runtime => runtime.dispose()); vi.clearAllMocks(); viewport.zoom = 1; });
+afterEach(() => {
+    cleanup(); runtimes.splice(0).forEach(runtime => runtime.dispose()); vi.clearAllMocks();
+    Object.assign(viewport, { x: 0, y: 0, zoom: 1, width: 0, height: 0 });
+});
 
-function setup({ withBounds = true, networkIds = {} }: { withBounds?: boolean; networkIds?: Record<number, number | null> } = {}) {
+function setup({ withBounds = true, networkIds = {}, snapshot: exampleSnapshot }: {
+    withBounds?: boolean; networkIds?: Record<number, number | null>; snapshot?: SaveSnapshot;
+} = {}) {
     const runtime = createAppRuntime();
     runtimes.push(runtime);
     registerHeadlessApplication(runtime);
     const harness = createUkladTestHarness(runtime);
     harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
-    const snapshot = analyzeSave(snapshotFixture(), extractionContext);
+    const snapshot = exampleSnapshot ?? analyzeSave(snapshotFixture(), extractionContext);
     for (const core of snapshot.cores) for (const entity of [core, ...core.buildings]) {
         if (entity.id in networkIds) entity.powerNetworkId = networkIds[entity.id];
     }
-    snapshot.cores[0].bounds = { min: { x: -120.5, y: -350, z: -10 }, max: { x: 279.5, y: 250, z: 10 } };
+    if (!exampleSnapshot) {
+        snapshot.cores[0].bounds = { min: { x: -120.5, y: -350, z: -10 }, max: { x: 279.5, y: 250, z: 10 } };
+        const dispatcher = snapshot.cores.flatMap(core => core.buildings).find(building => building.id === 20)!;
+        dispatcher.name = 'Ore dispatch';
+        dispatcher.position = { x: -100, y: 250, z: 75 };
+    }
     if (!withBounds) for (const core of snapshot.cores) core.bounds = null;
-    const dispatcher = snapshot.cores.flatMap(core => core.buildings).find(building => building.id === 20)!;
-    dispatcher.name = 'Ore dispatch';
-    dispatcher.position = { x: -100, y: 250, z: 75 };
     let workspace = createSaveWorkspace('one', 'World', snapshot);
     harness.restoreState({ ...harness.getState(), savesWorkspaces: { one: workspace }, savesWorkspaceOrder: ['one'], savesActiveWorkspaceId: 'one' });
     const onOpenCore = vi.fn();
     const view = () => <UkladProvider runtime={runtime}><SaveMap workspace={workspace} initialCoreId={1} onOpenCore={onOpenCore} /></UkladProvider>;
     let result = render(view());
-    return { onOpenCore, harness, remount: () => { result.unmount(); result = render(view()); }, replaceSnapshot: async () => {
-        workspace = createSaveWorkspace('one', 'World', analyzeSave(snapshotFixture(), extractionContext));
+    return { onOpenCore, harness, remount: () => { result.unmount(); result = render(view()); }, rename: async (name: string) => {
+        await act(async () => {
+            harness.dispatchSync([appIds.events.SAVES_RENAME_WORKSPACE, 'one', name]);
+            workspace = harness.getState().savesWorkspaces.one;
+            result.rerender(view());
+        });
+    }, replaceSnapshot: async (nextSnapshot = analyzeSave(snapshotFixture(), extractionContext)) => {
+        workspace = createSaveWorkspace('one', 'World', nextSnapshot);
         await act(async () => {
             harness.restoreState({ ...harness.getState(), savesImport: { requestId: 50, targetWorkspaceId: 'one', phase: 'reading', fileName: 'World.sav', error: null } });
             harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, 50, workspace.snapshot]);
@@ -127,6 +149,319 @@ function layerCheckbox(name: string) {
     if (settings.getAttribute('aria-expanded') !== 'true') fireEvent.click(settings);
     return screen.getByRole('checkbox', { name });
 }
+
+function setupOverlapExamples() {
+    return setup({ snapshot: analyzeSave(factoryMapOverlapFixture(), extractionContext) });
+}
+
+const markerButton = (id: number) => within(screen.getByTestId(`rf-node-${id}`)).getByRole('button');
+const layerControls = () => screen.getByRole('region', { name: 'Building layers' });
+const levelControls = () => screen.getByRole('region', { name: 'Building levels' });
+const changeLevel = (direction: 'Higher' | 'Lower') => interact(() => {
+    fireEvent.click(within(levelControls()).getByRole('button', { name: `${direction} level` }));
+});
+const node = (id: number) => flowProps.nodes!.find(node => node.id === String(id))!;
+const focusExample = (id: number) => interact(() => {
+    fireEvent.change(screen.getByRole('combobox', { name: 'Focus Core' }), { target: { value: String(id) } });
+});
+const searchFor = async (id: number) => {
+    const search = screen.getByRole('combobox', { name: 'Find a building' });
+    await interact(() => { fireEvent.change(search, { target: { value: `#${id}` } }); });
+    await interact(() => { fireEvent.keyDown(search, { key: 'Enter' }); });
+};
+
+it('reveals each of the four aligned pairs as layers, preserving every individual building and position', async () => {
+    setupOverlapExamples();
+    const geometry = () => flowProps.nodes!.map(({ id, position }) => ({ id, position }));
+    const original = geometry();
+    for (const id of [105, 106, 107, 108]) {
+        expect(markerButton(id).querySelector('.save-map-layer-badge')).toHaveTextContent('2');
+        expect(node(id).zIndex).toBeGreaterThan(node(id - 4).zIndex!);
+        await interact(() => { fireEvent.click(markerButton(id)); });
+        expect(within(layerControls()).getByRole('button', { name: 'Above' })).toBeDisabled();
+        await interact(() => { fireEvent.click(within(layerControls()).getByRole('button', { name: 'Below' })); });
+        expect(markerButton(id - 4)).toHaveAttribute('aria-pressed', 'true');
+        expect(markerButton(id - 4).querySelector('.save-map-layer-badge')).toHaveTextContent('1');
+        expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 1 of 2');
+        expect(node(id).data.ghost).toBe(true);
+        expect(node(id).style?.pointerEvents).toBe('none');
+        expect(within(layerControls()).getByRole('button', { name: 'Above' })).toHaveFocus();
+        expect(within(screen.getByTestId(`rf-node-${id}`)).queryByRole('button')).toBeNull();
+        expect(node(id).zIndex).toBeGreaterThan(node(id - 4).zIndex!);
+        expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent(`Exact ${id - 104}`);
+        await interact(() => { fireEvent.click(within(layerControls()).getByRole('button', { name: 'Above' })); });
+        expect(node(id).data.ghost).toBe(false);
+    }
+    expect(geometry()).toEqual(original);
+    expect(screen.queryByText('Overlapping buildings')).toBeNull();
+});
+
+it('reveals offset mixed buildings using node intersections without physical geometry', async () => {
+    setupOverlapExamples();
+    await focusExample(2);
+    expect([201, 202, 203].every(id => node(id).data.hasLayers)).toBe(true);
+    expect(screen.queryByRole('slider')).toBeNull();
+    expect([201, 202, 203].map(id => node(id).data.entity.level)).toEqual([2, 3, 1]);
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 3 of 3');
+    await changeLevel('Lower');
+    expect(node(202).data.ghost).toBe(true);
+    expect([201, 203].every(id => !node(id).data.ghost)).toBe(true);
+    await interact(() => { fireEvent.click(markerButton(201)); });
+    await interact(() => { fireEvent.click(within(layerControls()).getByRole('button', { name: 'Below' })); });
+    expect(markerButton(203)).toHaveAttribute('aria-pressed', 'true');
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 1 of 3');
+    expect([201, 202].every(id => node(id).data.ghost)).toBe(true);
+    await searchFor(202);
+    expect([201, 202, 203].every(id => !node(id).data.ghost)).toBe(true);
+});
+
+it('changes overlap levels without hiding unrelated buildings on higher ground', async () => {
+    setupOverlapExamples();
+    await focusExample(6);
+    expect(levelControls().parentElement).toHaveClass('save-map-canvas');
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 2 of 2');
+    expect(levelControls().textContent).toBe('2'); // No text panel beside the control.
+    expect(levelControls().querySelector('.save-map-level-symbol svg')).not.toBeNull();
+    expect([601, 602, 603, 604].map(id => node(id).data.entity.level)).toEqual([1, 1, 1, 2]);
+    await changeLevel('Lower');
+    expect(node(604).data.ghost).toBe(true);
+    expect([601, 602, 603].every(id => !node(id).data.ghost)).toBe(true);
+    expect(node(105).data.ghost).toBe(false); // Other Cores are untouched.
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 1 of 2');
+    expect(within(levelControls()).getByRole('button', { name: 'Lower level' })).toBeDisabled();
+    expect(within(levelControls()).getByRole('button', { name: 'Higher level' })).toHaveFocus();
+    await interact(() => { fireEvent.click(markerButton(602)); }); // High terrain still selects level 1.
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 1 of 2');
+    expect(screen.queryByRole('region', { name: 'Building layers' })).toBeNull();
+    await changeLevel('Higher');
+    expect(within(levelControls()).getByRole('button', { name: 'Higher level' })).toBeDisabled();
+    expect(within(levelControls()).getByRole('button', { name: 'Lower level' })).toHaveFocus();
+    expect([601, 602, 603, 604].every(id => !node(id).data.ghost)).toBe(true);
+    expect(screen.queryByRole('region', { name: 'Building details' })).toBeNull();
+});
+
+it('skips same-Z comparisons even when markers or positions coincide', async () => {
+    setupOverlapExamples();
+    await focusExample(3);
+    expect(screen.queryByRole('region', { name: 'Building levels' })).toBeNull();
+    for (const id of [301, 302, 303, 304, 305, 306, 307, 308]) {
+        expect(node(id).data.hasLayers).toBe(false);
+        await interact(() => { fireEvent.click(markerButton(id), { detail: 1, clientX: 150, clientY: 60 }); });
+        expect(screen.queryByRole('region', { name: 'Building layers' })).toBeNull();
+    }
+});
+
+it('navigates irregular negative and fractional heights and searches hidden duplicates by ID', async () => {
+    setupOverlapExamples();
+    await searchFor(505);
+    expect(markerButton(505)).toHaveAttribute('aria-pressed', 'true');
+    expect(node(506).data.ghost).toBe(true);
+    expect(layerControls()).toHaveTextContent('Level 5');
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 5 of 10');
+    await interact(() => { fireEvent.click(within(layerControls()).getByRole('button', { name: 'Below' })); });
+    expect(markerButton(504)).toHaveAttribute('aria-pressed', 'true');
+    expect(layerControls()).toHaveTextContent('Level 4');
+    await searchFor(501);
+    expect(layerControls()).toHaveTextContent('Level 1');
+    expect(within(layerControls()).getByRole('button', { name: 'Below' })).toBeDisabled();
+    expect(node(510).data.ghost).toBe(true);
+    await searchFor(510);
+    expect(node(510).data.ghost).toBe(false);
+    expect(markerButton(510)).toHaveAttribute('aria-pressed', 'true');
+    expect(markerButton(510).querySelector('.save-map-layer-badge')).toHaveTextContent('10');
+    await searchFor(801);
+    expect(layerControls()).toHaveTextContent('Level 1');
+    expect(node(802).data.ghost).toBe(true);
+    await interact(() => { fireEvent.keyDown(screen.getByRole('region', { name: 'Snapshot map' }), { key: 'Escape' }); });
+    expect(screen.queryByRole('region', { name: 'Building layers' })).toBeNull();
+});
+
+it('follows the Core in view after panning, retaining independent levels without moving the camera', async () => {
+    Object.assign(viewport, { width: 800, height: 600, x: 250, y: 150 });
+    const { remount } = setupOverlapExamples();
+    const picker = () => screen.getByRole('combobox', { name: 'Focus Core' });
+    expect(picker()).toHaveValue('1');
+    await changeLevel('Lower');
+    const core6View = { x: 400 - 5200, y: 300 - 5150, zoom: 1 };
+    await interact(() => { flowProps.onMove?.(new MouseEvent('mousemove'), core6View); });
+    expect(picker()).toHaveValue('1'); // No flicker while dragging between Cores.
+    await interact(() => { flowProps.onMoveEnd?.(new MouseEvent('mouseup'), core6View); });
+    expect(picker()).toHaveValue('6');
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 2 of 2');
+    await changeLevel('Lower');
+    expect(node(604).data.ghost).toBe(true);
+    expect(node(105).data.ghost).toBe(true);
+    await interact(() => { flowProps.onMoveEnd?.(null, { x: 250, y: 150, zoom: 1 }); });
+    expect(picker()).toHaveValue('1');
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 1 of 2');
+    await changeLevel('Higher');
+    expect(node(105).data.ghost).toBe(false);
+    expect(node(604).data.ghost).toBe(true);
+    await interact(() => { flowProps.onMoveEnd?.(null, { x: -3000, y: -3000, zoom: 1 }); });
+    expect(picker()).toHaveValue('');
+    expect(screen.queryByRole('region', { name: 'Building levels' })).toBeNull();
+    // A restored camera is authoritative over initialCoreId, including on mount.
+    Object.assign(viewport, { x: 400 - 15150, y: 300 - 5150 });
+    await interact(() => { flowProps.onMove?.(null, viewport); });
+    remount();
+    expect(picker()).toHaveValue('8');
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 2 of 2');
+    expect(fitView).not.toHaveBeenCalled();
+    expect(setCenter).not.toHaveBeenCalled();
+});
+
+it('preserves cutaways on rename and resets them on import even when building IDs are unchanged', async () => {
+    const { harness, rename, replaceSnapshot } = setupOverlapExamples();
+    await focusExample(1);
+    await changeLevel('Lower');
+    expect(node(105).data.ghost).toBe(true);
+    await focusExample(6);
+    await changeLevel('Lower');
+    expect(node(604).data.ghost).toBe(true);
+    const map = harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one']);
+    const snapshot = harness.getState().savesWorkspaces.one.snapshot;
+    await rename('Renamed world');
+    expect(harness.getState().savesWorkspaces.one.snapshot).toBe(snapshot);
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one'])).not.toBe(map);
+    expect(node(105).data.ghost).toBe(true);
+    expect(node(604).data.ghost).toBe(true);
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 1 of 2');
+    await replaceSnapshot(structuredClone(snapshot));
+    expect(flowProps.nodes!.some(node => node.data.ghost)).toBe(false);
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 2 of 2');
+});
+
+it('keeps All Cores and Fit view selected after programmatic fitting, even on compact maps', async () => {
+    Object.assign(viewport, { width: 800, height: 600, x: 250, y: 150 });
+    setupOverlapExamples();
+    const picker = screen.getByRole('combobox', { name: 'Focus Core' });
+    for (const zoom of [.05, 1.2]) {
+        await interact(() => { fireEvent.change(picker, { target: { value: '' } }); });
+        Object.assign(viewport, { zoom });
+        await interact(() => {
+            flowProps.onMoveStart?.(null, viewport);
+            flowProps.onMove?.(null, viewport);
+            flowProps.onMoveEnd?.(null, viewport);
+        });
+        expect(picker).toHaveValue('');
+        expect(screen.queryByRole('region', { name: 'Building levels' })).toBeNull();
+    }
+    // Zoom buttons are deliberate camera navigation and release the explicit target.
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Zoom in' })); });
+    await interact(() => { flowProps.onMoveEnd?.(null, viewport); });
+    expect(picker).toHaveValue('1');
+    expect(levelControls()).toBeInTheDocument();
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Fit view' })); });
+    await interact(() => { flowProps.onMoveEnd?.(null, viewport); });
+    expect(picker).toHaveValue('');
+    // Direct panning also releases All Cores, but only at a close zoom.
+    await interact(() => { flowProps.onMoveStart?.(new MouseEvent('mousedown'), viewport); });
+    await interact(() => { flowProps.onMoveEnd?.(new MouseEvent('mouseup'), { x: 400 - 15150, y: 300 - 5150, zoom: 1 }); });
+    expect(picker).toHaveValue('8');
+});
+
+it('hides level controls and automatic Core focus at world zoom without changing level assignments', async () => {
+    Object.assign(viewport, { width: 800, height: 600, x: 250, y: 150 });
+    const { harness } = setupOverlapExamples();
+    const map = harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one']);
+    await changeLevel('Lower');
+    for (const zoom of [BUILDING_DETAIL_ZOOM - .001, BUILDING_DETAIL_ZOOM]) {
+        Object.assign(viewport, { x: 400 - 150 * zoom, y: 300 - 150 * zoom, zoom });
+        await interact(() => { flowProps.onMoveEnd?.(new MouseEvent('mouseup'), viewport); });
+        if (zoom < BUILDING_DETAIL_ZOOM) {
+            expect(screen.queryByRole('region', { name: 'Building levels' })).toBeNull();
+            expect(screen.getByRole('combobox', { name: 'Focus Core' })).toHaveValue('');
+        } else {
+            expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 1 of 2');
+            expect(screen.getByRole('combobox', { name: 'Focus Core' })).toHaveValue('1');
+        }
+        expect(node(105).data.ghost).toBe(true);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one'])).toEqual(map);
+    }
+});
+
+it('preserves aligned stacks and selection across zoom, all node sizes and visual settings', async () => {
+    viewport.zoom = .2;
+    const { harness, remount } = setupOverlapExamples();
+    expect(markerButton(801).querySelector('.save-map-layer-badge')).toBeNull();
+    const map = harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one']);
+    const original = flowProps.nodes!.map(({ id, position }) => ({ id, position }));
+    await interact(() => { fireEvent.click(markerButton(801)); });
+    expect(layerControls()).toBeInTheDocument();
+    expect(node(802).data.ghost).toBe(true);
+    viewport.zoom = 2;
+    remount();
+    expect(node(802).data.ghost).toBe(true);
+    expect(markerButton(801).querySelector('.save-map-layer-badge')).not.toBeNull();
+    await toggleLayer('Power networks');
+    for (const size of ['Compact', 'Standard', 'Large']) {
+        await interact(() => {
+            const button = screen.getByRole('button', { name: size });
+            button.focus(); fireEvent.click(button);
+        });
+        expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one'])?.stacks.get(101)).toEqual(map?.stacks.get(101));
+        expect(node(801).data.hasLayers).toBe(true);
+        expect(node(802).data.ghost).toBe(true);
+        expect(node(601).data.hasLayers).toBe(false);
+        expect(node(602).data.hasLayers).toBe(false);
+        expect(layerControls()).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: size })).toHaveFocus();
+    }
+    expect(flowProps.nodes!.map(({ id, position }) => ({ id, position }))).toEqual(original);
+});
+
+it('recalculates layers on node resize, resets stale cutaways and keeps the selected building visible', async () => {
+    const { harness } = setupOverlapExamples();
+    await focusExample(8);
+    await toggleLayer('Power networks'); // Open map settings.
+    const resize = (size: string) => interact(() => { fireEvent.click(screen.getByRole('button', { name: size })); });
+    expect([801, 802, 803, 804].map(id => node(id).data.entity.level)).toEqual([1, 2, 1, 1]);
+    await resize('Large');
+    expect([801, 802, 803, 804].map(id => node(id).data.entity.level)).toEqual([1, 2, 2, 3]);
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 3 of 3');
+    await changeLevel('Lower');
+    expect(node(804).data.ghost).toBe(true);
+    await resize('Compact');
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 2 of 2');
+    expect([801, 802, 803, 804].every(id => !node(id).data.ghost)).toBe(true);
+    await resize('Large');
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 3 of 3');
+    expect(node(804).data.ghost).toBe(false); // No stale cutaway returns when switching back.
+    await searchFor(803);
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 2 of 3');
+    await resize('Standard');
+    expect(markerButton(803)).toHaveAttribute('aria-pressed', 'true');
+    expect(node(803).data.hasLayers).toBe(false);
+    expect(node(802).data.ghost).toBe(true);
+    expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 1 of 2');
+    await resize('Large');
+    expect(markerButton(803)).toHaveAttribute('aria-pressed', 'true');
+    expect(markerButton(803).querySelector('.save-map-layer-badge')).toHaveTextContent('2');
+    expect(node(804).data.ghost).toBe(true);
+    const map = harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one']);
+    await toggleLayer('Power networks');
+    await toggleLayer('Building names');
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one'])).toBe(map);
+    expect(node(804).data.ghost).toBe(true);
+});
+
+it('hides links with ghost endpoints, follows real cargo connections and resets layers on import', async () => {
+    const { replaceSnapshot } = setupOverlapExamples();
+    expect([701, 702, 703, 704].map(id => node(id).data.entity.level)).toEqual([1, 2, 1, 2]);
+    await interact(() => { fireEvent.click(markerButton(701)); });
+    expect(node(702).data.ghost).toBe(true);
+    expect(flowProps.edges!.map(edge => edge.source)).toEqual(['701']);
+    await interact(() => {
+        fireEvent.click(within(screen.getByRole('region', { name: 'Building details' })).getByRole('button', { name: 'Show connected building' }));
+    });
+    expect(markerButton(703)).toHaveAttribute('aria-pressed', 'true');
+    expect(node(704).data.ghost).toBe(true);
+    expect(flowProps.edges!.find(edge => edge.source === '701')?.label).toBe('Helium-3');
+    await replaceSnapshot();
+    expect(screen.queryByRole('region', { name: 'Building layers' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Building details' })).toBeNull();
+    expect(flowProps.nodes!.some(node => node.data.ghost)).toBe(false);
+});
 
 it('keeps the selected node, display settings and layers when returning to the map', async () => {
     const { remount } = setup();
@@ -308,7 +643,7 @@ it('toggles stable network colors across Cores and buildings without changing ot
         expect(button(id)).toHaveClass('has-power-network');
         expect(button(id).style.getPropertyValue('--save-map-network-border-style')).toBe('solid');
         expect(button(id).querySelector('.save-map-network-badge')).toHaveTextContent('#0');
-        expect(button(id)).toHaveAttribute('aria-description', 'Power network 0');
+        expect(button(id)).toHaveAttribute('aria-description', expect.stringContaining('Power network 0'));
     }
     expect(button(22).style.getPropertyValue('--save-map-network-color')).toBe('');
     expect(button(22)).not.toHaveClass('has-power-network');
@@ -324,7 +659,7 @@ it('toggles stable network colors across Cores and buildings without changing ot
     expect(button(20).style.getPropertyValue('--save-map-network-color')).toBe('');
     expect(button(1)).not.toHaveClass('has-power-network');
     expect(button(20).querySelector('.save-map-network-badge')).toBeNull();
-    expect(button(20)).not.toHaveAttribute('aria-description');
+    expect(button(20).getAttribute('aria-description')).not.toContain('Power network');
     expect(button(20)).toHaveAttribute('aria-pressed', 'true');
     await toggleLayer('Core bounds');
     await toggleLayer('Cargo links');
@@ -374,7 +709,7 @@ it('keeps network identities on Cores at overview zoom without crowding small bu
     expect(core.querySelector('.save-map-network-badge')).toHaveTextContent('#0');
     expect(building.querySelector('.save-map-network-badge')).toBeNull();
     expect(within(building).getByRole('button')).toHaveClass('has-power-network');
-    expect(within(building).getByRole('button')).toHaveAttribute('aria-description', 'Power network 0');
+    expect(within(building).getByRole('button')).toHaveAttribute('aria-description', expect.stringContaining('Power network 0'));
 });
 
 it('keeps nearby Core names visible and shows building counts at overview zoom', async () => {

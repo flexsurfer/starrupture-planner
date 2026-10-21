@@ -187,10 +187,12 @@ describe('headless application E2E', () => {
             overview: [appIds.subscriptions.SAVES_OVERVIEW, 'one'], core: [appIds.subscriptions.SAVES_CORE_BY_ID, 'one', 1],
             selected: [appIds.subscriptions.SAVES_SELECTED_CORE, 'one'], candidate: [appIds.subscriptions.SAVES_IMPORT],
             selectedView: [appIds.subscriptions.SAVES_SELECTED_VIEW], selectedNodes: [appIds.subscriptions.SAVES_MAP_SELECTED_NODES],
-            display: [appIds.subscriptions.SAVES_MAP_DISPLAY], layers: [appIds.subscriptions.SAVES_MAP_LAYERS],
+            display: [appIds.subscriptions.SAVES_MAP_DISPLAY], buildingSize: [appIds.subscriptions.SAVES_MAP_BUILDING_SIZE],
+            layers: [appIds.subscriptions.SAVES_MAP_LAYERS],
             viewports: [appIds.subscriptions.SAVES_MAP_VIEWPORTS], viewport: [appIds.subscriptions.SAVES_MAP_VIEWPORT, 'one'],
             bases: [appIds.subscriptions.BASES_LIST], planner: [appIds.subscriptions.PLANNER_TABS],
         } as const);
+        expect(saves.value('buildingSize')).toBe(72);
         await dispatch(scenario, [appIds.events.BASES_CREATE_BASE, 'Keep manual work']);
         await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'keep', 'Keep planner work', 'single']);
         const unrelated = { bases: saves.value('bases'), planner: saves.value('planner') };
@@ -210,6 +212,7 @@ describe('headless application E2E', () => {
         expect(saves.value('selectedNodes')).toEqual({ one: 200 });
         expect(saves.value('selectedView')).toBe('overview');
         expect(saves.value('display')).toMatchObject({ buildingSize: 88, showNames: true, showGrid: false });
+        expect(saves.value('buildingSize')).toBe(88);
         expect(saves.value('layers')).toEqual({ showLinks: true, showBounds: false, showPowerNetworks: true });
         expect(saves.value('viewport')).toEqual({ x: 12, y: -34, zoom: 0.8 });
         expect(saves.value('viewports')).toEqual({ one: saves.value('viewport') });

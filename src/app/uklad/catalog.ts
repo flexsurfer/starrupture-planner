@@ -151,6 +151,7 @@ export const appIds = {
         SAVES_SELECTED_VIEW: 'saves/selected-view',
         SAVES_MAP_SELECTED_NODES: 'saves/map-selected-nodes',
         SAVES_MAP_DISPLAY: 'saves/map-display',
+        SAVES_MAP_BUILDING_SIZE: 'saves/map-building-size',
         SAVES_MAP_LAYERS: 'saves/map-layers',
         SAVES_MAP_VIEWPORTS: 'saves/map-viewports',
         SAVES_MAP_VIEWPORT: 'saves/map-viewport',

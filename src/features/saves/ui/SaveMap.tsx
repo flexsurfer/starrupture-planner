@@ -1,6 +1,6 @@
 import type { MapDisplaySettings, MapLayers } from '../map-preferences';
 import { useCallback, useMemo, useState } from 'react';
-import { Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow, useStore } from '@xyflow/react';
+import { Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow, useStore, type Viewport } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
@@ -8,22 +8,22 @@ import { useTranslation } from '@/shared/i18n';
 import { useFlowLabels } from '@/shared/i18n/useFlowLabels';
 import type { SaveMap as MapData, SaveMapEntity } from '../map';
 import type { SaveWorkspace } from '../types';
-import type { SavePosition } from '../snapshot';
 import { SaveMapCoreBounds, SaveMapNode, type MapNode } from './SaveMapNode';
 import { SaveMapDetails } from './SaveMapDetails';
+import { SaveMapLevels, SaveMapBuildingLayers } from './SaveMapLevels';
 import { SaveMapIcon } from './SaveMapIcon';
 import { SaveMapSearch } from './SaveMapSearch';
 import { SaveMapEdge, type CargoEdge } from './SaveMapEdge';
 import { SaveMapSettings } from './SaveMapSettings';
 import { cargoHandles } from './map-display';
 import { powerNetworkStyles } from './power-network-style';
+import { BUILDING_DETAIL_ZOOM, coreInViewport, mapFocusMarkers } from './map-viewport';
+import { CORE_MARKER_SIZE, projectMapPosition as project } from '../map-coordinates';
 import './SaveMap.css';
 
 const nodeTypes = { saveBuilding: SaveMapNode, saveCoreBounds: SaveMapCoreBounds };
 const edgeTypes = { saveCargo: SaveMapEdge };
 const nodeOrigin: [number, number] = [0.5, 0.5];
-// Fixed projection, with no graph layout or relocation of buildings. +Y points down.
-const project = (position: SavePosition) => ({ x: position.x / 10, y: position.y / 10 });
 const fitOptions = { padding: 0.2, minZoom: 0.005, maxZoom: 1.5 };
 const motionDuration = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 300;
 
@@ -45,47 +45,106 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
         runtime.dispatch([appIds.events.SAVES_SET_MAP_VIEWPORT, workspace.id, next.x, next.y, next.zoom]);
     }, [runtime, workspace.id]);
     const theme = useSubscription([appIds.subscriptions.UI_THEME]);
-    const { fitView, setCenter } = useReactFlow<MapNode>();
+    const { fitView, setCenter, getViewport } = useReactFlow<MapNode>();
+    const width = useStore(state => state.width);
+    const height = useStore(state => state.height);
+    const showBuildingDetail = useStore(state => state.transform[2] >= BUILDING_DETAIL_ZOOM);
     const selections = useSubscription([appIds.subscriptions.SAVES_MAP_SELECTED_NODES]);
     const layers = useSubscription([appIds.subscriptions.SAVES_MAP_LAYERS]);
     const setLayers = (value: MapLayers) => runtime.dispatch([appIds.events.SAVES_SET_MAP_LAYERS, value]);
     const { showLinks, showBounds, showPowerNetworks } = layers;
     const display = useSubscription([appIds.subscriptions.SAVES_MAP_DISPLAY]);
     const setDisplay = (value: MapDisplaySettings) => runtime.dispatch([appIds.events.SAVES_SET_MAP_DISPLAY, value]);
-    const [focusedCore, setFocusedCore] = useState(initialCoreId === null ? '' : String(initialCoreId));
+    // Explicit navigation provides immediate feedback. Once the camera settles,
+    // derive focus from that viewport (also on remount and resize).
+    const [focus, setFocus] = useState<{ coreId: string } | { viewport: Viewport }>(() => viewport
+        ? { viewport } : { coreId: initialCoreId === null ? '' : String(initialCoreId) });
+    const setFocusedCore = useCallback((coreId: string) => setFocus({ coreId }), []);
     const powerStyles = useMemo(() => powerNetworkStyles(map.entities.map(entity =>
         (entity.detail?.instance ?? entity.core.core).powerNetworkId)), [map]);
     const coreName = useCallback((entity: SaveMapEntity) => entity.core.core.name ?? t('Core {number}', { number: entity.coreNumber }), [t]);
     const entityName = useCallback((entity: SaveMapEntity) => entity.detail
         ? entity.detail.instance.name ?? entity.detail.building.name : coreName(entity), [coreName]);
     const byId = useMemo(() => new Map(map.entities.map(entity => [entity.id, entity])), [map]);
+    // Reset before children commit on import or resize, releasing obsolete state.
+    // Renames preserve snapshot identity and therefore retain the cutaways.
+    const [cutaways, setCutaways] = useState(() => ({ snapshot: workspace.snapshot,
+        buildingSize: map.buildingSize, levels: new Map<number, number>() }));
+    if (cutaways.snapshot !== workspace.snapshot || cutaways.buildingSize !== map.buildingSize) {
+        setCutaways({ snapshot: workspace.snapshot, buildingSize: map.buildingSize, levels: new Map() });
+    }
+    const levelLimits = cutaways.levels;
+    const setLevelLimit = useCallback((coreId: number, level: number) => {
+        setCutaways(current => ({ ...current, levels: new Map(current.levels).set(coreId, level) }));
+    }, []);
     const cores = useMemo(() => map.entities.filter(entity => !entity.detail), [map]);
+    const focusMarkers = useMemo(() => mapFocusMarkers(map.entities), [map]);
+    const viewportCore = useMemo(() => 'viewport' in focus
+        ? coreInViewport(focusMarkers, focus.viewport, width, height, map.buildingSize) : null,
+    [focus, focusMarkers, width, height, map.buildingSize]);
+    const focusedCore = 'coreId' in focus ? focus.coreId : viewportCore === null ? '' : String(viewportCore);
     const corePositions = useMemo(() => cores.map(core => ({ ...project(core.position), id: core.id, name: coreName(core),
         countLabel: t('{count} buildings', { count: core.core.buildings.length }) })), [cores, coreName, t]);
     // Import replacement clears session selection because node IDs belong to a snapshot.
     const selected = byId.get(selections[workspace.id]);
     const selectedCoreId = selected?.core.core.id;
+    const selectedStack = selected && map.stacks.get(selected.id);
+    const hasBuildingLayers = selectedStack && (selectedStack.above.length > 0 || selectedStack.below.length > 0);
     const selectEntity = useCallback((id: number | null) => runtime.dispatch([appIds.events.SAVES_SELECT_MAP_NODE, workspace.id, id]), [runtime, workspace.id]);
+    const selectMarker = useCallback((id: number) => {
+        const entity = byId.get(id);
+        if (!entity) return;
+        if (entity.detail) {
+            setFocusedCore(String(entity.core.core.id));
+            setLevelLimit(entity.core.core.id, entity.level!);
+        }
+        selectEntity(id);
+    }, [byId, setLevelLimit, selectEntity, setFocusedCore]);
+    const scopeId = focusedCore !== '' && byId.get(Number(focusedCore))?.detail === null ? Number(focusedCore) : null;
+    const levelCount = scopeId === null ? 0 : map.levelCountsByCore.get(scopeId) ?? 0;
+    // A restored selection reveals the same level even before transient camera
+    // controls have been used in this mount.
+    const levelForCore = useCallback((coreId: number) => levelLimits.get(coreId)
+        ?? (selected?.detail && selectedCoreId === coreId ? selected.level! : undefined), [levelLimits, selected, selectedCoreId]);
+    const currentLevel = (scopeId === null ? undefined : levelForCore(scopeId)) ?? levelCount;
+    const heightRanks = useMemo(() => new Map([...new Set(map.entities.map(entity => entity.position.z))]
+        .sort((a, b) => a - b).map((z, index) => [z, index * 2])), [map]);
+    const aboveCutaway = useCallback((entity: SaveMapEntity) => {
+        const level = levelForCore(entity.core.core.id);
+        return entity.level !== null && level !== undefined && entity.level > level;
+    }, [levelForCore]);
+    const ghosts = useMemo(() => {
+        const ids = new Set(map.entities.filter(aboveCutaway).map(entity => entity.id));
+        if (selected) {
+            for (const id of map.stacks.get(selected.id)?.above ?? []) ids.add(id);
+        }
+        return ids;
+    }, [map, aboveCutaway, selected]);
+    const resetLevels = () => { setCutaways(current => ({ ...current, levels: new Map() })); selectEntity(null); };
     const focusEntity = (id: number) => {
         const entity = byId.get(id);
         if (!entity) return;
-        selectEntity(id);
+        selectMarker(id);
         const point = project(entity.position);
-        setFocusedCore('');
+        // Search/cargo navigation reveals the selected building's overlap level.
+        setFocusedCore(String(entity.core.core.id));
         void setCenter(point.x, point.y, { zoom: 1.2, duration: motionDuration() });
     };
     const nodes = useMemo<MapNode[]>(() => map.entities.flatMap(entity => {
         const networkId = (entity.detail?.instance ?? entity.core.core).powerNetworkId;
         const powerStyle = showPowerNetworks && networkId !== null ? powerStyles.get(networkId) : undefined;
         const data = { entity, name: entityName(entity), selected: entity.id === selected?.id,
-            related: entity.id === selected?.connectedBuildingId, labelPeers: entity.detail ? undefined : corePositions, onSelect: selectEntity,
+            related: entity.id === selected?.connectedBuildingId, labelPeers: entity.detail ? undefined : corePositions, onSelect: selectMarker,
+            hasLayers: Boolean(map.stacks.get(entity.id)?.above.length || map.stacks.get(entity.id)?.below.length),
+            ghost: ghosts.has(entity.id),
             showNames: display.showNames, showResources: display.showResources,
             powerColor: powerStyle?.color, powerBorderStyle: powerStyle?.borderStyle };
-        const size = entity.detail ? display.buildingSize : 48;
+        const size = entity.detail ? map.buildingSize : CORE_MARKER_SIZE;
         const marker: MapNode = {
             id: String(entity.id), type: 'saveBuilding', position: project(entity.position), width: size, height: size,
-            style: { width: size, height: size },
-            zIndex: data.selected ? 4 : entity.detail ? (data.related ? 2 : 0) : 3, data,
+            style: { width: size, height: size, ...(data.ghost ? { pointerEvents: 'none' as const } : {}) },
+            // Selection may raise a marker within its elevation, never over a higher building.
+            zIndex: entity.detail ? heightRanks.get(entity.position.z)! + (data.selected || data.related ? 1 : 0) : heightRanks.size * 2 + 2, data,
         };
         const bounds = !entity.detail && showBounds ? entity.core.core.bounds : null;
         if (!bounds) return [marker];
@@ -99,9 +158,9 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
             data: { ...data, selected: selectedCoreId === entity.id },
         };
         return [area, marker];
-    }), [map, entityName, selectEntity, selected?.id, selected?.connectedBuildingId, selectedCoreId, showBounds, showPowerNetworks, powerStyles, corePositions,
-        display.buildingSize, display.showNames, display.showResources]);
-    const edges = useMemo<CargoEdge[]>(() => showLinks ? map.links.map(link => {
+    }), [map, entityName, selectMarker, ghosts, heightRanks, selected?.id, selected?.connectedBuildingId, selectedCoreId, showBounds, showPowerNetworks, powerStyles, corePositions,
+        display.showNames, display.showResources]);
+    const edges = useMemo<CargoEdge[]>(() => showLinks ? map.links.filter(link => !ghosts.has(link.source) && !ghosts.has(link.target)).map(link => {
         const highlighted = selected?.id === link.source || selected?.id === link.target;
         return { id: `cargo-${link.source}`, source: String(link.source), target: String(link.target), type: 'saveCargo',
             ...cargoHandles(byId.get(link.source)!.position, byId.get(link.target)!.position),
@@ -110,9 +169,10 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
             labelStyle: { fill: 'var(--save-map-text)', fontSize: 12 }, labelBgStyle: { fill: 'var(--save-map-panel)' },
             labelBgPadding: [8, 5] as [number, number], labelBgBorderRadius: 5,
         };
-    }) : [], [map, byId, selected, showLinks, display.animateCargo, t]);
+    }) : [], [map, byId, ghosts, selected, showLinks, display.animateCargo, t]);
     const focusCore = (id: string) => {
         setFocusedCore(id);
+        if (id === '') resetLevels();
         void fitView({ ...fitOptions, duration: motionDuration(), nodes: id === '' ? nodes : nodes.filter(node => node.data.entity.core.core.id === Number(id)) });
     };
     const initialFit = useMemo(() => ({ ...fitOptions, ...(initialCoreId === null ? {} : {
@@ -124,7 +184,7 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     }}>
         <div className="save-map-toolbar">
             <label className="save-map-focus"><span className="sr-only">{t('Focus Core')}</span><SaveMapIcon name="focus" />
-                <select className="select select-bordered select-sm" value={focusedCore} onChange={event => focusCore(event.target.value)}>
+                <select className="select select-bordered select-sm" value={scopeId === null ? '' : String(scopeId)} onChange={event => focusCore(event.target.value)}>
                     <option value="">{t('All Cores')}</option>
                     {cores.map(entity => <option key={entity.id} value={entity.id}>{coreName(entity)}</option>)}
                 </select>
@@ -138,21 +198,30 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
             <div className="save-map-canvas">
                 <ReactFlow<MapNode, CargoEdge> nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} nodeOrigin={nodeOrigin}
                     colorMode={theme} attributionPosition="bottom-left" ariaLabelConfig={flowLabels} defaultViewport={viewport ?? undefined} onMove={rememberViewport}
+                    onMoveStart={(event, next) => { if (event !== null) setFocus({ viewport: next }); }}
+                    // Fitting an explicit target must not overwrite the picker,
+                    // especially All Cores when a small map fits at a close zoom.
+                    onMoveEnd={(event, next) => setFocus(current => event === null && 'coreId' in current ? current : { viewport: next })}
                     fitView={viewport === null} fitViewOptions={initialFit} minZoom={0.005} maxZoom={3}
                     nodesDraggable={false} nodesConnectable={false} nodesFocusable={false} edgesFocusable={false}
                     elementsSelectable={false} deleteKeyCode={null} onlyRenderVisibleElements
-                    onNodeClick={(_event, node) => { if (node.type === 'saveBuilding') selectEntity(node.data.entity.id); }}
-                    onPaneClick={() => selectEntity(null)} onEdgeClick={(_event, edge) => selectEntity(Number(edge.source))}>
+                    onNodeClick={(_event, node) => { if (node.type === 'saveBuilding' && !node.data.ghost) selectMarker(node.data.entity.id); }}
+                    onPaneClick={() => selectEntity(null)} onEdgeClick={(_event, edge) => selectMarker(Number(edge.source))}>
                     {display.showGrid && <MapGrid />}
                     <Controls position="bottom-left" showInteractive={false} fitViewOptions={{ ...fitOptions, duration: motionDuration() }}
-                        onFitView={() => setFocusedCore('')} />
+                        onZoomIn={() => setFocus({ viewport: getViewport() })} onZoomOut={() => setFocus({ viewport: getViewport() })}
+                        onFitView={() => { setFocusedCore(''); resetLevels(); }} />
                 </ReactFlow>
+                {showBuildingDetail && scopeId !== null && <SaveMapLevels level={currentLevel} count={levelCount} coreName={coreName(byId.get(scopeId)!)}
+                    onChange={level => { selectEntity(null); setLevelLimit(scopeId, level); }} />}
                 <SaveMapSettings value={display} onChange={setDisplay} layers={layers} onLayersChange={setLayers} />
             </div>
             {selected && <aside className="save-map-inspector">
+                {hasBuildingLayers &&
+                    <SaveMapBuildingLayers stack={selectedStack} level={selected.level!} onSelect={selectMarker} onClose={() => selectEntity(null)} />}
                 <SaveMapDetails entity={selected} coreName={coreName(selected)}
                     connected={selected.connectedBuildingId === null ? undefined : byId.get(selected.connectedBuildingId)}
-                    onClose={() => selectEntity(null)} onSelect={focusEntity} onFocusCore={id => focusCore(String(id))} onOpenCore={onOpenCore} />
+                    onClose={hasBuildingLayers ? undefined : () => selectEntity(null)} onSelect={focusEntity} onFocusCore={id => focusCore(String(id))} onOpenCore={onOpenCore} />
             </aside>}
         </div>
     </section>;
