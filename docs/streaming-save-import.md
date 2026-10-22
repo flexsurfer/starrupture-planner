@@ -24,6 +24,9 @@ source records never enter Uklad state or persistence.
 - Compressed file: 64 MiB.
 - Declared and actual unpacked bytes: 512 MiB.
 - Web import timeout: 120 seconds, with immediate worker termination on cancel.
+- Source objects: up to 1,000,000 keys, subject to the key-character budget below.
+  The 100,000-record limit per retained collection applies after unused world
+  entities are discarded, so those entities do not count against analyzer inputs.
 - Existing analyzer record/fragment limits remain. Parsing additionally bounds
   nesting (128), individual tokens (4 Mi characters), selected records
   (8 Mi characters, checked per chunk), object keys (2,048 characters each and

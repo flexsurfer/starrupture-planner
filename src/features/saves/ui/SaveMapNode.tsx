@@ -1,10 +1,10 @@
-import { memo, useMemo, type CSSProperties } from 'react';
-import { Handle, Position, useStore, type Node, type NodeProps } from '@xyflow/react';
+import { memo, useContext, type CSSProperties } from 'react';
+import { Handle, useStore, type Position, type Node, type NodeProps } from '@xyflow/react';
 import { BuildingImage } from '@/shared/ui';
 import { useTranslation } from '@/shared/i18n';
 import type { SaveMapEntity } from '../map';
 import { CORE_MARKER_SIZE, coreMarkerSize } from '../map-coordinates';
-import { placeCoreLabels, type CoreLabelPeer } from './map-display';
+import { CoreLabelsContext } from './core-labels-context';
 import { SaveMapResourceMarker } from './SaveMapResourceMarker';
 import type { PowerNetworkStyle } from './power-network-style';
 import { SaveMapIcon } from './SaveMapIcon';
@@ -17,7 +17,7 @@ export type MapNode = Node<{
     related: boolean;
     showNames: boolean;
     showResources: boolean;
-    labelPeers?: CoreLabelPeer[];
+    ports: { id: string; type: 'source' | 'target'; position: Position }[];
     powerColor?: string;
     powerBorderStyle?: PowerNetworkStyle['borderStyle'];
     hasLayers?: boolean;
@@ -39,20 +39,19 @@ function NetworkBadge({ networkId }: { networkId: number | null }) {
 }
 
 function CoreMarker({ data }: { data: MapNode['data'] }) {
-    const { name, selected, powerColor, labelPeers, entity } = data;
-    const { t } = useTranslation();
-    // Keep just the few Core markers legible at world scale. Building markers stay spatial.
-    const zoom = useStore(state => state.transform[2]);
+    const { name, selected, powerColor, entity } = data;
+    // Keep Core icons and names compact at every zoom. Building markers stay spatial.
+    const { zoom, placements } = useContext(CoreLabelsContext);
     const scale = coreMarkerSize(zoom) / CORE_MARKER_SIZE;
-    const placements = useMemo(() => placeCoreLabels(labelPeers ?? [], zoom), [labelPeers, zoom]);
-    const label = placements.get(entity.id) ?? { x: 0, y: coreMarkerSize(zoom) * zoom / 2 + 26 };
+    const placement = placements.get(entity.id);
+    const label = placement ?? { x: 0, y: coreMarkerSize(zoom) * zoom / 2 + 11 };
     return <div className={`save-map-core-marker ${selected ? 'is-selected' : ''}`}
         style={{ transform: `scale(${scale})` }}>
         <BuildingImage buildingId="base_core" building={{ name }} size="small" />
         {powerColor && <NetworkBadge networkId={entity.core.core.powerNetworkId} />}
-        <span className="save-map-core-label" style={{ left: `calc(50% + ${label.x / (scale * zoom)}px)`,
-            top: `calc(50% + ${label.y / (scale * zoom)}px)`, transform: `translate(-50%, -50%) scale(${Math.max(1, 1 / (scale * zoom))})` }}>
-            <span>{name}</span>{zoom < 0.12 && <small>{t('{count} buildings', { count: entity.core.buildings.length })}</small>}
+        <span className={`save-map-core-label${placement ? '' : ' is-crowded'}`} style={{ left: `calc(50% + ${label.x / (scale * zoom)}px)`,
+            top: `calc(50% + ${label.y / (scale * zoom)}px)`, transform: `translate(-50%, -50%) scale(${1 / (scale * zoom)})` }}>
+            {name}
         </span>
     </div>;
 }
@@ -67,13 +66,12 @@ export const SaveMapNode = memo(function SaveMapNode({ data, width = 72 }: NodeP
     const networkId = (detail?.instance ?? entity.core.core).powerNetworkId;
     const networkLabel = powerColor && networkId !== null ? t('Power network {number}', { number: networkId }) : undefined;
     const layerLabel = data.hasLayers ? t('Level {level} · Buildings above or below', { level: entity.level! }) : undefined;
-    if (data.ghost) return <div aria-hidden="true" className="save-map-ghost">
-        <BuildingImage buildingId={detail!.building.id} building={detail!.building} size="large" className="save-map-building-image" />
-    </div>;
+    const ports = data.ports.map(port => <Handle key={port.id} {...port} className="!pointer-events-none !opacity-0" />);
+    // Use the icon's alpha mask so cutaways keep their building shape without image components or badges.
+    if (data.ghost) return <>{ports}<div aria-hidden="true" className="save-map-ghost"
+        style={{ maskImage: `url("${import.meta.env.BASE_URL}icons/buildings/${detail!.building.id}.webp")` }} /></>;
     return <>
-        {[Position.Top, Position.Right, Position.Bottom, Position.Left].flatMap(position =>
-            (['target', 'source'] as const).map(type => <Handle key={`${type}-${position}`} id={`${type}-${position}`}
-                type={type} position={position} className="!pointer-events-none !opacity-0" />))}
+        {ports}
         <button type="button" className={`nodrag nopan save-map-marker ${detail ? '' : 'is-core'} ${selected ? 'is-selected' : ''} ${related ? 'is-related' : ''} ${powerColor ? 'has-power-network' : ''}`}
             style={powerColor ? { '--save-map-network-color': powerColor, '--save-map-network-border-style': powerBorderStyle } as CSSProperties : undefined}
             aria-label={name} aria-description={[networkLabel, layerLabel].filter(Boolean).join(' · ') || undefined} aria-pressed={selected}

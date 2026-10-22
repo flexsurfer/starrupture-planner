@@ -4,6 +4,14 @@ import { coreMarkerSize, projectMapPosition } from '../map-coordinates';
 // Keep building badges, level navigation and automatic Core focus at one detail threshold.
 export const BUILDING_DETAIL_ZOOM = 0.45;
 
+// Show buildings well before the typical Core fit (~0.24). A dead band prevents
+// repeated mounts when a trackpad hovers around the world/detail boundary.
+export const BUILDING_SHOW_ZOOM = 0.12;
+export const BUILDING_HIDE_ZOOM = 0.09;
+export function buildingsVisible(zoom: number, wasVisible: boolean) {
+    return zoom >= (wasVisible ? BUILDING_HIDE_ZOOM : BUILDING_SHOW_ZOOM);
+}
+
 interface FocusMarker { coreId: number; x: number; y: number; isCore: boolean }
 
 export function mapFocusMarkers(entities: readonly SaveMapEntity[]): FocusMarker[] {

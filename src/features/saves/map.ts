@@ -24,6 +24,13 @@ export interface SaveMapLink {
     item: { id: string; name: string } | null;
 }
 
+export interface SaveMapCoreLink {
+    source: number;
+    target: number;
+    items: SaveMapLink['item'][];
+    bidirectional: boolean;
+}
+
 /** Derive marker overlap levels and direct cargo links without relocating saved positions. */
 export function buildSaveMap(overview: SaveOverview, data: SaveGameData, buildingSize = defaultMapDisplay.buildingSize) {
     const entities: SaveMapEntity[] = [];
@@ -51,11 +58,20 @@ export function buildSaveMap(overview: SaveOverview, data: SaveGameData, buildin
         levelCountsByCore.set(core.core.id, levelCount);
     }
     const byId = new Map(entities.map(entity => [entity.id, entity]));
+    const coreLinks = new Map<string, SaveMapCoreLink>();
     for (const link of links) {
         byId.get(link.source)!.connectedBuildingId = link.target;
         byId.get(link.target)!.connectedBuildingId = link.source;
+        const source = byId.get(link.source)!.core.core.id, target = byId.get(link.target)!.core.core.id;
+        // World zoom shows one directed route per Core pair, excluding local deliveries.
+        if (source === target) continue;
+        const key = `${source}:${target}`;
+        const route = coreLinks.get(key) ?? { source, target, items: [], bidirectional: false };
+        if (!route.items.some(item => item?.id === link.item?.id)) route.items.push(link.item);
+        coreLinks.set(key, route);
     }
-    return { entities, links, levelCountsByCore, stacks, buildingSize };
+    for (const route of coreLinks.values()) route.bidirectional = coreLinks.has(`${route.target}:${route.source}`);
+    return { entities, links, coreLinks: [...coreLinks.values()], levelCountsByCore, stacks, buildingSize };
 }
 
 export type SaveMap = ReturnType<typeof buildSaveMap>;

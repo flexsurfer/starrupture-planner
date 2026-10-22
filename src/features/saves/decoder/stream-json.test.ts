@@ -46,6 +46,26 @@ it('discards unrelated sections, unknown entities, unused fields and running sta
     expect(analyzeSave(projection, extractionContext)).toEqual(analyzeSave(input, extractionContext));
 });
 
+it('imports known buildings after more than 100,000 discarded world entities', () => {
+    const save = saveFixture();
+    const expected = analyzeSave(save, extractionContext);
+    const unknown = { spawnData: { entityConfigDataPath: '/Game/Chimera/World/DA_Unknown.DA_Unknown' } };
+    save.itemData.Mass.entities = {
+        ...Object.fromEntries(Array.from({ length: 100_001 }, (_, index) => [`(ID=${index + 1000})`, unknown])),
+        ...save.itemData.Mass.entities,
+    };
+    const projection = parse(JSON.stringify(save));
+    expect(JSON.stringify(projection).length).toBeLessThan(5000);
+    expect(analyzeSave(projection, extractionContext)).toEqual(expected);
+});
+
+it('still rejects more than 100,000 retained records in a collection', () => {
+    const input = { itemData: { Mass: { entities: {}, electricitySubsystemState: {
+        nodeData: Object.fromEntries(Array.from({ length: 100_001 }, (_, index) => [`(UId=(ID=${index}))`, null])),
+    } } } };
+    expect(() => parse(JSON.stringify(input))).toThrow('complexity');
+});
+
 it.each([
     '{}', 'null', '[]', '{"itemData":[]}', '{"itemData":{"Mass":[]}}',
     '{"itemData":{"Mass":{"entities":[]}}}', '{"itemData.Mass.entities":{}}',

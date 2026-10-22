@@ -16,6 +16,7 @@ import { createSaveWorkspace } from '../workspace';
 import { SaveMap } from './SaveMap';
 import type { MapNode } from './SaveMapNode';
 import { BUILDING_DETAIL_ZOOM } from './map-viewport';
+import * as mapDisplay from './map-display';
 
 const { fitView, setCenter, getViewport, viewport } = vi.hoisted(() => {
     const viewport = { x: 0, y: 0, zoom: 1, width: 0, height: 0 };
@@ -35,7 +36,7 @@ vi.mock('@xyflow/react', async importOriginal => ({
     </>,
     ReactFlow: (props: ReactFlowProps<MapNode>) => {
         flowProps = props;
-        return <div>{props.nodes?.map(node => {
+        return <div>{props.nodes?.filter(node => !node.hidden).map(node => {
             const Component = props.nodeTypes![node.type!];
             return <div key={node.id} data-testid={`rf-node-${node.id}`} style={node.style}><Component {...{
                 ...node, dragging: false, isConnectable: false, positionAbsoluteX: node.position.x, positionAbsoluteY: node.position.y,
@@ -99,6 +100,9 @@ it('restores zoom and pan after remounting without fitting over the session view
     await act(async () => {
         flowProps.onMove?.(new MouseEvent('mousemove'), position);
         await harness.flush();
+        expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_VIEWPORT, 'one'])).toBeNull();
+        flowProps.onMoveEnd?.(new MouseEvent('mouseup'), position);
+        await harness.flush();
     });
     expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_VIEWPORT, 'one'])).toEqual(position);
     remount();
@@ -107,7 +111,7 @@ it('restores zoom and pan after remounting without fitting over the session view
     // Search, Core focus and Fit view move the camera programmatically (null event).
     const focused = { x: 100, y: -50, zoom: 1.2 };
     await act(async () => {
-        flowProps.onMove?.(null, focused);
+        flowProps.onMoveEnd?.(null, focused);
         await harness.flush();
     });
     await replaceSnapshot();
@@ -302,7 +306,7 @@ it('follows the Core in view after panning, retaining independent levels without
     expect(screen.queryByRole('region', { name: 'Building levels' })).toBeNull();
     // A restored camera is authoritative over initialCoreId, including on mount.
     Object.assign(viewport, { x: 400 - 15150, y: 300 - 5150 });
-    await interact(() => { flowProps.onMove?.(null, viewport); });
+    await interact(() => { flowProps.onMoveEnd?.(null, viewport); });
     remount();
     expect(picker()).toHaveValue('8');
     expect(within(levelControls()).getByRole('status')).toHaveAccessibleName('Level 2 of 2');
@@ -578,7 +582,7 @@ it('resets the Core picker when fitting the entire map', async () => {
     expect(picker).toHaveValue('1');
     await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Fit view' })); });
     expect(picker).toHaveValue('');
-    expect(fitView).toHaveBeenCalledWith({ padding: 0.2, minZoom: 0.005, maxZoom: 1.5, duration: 300 });
+    expect(fitView).toHaveBeenCalledWith({ padding: 0.2, minZoom: 0.005, maxZoom: 1.5, duration: 300, includeHiddenNodes: true });
 });
 
 it('shows saved Core bounds behind buildings, includes them in fitting, and toggles them independently', async () => {
@@ -674,6 +678,7 @@ it('uses uniform building sizes without moving saved positions, resizing Cores o
     setup();
     const geometry = () => flowProps.nodes!.map(({ id, position }) => ({ id, position }));
     const initialGeometry = geometry();
+    const initialCoreSize = flowProps.nodes!.find(node => node.id === '1')?.width;
     const bounds = flowProps.nodes!.find(node => node.id === 'bounds-1');
     const links = flowProps.edges;
     const building = () => flowProps.nodes!.find(node => node.id === '20')!;
@@ -688,7 +693,7 @@ it('uses uniform building sizes without moving saved positions, resizing Cores o
     expect(building().width).toBe(88);
     expect(flowProps.nodes!.filter(node => node.type === 'saveBuilding' && node.data.entity.detail).every(node => node.width === 88 && node.height === 88)).toBe(true);
     expect(building().data.selected).toBe(true);
-    expect(flowProps.nodes!.find(node => node.id === '1')?.width).toBe(48);
+    expect(flowProps.nodes!.find(node => node.id === '1')?.width).toBe(initialCoreSize);
     expect(flowProps.nodes!.find(node => node.id === 'bounds-1')).toMatchObject({ width: bounds!.width, height: bounds!.height });
     expect(geometry()).toEqual(initialGeometry);
     await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Compact' })); });
@@ -712,14 +717,14 @@ it('keeps network identities on Cores at overview zoom without crowding small bu
     expect(within(building).getByRole('button')).toHaveAttribute('aria-description', expect.stringContaining('Power network 0'));
 });
 
-it('keeps nearby Core names visible and shows building counts at overview zoom', async () => {
+it('keeps nearby Core names compact without building counts at overview zoom', async () => {
     viewport.zoom = 0.03;
     setup();
     for (const id of [1, 2]) {
         const label = screen.getByTestId(`rf-node-${id}`).querySelector('.save-map-core-label')!;
         expect(label).toHaveTextContent(id === 1 ? 'Workshop' : 'Core 2');
         expect(label).not.toHaveClass('is-crowded');
-        expect(label.querySelector('small')).toHaveTextContent('buildings');
+        expect(label).not.toHaveTextContent('buildings');
     }
     const labels = [1, 2].map(id => screen.getByTestId(`rf-node-${id}`).querySelector<HTMLElement>('.save-map-core-label')!);
     expect(labels[0].style.top).not.toBe(labels[1].style.top);
@@ -731,6 +736,147 @@ it('omits Core building counts at closer zoom', async () => {
         const label = screen.getByTestId(`rf-node-${id}`).querySelector('.save-map-core-label')!;
         expect(label.querySelector('small')).toBeNull();
     }
+});
+
+it('declutters dense Core names instead of displacing them far from their icons', () => {
+    const peers = Array.from({ length: 20 }, (_, id) => ({ id, name: `Core ${id + 1}`, x: id % 5 * 200, y: Math.floor(id / 5) * 200 }));
+    const placements = mapDisplay.placeCoreLabels(peers, .03);
+    expect(placements.size).toBeGreaterThan(0);
+    expect(placements.size).toBeLessThan(peers.length);
+    for (const { x, y } of placements.values()) expect(Math.hypot(x, y)).toBeLessThan(40);
+    // When the same Cores are spread out by zooming in, every name becomes visible nearby.
+    const detailed = mapDisplay.placeCoreLabels(peers, 1);
+    expect(detailed.size).toBe(peers.length);
+    for (const { x, y } of detailed.values()) expect(Math.hypot(x, y)).toBeLessThan(40);
+});
+
+it('unmounts buildings at world zoom with hysteresis while preserving search and complete fit geometry', async () => {
+    viewport.zoom = .03;
+    setup();
+    const geometry = flowProps.nodes!.map(({ id, position, measured }) => ({ id, position, measured }));
+    const zoomTo = (zoom: number) => interact(() => {
+        viewport.zoom = zoom;
+        flowProps.onMoveEnd?.(new MouseEvent('mouseup'), viewport);
+    });
+    expect(screen.queryByTestId('rf-node-20')).toBeNull();
+    expect(node(20).hidden).toBe(true);
+    expect(node(20).measured).toEqual({ width: 72, height: 72 });
+    expect(flowProps.edges).toMatchObject([{ source: '1', target: '2', data: { coreRoute: { bidirectional: false } } }]);
+    expect(flowProps.fitViewOptions?.includeHiddenNodes).toBe(true);
+    await zoomTo(.11);
+    expect(screen.queryByTestId('rf-node-20')).toBeNull();
+    expect(flowProps.edges!.map(edge => edge.id)).toEqual(['core-cargo-1-2']);
+    await zoomTo(.12);
+    expect(markerButton(20)).toBeInTheDocument();
+    expect(flowProps.edges!.map(edge => edge.id)).toEqual(['cargo-20', 'cargo-21']);
+    await zoomTo(.10);
+    expect(markerButton(20)).toBeInTheDocument();
+    expect(flowProps.edges!.every(edge => !edge.data?.coreRoute)).toBe(true);
+    await zoomTo(.089);
+    expect(screen.queryByTestId('rf-node-20')).toBeNull();
+    expect(flowProps.edges!.map(edge => edge.id)).toEqual(['core-cargo-1-2']);
+    await focusExample(2);
+    expect(fitView.mock.calls.at(-1)![0].includeHiddenNodes).toBe(true);
+    expect(fitView.mock.calls.at(-1)![0].nodes.map((node: MapNode) => node.id)).toContain('206');
+    await searchFor(200);
+    expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent('Tube');
+    expect(setCenter).toHaveBeenCalled();
+    await zoomTo(.242);
+    expect(screen.getByTestId('rf-node-20')).toBeInTheDocument();
+    expect(node(20).hidden).toBe(false);
+    expect(markerButton(200)).toHaveAttribute('aria-pressed', 'true');
+    expect(flowProps.nodes!.map(({ id, position, measured }) => ({ id, position, measured }))).toEqual(geometry);
+});
+
+it('keeps unrelated node objects and handlers stable when selecting buildings and changing levels', async () => {
+    setupOverlapExamples();
+    const unrelated = new Map(flowProps.nodes!.filter(node => node.data.entity.core.core.id !== 1).map(node => [node.id, node]));
+    const handlers = [flowProps.onNodeClick, flowProps.onPaneClick, flowProps.onEdgeClick, flowProps.onMoveStart, flowProps.onMoveEnd];
+    await interact(() => { fireEvent.click(markerButton(101)); });
+    const afterFirst = new Map(flowProps.nodes!.map(node => [node.id, node]));
+    const edges = flowProps.edges;
+    await interact(() => { fireEvent.click(markerButton(102)); });
+    expect(flowProps.nodes!.filter(node => node !== afterFirst.get(node.id)).map(node => node.id).sort()).toEqual(['101', '102']);
+    expect(flowProps.edges).toBe(edges);
+    const sameSelection = flowProps.nodes;
+    await interact(() => { fireEvent.click(markerButton(102)); });
+    expect(flowProps.nodes).toBe(sameSelection);
+    await changeLevel('Higher');
+    for (const [id, previous] of unrelated) expect(flowProps.nodes!.find(node => node.id === id)).toBe(previous);
+    expect([flowProps.onNodeClick, flowProps.onPaneClick, flowProps.onEdgeClick, flowProps.onMoveStart, flowProps.onMoveEnd]).toEqual(handlers);
+    expect(flowProps.onMove).toBeUndefined();
+});
+
+it('keeps overview cargo visible through cutaways, highlights selected Cores and respects cargo settings', async () => {
+    const snapshot = analyzeSave(factoryMapOverlapFixture(), extractionContext);
+    const source = snapshot.cores.find(core => core.id === 7)!;
+    const target = snapshot.cores.find(core => core.id === 8)!;
+    target.buildings.push(...source.buildings.filter(building => [703, 704].includes(building.id)));
+    source.buildings = source.buildings.filter(building => ![703, 704].includes(building.id));
+    setup({ snapshot });
+    await interact(() => { fireEvent.click(markerButton(701)); });
+    expect(node(702).data.ghost).toBe(true);
+    expect(flowProps.edges!.map(edge => edge.id)).toEqual(['cargo-701']);
+    await interact(() => { viewport.zoom = .03; flowProps.onMoveEnd?.(new MouseEvent('mouseup'), viewport); });
+    expect(flowProps.edges).toMatchObject([{ id: 'core-cargo-7-8', source: '7', target: '8', label: 'Helium-3',
+        data: { highlighted: true, dimmed: false, animate: true, coreRoute: { bidirectional: false } } }]);
+    expect(screen.queryByTestId('rf-node-701')).toBeNull();
+    expect(screen.queryByTestId('rf-node-702')).toBeNull();
+    await interact(() => { fireEvent.click(markerButton(1)); });
+    expect(flowProps.edges![0]).toMatchObject({ label: undefined, data: { highlighted: false, dimmed: true } });
+    await interact(() => { flowProps.onEdgeClick?.({} as never, flowProps.edges![0]); });
+    expect(markerButton(7)).toHaveAttribute('aria-pressed', 'true');
+    expect(flowProps.edges![0]).toMatchObject({ label: 'Helium-3', data: { highlighted: true, dimmed: false } });
+    await interact(() => { fireEvent.click(markerButton(8)); });
+    expect(flowProps.edges![0].data?.highlighted).toBe(true);
+    await toggleLayer('Cargo links');
+    expect(flowProps.edges).toEqual([]);
+    await toggleLayer('Cargo links');
+    await interact(() => { fireEvent.click(screen.getByRole('checkbox', { name: 'Cargo movement' })); });
+    expect(flowProps.edges![0].data?.animate).toBe(false);
+});
+
+it('creates only real cargo ports and supplies their geometry before offscreen nodes mount', async () => {
+    setup();
+    expect(node(1).data.ports).toEqual([{ id: 'source-right', type: 'source', position: 'right' }]);
+    expect(node(2).data.ports).toEqual([{ id: 'target-left', type: 'target', position: 'left' }]);
+    expect(node(1).handles).toEqual([{ id: 'source-right', type: 'source', position: 'right', x: 21, y: 9, width: 6, height: 6 }]);
+    expect(node(22).data.ports).toEqual([]);
+    expect(node(20).data.ports).toEqual([{ id: 'source-top', type: 'source', position: 'top' }]);
+    expect(node(30).data.ports).toEqual([{ id: 'target-bottom', type: 'target', position: 'bottom' }]);
+    expect(node(20).handles).toEqual([{ id: 'source-top', type: 'source', position: 'top', x: 33, y: -3, width: 6, height: 6 }]);
+    expect(node(30).handles).toEqual([{ id: 'target-bottom', type: 'target', position: 'bottom', x: 33, y: 69, width: 6, height: 6 }]);
+    await toggleLayer('Cargo links');
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Large' })); });
+    expect(node(20).handles![0]).toMatchObject({ x: 41, y: -3 });
+    expect(node(30).handles![0]).toMatchObject({ x: 41, y: 85 });
+});
+
+it('uses lightweight cutaway ghosts and pauses cargo animation for camera gestures', async () => {
+    setupOverlapExamples();
+    await changeLevel('Lower');
+    const ghost = screen.getByTestId('rf-node-105');
+    expect(ghost.querySelector('.save-map-ghost')).not.toBeNull();
+    expect(ghost.querySelector('img')).toBeNull();
+    expect(within(ghost).queryByRole('button')).toBeNull();
+    await interact(() => { flowProps.onMoveStart?.(new MouseEvent('mousedown'), viewport); });
+    expect(document.querySelector('.save-map-canvas')).toHaveClass('is-moving');
+    await interact(() => { flowProps.onMoveEnd?.(new MouseEvent('mouseup'), viewport); });
+    expect(document.querySelector('.save-map-canvas')).not.toHaveClass('is-moving');
+});
+
+it('lays out all Core labels once per zoom and never repeats layout for selection or panning', async () => {
+    const layout = vi.spyOn(mapDisplay, 'placeCoreLabels');
+    try {
+        setupOverlapExamples();
+        expect(layout).toHaveBeenCalledTimes(1);
+        await interact(() => { fireEvent.click(markerButton(101)); });
+        await interact(() => { flowProps.onMoveEnd?.(new MouseEvent('mouseup'), { ...viewport, x: 25 }); });
+        expect(layout).toHaveBeenCalledTimes(1);
+        viewport.zoom = .5;
+        await interact(() => { flowProps.onMoveEnd?.(new MouseEvent('mouseup'), viewport); });
+        expect(layout).toHaveBeenCalledTimes(2);
+    } finally { layout.mockRestore(); }
 });
 
 it('enables cargo movement by default and controls map detail and transport motion independently', async () => {

@@ -114,11 +114,14 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
     registrar.regEvent(appIds.events.SAVES_SET_MAP_VIEWPORT, ({ draftState }, id, x, y, zoom) => {
         if (!Object.hasOwn(draftState.savesWorkspaces, id) || ![x, y, zoom].every(Number.isFinite)
             || zoom < 0.005 || zoom > 3) return;
+        const previous = draftState.savesMapViewports[id];
+        if (previous?.x === x && previous.y === y && previous.zoom === zoom) return;
         draftState.savesMapViewports[id] = { x, y, zoom };
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_MAP_NODE, ({ draftState }, id, nodeId) => {
         if (!Object.hasOwn(draftState.savesWorkspaces, id)) return;
         if (nodeId === null) { delete draftState.savesMapSelectedNodes[id]; return; }
+        if (draftState.savesMapSelectedNodes[id] === nodeId) return;
         const snapshot = draftState.savesWorkspaces[id].snapshot;
         if (snapshot.cores.some(core => core.id === nodeId || core.buildings.some(building => building.id === nodeId))) {
             draftState.savesMapSelectedNodes[id] = nodeId;

@@ -88,6 +88,7 @@
 .save-map-marker.is-selected, .save-map-core-marker.is-selected { border-color: var(--save-map-accent); outline: 2px solid var(--save-map-accent); outline-offset: 3px; background: var(--save-map-panel); }
 .save-map-marker.is-core { border: 0; background: transparent !important; box-shadow: none; outline: none; }
 .save-map-core-marker { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--save-map-accent); background: var(--save-map-panel); }
+.save-map-core-marker > div, .save-map-core-marker > div > img { width: 100%; height: 100%; object-fit: contain; }
 .save-map-marker.has-power-network:not(.is-core), .save-map-marker.has-power-network .save-map-core-marker {
   border: 3px var(--save-map-network-border-style, solid) var(--save-map-network-color);
   background: color-mix(in srgb, var(--save-map-network-color) 24%, var(--save-map-panel));
@@ -98,8 +99,7 @@
 .save-map button:disabled { cursor: default; opacity: .35; }
 .save-map-layer-badge { position: absolute; top: -8px; left: -7px; display: flex; align-items: center; gap: 3px; padding: 3px 5px; border: 1px solid var(--save-map-border); border-radius: 5px; background: var(--save-map-panel); color: var(--save-map-accent); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 16px; }
 .save-map-layer-badge .save-map-icon { width: 14px; height: 14px; }
-.save-map-ghost { width: 100%; height: 100%; border: 1px dashed var(--save-map-muted); border-radius: 5px; opacity: .13; pointer-events: none; }
-.save-map-ghost > .save-map-building-image { width: 100%; height: 100%; padding: 3px; filter: grayscale(1); }
+.save-map-ghost { width: 100%; height: 100%; padding: 4px; background: var(--save-map-muted); mask-size: contain; mask-position: center; mask-repeat: no-repeat; mask-origin: content-box; mask-clip: content-box; opacity: .13; pointer-events: none; }
 .save-map-levels { position: absolute; top: 15px; left: 15px; z-index: 5; display: flex; flex-direction: column; width: 32px; border-radius: 3px; background: var(--save-map-panel); box-shadow: 0 0 2px 1px #0002; }
 .save-map-levels > button, .save-map-levels > output { display: grid; place-items: center; width: 32px; height: 32px; border-bottom: 1px solid var(--save-map-border); }
 .save-map-levels > button:last-of-type { border-bottom: 0; border-radius: 0 0 3px 3px; }
@@ -114,9 +114,9 @@
 .save-map-layer-navigation { display: flex; gap: 8px; margin-top: 10px; }
 .save-map-layer-navigation button { display: flex; flex: 1; justify-content: center; align-items: center; gap: 8px; min-height: 36px; border: 1px solid var(--save-map-border); border-radius: 5px; }
 .save-map-layer-navigation button:hover:enabled { border-color: var(--save-map-accent); }
-.save-map-core-label { position: absolute; transform-origin: center; min-width: max-content; max-width: 170px; padding: 3px 7px; border-radius: 4px; background: var(--save-map-panel); text-align: center; pointer-events: none; }
-.save-map-core-label > span { display: block; max-width: 156px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }
-.save-map-core-label small { display: block; font-size: 10px; color: var(--save-map-muted); }
+.save-map-core-label { position: absolute; transform-origin: center; width: max-content; max-width: 100px; padding: 1px 3px; border-radius: 3px; background: var(--save-map-panel); color: var(--save-map-text); text-align: center; pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 500; line-height: 14px; }
+.save-map-core-label.is-crowded { opacity: 0; }
+.save-map-marker:hover .save-map-core-label, .save-map-marker:focus-visible .save-map-core-label, .save-map-core-marker.is-selected .save-map-core-label { opacity: 1; }
 .save-map-resource-marker { position: absolute; right: 2px; bottom: 2px; display: block; box-sizing: content-box; padding: 1px; border-radius: 3px; background: #171b24; box-shadow: 0 1px 3px #0004; pointer-events: none; }
 .save-map-resource-image { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; }
 .save-map-resource-image > div { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -130,9 +130,13 @@
 .save-map-route.is-overview.is-dimmed { opacity: .6; }
 .save-map-route-casing { stroke: var(--save-map-canvas); stroke-width: calc(7px * var(--save-map-route-scale)); stroke-linecap: round; pointer-events: none; }
 .save-map .save-map-route-line { stroke: currentColor; stroke-width: calc(3px * var(--save-map-route-scale)); stroke-linecap: round; }
+.save-map-route.is-core-route .save-map-route-casing { stroke-width: calc(4px * var(--save-map-route-scale)); }
+.save-map .save-map-route.is-core-route .save-map-route-line { stroke-width: calc(1.5px * var(--save-map-route-scale)); }
 .save-map-route-cargo { stroke: var(--save-map-panel); stroke-width: calc(1.2px * var(--save-map-route-scale)); stroke-dasharray: calc(4px * var(--save-map-route-scale)) calc(14px * var(--save-map-route-scale)); stroke-linecap: butt; pointer-events: none; }
+.save-map-route.is-core-route .save-map-route-cargo { stroke-width: calc(.75px * var(--save-map-route-scale)); }
 .save-map-route.is-overview:not(.is-moving) .save-map-route-cargo { display: none; }
 .save-map-route.is-moving .save-map-route-cargo { animation: save-map-cargo 1.5s linear infinite; }
+.save-map-canvas.is-moving .save-map-route-cargo { animation-play-state: paused; }
 @keyframes save-map-cargo { to { stroke-dashoffset: calc(-18px * var(--save-map-route-scale)); } }
 @media (prefers-reduced-motion: reduce) {
   .save-map-route.is-moving .save-map-route-cargo { animation: none; }

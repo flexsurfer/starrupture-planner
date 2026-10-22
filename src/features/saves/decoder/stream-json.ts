@@ -21,7 +21,9 @@ const requiredPaths = ['$', '$.itemData', '$.itemData.Mass', entityPath];
 const MAX_RECORD_CHARS = 8 * 1024 * 1024;
 const MAX_PROJECTION_CHARS = 16 * 1024 * 1024;
 const MAX_ACTIVE_KEY_CHARS = 4 * 1024 * 1024;
-const MAX_RECORDS = 100_000;
+// Source objects include world entities that are discarded before analysis.
+const MAX_OBJECT_KEYS = 1_000_000;
+const MAX_RETAINED_RECORDS = 100_000;
 const fragmentPrefixes = [
     '/Script/AuActorPlacement.AuAPMassFragment(',
     '/Script/Chimera.CrMassBuildingBaseCoreFragment(',
@@ -84,7 +86,7 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             if (key === '__proto__' || parent.keys.has(key)) throw new SaveImportError('structure');
             activeKeyChars += key.length;
             parent.keyChars += key.length;
-            if (key.length > 2048 || activeKeyChars > MAX_ACTIVE_KEY_CHARS || parent.keys.size >= MAX_RECORDS) throw new SaveImportError('complexity');
+            if (key.length > 2048 || activeKeyChars > MAX_ACTIVE_KEY_CHARS || parent.keys.size >= MAX_OBJECT_KEYS) throw new SaveImportError('complexity');
             parent.keys.add(key);
             parent.nextKey = key;
             parent.expectsKey = false;
@@ -133,9 +135,6 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
         }
         // Optional maps must be objects, and Core level records must be an array.
         if (path === levelPath ? !Array.isArray(parent) : typeof key !== 'string' || Array.isArray(parent)) return;
-        const count = (counts.get(path) ?? 0) + 1;
-        if (count > MAX_RECORDS) throw new SaveImportError('complexity');
-        counts.set(path, count);
         const source = record(value);
         let projected: unknown;
         switch (path) {
@@ -148,6 +147,9 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             default: return;
         }
         if (projected === undefined) return;
+        const count = (counts.get(path) ?? 0) + 1;
+        if (count > MAX_RETAINED_RECORDS) throw new SaveImportError('complexity');
+        counts.set(path, count);
         projectionChars += JSON.stringify(projected).length + String(key).length;
         if (projectionChars > MAX_PROJECTION_CHARS) throw new SaveImportError('complexity');
         if (path === levelPath) levels.push(projected);
