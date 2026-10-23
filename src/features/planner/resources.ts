@@ -13,6 +13,9 @@ export interface PlannerResource {
     /** Optional attribution only; save replacement/deletion never changes this allocation. */
     coreId?: number;
     coreName?: string;
+    coreIds?: number[];
+    /** Snapshot-local identity prevents the same physical source being added through another Core. */
+    source?: { workspaceId: string; snapshotKey: string; buildingIds: number[] };
 }
 export interface PlannerResourceSummary {
     itemId: string;
@@ -37,10 +40,14 @@ export interface PlannerResourcePicker {
     workspaceId: string;
     snapshotKey: string;
     compatible: boolean;
-    cores: { coreId: number; coreKey: string; name: string; buildings: PlannerResourcePickerBuilding[] }[];
+    cores: { coreId: number; coreKey: string; name: string }[];
+    groups: { coreId: number; coreIds: number[]; coreKey: string; name: string; buildings: PlannerResourcePickerBuilding[] }[];
 }
 export interface PlannerResourceSelection { buildingId: number; ratePerMinute?: number }
-export interface PlannerCoreAllocation { coreId: number; coreName: string; itemId: string; ratePerMinute: number }
+export interface PlannerCoreAllocation {
+    coreId: number; coreName: string; coreIds?: number[]; itemId: string; ratePerMinute: number;
+    source?: PlannerResource['source'];
+}
 export interface PlannerResourceFit {
     available: boolean;
     reason: 'multi-target' | 'no-target' | 'no-resources' | 'unrelated-resources' | null;
@@ -55,6 +62,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 const validText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0 && value.length <= 512;
 export const isValidResourceRate = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 1e9;
 const fail = (): never => { throw new Error('Invalid planner resources'); };
+const validId = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) < 4294967295;
+const validIds = (value: unknown): value is number[] => Array.isArray(value) && value.length > 0 && value.length <= 10000
+    && value.every(validId) && new Set(value).size === value.length;
 
 /** Whitelist and detach persisted data. Strict mode is used by archive import. */
 export function normalizePlannerResources(value: unknown, strict = false): PlannerResource[] {
@@ -67,32 +77,54 @@ export function normalizePlannerResources(value: unknown, strict = false): Plann
         }
         const row: PlannerResource = { id: entry.id, itemId: entry.itemId, ratePerMinute: entry.ratePerMinute, enabled: entry.enabled };
         if (entry.coreId !== undefined || entry.coreName !== undefined) {
+            // A shared label joins several individually bounded save names.
+            const nameLimit = Array.isArray(entry.coreIds) ? Math.min(entry.coreIds.length, 10000) * 515 : 512;
             if (typeof entry.coreId !== 'number' || !Number.isSafeInteger(entry.coreId) || entry.coreId < 0 || entry.coreId >= 4294967295
-                || !validText(entry.coreName)) {
+                || typeof entry.coreName !== 'string' || !entry.coreName.trim() || entry.coreName.length > nameLimit) {
                 if (strict) fail(); return [];
             }
             row.coreId = entry.coreId;
             row.coreName = entry.coreName;
         }
+        if (entry.coreIds !== undefined) {
+            if (row.coreId === undefined || !validIds(entry.coreIds) || !entry.coreIds.includes(row.coreId)) {
+                if (strict) fail(); return [];
+            }
+            row.coreIds = [...entry.coreIds];
+        }
+        if (entry.source !== undefined) {
+            const source = entry.source;
+            if (row.coreId === undefined || !isRecord(source) || !validText(source.workspaceId) || !validText(source.snapshotKey) || !validIds(source.buildingIds)) {
+                if (strict) fail(); return [];
+            }
+            row.source = { workspaceId: source.workspaceId, snapshotKey: source.snapshotKey, buildingIds: [...source.buildingIds] };
+        }
         ids.add(row.id);
         return [row];
     });
 }
-/** Sum selected buildings before checking duplicates: identity belongs to the allocation. */
+/** Sum distinct sources within each exact coverage group. */
 export function groupPlannerCoreAllocations(rows: PlannerCoreAllocation[]): PlannerCoreAllocation[] {
     const groups = new Map<string, PlannerCoreAllocation>();
     for (const row of rows) {
-        const key = JSON.stringify([row.coreId, row.itemId]);
+        const key = JSON.stringify([row.coreIds ?? [row.coreId], row.itemId]);
         const previous = groups.get(key);
-        if (previous) previous.ratePerMinute += row.ratePerMinute;
-        else groups.set(key, { ...row });
+        if (previous) {
+            previous.ratePerMinute += row.ratePerMinute;
+            if (previous.source && row.source) previous.source.buildingIds.push(...row.source.buildingIds);
+        } else groups.set(key, { ...row, ...(row.source ? { source: { ...row.source, buildingIds: [...row.source.buildingIds] } } : {}) });
     }
     return [...groups.values()];
 }
 export function hasPlannerCoreAllocation(resources: PlannerResource[], allocation: PlannerCoreAllocation): boolean {
     return resources.some(row => row.coreId === allocation.coreId && row.itemId === allocation.itemId
+        && JSON.stringify(row.coreIds ?? [row.coreId]) === JSON.stringify(allocation.coreIds ?? [allocation.coreId])
+        && (!row.source || !allocation.source || row.source.workspaceId !== allocation.source.workspaceId || row.source.snapshotKey !== allocation.source.snapshotKey)
         // Ignore only floating-point addition noise (e.g. 0.1 + 0.2 vs 0.3).
         && Math.abs(row.ratePerMinute - allocation.ratePerMinute) <= Number.EPSILON * Math.max(1, row.ratePerMinute, allocation.ratePerMinute) * 8);
+}
+export function importedPlannerBuildingIds(resources: PlannerResource[], picker: Pick<PlannerResourcePicker, 'workspaceId' | 'snapshotKey'>): Set<number> {
+    return new Set(resources.flatMap(row => row.source?.workspaceId === picker.workspaceId && row.source.snapshotKey === picker.snapshotKey ? row.source.buildingIds : []));
 }
 export function resourcesFromLegacyInputs(value: unknown): PlannerResource[] {
     if (!isRecord(value)) return [];
@@ -114,9 +146,9 @@ export function nextPlannerResourceId(resources: PlannerResource[]): string {
     while (used.has(`resource-${index}`)) index++;
     return `resource-${index}`;
 }
-/** Non-security content fingerprint. Derived once per save change, never during rate edits. */
+/** Non-security content fingerprint. Display-only renames preserve physical source identity. */
 export function saveResourceSnapshotKey(snapshot: SaveSnapshot): string {
-    const text = JSON.stringify(snapshot);
+    const text = JSON.stringify(snapshot, (key, value: unknown) => key === 'name' ? undefined : value);
     let hash = 2166136261;
     let second = 5381;
     for (let index = 0; index < text.length; index++) { hash = Math.imul(hash ^ text.charCodeAt(index), 16777619); second = Math.imul(second, 33) ^ text.charCodeAt(index); }

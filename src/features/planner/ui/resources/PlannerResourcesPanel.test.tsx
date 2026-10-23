@@ -233,10 +233,8 @@ it('adds buildings across cores directly without save selection, metadata, or re
     expect(screen.queryByRole('button', { name: 'Replace from save' })).not.toBeInTheDocument();
     expect(screen.queryByText(/Captured/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'or add from Factory Map' }));
-    expect(screen.getByLabelText('Select Iron Ore from North drill')).toBeEnabled();
-    fireEvent.click(screen.getByLabelText('Select Iron Ore from North drill'));
-    fireEvent.change(screen.getByLabelText('Amount for Iron Ore from North drill'), { target: { value: '40' } });
-    expect(within(screen.getByRole('group', { name: 'Selected allocations' })).getByText(/Already added/)).toBeVisible();
+    expect(screen.getByLabelText('Select Iron Ore from North drill')).toBeDisabled();
+    expect(screen.getAllByText('Already added')).toHaveLength(2);
     expect(screen.getByRole('button', { name: /Add selected resources/ })).toBeDisabled();
     await act(async () => harness.dispatchSync([appIds.events.SAVES_REMOVE_WORKSPACE, 'world']));
     expect(screen.queryByRole('button', { name: 'or add from Factory Map' })).not.toBeInTheDocument();
@@ -260,7 +258,45 @@ it('uses the active save instead of the first workspace', async () => {
     expect(screen.queryByText('Another world')).not.toBeInTheDocument();
 });
 
-it('checks already-added totals per core and item while keeping individual buildings selectable', async () => {
+it('shows one shared source group and preserves its amount and selection while searching Core names', async () => {
+    const { harness } = setup();
+    await addSave(harness);
+    const world = structuredClone(harness.getState().savesWorkspaces.world);
+    const [north, south] = world.snapshot.cores;
+    north.bounds = { min: { x: -10, y: -10, z: -10 }, max: { x: 10, y: 10, z: 10 } };
+    south.bounds = { min: { x: 0, y: -10, z: -10 }, max: { x: 20, y: 10, z: 10 } };
+    for (const building of north.buildings) building.position.x = building.id === 10 ? 5 : -5;
+    for (const building of south.buildings) building.position.x = 15;
+    await act(async () => harness.restoreState({ ...harness.getState(), savesWorkspaces: { world } }));
+    fireEvent.click(screen.getByRole('button', { name: 'or add from Factory Map' }));
+    expect(screen.getByRole('img', { name: 'Shared across North, South' })).toBeVisible();
+    expect(screen.getAllByLabelText('Select Iron Ore from North drill')).toHaveLength(1);
+    fireEvent.click(screen.getByLabelText('Select all in North, South'));
+    fireEvent.change(screen.getByLabelText('Amount for Iron Ore from North drill'), { target: { value: '30' } });
+    const search = screen.getByRole('searchbox', { name: 'Search resources, buildings, or cores' });
+    for (const name of ['North', 'South']) {
+        fireEvent.change(search, { target: { value: name } });
+        expect(screen.getByText('North, South')).toBeVisible();
+        expect(screen.getByLabelText('Select Iron Ore from North drill')).toBeChecked();
+        expect(screen.getByLabelText('Amount for Iron Ore from North drill')).toHaveValue(30);
+    }
+    fireEvent.change(search, { target: { value: 'Spare' } });
+    fireEvent.click(screen.getByLabelText('Select Iron Ore from Spare drill'));
+    fireEvent.change(screen.getByLabelText('Amount for Iron Ore from Spare drill'), { target: { value: '50' } });
+    fireEvent.change(search, { target: { value: '' } });
+    expect(screen.getByLabelText('Amount for Iron Ore from North drill')).toHaveValue(30);
+    fireEvent.click(screen.getByLabelText('Select Iron Ore from South drill'));
+    fireEvent.click(screen.getByRole('button', { name: /Add selected resources/ }));
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_EXTERNAL_INPUTS])).toEqual({ 'iron-ore': 200 }));
+    expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCES])).toMatchObject([
+        { coreIds: [1, 2], coreName: 'North, South', ratePerMinute: 30 },
+        { coreId: 1, ratePerMinute: 50 }, { coreId: 2, ratePerMinute: 120 },
+    ]);
+    fireEvent.click(screen.getByRole('heading', { name: 'Iron Ore' }));
+    expect(screen.getByRole('img', { name: 'Shared across North, South' })).toBeVisible();
+});
+
+it('marks imported physical sources as already added while keeping other buildings selectable', async () => {
     const { harness } = setup();
     await addSave(harness);
     const selectNorth = () => {
@@ -271,16 +307,15 @@ it('checks already-added totals per core and item while keeping individual build
     selectNorth();
     expect(within(screen.getByRole('group', { name: 'Selected allocations' })).getByText('120/min')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: /Add selected resources/ }));
-    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCES])).toEqual([
+    await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCES])).toMatchObject([
         { id: 'resource-1', coreId: 1, coreName: 'North', itemId: 'iron-ore', ratePerMinute: 120, enabled: true },
     ]));
     fireEvent.click(screen.getByRole('button', { name: 'or add from Factory Map' }));
     selectNorth();
     expect(screen.getByRole('button', { name: /Add selected resources/ })).toBeDisabled();
-    expect(within(screen.getByRole('group', { name: 'Selected allocations' })).getByText(/Already added/)).toBeVisible();
-    fireEvent.change(screen.getByLabelText('Amount for Iron Ore from North drill'), { target: { value: '50' } });
-    expect(screen.getByRole('button', { name: /Add selected resources/ })).toBeEnabled();
-    fireEvent.change(screen.getByLabelText('Amount for Iron Ore from North drill'), { target: { value: '60' } });
+    expect(screen.getAllByText('Already added')).toHaveLength(2);
+    expect(screen.getByLabelText('Select Iron Ore from North drill')).toBeDisabled();
+    expect(screen.getByLabelText('Select Iron Ore from Spare drill')).toBeDisabled();
     fireEvent.click(screen.getByLabelText('Select Iron Ore from South drill'));
     fireEvent.click(screen.getByRole('button', { name: /Add selected resources/ }));
     await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCES])).toHaveLength(2));

@@ -751,6 +751,8 @@
   "This save is too large to store in this browser.": "This save is too large to store in this browser.",
   "Core {number}": "Core {number}",
   "Open Core {name}": "Open Core {name}",
+  "Open on map": "Open on map",
+  "Open Core {name} on map": "Open Core {name} on map",
   "No Cores found in this save.": "No Cores found in this save.",
   "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.",
   "Available resources": "Available resources",
@@ -817,7 +819,7 @@
   "Experimental functionality": "Experimental functionality",
   "Only tested with {dataVersion} game data and .sav files from StarRupture {gameVersion}.": "Only tested with {dataVersion} game data and .sav files from StarRupture {gameVersion}.",
   "Update": "Update",
-  "View details": "View details",
+  "View buildings": "View buildings",
   "Core": "Core",
   "No power networks found in this save.": "No power networks found in this save.",
   "Where to find .sav files": "Where to find .sav files",
@@ -903,5 +905,8 @@
   "Higher level": "Higher level",
   "Lower level": "Lower level",
   "Shows this level and all levels below.": "Shows this level and all levels below.",
-  "Level {level} · Buildings above or below": "Level {level} · Buildings above or below"
+  "Level {level} · Buildings above or below": "Level {level} · Buildings above or below",
+  "Shared across {cores}": "Shared across {cores}",
+  "{count} shared": "{count} shared",
+  "Shared resources": "Shared resources"
 }

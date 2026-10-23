@@ -190,6 +190,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.SAVES_SELECT_VIEW]: [view: SaveView];
         [appIds.events.SAVES_SET_MAP_VIEWPORT]: [workspaceId: string, x: number, y: number, zoom: number];
         [appIds.events.SAVES_SELECT_CORE]: [workspaceId: string, coreId: number | null];
+        [appIds.events.SAVES_OPEN_CORE_ON_MAP]: [workspaceId: string, coreId: number];
         [appIds.events.PLANNER_SET_EXTERNAL_INPUT]: [itemId: string, amount: number];
         [appIds.events.PLANNER_REMOVE_EXTERNAL_INPUT]: [itemId: string];
         [appIds.events.PRODUCTION_PLAN_ADD_INPUT]: [baseId: string, planId: string, itemId: string, amount: number, buildingTypeId: string, name?: string, description?: string];

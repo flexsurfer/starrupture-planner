@@ -109,7 +109,7 @@ it('persists independent planner allocations while comparison selection stays in
     await app.dispatch([appIds.events.PLANNER_CREATE_TAB, 'plan', 'Plan', 'single']);
     await app.dispatch([appIds.events.PLANNER_SET_SELECTED_ITEM, 'bar_titanium']);
     const picker = app.harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCE_PICKER, 'one'])!;
-    const core = picker.cores.find(core => core.buildings.length)!;
+    const core = picker.groups.find(core => core.buildings.length)!;
     await app.dispatch([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'one', picker.snapshotKey, [{ buildingId: core.buildings[0].buildingId, ratePerMinute: 25 }]]);
     const original = structuredClone(app.harness.getState().plannerTabs);
     await app.dispatch([appIds.events.PLANNER_SET_COMPARISON_CORES, 'one', picker.snapshotKey, [core.coreId]]);
@@ -117,7 +117,7 @@ it('persists independent planner allocations while comparison selection stays in
     const persisted = JSON.parse(storage.getItem(key(stateKeys.plannerTabs))!).data;
     expect(persisted).toEqual(original);
     expect(persisted[0]).not.toHaveProperty('buildingBaseline');
-    expect(Object.keys(persisted[0].resources[0]).sort()).toEqual(['coreId', 'coreName', 'enabled', 'id', 'itemId', 'ratePerMinute']);
+    expect(Object.keys(persisted[0].resources[0]).sort()).toEqual(['coreId', 'coreIds', 'coreName', 'enabled', 'id', 'itemId', 'ratePerMinute', 'source']);
     expect(storage.getItem(key(stateKeys.plannerComparisonCoreIds))).toBeNull();
     const archive = createArchive(app.harness.getState(), { baseIds: [], planIds: null });
     expect(parseArchive(JSON.stringify(archive)).plans).toEqual(original);

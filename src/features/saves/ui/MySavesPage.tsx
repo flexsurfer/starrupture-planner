@@ -21,6 +21,7 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
     const runtime = useRuntime();
     const overview = useSubscription([appIds.subscriptions.SAVES_OVERVIEW, workspace.id]);
     const selected = useSubscription([appIds.subscriptions.SAVES_SELECTED_CORE, workspace.id]);
+    const mapSelections = useSubscription([appIds.subscriptions.SAVES_MAP_SELECTED_NODES]);
     const view = useSubscription([appIds.subscriptions.SAVES_SELECTED_VIEW]);
     const setView = (next: typeof saveViews[number]['id']) => runtime.dispatch([appIds.events.SAVES_SELECT_VIEW, next]);
     const openCore = (id: number) => {
@@ -63,8 +64,8 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
         </div>
         <div id={`save-panel-${view}`} role="tabpanel" aria-labelledby={`save-view-${view}`}
             className={view === 'map' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'min-h-0 flex-1 overflow-auto p-3 sm:p-4'}>
-            {view === 'map' ? <SaveMap workspace={workspace} initialCoreId={null} onOpenCore={openCore} />
-                : view === 'power-networks' ? <SavePowerNetworks networks={overview?.powerNetworks ?? []} onOpenCore={openCore} /> : <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,23rem),1fr))] auto-rows-fr gap-4">
+            {view === 'map' ? <SaveMap workspace={workspace} initialCoreId={mapSelections[workspace.id] ?? null} onOpenCore={openCore} />
+                : view === 'power-networks' ? <SavePowerNetworks networks={overview?.powerNetworks ?? []} onOpenCore={openCore} /> : <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,23rem),1fr))] auto-rows-auto items-stretch gap-4">
                 {overview?.cores.map(coreOverview => <SaveCoreCard key={coreKey(coreOverview.core)} workspace={workspace} coreOverview={coreOverview}
                     name={coreName(coreOverview.core)} disabled={disabled} />)}
             </div>}

@@ -2,6 +2,7 @@ import { useTranslation, type MessageKey } from '@/shared/i18n';
 import { BuildingImage, ItemImage } from '@/shared/ui';
 import { getItemCategoryColor } from '@/utils/itemColors';
 import type { SaveResource, SaveResourceBuilding } from '../overview';
+import { SharedCoverage } from '@/shared/ui/SharedCoverage';
 
 const resourceSources: Record<SaveResource['source'], MessageKey> = {
     extraction: 'Local extraction', delivery: 'Imported from other Cores', shipment: 'Sent to other Cores',
@@ -15,9 +16,9 @@ export function ResourceRows({ resources, empty, expandable = true, showSourceLa
     const rate = (value: number | null) => value === null ? <span className="text-base-content/35">—</span>
         : <>{formatNumber(value, { maximumFractionDigits: 1 })}<span className="ml-0.5 text-[11px] font-normal">{t('/min')}</span></>;
     const route = (source: SaveResource['source'], building: SaveResourceBuilding) => {
-        const core = building.relatedCore;
-        if (!core && !building.relatedBuilding) return t('No linked output');
-        const name = core ? core.name ?? t('Core {number}', { number: core.number }) : t('Unassigned Core');
+        if (!building.relatedBuilding) return t('No linked output');
+        const name = building.relatedCores.length ? building.relatedCores.map(core => core.name ?? t('Core {number}', { number: core.number })).join(' + ')
+            : t('Unassigned Core');
         if (building.relatedBuilding) {
             if (source === 'delivery') return t('From {coreName} · {dispatcherName}', {
                 coreName: name, dispatcherName: building.relatedBuilding.name,
@@ -32,12 +33,16 @@ export function ResourceRows({ resources, empty, expandable = true, showSourceLa
     return <div className="divide-y divide-base-content/5">{resources.map(resource => {
         const hasRoute = resource.source === 'delivery' || resource.source === 'shipment';
         const routes = [...new Set(resource.buildings.map(building => route(resource.source, building)))];
+        const shared = resource.buildings.filter(building => building.cores.length > 1);
+        const sharedNames = [...new Map(shared.flatMap(building => building.cores.map(core => [core.id, core] as const))).values()]
+            .map(core => core.name ?? t('Core {number}', { number: core.number })).join(' + ');
         const content = <>
             <span className="shrink-0"><ItemImage itemId={resource.itemId} item={{ name: resource.name }} size="small" /></span>
             <span className="min-w-0 flex-1">
                 <span className="block break-words text-sm font-medium leading-snug text-base-content/85">{resource.name}</span>
                 {(hasRoute || showSourceLabel) && <span className="mt-0.5 block text-[11px] text-base-content/45">{hasRoute ? routes.join(' · ') : t(resourceSources[resource.source])}</span>}
             </span>
+            {shared.length > 0 && <SharedCoverage names={sharedNames} />}
             <span className="shrink-0 text-right text-base font-semibold tabular-nums" style={{ color: getItemCategoryColor(resource.type) }}
                 title={t(resource.rate === null ? 'Rate unavailable' : 'Max capacity')}>{rate(resource.rate)}</span>
         </>;
@@ -50,6 +55,7 @@ export function ResourceRows({ resources, empty, expandable = true, showSourceLa
                     <BuildingImage buildingId={building.buildingTypeId} building={{ name: building.name }} size="xsmall" />
                     <span className="min-w-0 flex-1 break-words">
                         {building.name}
+                        {building.cores.length > 1 && <span className="ml-1 inline-flex align-middle"><SharedCoverage names={building.cores.map(core => core.name ?? t('Core {number}', { number: core.number })).join(' + ')} /></span>}
                         {hasRoute && <span className="block text-[11px] text-base-content/40">{route(resource.source, building)}</span>}
                     </span>
                     <span className="shrink-0 tabular-nums">{rate(building.rate)}</span>

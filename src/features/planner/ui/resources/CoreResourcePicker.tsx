@@ -3,7 +3,9 @@ import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { useTranslation } from '@/shared/i18n';
 import { ItemImage } from '@/shared/ui';
-import { groupPlannerCoreAllocations, hasPlannerCoreAllocation, isValidResourceRate, type PlannerResourcePicker } from '../../resources';
+import { SharedCoverage } from '@/shared/ui/SharedCoverage';
+import { prepareCoreResourceSelection } from '../../core-resources';
+import { hasPlannerCoreAllocation, importedPlannerBuildingIds, type PlannerResourcePicker } from '../../resources';
 
 interface CoreResourcePickerProps {
     workspaceId: string;
@@ -25,15 +27,14 @@ function PickerContents({ data, onDone, focusItemId }: CoreResourcePickerProps &
     const [amounts, setAmounts] = useState<Record<string, string>>({});
     const queryId = useId();
     const normalizedQuery = query.trim().toLocaleLowerCase();
-    const selectedRows = data.cores.flatMap(core => core.buildings.filter(building => selected[building.buildingId] && !building.isTarget)
-        .map(building => ({ ...building, coreId: core.coreId, coreName: core.name })));
+    const imported = importedPlannerBuildingIds(resources, data);
+    const selectedRows = data.groups.flatMap(core => core.buildings.filter(building => selected[building.buildingId] && !building.isTarget && !imported.has(building.buildingId)));
     const allocations = selectedRows.map(building => ({ buildingId: building.buildingId, ratePerMinute: Number(amounts[building.buildingId] ?? building.capacity ?? '') }));
-    const grouped = groupPlannerCoreAllocations(selectedRows.map((row, index) => ({
-        coreId: row.coreId, coreName: row.coreName, itemId: row.itemId, ratePerMinute: allocations[index].ratePerMinute,
-    }))).map(row => ({ ...row, alreadyAdded: hasPlannerCoreAllocation(resources, row) }));
+    const prepared = prepareCoreResourceSelection(data, allocations, resources);
+    const grouped = (prepared ?? []).map(row => ({ ...row, alreadyAdded: hasPlannerCoreAllocation(resources, row) }));
     const newCount = grouped.filter(row => !row.alreadyAdded).length;
-    const valid = data.compatible && newCount > 0 && [...allocations, ...grouped].every(allocation => isValidResourceRate(allocation.ratePerMinute));
-    const visibleCores = data.cores.map(core => ({
+    const valid = data.compatible && newCount > 0 && prepared !== null;
+    const visibleCores = data.groups.map(core => ({
         ...core,
         buildings: core.buildings.filter(building => (!focusItemId || building.itemId === focusItemId)
             && (!normalizedQuery || `${core.name} ${building.itemName} ${building.buildingName}`.toLocaleLowerCase().includes(normalizedQuery))),
@@ -48,7 +49,7 @@ function PickerContents({ data, onDone, focusItemId }: CoreResourcePickerProps &
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
             {!visibleCores.length && <p className="py-3 text-sm text-base-content/60">{t('No matching resources.')}</p>}
             {visibleCores.map(core => {
-                const selectable = core.buildings.filter(building => !building.isTarget);
+                const selectable = core.buildings.filter(building => !building.isTarget && !imported.has(building.buildingId));
                 const allSelected = selectable.length > 0 && selectable.every(building => selected[building.buildingId]);
                 const someSelected = selectable.some(building => selected[building.buildingId]);
                 return <section key={core.coreKey} className="mb-3">
@@ -60,13 +61,17 @@ function PickerContents({ data, onDone, focusItemId }: CoreResourcePickerProps &
                                 const checked = event.target.checked;
                                 setSelected(previous => ({ ...previous, ...Object.fromEntries(selectable.map(building => [building.buildingId, checked])) }));
                             }} />
-                        <span className="min-w-0 flex-1 truncate">{core.name}</span>
+                        <span className="flex min-w-0 flex-1 items-center gap-1">
+                            <span className="truncate">{core.name}</span>
+                            {core.coreIds.length > 1 && <SharedCoverage names={core.name} />}
+                        </span>
                         <span className="font-normal text-base-content/45">{t('/min')}</span>
                     </label>
                     <div className="divide-y divide-base-300/50">
                         {core.buildings.map(building => {
                             const checked = !!selected[building.buildingId];
-                            const disabled = !data.compatible || building.isTarget;
+                            const alreadyAdded = imported.has(building.buildingId);
+                            const disabled = !data.compatible || building.isTarget || alreadyAdded;
                             return <div key={building.buildingId} className={`flex items-center gap-2 py-2 ${disabled ? 'opacity-45' : ''}`}>
                                 <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
                                     <input type="checkbox" className="checkbox checkbox-xs shrink-0" checked={checked} disabled={disabled}
@@ -79,6 +84,7 @@ function PickerContents({ data, onDone, focusItemId }: CoreResourcePickerProps &
                                     </span>
                                 </label>
                                 {building.isTarget ? <span className="text-xs text-base-content/60">{t('Plan target')}</span>
+                                    : alreadyAdded ? <span className="text-xs text-base-content/60">{t('Already added')}</span>
                                     : checked ? <input type="number" min="0.0001" max="1000000000" step="any" required
                                         className="input input-bordered input-sm w-22 shrink-0 px-2 text-right tabular-nums"
                                         aria-label={t('Amount for {item} from {building}', { item: building.itemName, building: building.buildingName })}
@@ -93,7 +99,7 @@ function PickerContents({ data, onDone, focusItemId }: CoreResourcePickerProps &
         </div>
         <div className="shrink-0 border-t border-base-300 p-4">
             {grouped.length > 0 && <div className="mb-3 max-h-28 overflow-y-auto text-xs" role="group" aria-label={t('Selected allocations')}>
-                {grouped.map(row => <p key={`${row.coreId}:${row.itemId}`} className="flex flex-wrap justify-between gap-x-2 gap-y-1 py-0.5">
+                {grouped.map(row => <p key={`${(row.coreIds ?? [row.coreId]).join(',')}:${row.itemId}`} className="flex flex-wrap justify-between gap-x-2 gap-y-1 py-0.5">
                     <span>{row.coreName} · {selectedRows.find(building => building.itemId === row.itemId)?.itemName}</span>
                     <span>{formatNumber(row.ratePerMinute, { maximumFractionDigits: 2 })}{t('/min')}{row.alreadyAdded && ` · ${t('Already added')}`}</span>
                 </p>)}

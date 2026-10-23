@@ -4,6 +4,8 @@ import type { SaveMapEntity } from '../map';
 import { SaveCoreHeat } from './SaveCoreHeat';
 import { SaveCoreResources } from './SaveCoreResources';
 import { SaveMapIcon } from './SaveMapIcon';
+import { SharedCoverage } from '@/shared/ui/SharedCoverage';
+import { SaveCoreSharedBadge } from './SaveCoreSharedBadge';
 
 export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect, onFocusCore, onOpenCore }: {
     entity: SaveMapEntity; coreName: string; connected?: SaveMapEntity;
@@ -13,20 +15,32 @@ export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect,
     const detail = entity.detail;
     const name = detail ? detail.instance.name ?? detail.building.name : coreName;
     const connectedName = connected?.detail ? connected.detail.instance.name ?? connected.detail.building.name : null;
-    const connectedCore = connected ? connected.core.core.name ?? t('Core {number}', { number: connected.coreNumber }) : null;
+    const connectedCore = connected?.detail ? connected.detail.cores.map(core => core.name ?? t('Core {number}', { number: core.number })).join(' + ') || t('Unassigned Core') : null;
     const format = (value: number) => formatNumber(value, { maximumFractionDigits: 1 });
 
     return <section className="save-map-details" aria-label={t('Building details')}>
         <div className="save-map-entity-heading">
-            <BuildingImage buildingId={detail?.building.id ?? 'base_core'} building={{ name }} size="small" />
+            <div className="relative shrink-0">
+                <BuildingImage buildingId={detail?.building.id ?? 'base_core'} building={{ name }} size="small" />
+                {!detail && <SaveCoreSharedBadge coreOverview={entity.core} />}
+            </div>
             <div>
                 <h4>{name}</h4>
                 {detail && name !== detail.building.name && <p>{detail.building.name}</p>}
-                <p>{detail ? coreName : t('Lv.{level} · {count} buildings', {
+                <p>{detail ? <>{detail.cores.map(core => core.name ?? t('Core {number}', { number: core.number })).join(' + ') || t('Unassigned Core')}
+                    {detail.cores.length > 1 && <span className="ml-1 inline-flex align-middle"><SharedCoverage names={coreName} /></span>}</> : t('Lv.{level} · {count} buildings', {
                     level: entity.core.core.level === null ? '—' : entity.core.core.level + 1, count: entity.core.buildings.length,
                 })}</p>
             </div>
-            {onClose && <button type="button" className="save-map-icon-button" onClick={onClose} aria-label={t('Close')}><SaveMapIcon name="close" /></button>}
+            {(!detail || onClose) && <div className="save-map-entity-actions">
+                {!detail && <>
+                    <button type="button" className="save-map-icon-button" title={t('View buildings')} aria-label={t('View buildings')}
+                        onClick={() => onOpenCore(entity.core.core.id)}><SaveMapIcon name="details" /></button>
+                    <button type="button" className="save-map-icon-button" title={t('Focus Core')} aria-label={t('Focus Core')}
+                        onClick={() => onFocusCore(entity.id)}><SaveMapIcon name="focus" /></button>
+                </>}
+                {onClose && <button type="button" className="save-map-icon-button" onClick={onClose} aria-label={t('Close')}><SaveMapIcon name="close" /></button>}
+            </div>}
         </div>
         {detail ? <>
             {(detail.building.power !== undefined || detail.building.heat !== undefined) && <dl className="save-map-properties save-map-detail-section">
@@ -70,11 +84,5 @@ export function SaveMapDetails({ entity, coreName, connected, onClose, onSelect,
             <div className="save-map-detail-section"><SaveCoreHeat heat={entity.core.heat} capacity={entity.core.heatCapacity} /></div>
             <div className="mt-3"><SaveCoreResources coreOverview={entity.core} /></div>
         </>}
-        {!detail && <button type="button" className="save-map-detail-action save-map-open-core" onClick={() => onOpenCore(entity.core.core.id)}>
-            <span>{t('View details')}</span><SaveMapIcon name="arrow" />
-        </button>}
-        {!detail && <button type="button" className="save-map-detail-action mt-2" onClick={() => onFocusCore(entity.id)}>
-            <span>{t('Focus Core')}</span><SaveMapIcon name="focus" />
-        </button>}
     </section>;
 }

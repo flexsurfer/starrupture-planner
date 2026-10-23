@@ -15,7 +15,8 @@ export function buildingsVisible(zoom: number, wasVisible: boolean) {
 interface FocusMarker { coreId: number; x: number; y: number; isCore: boolean }
 
 export function mapFocusMarkers(entities: readonly SaveMapEntity[]): FocusMarker[] {
-    return entities.map(entity => ({ coreId: entity.core.core.id, ...projectMapPosition(entity.position), isCore: entity.detail === null }));
+    return entities.flatMap(entity => (entity.detail ? entity.detail.cores.map(core => core.id) : [entity.id])
+        .map(coreId => ({ coreId, ...projectMapPosition(entity.position), isCore: entity.detail === null })));
 }
 
 /** Focus the nearest visible marker, never the empty space between a Core's buildings. */

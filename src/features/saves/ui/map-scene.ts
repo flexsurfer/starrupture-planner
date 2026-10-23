@@ -6,14 +6,14 @@ export function createMapNodeProjector() {
     let cache = new Map<MapNode, MapNode>();
     let result: MapNode[] = [];
     return (base: MapNode[], ghosts: ReadonlySet<number>, selectedId: number | undefined,
-        relatedId: number | null | undefined, selectedCoreId: number | undefined, showBuildings: boolean, showBounds: boolean) => {
+        relatedId: number | null | undefined, selectedCoreIds: ReadonlySet<number>, showBuildings: boolean, showBounds: boolean) => {
         const next = new Map<MapNode, MapNode>();
         const nodes: MapNode[] = [];
         for (const node of base) {
             const bounds = node.type === 'saveCoreBounds';
             if (bounds && !showBounds) continue;
             const { entity } = node.data;
-            const selected = bounds ? entity.id === selectedCoreId : entity.id === selectedId;
+            const selected = bounds ? selectedCoreIds.has(entity.id) : entity.id === selectedId;
             const related = !bounds && entity.id === relatedId;
             const ghost = !bounds && ghosts.has(entity.id);
             const hidden = Boolean(entity.detail) && !showBuildings;
@@ -36,13 +36,13 @@ export function createMapNodeProjector() {
 export function createCargoEdgeProjector() {
     let cache = new Map<CargoEdge, CargoEdge>();
     let result: CargoEdge[] = [];
-    return (base: CargoEdge[], ghosts: ReadonlySet<number>, selectedId: number | undefined, visible: boolean, animate: boolean) => {
+    return (base: CargoEdge[], ghosts: ReadonlySet<number>, selectedIds: ReadonlySet<number>, visible: boolean, animate: boolean) => {
         const next = new Map<CargoEdge, CargoEdge>();
         const edges: CargoEdge[] = [];
         for (const edge of visible ? base : []) {
             if (ghosts.has(Number(edge.source)) || ghosts.has(Number(edge.target))) continue;
-            const highlighted = selectedId === Number(edge.source) || selectedId === Number(edge.target);
-            const dimmed = !highlighted && selectedId !== undefined;
+            const highlighted = selectedIds.has(Number(edge.source)) || selectedIds.has(Number(edge.target));
+            const dimmed = !highlighted && selectedIds.size > 0;
             const previous = cache.get(edge);
             const rendered = previous && previous.data?.highlighted === highlighted && previous.data.dimmed === dimmed
                 && previous.data.animate === animate ? previous : {

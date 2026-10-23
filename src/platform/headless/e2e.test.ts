@@ -216,6 +216,10 @@ describe('headless application E2E', () => {
         expect(saves.value('layers')).toEqual({ showLinks: true, showBounds: false, showPowerNetworks: true });
         expect(saves.value('viewport')).toEqual({ x: 12, y: -34, zoom: 0.8 });
         expect(saves.value('viewports')).toEqual({ one: saves.value('viewport') });
+        await dispatch(scenario, [appIds.events.SAVES_OPEN_CORE_ON_MAP, 'one', 1]);
+        expect(saves.value('selectedView')).toBe('map');
+        expect(saves.value('selectedNodes')).toEqual({ one: 1 });
+        expect(saves.value('viewport')).toBeNull();
         await dispatch(scenario, [appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'First world']);
         await dispatch(scenario, [appIds.events.SAVES_SELECT_CORE, 'one', 1]);
         const baseline = saves.value('one')!.snapshot;
@@ -266,7 +270,10 @@ describe('headless application E2E', () => {
         const importer = mountView(scenario, 'resource source import', { candidate: [appIds.subscriptions.SAVES_IMPORT] } as const);
         await dispatch(scenario, [appIds.events.SAVES_IMPORT_OPEN, 'resource-world']);
         await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, { name: 'resources.sav', size: 10, arrayBuffer: async () => new ArrayBuffer(10) }]);
-        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, importer.value('candidate').requestId, analyzeSave(snapshotFixture(), extractionContext)]);
+        const snapshot = analyzeSave(snapshotFixture(), extractionContext);
+        // The second Core covers both the shared drills and its exclusive sources.
+        snapshot.cores[1].bounds!.max.x = 110;
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, importer.value('candidate').requestId, snapshot]);
         importer.unmount();
         await dispatchAll(scenario, [
             [appIds.events.PLANNER_OPEN_ITEM, 'bar_titanium'],
@@ -306,8 +313,9 @@ describe('headless application E2E', () => {
         } as const);
         const options = picker.value('options')!;
         expect(options.compatible).toBe(true);
+        expect(options.groups[0].coreIds).toEqual([1, 2]);
         expect(picker.value('source')?.snapshotKey).toBe(options.snapshotKey);
-        const selected = options.cores.flatMap(core => core.buildings.filter(building => building.itemId === 'ore_titanium').slice(0, 1));
+        const selected = options.groups.flatMap(core => core.buildings.filter(building => building.itemId === 'ore_titanium').slice(0, 1));
         expect(selected).toHaveLength(2);
         await dispatch(scenario, [appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'resource-world', options.snapshotKey,
             selected.map(building => ({ buildingId: building.buildingId }))]);

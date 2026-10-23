@@ -8,6 +8,7 @@ import type { SaveSnapshot } from '@/features/saves/snapshot';
 import type { AppVersionedGameData } from '@/app/uklad/model';
 import { createSaveWorkspace } from '@/features/saves/workspace';
 import { normalizePlannerTabs } from '@/platform/web/planner-tabs-storage';
+import { normalizePlannerResources, saveResourceSnapshotKey } from './resources';
 
 const revision = `sha256:${'a'.repeat(64)}`;
 const data: AppVersionedGameData = {
@@ -60,7 +61,72 @@ function setup() {
 }
 
 describe('independent planner resources', () => {
-    it('groups identical extractors per core and item, then checks duplicates by allocation amount', () => {
+    it('groups exact two- and three-Core coverage and imports each physical source only once', () => {
+        const { harness, picker, resources } = setup();
+        const world = snapshot();
+        const [north, south] = world.cores;
+        const bounds = (min: number, max: number) => ({ min: { x: min, y: -10, z: -10 }, max: { x: max, y: 10, z: 10 } });
+        north.bounds = bounds(-10, 10); south.bounds = bounds(0, 20);
+        for (const building of north.buildings) building.position = { x: -5, y: 0, z: 0 };
+        for (const building of south.buildings) building.position = { x: 12, y: 0, z: 0 };
+        north.buildings[0].position.x = 2;
+        north.buildings[1].position.x = 7;
+        for (const [id, x] of [[15, -5], [16, 7], [17, 17], [18, 22], [19, 2]]) {
+            north.buildings.push({ ...north.buildings[0], id, position: { x, y: 0, z: 0 } });
+        }
+        world.cores.push({ ...south, id: 3, spawnTimeSeconds: 3, name: 'East', bounds: bounds(5, 25), buildings: [] });
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'World', world) } });
+        const groups = picker().groups;
+        expect(groups.map(group => [group.name, group.coreIds])).toEqual([
+            ['North, South', [1, 2]], ['North, South, East', [1, 2, 3]], ['South, East', [2, 3]], ['North', [1]], ['East', [3]],
+        ]);
+        const ids = groups.flatMap(group => group.buildings.map(building => building.buildingId));
+        expect(new Set(ids).size).toBe(ids.length);
+        const select = (ids: number[]) => harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey,
+            ids.map(buildingId => ({ buildingId }))]);
+        select([10, 10]);
+        expect(resources()).toMatchObject([{ coreIds: [1, 2], coreName: 'North, South', ratePerMinute: 60,
+            source: { buildingIds: [10] } }]);
+        // Another drill with the same item and rate is a distinct physical source.
+        select([19, 10]);
+        expect(resources()).toHaveLength(2);
+        select(ids);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_EXTERNAL_INPUTS])).toEqual({ ore: 480, plate: 240 });
+        select(ids);
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_EXTERNAL_INPUTS])).toEqual({ ore: 480, plate: 240 });
+        // A rename changes labels without resetting physical identity or copied quantities.
+        const key = picker().snapshotKey;
+        const renamed = structuredClone(harness.getState().savesWorkspaces.world);
+        renamed.snapshot.cores[0].name = 'Renamed';
+        harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: renamed } });
+        expect(picker().snapshotKey).toBe(key);
+        select(ids);
+        expect(resources()[0].coreName).toBe('North, South');
+        expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_EXTERNAL_INPUTS])).toEqual({ ore: 480, plate: 240 });
+        for (const coreIds of [[1], [2], [3], [1, 2, 3]]) {
+            harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', key, coreIds]);
+            expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]).rows[0].existing)
+                .toBe(coreIds[0] === 1 && coreIds.length === 1 ? 1 : 2);
+        }
+    });
+
+    it('detaches shared provenance, retains legacy rows, and rejects malformed coverage metadata', () => {
+        const row = { id: 'resource-1', coreId: 1, coreIds: [1, 2, 3], coreName: 'North + South + East', itemId: 'ore', ratePerMinute: 60, enabled: true,
+            source: { workspaceId: 'world', snapshotKey: saveResourceSnapshotKey(snapshot()), buildingIds: [10, 15] } };
+        const normalized = normalizePlannerResources([row], true)[0];
+        expect(normalized).toEqual(row);
+        expect(normalized.coreIds).not.toBe(row.coreIds);
+        expect(normalized.source?.buildingIds).not.toBe(row.source.buildingIds);
+        const legacy = { id: 'legacy', coreId: 1, coreName: 'North', itemId: 'ore', ratePerMinute: 5, enabled: true };
+        expect(normalizePlannerResources([legacy], true)).toEqual([legacy]);
+        for (const invalid of [{ ...row, coreIds: [2, 3] }, { ...row, coreIds: [1, 1] },
+            { ...row, source: { ...row.source, buildingIds: [10, 10] } }, { ...row, source: { ...row.source, buildingIds: [-1] } }]) {
+            expect(() => normalizePlannerResources([invalid], true)).toThrow();
+            expect(normalizePlannerResources([invalid])).toEqual([]);
+        }
+    });
+
+    it('groups extractors per Core and item and remembers physical sources after rate edits', () => {
         const { harness, picker, resources } = setup();
         const expanded = snapshot();
         expanded.cores[0].buildings.push({ ...expanded.cores[0].buildings[0], id: 15 });
@@ -69,20 +135,20 @@ describe('independent planner resources', () => {
             appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, ids.map(buildingId => ({ buildingId, ratePerMinute })),
         ]);
         select([10, 15, 10, 20]);
-        expect(resources()).toEqual([
+        expect(resources()).toMatchObject([
             { id: 'resource-1', coreId: 1, coreName: 'North', itemId: 'ore', ratePerMinute: 120, enabled: true },
             { id: 'resource-2', coreId: 2, coreName: 'South', itemId: 'ore', ratePerMinute: 120, enabled: true },
         ]);
         select([15, 10, 20]);
         expect(resources()).toHaveLength(2);
-        // An edited amount is a different allocation; the original amount can be added again.
+        // Editing or disabling an allocation does not make its sources available again.
         harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_RATE, 'resource-1', 90]);
         select([10, 15]);
-        expect(resources()).toHaveLength(3);
-        harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_ENABLED, 'resource-3', false]);
+        expect(resources()).toHaveLength(2);
+        harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_ENABLED, 'resource-1', false]);
         select([10, 15]);
-        expect(resources()).toHaveLength(3);
-        // Building identity, core name and save workspace do not participate in matching.
+        expect(resources()).toHaveLength(2);
+        // A replacement snapshot can provide a fresh allocation at a different amount.
         expanded.cores[0].name = 'Renamed';
         expanded.cores[0].spawnTimeSeconds = 99;
         expanded.cores[0].buildings[0].id = 99;
@@ -140,7 +206,7 @@ describe('independent planner resources', () => {
 
     it('selects incoming buildings across cores and edits allocations without duplicating sources', () => {
         const { harness, picker, resources } = setup();
-        expect(picker().cores.map(core => core.buildings.map(building => building.buildingId))).toEqual([[10], [20, 22]]);
+        expect(picker().groups.map(core => core.buildings.map(building => building.buildingId))).toEqual([[10], [20, 22]]);
         harness.dispatchSync([appIds.events.PLANNER_ADD_MANUAL_RESOURCE, 'ore', 5]);
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }, { buildingId: 20 }]]);
         expect(resources()).toHaveLength(3);
@@ -183,7 +249,7 @@ describe('independent planner resources', () => {
         const changed = snapshot(); changed.savedAt = '20261015130000';
         changed.cores[0].buildings[0].configuration = { kind: 'extractor', itemId: 'ore', nodePurity: 'pure' };
         harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'World', changed) } });
-        expect(picker().cores[0].buildings[0]).toMatchObject({ capacity: 120 });
+        expect(picker().groups[0].buildings[0]).toMatchObject({ capacity: 120 });
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }, { buildingId: 20 }]]);
         expect(resources()).toHaveLength(3);
         expect(resources()[0]).toEqual(original[0]);
@@ -198,7 +264,7 @@ describe('independent planner resources', () => {
         const metadata = structuredClone(data.saveBuildingCatalog!);
         metadata.extractionRates['drill:ore:normal'] = null;
         harness.restoreState({ ...harness.getState(), savesBuildingCatalog: metadata });
-        expect(picker().cores[0].buildings[0].capacity).toBeNull();
+        expect(picker().groups[0].buildings[0].capacity).toBeNull();
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }]]);
         expect(resources()).toEqual([]);
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10, ratePerMinute: 5 }]]);
@@ -270,7 +336,7 @@ describe('independent planner resources', () => {
         const { harness, picker } = setup();
         const named = snapshot(); named.cores[0].name = '   '; named.cores[0].buildings[0].name = '   ';
         harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'World', named) } });
-        expect(picker().cores[0]).toMatchObject({ name: 'Core 1', buildings: [{ buildingName: 'Drill' }] });
+        expect(picker().groups[0]).toMatchObject({ name: 'Core 1', buildings: [{ buildingName: 'Drill' }] });
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 10 }]]);
         harness.dispatchSync([appIds.events.PLANNER_SET_COMPARISON_CORES, 'world', picker().snapshotKey, [1]]);
         const plan = harness.getState().plannerTabs[0];
@@ -287,7 +353,9 @@ describe('independent planner resources', () => {
         Object.assign(stored.resources[0], { unknownField: 'discard' });
         Object.assign(stored, { unknownField: 'discard' });
         const normalized = normalizePlannerTabs([stored])[0];
-        expect(Object.keys(normalized.resources[0]).sort()).toEqual(['coreId', 'coreName', 'enabled', 'id', 'itemId', 'ratePerMinute']);
+        expect(Object.keys(normalized.resources[0]).sort()).toEqual(['coreId', 'coreName', 'enabled', 'id', 'itemId', 'ratePerMinute', 'source']);
+        expect(normalized.resources[0].source).toEqual(stored.resources[0].source);
+        expect(normalized.resources[0].source?.buildingIds).not.toBe(stored.resources[0].source?.buildingIds);
         expect(normalized).not.toHaveProperty('unknownField');
         stored.resources[0].coreName = 'Mutated';
         expect(normalized.resources[0].coreName).toBe('North');

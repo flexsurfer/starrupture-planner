@@ -751,6 +751,8 @@
   "This save is too large to store in this browser.": "Dieser Spielstand ist zu groß, um ihn in diesem Browser zu speichern.",
   "Core {number}": "Core {number}",
   "Open Core {name}": "Core {name} öffnen",
+  "Open on map": "Auf Karte öffnen",
+  "Open Core {name} on map": "Core {name} auf der Karte öffnen",
   "No Cores found in this save.": "Keine Cores in diesem Spielstand gefunden.",
   "Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.": "Erkunde deine Fabrik auf einer interaktiven StarRupture-Karte. Importiere einen Spielstand, finde Gebäude, verfolge Frachtverbindungen und prüfe Stromnetze und Core-Hitze.",
   "Available resources": "Verfügbare Ressourcen",
@@ -817,7 +819,7 @@
   "Experimental functionality": "Experimentelle Funktion",
   "Only tested with {dataVersion} game data and .sav files from StarRupture {gameVersion}.": "Nur mit Spieldaten von {dataVersion} und .sav-Dateien aus StarRupture {gameVersion} getestet.",
   "Update": "Aktualisieren",
-  "View details": "Details anzeigen",
+  "View buildings": "Gebäude anzeigen",
   "Core": "Core",
   "No power networks found in this save.": "Keine Stromnetze in diesem Spielstand gefunden.",
   "Where to find .sav files": "Wo du .sav-Dateien findest",
@@ -903,5 +905,8 @@
   "Higher level": "Höhere Ebene",
   "Lower level": "Niedrigere Ebene",
   "Shows this level and all levels below.": "Zeigt diese Ebene und alle darunterliegenden Ebenen.",
-  "Level {level} · Buildings above or below": "Ebene {level} · Gebäude darüber oder darunter"
+  "Level {level} · Buildings above or below": "Ebene {level} · Gebäude darüber oder darunter",
+  "Shared across {cores}": "Gemeinsam genutzt von {cores}",
+  "{count} shared": "{count} gemeinsam genutzt",
+  "Shared resources": "Gemeinsam genutzte Ressourcen"
 }

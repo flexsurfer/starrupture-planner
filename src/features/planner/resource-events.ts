@@ -5,7 +5,8 @@ import { createSaveGameData } from '@/features/saves/game-data';
 import { buildSaveOverview } from '@/features/saves/overview';
 import { getActiveSaveWorkspace } from '@/features/saves/workspace';
 import { getActivePlannerTab } from './state';
-import { getPlannerResourceFit, groupPlannerCoreAllocations, hasPlannerCoreAllocation, isValidResourceRate, nextPlannerResourceId, plannerTargetIds, saveResourceSnapshotKey, type PlannerCoreAllocation, type PlannerResource } from './resources';
+import { buildCoreResourcePicker, prepareCoreResourceSelection } from './core-resources';
+import { getPlannerResourceFit, hasPlannerCoreAllocation, isValidResourceRate, nextPlannerResourceId, plannerTargetIds, saveResourceSnapshotKey, type PlannerResource } from './resources';
 
 export const registerPlannerResourceEvents: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
     registrar.regEvent(appIds.events.PLANNER_ADD_MANUAL_RESOURCE, ({ draftState }, itemId, ratePerMinute) => {
@@ -37,26 +38,13 @@ export const registerPlannerResourceEvents: UkladModule<UkladRegistrar<AppContra
             || workspace.snapshot.gameData.version !== draftState.appDataVersion || workspace.snapshot.gameData.revision !== metadata.revision
             || saveResourceSnapshotKey(workspace.snapshot) !== snapshotKey || !Array.isArray(selections) || !selections.length || selections.length > 10000) return;
         const overview = buildSaveOverview(workspace, createSaveGameData(draftState.buildingsList, draftState.itemsList, metadata));
-        const available = new Map(overview.cores.flatMap((core, index) => core.incoming.flatMap(resource => resource.buildings.map(building => [building.buildingId,
-            { core, coreName: core.core.name?.trim() || `Core ${index + 1}`, resource, building }] as const))));
+        const picker = buildCoreResourcePicker(overview, true);
         const targets = new Set(plannerTargetIds(tab));
-        const allocations: PlannerCoreAllocation[] = [];
-        const selected = new Set<number>();
-        for (const selection of selections) {
-            if (!selection || typeof selection !== 'object' || !Number.isSafeInteger(selection.buildingId)) return;
-            const source = available.get(selection.buildingId);
-            if (!source) return;
-            if (selected.has(selection.buildingId)) continue;
-            selected.add(selection.buildingId);
-            const ratePerMinute = selection.ratePerMinute ?? source.building.rate;
-            if (!isValidResourceRate(ratePerMinute)) return;
-            if (targets.has(source.resource.itemId)) return;
-            allocations.push({ coreId: source.core.core.id, coreName: source.coreName, itemId: source.resource.itemId, ratePerMinute });
-        }
-        const grouped = groupPlannerCoreAllocations(allocations);
-        if (!grouped.every(row => isValidResourceRate(row.ratePerMinute))) return;
+        for (const core of picker.groups) for (const building of core.buildings) building.isTarget = targets.has(building.itemId);
+        const prepared = prepareCoreResourceSelection(picker, selections, tab.resources);
+        if (!prepared) return;
         const added: PlannerResource[] = [];
-        for (const allocation of grouped) {
+        for (const allocation of prepared) {
             if (hasPlannerCoreAllocation(tab.resources, allocation)) continue;
             added.push({ id: nextPlannerResourceId([...tab.resources, ...added]), ...allocation, enabled: true });
         }

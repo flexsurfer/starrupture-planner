@@ -4,6 +4,7 @@ import { useTranslation } from '@/shared/i18n';
 import { ItemImage } from '@/shared/ui';
 import type { PlannerResourceSummary } from '../../resources';
 import { ResourceRateField } from './ResourceRateField';
+import { SharedCoverage } from '@/shared/ui/SharedCoverage';
 
 export function ResourceItemGroup({ group, focused, color }: { group: PlannerResourceSummary; focused: boolean; color: string }) {
     const { t, formatNumber } = useTranslation();
@@ -42,7 +43,10 @@ export function ResourceItemGroup({ group, focused, color }: { group: PlannerRes
                     aria-label={t('Enable resource {name}', { name: group.name })}
                     onChange={event => runtime.dispatch([appIds.events.PLANNER_SET_RESOURCE_ENABLED, row.id, event.target.checked])} />
                 <div className={`min-w-0 flex-1 ${row.enabled ? '' : 'opacity-45'}`}>
-                    <p className="truncate text-xs font-medium" title={row.coreName}>{row.coreName ?? t('Manual')}</p>
+                    <p className="flex items-center gap-1 text-xs font-medium" title={row.coreName}>
+                        {row.coreIds && row.coreIds.length > 1 && <SharedCoverage names={row.coreName} />}
+                        <span className="truncate">{row.coreName ?? t('Manual')}</span>
+                    </p>
                 </div>
                 <ResourceRateField value={row.ratePerMinute} label={t('Resource amount for {name}', { name: group.name })}
                     onChange={amount => runtime.dispatch([appIds.events.PLANNER_SET_RESOURCE_RATE, row.id, amount])} />

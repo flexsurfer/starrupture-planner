@@ -1,8 +1,9 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
-import { coreKey } from '@/features/saves/snapshot';
-import { aggregatePlannerResources, buildPlannerResourceSummary, getPlannerResourceFit, saveResourceSnapshotKey } from './resources';
+import { buildCoreCoverage } from '@/features/saves/coverage';
+import { buildCoreResourcePicker } from './core-resources';
+import { aggregatePlannerResources, buildPlannerResourceSummary, getPlannerResourceFit } from './resources';
 import type { PlannerStatsBuildingRow } from './types';
 
 export const registerPlannerResourceSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
@@ -30,16 +31,11 @@ export const registerPlannerResourceSubscriptions: UkladModule<UkladRegistrar<Ap
         ([overview, version, metadata]) => {
             if (!overview) return null;
             const { workspace } = overview;
-            return { workspaceId: workspace.id, snapshotKey: saveResourceSnapshotKey(workspace.snapshot),
-                compatible: workspace.snapshot.gameData.version === version && workspace.snapshot.gameData.revision === metadata?.revision,
-                cores: overview.cores.map((core, index) => ({ coreId: core.core.id, coreKey: coreKey(core.core), name: core.core.name?.trim() || `Core ${index + 1}`,
-                    buildings: core.incoming.flatMap(resource => resource.buildings.map(building => ({ buildingId: building.buildingId, buildingTypeId: building.buildingTypeId,
-                        buildingName: building.name.trim() || core.buildingDetails.find(detail => detail.instance.id === building.buildingId)?.building.name || building.buildingTypeId, itemId: resource.itemId, itemName: resource.name, capacity: building.rate,
-                        source: resource.source === 'extraction' ? 'extraction' as const : 'delivery' as const, isTarget: false }))) })) };
+            return buildCoreResourcePicker(overview, workspace.snapshot.gameData.version === version && workspace.snapshot.gameData.revision === metadata?.revision);
         });
     registrar.regSub(appIds.subscriptions.PLANNER_RESOURCE_PICKER,
         id => [[appIds.subscriptions.PLANNER_RESOURCE_PICKER_SOURCE, id], [appIds.subscriptions.PLANNER_ACTIVE_TARGET_IDS]],
-        ([picker, targets]) => !picker ? null : { ...picker, cores: picker.cores.map(core => ({ ...core, buildings: core.buildings.map(building => ({ ...building,
+        ([picker, targets]) => !picker ? null : { ...picker, groups: picker.groups.map(core => ({ ...core, buildings: core.buildings.map(building => ({ ...building,
             isTarget: targets.includes(building.itemId),
         })) })) });
     registrar.regSub(appIds.subscriptions.PLANNER_RESOURCE_FIT,
@@ -54,7 +50,9 @@ export const registerPlannerResourceSubscriptions: UkladModule<UkladRegistrar<Ap
             const cores = ordered.filter(core => coreIds.includes(core.id));
             if (cores.length !== coreIds.length) return { coreNames: [], rows: [] };
             const counts = new Map<string, number>();
-            for (const core of cores) for (const building of core.buildings) if (building.configuration.kind === 'production') {
+            const { buildingsByCore } = buildCoreCoverage(ordered);
+            const unique = new Map(cores.flatMap(core => buildingsByCore.get(core.id)!.map(building => [building.id, building] as const)));
+            for (const building of unique.values()) if (building.configuration.kind === 'production') {
                 counts.set(building.buildingTypeId, (counts.get(building.buildingTypeId) ?? 0) + 1);
             }
             const coreNames = cores.map(core => core.name?.trim() || `Core ${ordered.indexOf(core) + 1}`);

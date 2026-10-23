@@ -4,6 +4,8 @@ import { BuildingImage, ItemImage } from '@/shared/ui';
 import { getItemCategoryColor } from '@/utils/itemColors';
 import { useModalDialog } from '@/shared/ui/useModalDialog';
 import type { SaveCoreOverview, SaveBuildingSection } from '../overview';
+import { SharedCoverage } from '@/shared/ui/SharedCoverage';
+import { SaveCoreSharedBadge } from './SaveCoreSharedBadge';
 
 const sections: { id: SaveBuildingSection; title: MessageKey }[] = [
     { id: 'incoming', title: 'Incoming resources' }, { id: 'outgoing', title: 'Outgoing resources' },
@@ -24,7 +26,10 @@ export function SaveCoreDialog({ coreOverview, name, onClose }: {
         onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
         <div className="modal-box flex max-h-[85dvh] w-full max-w-3xl flex-col overflow-hidden bg-base-100 p-0">
             <header className="flex shrink-0 items-center gap-3 border-b border-base-300 bg-base-200 p-4">
-                <BuildingImage buildingId="base_core" building={{ name: 'Base Core' }} size="small" />
+                <div className="relative shrink-0">
+                    <BuildingImage buildingId="base_core" building={{ name: 'Base Core' }} size="small" />
+                    <SaveCoreSharedBadge coreOverview={coreOverview} />
+                </div>
                 <div className="min-w-0 flex-1">
                     <h2 id={`${id}-title`} className="break-words font-semibold">{name}</h2>
                     <p className="text-xs text-base-content/60">{t('{count} buildings', { count: coreOverview.buildings.length })}</p>
@@ -39,7 +44,7 @@ export function SaveCoreDialog({ coreOverview, name, onClose }: {
                     return <section key={section.id} aria-labelledby={`${id}-${section.id}`}>
                         <h3 id={`${id}-${section.id}`} className="mb-2 text-sm font-semibold">{t(section.title)}</h3>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            {entries.map(({ detail, count, resources }) => <article key={individual ? detail.instance.id : detail.building.id}
+                            {entries.map(({ detail, count, sharedCount, resources }) => <article key={individual ? detail.instance.id : detail.building.id}
                                 className="min-w-0 rounded-lg border border-base-300 bg-base-200 p-3">
                                 <div className="flex items-center gap-2">
                                     <BuildingImage buildingId={detail.building.id} building={detail.building} size="small" />
@@ -47,6 +52,8 @@ export function SaveCoreDialog({ coreOverview, name, onClose }: {
                                         <h4 className="break-words text-sm font-medium">{individual && detail.instance.configuration.kind !== 'launcher' ? detail.instance.name ?? detail.building.name : detail.building.name}</h4>
                                         {detail.instance.configuration.kind === 'launcher' && <p className="text-xs text-base-content/60">{t('{count} launchers', { count })}</p>}
                                         {!individual && <p className="text-xs text-base-content/60">{t('{count} buildings', { count })}</p>}
+                                        {sharedCount > 0 && <SharedCoverage count={sharedCount}
+                                            names={individual && detail.instance.configuration.kind !== 'launcher' ? detail.cores.map(core => core.name ?? t('Core {number}', { number: core.number })).join(' + ') : undefined} />}
                                     </div>
                                 </div>
                                 {detail.nodePurity && detail.nodePurity !== 'not-applicable' && <p className="mt-2 text-xs text-base-content/60">{t('Node purity: {purity}', {

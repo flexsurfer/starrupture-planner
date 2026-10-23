@@ -9,6 +9,7 @@ import { SaveMapResourceMarker } from './SaveMapResourceMarker';
 import type { PowerNetworkStyle } from './power-network-style';
 import { SaveMapIcon } from './SaveMapIcon';
 import { BUILDING_DETAIL_ZOOM } from './map-viewport';
+import { SaveCoreSharedBadge } from './SaveCoreSharedBadge';
 
 export type MapNode = Node<{
     entity: SaveMapEntity;
@@ -48,6 +49,7 @@ function CoreMarker({ data }: { data: MapNode['data'] }) {
     return <div className={`save-map-core-marker ${selected ? 'is-selected' : ''}`}
         style={{ transform: `scale(${scale})` }}>
         <BuildingImage buildingId="base_core" building={{ name }} size="small" />
+        <SaveCoreSharedBadge coreOverview={entity.core} />
         {powerColor && <NetworkBadge networkId={entity.core.core.powerNetworkId} />}
         <span className={`save-map-core-label${placement ? '' : ' is-crowded'}`} style={{ left: `calc(50% + ${label.x / (scale * zoom)}px)`,
             top: `calc(50% + ${label.y / (scale * zoom)}px)`, transform: `translate(-50%, -50%) scale(${1 / (scale * zoom)})` }}>

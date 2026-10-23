@@ -1,5 +1,5 @@
 import type { MapDisplaySettings, MapLayers } from '../map-preferences';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow, useStore, type Position, type Viewport, type NodeMouseHandler, type EdgeMouseHandler } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { appIds } from '@/app/uklad/catalog';
@@ -29,6 +29,15 @@ const nodeOrigin: [number, number] = [0.5, 0.5];
 // Hidden building geometry still participates in fitting, search and camera restoration.
 const fitOptions = { padding: 0.2, minZoom: 0.005, maxZoom: 1.5, includeHiddenNodes: true };
 const motionDuration = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 300;
+const inCore = (entity: SaveMapEntity, id: number) => entity.detail
+    ? entity.detail.cores.some(core => core.id === id) : entity.id === id;
+
+// Node data keeps one handler while its behavior follows the latest committed view.
+function useStableSelection(onSelect: (id: number) => void) {
+    const selectRef = useRef(onSelect);
+    useLayoutEffect(() => { selectRef.current = onSelect; }, [onSelect]);
+    return useCallback((id: number) => selectRef.current(id), []);
+}
 
 function MapGrid() {
     // Keep planner-style dots visible across the much wider world-map zoom range.
@@ -77,7 +86,9 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     const onZoom = useCallback(() => setFocus({ viewport: getViewport() }), [getViewport]);
     const powerStyles = useMemo(() => powerNetworkStyles(map.entities.map(entity =>
         (entity.detail?.instance ?? entity.core.core).powerNetworkId)), [map]);
-    const coreName = useCallback((entity: SaveMapEntity) => entity.core.core.name ?? t('Core {number}', { number: entity.coreNumber }), [t]);
+    const coreName = useCallback((entity: SaveMapEntity) => entity.detail
+        ? entity.detail.cores.map(core => core.name ?? t('Core {number}', { number: core.number })).join(' + ') || t('Unassigned Core')
+        : entity.core.core.name ?? t('Core {number}', { number: entity.coreNumber }), [t]);
     const entityName = useCallback((entity: SaveMapEntity) => entity.detail
         ? entity.detail.instance.name ?? entity.detail.building.name : coreName(entity), [coreName]);
     const byId = useMemo(() => new Map(map.entities.map(entity => [entity.id, entity])), [map]);
@@ -102,32 +113,35 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     const corePositions = useMemo(() => cores.map(core => ({ ...project(core.position), id: core.id, name: coreName(core) })), [cores, coreName]);
     // Import replacement clears session selection because node IDs belong to a snapshot.
     const selected = byId.get(selections[workspace.id]);
-    const selectedCoreId = selected?.core.core.id;
+    const selectedIds = useMemo(() => new Set(selected ? [selected.id] : []), [selected]);
+    const selectedCoreIds = useMemo(() => new Set(selected?.detail ? selected.detail.cores.map(core => core.id) : selected ? [selected.id] : []), [selected]);
     const selectedStack = selected && map.stacks.get(selected.id);
     const hasBuildingLayers = selectedStack && (selectedStack.above.length > 0 || selectedStack.below.length > 0);
     const selectEntity = useCallback((id: number | null) => runtime.dispatch([appIds.events.SAVES_SELECT_MAP_NODE, workspace.id, id]), [runtime, workspace.id]);
-    const selectMarker = useCallback((id: number) => {
+    const selectMarker = useStableSelection((id: number) => {
         const entity = byId.get(id);
         if (!entity) return;
         if (entity.detail) {
-            setFocusedCore(String(entity.core.core.id));
-            setLevelLimit(entity.core.core.id, entity.level!);
+            const coreId = entity.detail.cores.find(core => String(core.id) === focusedCore)?.id ?? entity.detail.cores[0]?.id;
+            setFocusedCore(coreId === undefined ? '' : String(coreId));
+            if (coreId !== undefined) setLevelLimit(coreId, entity.level!);
         }
         selectEntity(id);
-    }, [byId, setLevelLimit, selectEntity, setFocusedCore]);
+    });
     const scopeId = focusedCore !== '' && byId.get(Number(focusedCore))?.detail === null ? Number(focusedCore) : null;
     const levelCount = scopeId === null ? 0 : map.levelCountsByCore.get(scopeId) ?? 0;
     // A restored selection reveals the same level even before transient camera
     // controls have been used in this mount.
     const levelForCore = useCallback((coreId: number) => levelLimits.get(coreId)
-        ?? (selected?.detail && selectedCoreId === coreId ? selected.level! : undefined), [levelLimits, selected, selectedCoreId]);
+        ?? (selected?.detail && selectedCoreIds.has(coreId) ? selected.level! : undefined), [levelLimits, selected, selectedCoreIds]);
     const currentLevel = (scopeId === null ? undefined : levelForCore(scopeId)) ?? levelCount;
     const heightRanks = useMemo(() => new Map([...new Set(map.entities.map(entity => entity.position.z))]
         .sort((a, b) => a - b).map((z, index) => [z, index * 2])), [map]);
     const aboveCutaway = useCallback((entity: SaveMapEntity) => {
-        const level = levelForCore(entity.core.core.id);
+        const level = scopeId !== null && inCore(entity, scopeId) ? levelForCore(scopeId)
+            : entity.detail?.cores.map(core => levelForCore(core.id)).find(level => level !== undefined);
         return entity.level !== null && level !== undefined && entity.level > level;
-    }, [levelForCore]);
+    }, [levelForCore, scopeId]);
     const ghosts = useMemo(() => {
         const ids = new Set(map.entities.filter(aboveCutaway).map(entity => entity.id));
         if (selected) {
@@ -143,9 +157,8 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
         const entity = byId.get(id);
         if (!entity) return;
         selectMarker(id);
+        if (!entity.detail) setFocusedCore(String(entity.id));
         const point = project(entity.position);
-        // Search/cargo navigation reveals the selected building's overlap level.
-        setFocusedCore(String(entity.core.core.id));
         void setCenter(point.x, point.y, { zoom: 1.2, duration: motionDuration() });
     }, [byId, selectMarker, setFocusedCore, setCenter]);
     const ports = useMemo(() => {
@@ -198,8 +211,8 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     }), [map, entityName, selectMarker, heightRanks, showPowerNetworks, powerStyles, ports,
         display.showNames, display.showResources]);
     const [projectNodes] = useState(createMapNodeProjector);
-    const nodes = useMemo(() => projectNodes(baseNodes, ghosts, selected?.id, selected?.connectedBuildingId, selectedCoreId, showBuildings, showBounds),
-        [projectNodes, baseNodes, ghosts, selected?.id, selected?.connectedBuildingId, selectedCoreId, showBuildings, showBounds]);
+    const nodes = useMemo(() => projectNodes(baseNodes, ghosts, selected?.id, selected?.connectedBuildingId, selectedCoreIds, showBuildings, showBounds),
+        [projectNodes, baseNodes, ghosts, selected?.id, selected?.connectedBuildingId, selectedCoreIds, showBuildings, showBounds]);
     const baseEdges = useMemo<CargoEdge[]>(() => map.links.map(link => {
         return { id: `cargo-${link.source}`, source: String(link.source), target: String(link.target), type: 'saveCargo',
             ...cargoHandles(byId.get(link.source)!.position, byId.get(link.target)!.position),
@@ -221,16 +234,16 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     }), [map, byId, t]);
     const [projectEdges] = useState(createCargoEdgeProjector);
     const edges = useMemo(() => projectEdges(showBuildings ? baseEdges : baseCoreEdges, ghosts,
-        showBuildings ? selected?.id : selectedCoreId, showLinks, display.animateCargo),
-    [projectEdges, baseEdges, baseCoreEdges, ghosts, selected?.id, selectedCoreId, showLinks, showBuildings, display.animateCargo]);
+        showBuildings ? selectedIds : selectedCoreIds, showLinks, display.animateCargo),
+    [projectEdges, baseEdges, baseCoreEdges, ghosts, selectedIds, selectedCoreIds, showLinks, showBuildings, display.animateCargo]);
     const fitNodes = useMemo(() => baseNodes.filter(node => showBounds || node.type !== 'saveCoreBounds'), [baseNodes, showBounds]);
     const focusCore = useCallback((id: string) => {
         setFocusedCore(id);
         if (id === '') resetLevels();
-        void fitView({ ...fitOptions, duration: motionDuration(), nodes: id === '' ? fitNodes : fitNodes.filter(node => node.data.entity.core.core.id === Number(id)) });
+        void fitView({ ...fitOptions, duration: motionDuration(), nodes: id === '' ? fitNodes : fitNodes.filter(node => inCore(node.data.entity, Number(id))) });
     }, [setFocusedCore, resetLevels, fitView, fitNodes]);
     const initialFit = useMemo(() => ({ ...fitOptions, ...(initialCoreId === null ? {} : {
-        nodes: fitNodes.filter(node => node.data.entity.core.core.id === initialCoreId).map(node => ({ id: node.id })),
+        nodes: fitNodes.filter(node => inCore(node.data.entity, initialCoreId)).map(node => ({ id: node.id })),
     }) }), [fitNodes, initialCoreId]);
     const onNodeClick = useCallback<NodeMouseHandler<MapNode>>((_event, node) => {
         if (node.type === 'saveBuilding' && !node.data.ghost) selectMarker(node.data.entity.id);

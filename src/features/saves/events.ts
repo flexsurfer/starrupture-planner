@@ -142,6 +142,15 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         if (coreId !== null && !workspace.snapshot.cores.some(core => core.id === coreId)) return;
         draftState.savesSelections[id] = { coreId };
     });
+    registrar.regEvent(appIds.events.SAVES_OPEN_CORE_ON_MAP, ({ draftState }, id, coreId) => {
+        if (draftState.savesStorageError === 'load' || !Object.hasOwn(draftState.savesWorkspaces, id)) return;
+        if (!draftState.savesWorkspaces[id].snapshot.cores.some(core => core.id === coreId)) return;
+        draftState.savesSelections[id] = { coreId: null };
+        draftState.savesMapSelectedNodes[id] = coreId;
+        // Fit the requested Core on mount instead of restoring the previous camera.
+        delete draftState.savesMapViewports[id];
+        draftState.savesSelectedView = 'map';
+    });
     registrar.regEvent(appIds.events.SAVES_STORAGE_FAILED, ({ draftState }, error) => {
         // A later write diagnostic must not hide a failed load.
         if (draftState.savesStorageError !== 'load') draftState.savesStorageError = error;

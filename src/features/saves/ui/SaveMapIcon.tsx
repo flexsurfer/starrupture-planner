@@ -1,4 +1,5 @@
 const paths = {
+    details: <><path d="M9 6h12M9 12h12M9 18h12" /><circle cx="4" cy="6" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="18" r="1" /></>,
     layers: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5m-18 5 9 5 9-5" /></>,
     up: <path d="m6 15 6-6 6 6" />,
     down: <path d="m6 9 6 6 6-6" />,

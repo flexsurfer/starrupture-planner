@@ -77,6 +77,7 @@ export const appIds = {
         SAVES_RENAME_WORKSPACE: 'saves/rename-workspace',
         SAVES_REMOVE_WORKSPACE: 'saves/remove-workspace',
         SAVES_SELECT_CORE: 'saves/select-core',
+        SAVES_OPEN_CORE_ON_MAP: 'saves/open-core-on-map',
         SAVES_SELECT_MAP_NODE: 'saves/select-map-node',
         SAVES_SET_MAP_DISPLAY: 'saves/set-map-display',
         SAVES_SET_MAP_LAYERS: 'saves/set-map-layers',

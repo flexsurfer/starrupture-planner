@@ -2,14 +2,17 @@ import type { Building } from '@/app/uklad/model';
 import { extractionRate, type SaveGameData } from './game-data';
 import type { SaveBuilding, SaveCore, SaveNodePurity } from './snapshot';
 import type { SaveWorkspace } from './types';
+import { buildCoreCoverage } from './coverage';
 
 export type SaveBuildingSection = 'incoming' | 'production' | 'outgoing' | 'energy' | 'infrastructure';
+export interface SaveCoreReference { id: number; name: string | null; number: number }
 export interface SaveResourceBuilding {
     buildingId: number;
     buildingTypeId: string;
     name: string;
     rate: number | null;
-    relatedCore: { id: number; name: string | null; number: number } | null;
+    cores: SaveCoreReference[];
+    relatedCores: SaveCoreReference[];
     relatedBuilding: { id: number; name: string } | null;
 }
 export interface SaveResource {
@@ -26,12 +29,13 @@ export interface SaveBuildingView {
     section: SaveBuildingSection;
     resources: SaveResource[];
     nodePurity: SaveNodePurity | null;
+    cores: SaveCoreReference[];
 }
 export interface SavePowerNetwork {
     id: number;
     coreIds: number[];
-    /** Owners of network buildings, plus directly connected Cores even when they own no members. */
-    coreContributions: { coreId: number; name: string | null; number: number; buildingCount: number }[];
+    /** Coverage counts can overlap; network totals always count physical buildings once. */
+    coreContributions: { coreId: number; name: string | null; number: number; buildingCount: number; sharedCount?: number }[];
     buildingCount: number;
     powerUse: number | null;
     powerGeneration: number | null;
@@ -40,7 +44,7 @@ export interface SaveCoreOverview {
     core: SaveCore;
     buildings: SaveBuilding[];
     buildingDetails: SaveBuildingView[];
-    buildingSections: Record<SaveBuildingSection, { detail: SaveBuildingView; count: number; resources: SaveResource[] }[]>;
+    buildingSections: Record<SaveBuildingSection, { detail: SaveBuildingView; count: number; sharedCount: number; resources: SaveResource[] }[]>;
     incoming: SaveResource[];
     outgoing: SaveResource[];
     corporationShipments: SaveResource[];
@@ -65,13 +69,13 @@ const sum = (values: (number | undefined)[]) => values.some(value => value === u
 export function buildSaveOverview(workspace: SaveWorkspace, data: SaveGameData) {
     const { buildings: saveBuildings, items: saveItemById, recipes: saveRecipes } = data;
     const orderedCores = [...workspace.snapshot.cores].sort((a, b) => a.spawnTimeSeconds - b.spawnTimeSeconds || a.id - b.id);
-    const buildings = orderedCores.flatMap(core => core.buildings);
+    const { buildings, buildingsByCore, coresByBuilding } = buildCoreCoverage(orderedCores);
+    const references = new Map(orderedCores.map((core, index) => [core.id, { id: core.id, name: core.name, number: index + 1 }]));
+    const coverage = new Map(buildings.map(building => [building.id, coresByBuilding.get(building.id)!.map(core => references.get(core.id)!)]));
     const byId = new Map(buildings.map(building => [building.id, building]));
-    const owners = new Map(orderedCores.flatMap((core, index) => core.buildings.map(building =>
-        [building.id, { id: core.id, name: core.name, number: index + 1 }] as const)));
     const senderByReceiver = new Map(buildings.flatMap(building => building.configuration.kind === 'dispatcher' && building.configuration.receiverId !== null
         ? [[building.configuration.receiverId, building] as const] : []));
-    const displayName = (building: SaveBuilding) => building.name ?? saveBuildings.get(building.buildingTypeId)?.name ?? building.buildingTypeId;
+    const displayName = (building: SaveBuilding) => building.name?.trim() || saveBuildings.get(building.buildingTypeId)?.name || building.buildingTypeId;
     const resourcesFor = (building: SaveBuilding): SaveResource[] => {
         const config = building.configuration;
         const resources: SaveResource[] = [];
@@ -80,7 +84,7 @@ export function buildSaveOverview(workspace: SaveWorkspace, data: SaveGameData) 
             const peer = peerId === undefined ? undefined : byId.get(peerId);
             if (item) resources.push({ itemId: item.id, name: item.name, type: item.type, rate, source,
                 buildings: [{ buildingId: building.id, buildingTypeId: building.buildingTypeId, name: displayName(building), rate,
-                    relatedCore: peer ? owners.get(peer.id) ?? null : null,
+                    cores: coverage.get(building.id)!, relatedCores: peer ? coverage.get(peer.id)! : [],
                     relatedBuilding: peer ? { id: peer.id, name: displayName(peer) } : null }] });
         };
         if (config.kind === 'extractor') add(config.itemId, extractionRate(data, building.buildingTypeId, config.itemId, config.nodePurity), 'extraction');
@@ -100,30 +104,33 @@ export function buildSaveOverview(workspace: SaveWorkspace, data: SaveGameData) 
     const networkIds = new Set([...orderedCores, ...buildings].flatMap(entity => entity.powerNetworkId === null ? [] : [entity.powerNetworkId]));
     const powerNetworks: SavePowerNetwork[] = [...networkIds].sort((a, b) => a - b).map(id => {
         const members = buildings.filter(building => building.powerNetworkId === id);
-        const countsByCore = new Map<number, number>();
-        for (const building of members) {
-            const owner = owners.get(building.id)!;
-            countsByCore.set(owner.id, (countsByCore.get(owner.id) ?? 0) + 1);
-        }
         const coreContributions = orderedCores.flatMap((core, index) => {
-            const buildingCount = countsByCore.get(core.id) ?? 0;
+            const covered = buildingsByCore.get(core.id)!.filter(building => building.powerNetworkId === id);
+            const buildingCount = covered.length;
+            const sharedCount = covered.filter(building => coverage.get(building.id)!.length > 1).length;
             return buildingCount > 0 || core.powerNetworkId === id
-                ? [{ coreId: core.id, name: core.name, number: index + 1, buildingCount }] : [];
+                ? [{ coreId: core.id, name: core.name, number: index + 1, buildingCount, ...(sharedCount ? { sharedCount } : {}) }] : [];
         });
         const power = (generator: boolean) => sum(members.filter(building => !saveBuildings.has(building.buildingTypeId) || (saveBuildings.get(building.buildingTypeId)?.type === 'generator') === generator)
             .map(building => saveBuildings.get(building.buildingTypeId)?.power));
         return { id, coreIds: orderedCores.filter(core => core.powerNetworkId === id).map(core => core.id),
             coreContributions, buildingCount: members.length, powerUse: power(false), powerGeneration: power(true) };
     });
+    const buildingDetails = buildings.map((instance): SaveBuildingView => {
+        const building = saveBuildings.get(instance.buildingTypeId) ?? { id: instance.buildingTypeId, name: instance.name ?? instance.buildingTypeId };
+        const config = instance.configuration;
+        const section: SaveBuildingSection = config.kind === 'extractor' || config.kind === 'receiver' ? 'incoming'
+            : config.kind === 'dispatcher' || config.kind === 'launcher' ? 'outgoing' : building.type === 'generator' ? 'energy'
+                : config.kind === 'production' ? 'production' : 'infrastructure';
+        return { building, instance, section, resources: resourcesFor(instance), nodePurity: config.kind === 'extractor' ? config.nodePurity : null,
+            cores: coverage.get(instance.id)! };
+    }).sort((a, b) => a.building.name.localeCompare(b.building.name) || a.instance.id - b.instance.id);
+    const detailsById = new Map(buildingDetails.map(detail => [detail.instance.id, detail]));
     const cores: SaveCoreOverview[] = orderedCores.map(core => {
-        const buildingDetails = core.buildings.map((instance): SaveBuildingView => {
-            const building = saveBuildings.get(instance.buildingTypeId) ?? { id: instance.buildingTypeId, name: instance.name ?? instance.buildingTypeId };
-            const config = instance.configuration;
-            const section: SaveBuildingSection = config.kind === 'extractor' || config.kind === 'receiver' ? 'incoming'
-                : config.kind === 'dispatcher' || config.kind === 'launcher' ? 'outgoing' : building.type === 'generator' ? 'energy'
-                    : config.kind === 'production' ? 'production' : 'infrastructure';
-            return { building, instance, section, resources: resourcesFor(instance), nodePurity: config.kind === 'extractor' ? config.nodePurity : null };
-        }).sort((a, b) => a.building.name.localeCompare(b.building.name) || a.instance.id - b.instance.id);
+        const coveredBuildings = buildingsByCore.get(core.id)!;
+        const coveredIds = new Set(coveredBuildings.map(building => building.id));
+        const buildingDetails = [...coveredBuildings].map(building => detailsById.get(building.id)!)
+            .sort((a, b) => a.building.name.localeCompare(b.building.name) || a.instance.id - b.instance.id);
         const buildingSections: SaveCoreOverview['buildingSections'] = { incoming: [], outgoing: [], production: [], energy: [], infrastructure: [] };
         for (const detail of buildingDetails) {
             const entries = buildingSections[detail.section];
@@ -135,23 +142,25 @@ export function buildSaveOverview(workspace: SaveWorkspace, data: SaveGameData) 
                 : grouped ? entries.find(entry => entry.detail.building.id === detail.building.id) : undefined;
             if (existing) {
                 existing.count++;
+                if (detail.cores.length > 1) existing.sharedCount++;
                 if (config.kind === 'launcher') existing.resources = combineResources([...existing.resources, ...detail.resources]);
-            } else entries.push({ detail, count: 1, resources: detail.resources });
+            } else entries.push({ detail, count: 1, sharedCount: detail.cores.length > 1 ? 1 : 0, resources: detail.resources });
         }
         const allResources = buildingDetails.flatMap(detail => detail.resources);
-        const interCore = (resource: SaveResource) => resource.buildings.some(building => building.relatedCore && building.relatedCore.id !== core.id);
-        const coreNetworks = new Set([core.powerNetworkId, ...core.buildings.map(building => building.powerNetworkId)]);
+        const interCore = (resource: SaveResource) => resource.buildings.some(building => building.relatedBuilding && !coveredIds.has(building.relatedBuilding.id));
+        const coreNetworks = new Set([core.powerNetworkId, ...coveredBuildings.map(building => building.powerNetworkId)]);
         const baseHeatCapacity = saveBuildings.get('base_core')?.levels?.find(level => level.level === core.level)?.heatCapacity;
-        return { core, buildings: core.buildings, buildingDetails, buildingSections,
+        const heatBuildings = buildingDetails.map(detail => saveBuildings.get(detail.instance.buildingTypeId));
+        return { core, buildings: coveredBuildings, buildingDetails, buildingSections,
             incoming: combineResources(allResources.filter(resource => resource.source === 'extraction' || resource.source === 'delivery' && interCore(resource))),
             outgoing: combineResources(allResources.filter(resource => resource.source === 'shipment' && interCore(resource))),
             corporationShipments: combineResources(allResources.filter(resource => resource.source === 'corporation')),
-            heat: sum(core.buildings.map(building => saveBuildings.get(building.buildingTypeId)?.heat)),
-            heatCapacity: baseHeatCapacity === undefined || core.buildings.some(building => !saveBuildings.has(building.buildingTypeId)) ? null : baseHeatCapacity
-                + buildingDetails.reduce((total, detail) => total + (detail.building.coreHeatCapacity ?? 0), 0),
+            heat: sum(heatBuildings.map(building => building?.heat)),
+            heatCapacity: baseHeatCapacity === undefined || heatBuildings.some(building => !building) ? null : baseHeatCapacity
+                + heatBuildings.reduce((total, building) => total + (building?.coreHeatCapacity ?? 0), 0),
             powerNetworks: powerNetworks.filter(network => coreNetworks.has(network.id)),
         };
     });
-    return { workspace, cores, powerNetworks };
+    return { workspace, cores, powerNetworks, buildingDetails };
 }
 export type SaveOverview = ReturnType<typeof buildSaveOverview>;

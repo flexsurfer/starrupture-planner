@@ -1,6 +1,7 @@
 import { useTranslation } from '@/shared/i18n';
 import type { SavePowerNetwork } from '../overview';
 import { SaveEnergyMeter } from './SaveEnergyMeter';
+import { SharedCoverage } from '@/shared/ui/SharedCoverage';
 
 export function SavePowerNetworks({ networks, onOpenCore }: {
     networks: SavePowerNetwork[]; onOpenCore: (coreId: number) => void;
@@ -10,7 +11,7 @@ export function SavePowerNetworks({ networks, onOpenCore }: {
     if (networks.length === 0) return <p className="py-10 text-center text-sm text-base-content/60">{t('No power networks found in this save.')}</p>;
 
     return <div className="space-y-3">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,23rem),1fr))] items-start gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,23rem),1fr))] auto-rows-auto items-stretch gap-4">
             {networks.map(network => {
                 const label = t('Power network {number}', { number: network.id });
                 return <article key={network.id} aria-label={label} className="card min-w-0 border border-base-300 bg-base-200">
@@ -38,7 +39,9 @@ export function SavePowerNetworks({ networks, onOpenCore }: {
                                             <button type="button" className="link link-hover block max-w-full break-words py-1 text-base-content/80"
                                                 aria-label={t('Open Core {name}', { name })} onClick={() => onOpenCore(core.coreId)}>{name}</button>
                                         </th>
-                                        <td className="py-2 text-right font-mono tabular-nums text-base-content/70">{formatNumber(core.buildingCount)}</td>
+                                        <td className="py-2 text-right font-mono tabular-nums text-base-content/70">{formatNumber(core.buildingCount)}
+                                            {!!core.sharedCount && <div><SharedCoverage count={core.sharedCount} /></div>}
+                                        </td>
                                     </tr>;
                                 })}
                             </tbody>

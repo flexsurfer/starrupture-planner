@@ -154,7 +154,8 @@ it('accepts a dropped file and shows building visuals without production objecti
     expect(within(card).queryByRole('heading', { name: 'Local extraction' })).toBeNull();
     expect(within(card).getByText('Heat')).toBeVisible();
     expect(within(card).queryByText('Imported from other Cores')).toBeNull();
-    expect(within(card).getByText('View details')).toBeVisible();
+    expect(within(card).getByRole('button', { name: 'Open Core Workshop' })).toHaveAttribute('title', 'View buildings');
+    expect(within(card).getByRole('button', { name: 'Open Core Workshop on map' })).toHaveAttribute('title', 'Open on map');
     expect(within(card).queryByAltText('Fabricator')).toBeNull();
     expect(within(card).getByRole('region', { name: 'Available resources' })).toHaveTextContent('Titanium Ore');
     expect(within(card).getByRole('region', { name: 'Sent to other Cores' })).toBeVisible();
@@ -197,6 +198,7 @@ it('requires one dropped save and leaves cancellation as a no-op', async () => {
 
 it('separates supplies and Core shipments, expands buildings, omits corporation shipments and empty outgoing sections from cards', async () => {
     const save = transportFixture();
+    save.itemData.Mass.entities['(ID=31)'].spawnData.transform.translation.x = 30;
     Object.assign(save.itemData.CrBuildingCustomNameSubsystem.customNames, { '(ID=20)': 'Ore dispatch', '(ID=30)': 'Ore intake' });
     Object.assign(save.itemData.Mass.entities, { '(ID=50)': saveEntity('Exporter/DA_Exporter.DA_Exporter', 0, [
         `/Script/Chimera.CrInventoryFragment(InputInventoryContainer=(Items=((ItemTypeFilter=(${JSON.stringify(heliumItemAsset)})))))`,

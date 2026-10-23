@@ -23,9 +23,11 @@ it('derives rates and counts without combining individual extractors or transpor
     expect(overview.cores[0].incoming.find(resource => resource.itemId === 'ore_titanium')?.rate).toBe(420);
     expect(overview.cores[1].incoming.find(resource => resource.itemId === 'ore_titanium')?.rate).toBe(960);
     expect(overview.cores[0].outgoing.find(resource => resource.itemId === 'helium')?.rate).toBe(480);
-    expect(overview.cores[1].incoming.find(resource => resource.source === 'delivery')?.rate).toBe(480);
+    expect(overview.cores[1].incoming.find(resource => resource.source === 'delivery')?.rate).toBe(240);
     expect(overview.cores[0].buildingDetails.filter(building => building.instance.configuration.kind === 'extractor')).toHaveLength(3);
-    expect(overview.cores[1].buildingDetails.filter(building => building.instance.configuration.kind === 'receiver')).toHaveLength(2);
+    expect(overview.cores[1].buildingDetails.filter(building => building.instance.configuration.kind === 'receiver')).toHaveLength(1);
+    // The second receiver remains on the map but is outside both saved bounds.
+    expect(overview.buildingDetails.find(building => building.instance.id === 31)?.cores).toEqual([]);
     expect(overview.cores[0].outgoing[0].buildings.map(building => building.relatedBuilding?.id)).toEqual([30, 31]);
     expect(JSON.stringify(workspace)).not.toMatch(/rate|capacity|catalog|disabled|fragment|interpretation/);
 });
