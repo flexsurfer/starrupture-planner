@@ -5,12 +5,41 @@ import { extractionContext, saveLookups, snapshotFixture, transportFixture, save
 import { createSaveWorkspace } from './workspace';
 import { buildSaveOverview } from './overview';
 import { buildSaveMap } from './map';
+import { filterSaveMap } from './map-filter';
 
 function cargoOverview() {
     const snapshot = analyzeSave(transportFixture(), extractionContext);
     for (const core of snapshot.cores) core.buildings = core.buildings.filter(building => [20, 30].includes(building.id));
     return { snapshot, overview: () => buildSaveOverview(createSaveWorkspace('one', 'World', snapshot), saveLookups) };
 }
+
+it('keeps overview cargo routes consistent with the filtered endpoints without altering the original map', () => {
+    const { overview } = cargoOverview();
+    const map = buildSaveMap(overview(), saveLookups);
+    const sender = map.entities.find(entity => entity.id === 20)!;
+    const receiver = map.entities.find(entity => entity.id === 30)!;
+    const sendersOnly = filterSaveMap(map, [sender.detail!.instance.buildingTypeId]);
+    expect(sendersOnly.entities.map(entity => entity.id).sort((a, b) => a - b)).toEqual([1, 2, 20]);
+    expect(sendersOnly.links).toEqual([]);
+    expect(sendersOnly.coreLinks).toEqual([]);
+    expect(sendersOnly.entities.find(entity => entity.id === 20)).toBe(sender);
+    expect(sendersOnly.stacks.get(20)?.above).not.toContain(30);
+    expect(sendersOnly.stacks.get(20)?.below).not.toContain(30);
+    expect(sendersOnly.levelCountsByCore).toBe(map.levelCountsByCore);
+    const cargo = filterSaveMap(map, [sender.detail!.instance.buildingTypeId, receiver.detail!.instance.buildingTypeId]);
+    expect(cargo).toBe(map);
+    expect(cargo.links).toEqual(map.links);
+    expect(cargo.coreLinks).toEqual(map.coreLinks);
+    expect(map.links).toHaveLength(1);
+    expect(map.coreLinks).toHaveLength(1);
+    const hidden = filterSaveMap(map, []);
+    expect(hidden.entities.map(entity => entity.id)).toEqual([1, 2]);
+    expect(hidden.links).toEqual([]);
+    expect(hidden.coreLinks).toEqual([]);
+    expect(hidden.stacks.size).toBe(0);
+    expect(hidden.levelCountsByCore).toBe(map.levelCountsByCore);
+    expect(map.entities).toHaveLength(4);
+});
 
 it('routes cargo between the covering Cores even when both endpoints have the same nearest Core', () => {
     const save = transportFixture();

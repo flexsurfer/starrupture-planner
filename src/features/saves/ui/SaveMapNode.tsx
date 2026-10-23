@@ -34,9 +34,9 @@ export const SaveMapCoreBounds = memo(function SaveMapCoreBounds({ data }: NodeP
     </svg>;
 });
 
-function NetworkBadge({ networkId }: { networkId: number | null }) {
+function NetworkBadge({ networkId, style }: { networkId: number | null; style?: CSSProperties }) {
     const { formatNumber } = useTranslation();
-    return networkId === null ? null : <span className="save-map-network-badge" aria-hidden="true">#{formatNumber(networkId)}</span>;
+    return networkId === null ? null : <span className="save-map-network-badge" style={style} aria-hidden="true">#{formatNumber(networkId)}</span>;
 }
 
 function CoreMarker({ data }: { data: MapNode['data'] }) {
@@ -50,7 +50,7 @@ function CoreMarker({ data }: { data: MapNode['data'] }) {
         style={{ transform: `scale(${scale})` }}>
         <BuildingImage buildingId="base_core" building={{ name }} size="small" />
         <SaveCoreSharedBadge coreOverview={entity.core} />
-        {powerColor && <NetworkBadge networkId={entity.core.core.powerNetworkId} />}
+        {powerColor && <NetworkBadge networkId={entity.core.core.powerNetworkId} style={{ transform: `scale(${1 / (scale * zoom)})` }} />}
         <span className={`save-map-core-label${placement ? '' : ' is-crowded'}`} style={{ left: `calc(50% + ${label.x / (scale * zoom)}px)`,
             top: `calc(50% + ${label.y / (scale * zoom)}px)`, transform: `translate(-50%, -50%) scale(${1 / (scale * zoom)})` }}>
             {name}

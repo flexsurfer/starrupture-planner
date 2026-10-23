@@ -41,8 +41,7 @@ export function SaveMapSettings({ value, onChange, layers, onLayersChange }: {
         {open && <div id={id} className="save-map-settings-panel" role="group" aria-label={t('Map settings')}>
             <fieldset className="mb-3 border-b border-base-content/10 pb-2">
                 <legend>{t('Map layers')}</legend>
-                {([{ key: 'showLinks', label: 'Cargo links' }, { key: 'showBounds', label: 'Core bounds' },
-                    { key: 'showPowerNetworks', label: 'Power networks' }] as const).map(option =>
+                {([{ key: 'showLinks', label: 'Cargo links' }, { key: 'showBounds', label: 'Core bounds' }] as const).map(option =>
                     <label key={option.key} className="save-map-setting">
                         <span>{t(option.label)}</span>
                         <input type="checkbox" className="toggle toggle-sm" checked={layers[option.key]}

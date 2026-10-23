@@ -9,7 +9,7 @@ Verified on 2026-10-21 with `internal/1.sav`: 57 Cores, 3,125 buildings, 41 carg
 - Render caches preserve node and edge references when their visual state is unchanged. A selection change updates the old/new selection, related endpoints, Core bounds and affected cutaways, rather than every node.
 - Only actual cargo ports get Handles, including Cores with inter-Core deliveries. Unconnected Cores and ordinary buildings have none. Ghosts use the building icon's alpha mask for a lightweight silhouette without image components or badges.
 - React Flow owns continuous camera movement. The viewport is saved to Uklad at gesture end. Core label placement runs once per zoom update and is shared by the Core markers. Cargo geometry is cached and cargo animation pauses during camera movement.
-- Core icons stay between 18 and 24 screen pixels. Names use a compact, single-line label beside the icon, without building counts. Crowded names appear on hover, keyboard focus or selection instead of being displaced to distant rows.
+- Core icons stay between 24 and 32 screen pixels. Power-network badges show the full number at a fixed, readable screen size. Names use a compact, single-line label beside the icon, without building counts. Crowded names appear on hover, keyboard focus or selection instead of being displaced to distant rows.
 - Default number formatting reuses its formatter. Redundant viewport, selection and level updates do not invalidate render data.
 
 ## Production browser comparison

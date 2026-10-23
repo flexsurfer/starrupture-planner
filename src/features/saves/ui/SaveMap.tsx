@@ -13,6 +13,7 @@ import { SaveMapDetails } from './SaveMapDetails';
 import { SaveMapLevels, SaveMapBuildingLayers } from './SaveMapLevels';
 import { SaveMapIcon } from './SaveMapIcon';
 import { SaveMapSearch } from './SaveMapSearch';
+import { SaveMapBuildingFilter } from './SaveMapBuildingFilter';
 import { SaveMapEdge, type CargoEdge } from './SaveMapEdge';
 import { SaveMapSettings } from './SaveMapSettings';
 import { SaveMapCoreLabels } from './SaveMapCoreLabels';
@@ -46,8 +47,8 @@ function MapGrid() {
     return <Background gap={gap} size={1 / zoom} />;
 }
 
-function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
-    map: MapData; workspace: SaveWorkspace; initialCoreId: number | null; onOpenCore: (id: number) => void;
+function SaveMapCanvas({ map, sourceMap, workspace, initialCoreId, onOpenCore }: {
+    map: MapData; sourceMap: MapData; workspace: SaveWorkspace; initialCoreId: number | null; onOpenCore: (id: number) => void;
 }) {
     const { t } = useTranslation();
     const flowLabels = useFlowLabels();
@@ -84,14 +85,14 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
         setFocus(current => event === null && 'coreId' in current ? current : { viewport: next });
     }, [runtime, workspace.id]);
     const onZoom = useCallback(() => setFocus({ viewport: getViewport() }), [getViewport]);
-    const powerStyles = useMemo(() => powerNetworkStyles(map.entities.map(entity =>
-        (entity.detail?.instance ?? entity.core.core).powerNetworkId)), [map]);
+    const powerStyles = useMemo(() => powerNetworkStyles(sourceMap.entities.map(entity =>
+        (entity.detail?.instance ?? entity.core.core).powerNetworkId)), [sourceMap]);
     const coreName = useCallback((entity: SaveMapEntity) => entity.detail
         ? entity.detail.cores.map(core => core.name ?? t('Core {number}', { number: core.number })).join(' + ') || t('Unassigned Core')
         : entity.core.core.name ?? t('Core {number}', { number: entity.coreNumber }), [t]);
     const entityName = useCallback((entity: SaveMapEntity) => entity.detail
         ? entity.detail.instance.name ?? entity.detail.building.name : coreName(entity), [coreName]);
-    const byId = useMemo(() => new Map(map.entities.map(entity => [entity.id, entity])), [map]);
+    const byId = useMemo(() => new Map(sourceMap.entities.map(entity => [entity.id, entity])), [sourceMap]);
     // Reset before children commit on import or resize, releasing obsolete state.
     // Renames preserve snapshot identity and therefore retain the cutaways.
     const [cutaways, setCutaways] = useState(() => ({ snapshot: workspace.snapshot,
@@ -156,11 +157,13 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
     const focusEntity = useCallback((id: number) => {
         const entity = byId.get(id);
         if (!entity) return;
+        // Explicit navigation to a connected building reveals its type as well.
+        if (!map.entities.includes(entity)) runtime.dispatch([appIds.events.SAVES_SET_MAP_BUILDING_FILTER, workspace.id, null]);
         selectMarker(id);
         if (!entity.detail) setFocusedCore(String(entity.id));
         const point = project(entity.position);
         void setCenter(point.x, point.y, { zoom: 1.2, duration: motionDuration() });
-    }, [byId, selectMarker, setFocusedCore, setCenter]);
+    }, [byId, map.entities, runtime, workspace.id, selectMarker, setFocusedCore, setCenter]);
     const ports = useMemo(() => {
         const result = new Map<number, MapNode['data']['ports']>();
         for (const link of [...map.links, ...map.coreLinks]) {
@@ -264,7 +267,13 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
                     {cores.map(entity => <option key={entity.id} value={entity.id}>{coreName(entity)}</option>)}
                 </select>
             </label>
+            <SaveMapBuildingFilter workspaceId={workspace.id} />
             <SaveMapSearch entities={map.entities} entityName={entityName} coreName={coreName} onSelect={focusEntity} />
+            <label className="save-map-setting save-map-power-toggle">
+                <span>{t('Power networks')}</span>
+                <input type="checkbox" className="toggle toggle-sm" checked={showPowerNetworks}
+                    onChange={event => setLayers({ ...layers, showPowerNetworks: event.target.checked })} />
+            </label>
         </div>
         {showBounds && cores.some(entity => !entity.core.core.bounds) && <p className="save-map-notice">
             {t('Some Core bounds are unavailable. Try re-importing the save.')}
@@ -302,7 +311,8 @@ function SaveMapCanvas({ map, workspace, initialCoreId, onOpenCore }: {
 export function SaveMap({ workspace, initialCoreId, onOpenCore }: {
     workspace: SaveWorkspace; initialCoreId: number | null; onOpenCore: (id: number) => void;
 }) {
-    const map = useSubscription([appIds.subscriptions.SAVES_MAP, workspace.id]);
-    if (!map || !map.entities.length) return null;
-    return <ReactFlowProvider><SaveMapCanvas map={map} workspace={workspace} initialCoreId={initialCoreId} onOpenCore={onOpenCore} /></ReactFlowProvider>;
+    const sourceMap = useSubscription([appIds.subscriptions.SAVES_MAP, workspace.id]);
+    const map = useSubscription([appIds.subscriptions.SAVES_FILTERED_MAP, workspace.id]);
+    if (!map || !sourceMap || !map.entities.length) return null;
+    return <ReactFlowProvider><SaveMapCanvas map={map} sourceMap={sourceMap} workspace={workspace} initialCoreId={initialCoreId} onOpenCore={onOpenCore} /></ReactFlowProvider>;
 }

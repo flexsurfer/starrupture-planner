@@ -8,8 +8,8 @@ it('keeps Core arrow endpoints clear of their screen-sized icons across world zo
         const coordinates = path[0].match(/-?\d+(?:\.\d+)?/g)!.map(Number);
         const [startX, startY] = coordinates;
         const [endX, endY] = coordinates.slice(-2);
-        expect(startX * zoom).toBeCloseTo(12);
-        expect((10000 - endX) * zoom).toBeCloseTo(12);
+        expect(startX * zoom).toBeCloseTo(15);
+        expect((10000 - endX) * zoom).toBeCloseTo(15);
         expect(startY).toBe(0);
         expect(endY).toBe(0);
         expect(path[1]).toBeCloseTo(5000);

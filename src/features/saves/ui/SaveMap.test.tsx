@@ -182,6 +182,164 @@ function layerCheckbox(name: string) {
     return screen.getByRole('checkbox', { name });
 }
 
+async function openBuildingFilter() {
+    const trigger = screen.getByRole('button', { name: 'Filter buildings' });
+    if (trigger.getAttribute('aria-expanded') !== 'true') {
+        await interact(() => { fireEvent.click(trigger); });
+    }
+}
+
+async function hideAllBuildingTypes() {
+    await openBuildingFilter();
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Hide all' })); });
+}
+
+async function chooseBuildingType(name: string) {
+    await openBuildingFilter();
+    await interact(() => {
+        fireEvent.click(within(screen.getByRole('group', { name: 'Building types' })).getByRole('checkbox', { name }));
+    });
+}
+
+it('selects every type by default, supports deselection and keeps an empty filter available for choosing individual types', async () => {
+    const { harness, remount } = setup();
+    const originalNodes = flowProps.nodes!;
+    const originalEdges = flowProps.edges;
+    await openBuildingFilter();
+    let panel = within(screen.getByRole('group', { name: 'Building types' }));
+    for (const checkbox of panel.getAllByRole('checkbox')) expect(checkbox).toBeChecked();
+    expect(panel.getByRole('button', { name: 'Select all' })).toBeDisabled();
+    expect(panel.getByRole('button', { name: 'Hide all' })).toBeEnabled();
+
+    await chooseBuildingType('Cargo Receiver');
+    expect(panel.getByRole('checkbox', { name: 'Cargo Receiver' })).not.toBeChecked();
+    expect(panel.getByRole('checkbox', { name: 'Cargo Dispatcher' })).toBeChecked();
+    expect(screen.queryByTestId('rf-node-30')).toBeNull();
+    expect(screen.getByTestId('rf-node-20')).toBeInTheDocument();
+    expect(panel.getByRole('button', { name: 'Select all' })).toBeEnabled();
+    await chooseBuildingType('Cargo Receiver');
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('All buildings');
+    expect(screen.getByTestId('rf-node-30')).toBeInTheDocument();
+
+    await interact(() => { fireEvent.click(markerButton(200)); });
+    await hideAllBuildingTypes();
+    for (const checkbox of panel.getAllByRole('checkbox')) expect(checkbox).not.toBeChecked();
+    expect(panel.getByRole('button', { name: 'Hide all' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('No buildings');
+    expect(screen.queryByRole('region', { name: 'Building details' })).toBeNull();
+    expect(flowProps.nodes!.map(node => node.id)).toEqual(originalNodes.filter(node => !node.data.entity.detail).map(node => node.id));
+    expect(flowProps.edges).toEqual([]);
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_BUILDING_FILTER, 'one'])).toEqual([]);
+    remount();
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('No buildings');
+    expect(flowProps.nodes!.every(node => !node.data.entity.detail)).toBe(true);
+
+    await chooseBuildingType('Cargo Dispatcher');
+    expect(screen.getByTestId('rf-node-20')).toBeInTheDocument();
+    expect(screen.queryByTestId('rf-node-30')).toBeNull();
+    await chooseBuildingType('Cargo Dispatcher');
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('No buildings');
+    expect(screen.queryByTestId('rf-node-20')).toBeNull();
+
+    panel = within(screen.getByRole('group', { name: 'Building types' }));
+    await interact(() => { fireEvent.change(panel.getByRole('searchbox', { name: 'Search building types' }), { target: { value: 'receiver' } }); });
+    await interact(() => { fireEvent.click(panel.getByRole('button', { name: 'Select all' })); });
+    expect(flowProps.nodes!.map(node => node.id)).toEqual(originalNodes.map(node => node.id));
+    expect(flowProps.edges!.map(edge => edge.id)).toEqual(originalEdges!.map(edge => edge.id));
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('All buildings');
+    await interact(() => { fireEvent.change(panel.getByRole('searchbox', { name: 'Search building types' }), { target: { value: '' } }); });
+    for (const checkbox of panel.getAllByRole('checkbox')) expect(checkbox).toBeChecked();
+});
+
+it('filters multiple building types, search and cargo links while preserving Cores, geometry and network colors', async () => {
+    const { harness } = setup({ networkIds: { 20: 8, 30: 8, 200: 0 } });
+    const source = harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one']);
+    const originalNodes = flowProps.nodes!;
+    const originalEdges = flowProps.edges;
+    await interact(() => { fireEvent.click(screen.getByRole('checkbox', { name: 'Power networks' })); });
+    const networkColor = node(20).data.powerColor;
+    await interact(() => { fireEvent.click(markerButton(200)); });
+    await hideAllBuildingTypes();
+    await chooseBuildingType('Cargo Dispatcher');
+    expect(screen.queryByRole('region', { name: 'Building details' })).toBeNull();
+    expect(screen.queryByTestId('rf-node-200')).toBeNull();
+    expect(screen.queryByTestId('rf-node-30')).toBeNull();
+    expect(screen.getByTestId('rf-node-20')).toBeInTheDocument();
+    expect(flowProps.edges).toEqual([]);
+    expect(node(20).data.powerColor).toBe(networkColor);
+    expect(flowProps.nodes!.filter(node => !node.data.entity.detail).map(node => node.id))
+        .toEqual(originalNodes.filter(node => !node.data.entity.detail).map(node => node.id));
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'one'])).toBe(source);
+    for (const rendered of flowProps.nodes!) {
+        expect(rendered.position).toEqual(originalNodes.find(node => node.id === rendered.id)!.position);
+    }
+    await chooseBuildingType('Cargo Receiver');
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('Building types (2)');
+    expect(screen.getByTestId('rf-node-30')).toBeInTheDocument();
+    expect(flowProps.edges!.map(edge => edge.id)).toEqual(originalEdges!.map(edge => edge.id));
+    await focusExample(1);
+    const fittedIds = fitView.mock.lastCall![0].nodes.map((node: MapNode) => node.id);
+    expect(fittedIds).toContain('21');
+    expect(fittedIds).not.toContain('200');
+    const search = screen.getByRole('combobox', { name: 'Find a building' });
+    await interact(() => { fireEvent.change(search, { target: { value: '#200' } }); });
+    expect(screen.getByRole('listbox', { name: 'Buildings' })).toBeEmptyDOMElement();
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Select all' })); });
+    expect(flowProps.nodes!.map(node => node.id)).toEqual(originalNodes.map(node => node.id));
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('All buildings');
+});
+
+it('searches filter options, dismisses with Escape and reveals a connected building outside the filter', async () => {
+    const { harness } = setup();
+    await interact(() => { fireEvent.click(markerButton(20)); });
+    await chooseBuildingType('Cargo Receiver');
+    const search = screen.getByRole('searchbox', { name: 'Search building types' });
+    await interact(() => { fireEvent.change(search, { target: { value: 'receiver' } }); });
+    const panel = within(screen.getByRole('group', { name: 'Building types' }));
+    expect(panel.getAllByRole('checkbox')).toHaveLength(1);
+    expect(panel.getByRole('checkbox', { name: 'Cargo Receiver' })).not.toBeChecked();
+    await interact(() => { fireEvent.keyDown(search, { key: 'Escape' }); });
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveFocus();
+    expect(screen.queryByRole('group', { name: 'Building types' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent('Ore dispatch');
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Show connected building' })); });
+    expect(screen.getByRole('region', { name: 'Building details' })).toHaveTextContent('Cargo Receiver');
+    expect(markerButton(30)).toHaveAttribute('aria-pressed', 'true');
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_BUILDING_FILTER, 'one']))
+        .toEqual(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_BUILDING_TYPES, 'one']).map(type => type.id));
+    expect(setCenter).toHaveBeenCalledWith(3, 0, { zoom: 1.2, duration: 300 });
+});
+
+it('retains each save filter across remounts and renames, then clears it when replacing or removing that save', async () => {
+    const { harness, remount, rename, replaceSnapshot } = setup();
+    const state = harness.getState();
+    const second = createSaveWorkspace('two', 'Second world', analyzeSave(snapshotFixture(), extractionContext));
+    act(() => { harness.restoreState({ ...state, savesWorkspaces: { ...state.savesWorkspaces, two: second }, savesWorkspaceOrder: ['one', 'two'] }); });
+    await hideAllBuildingTypes();
+    await chooseBuildingType('Cargo Dispatcher');
+    const selected = harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_BUILDING_FILTER, 'one']);
+    expect(selected).toHaveLength(1);
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_BUILDING_FILTER, 'two']))
+        .toEqual(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP_BUILDING_TYPES, 'two']).map(type => type.id));
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_FILTERED_MAP, 'two']))
+        .toBe(harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, 'two']));
+    await interact(() => { harness.dispatchSync([appIds.events.SAVES_SET_MAP_BUILDING_FILTER, 'missing', selected]); });
+    expect(harness.getState().savesMapBuildingFilters.missing).toBeUndefined();
+    await rename('Renamed world');
+    remount();
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('Building types (1)');
+    expect(screen.queryByTestId('rf-node-30')).toBeNull();
+    await replaceSnapshot();
+    expect(screen.getByRole('button', { name: 'Filter buildings' })).toHaveTextContent('All buildings');
+    expect(screen.getByTestId('rf-node-30')).toBeInTheDocument();
+    await interact(() => {
+        harness.dispatchSync([appIds.events.SAVES_SET_MAP_BUILDING_FILTER, 'two', [...selected, ...selected, 'unknown']]);
+    });
+    expect(harness.getState().savesMapBuildingFilters.two).toEqual(selected);
+    await interact(() => { harness.dispatchSync([appIds.events.SAVES_REMOVE_WORKSPACE, 'two']); });
+    expect(harness.getState().savesMapBuildingFilters.two).toBeUndefined();
+});
+
 function setupOverlapExamples() {
     const snapshot = analyzeSave(factoryMapOverlapFixture(), extractionContext);
     // These layer-control scenarios need all synthetic heights inside their Core.
@@ -971,7 +1129,7 @@ it('creates only real cargo ports and supplies their geometry before offscreen n
     // Sender 21 crosses from Core 2 into Core 1; sender 20 is outside Core bounds.
     expect(node(1).data.ports).toEqual([{ id: 'target-right', type: 'target', position: 'right' }]);
     expect(node(2).data.ports).toEqual([{ id: 'source-left', type: 'source', position: 'left' }]);
-    expect(node(1).handles).toEqual([{ id: 'target-right', type: 'target', position: 'right', x: 21, y: 9, width: 6, height: 6 }]);
+    expect(node(1).handles).toEqual([{ id: 'target-right', type: 'target', position: 'right', x: 29, y: 13, width: 6, height: 6 }]);
     expect(node(22).data.ports).toEqual([]);
     expect(node(20).data.ports).toEqual([{ id: 'source-top', type: 'source', position: 'top' }]);
     expect(node(30).data.ports).toEqual([{ id: 'target-bottom', type: 'target', position: 'bottom' }]);

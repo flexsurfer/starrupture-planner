@@ -63,6 +63,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         const selected = previous?.snapshot.cores.find(core => core.id === selectedId);
         const retainedSelection = selected && workspace.snapshot.cores.some(core => coreKey(core) === coreKey(selected)) ? selected.id : null;
         delete draftState.savesMapSelectedNodes[workspaceId];
+        delete draftState.savesMapBuildingFilters[workspaceId];
         draftState.savesWorkspaces[workspaceId] = workspace;
         if (!previous) {
             draftState.savesWorkspaceOrder.push(workspaceId);
@@ -101,6 +102,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         delete draftState.savesSelections[id];
         delete draftState.savesMapViewports[id];
         delete draftState.savesMapSelectedNodes[id];
+        delete draftState.savesMapBuildingFilters[id];
         draftState.savesWorkspaceOrder = order.filter(entry => entry !== id);
         if (wasActive) {
             draftState.plannerComparisonCoreIds = [];
@@ -132,6 +134,22 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
     });
     registrar.regEvent(appIds.events.SAVES_SET_MAP_LAYERS, ({ draftState }, layers) => {
         draftState.savesMapLayers = normalizeMapLayers(layers);
+    });
+    registrar.regEvent(appIds.events.SAVES_SET_MAP_BUILDING_FILTER, ({ draftState }, id, buildingTypeIds) => {
+        if (!Object.hasOwn(draftState.savesWorkspaces, id)) return;
+        if (buildingTypeIds === null) {
+            delete draftState.savesMapBuildingFilters[id];
+            return;
+        }
+        const buildings = draftState.savesWorkspaces[id].snapshot.cores.flatMap(core => core.buildings);
+        const available = new Set(buildings.map(building => building.buildingTypeId));
+        const selected = [...new Set(buildingTypeIds)].filter(typeId => available.has(typeId));
+        if (selected.length < available.size) draftState.savesMapBuildingFilters[id] = selected;
+        else delete draftState.savesMapBuildingFilters[id];
+        const inspected = buildings.find(building => building.id === draftState.savesMapSelectedNodes[id]);
+        if (inspected && !selected.includes(inspected.buildingTypeId)) {
+            delete draftState.savesMapSelectedNodes[id];
+        }
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_VIEW, ({ draftState }, view) => {
         if (view === 'map' || view === 'overview' || view === 'power-networks') draftState.savesSelectedView = view;

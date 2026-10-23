@@ -36,9 +36,9 @@ it('includes partially visible markers using the current size and excludes mere 
 it('uses the rendered Core marker size independently of building size', () => {
     const viewport = { x: 0, y: 0, zoom: .5 };
     // The compact Core is outside the viewport even though a building at the same position reaches it.
-    expect(coreInViewport([marker(1, -20, 50, true)], viewport, 100, 100, 56)).toBeNull();
-    expect(coreInViewport([marker(1, -20, 50)], viewport, 100, 100, 56)).toBe(1);
-    expect(coreInViewport([marker(1, -17, 50, true)], viewport, 100, 100, 56)).toBe(1);
+    expect(coreInViewport([marker(1, -24, 50, true)], viewport, 100, 100, 56)).toBeNull();
+    expect(coreInViewport([marker(1, -24, 50)], viewport, 100, 100, 56)).toBe(1);
+    expect(coreInViewport([marker(1, -23, 50, true)], viewport, 100, 100, 56)).toBe(1);
 });
 
 it('breaks equal-distance ties deterministically without depending on iteration order', () => {

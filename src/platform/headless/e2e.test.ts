@@ -189,10 +189,17 @@ describe('headless application E2E', () => {
             selectedView: [appIds.subscriptions.SAVES_SELECTED_VIEW], selectedNodes: [appIds.subscriptions.SAVES_MAP_SELECTED_NODES],
             display: [appIds.subscriptions.SAVES_MAP_DISPLAY], buildingSize: [appIds.subscriptions.SAVES_MAP_BUILDING_SIZE],
             layers: [appIds.subscriptions.SAVES_MAP_LAYERS],
+            buildingFilters: [appIds.subscriptions.SAVES_MAP_BUILDING_FILTERS],
+            buildingFilter: [appIds.subscriptions.SAVES_MAP_BUILDING_FILTER, 'one'],
+            buildingTypes: [appIds.subscriptions.SAVES_MAP_BUILDING_TYPES, 'one'],
+            filteredMap: [appIds.subscriptions.SAVES_FILTERED_MAP, 'one'],
             viewports: [appIds.subscriptions.SAVES_MAP_VIEWPORTS], viewport: [appIds.subscriptions.SAVES_MAP_VIEWPORT, 'one'],
             bases: [appIds.subscriptions.BASES_LIST], planner: [appIds.subscriptions.PLANNER_TABS],
         } as const);
         expect(saves.value('buildingSize')).toBe(72);
+        expect(saves.value('buildingFilter')).toEqual([]);
+        expect(saves.value('buildingTypes')).toEqual([]);
+        expect(saves.value('filteredMap')).toBeNull();
         await dispatch(scenario, [appIds.events.BASES_CREATE_BASE, 'Keep manual work']);
         await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'keep', 'Keep planner work', 'single']);
         const unrelated = { bases: saves.value('bases'), planner: saves.value('planner') };
@@ -202,6 +209,29 @@ describe('headless application E2E', () => {
             await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, saves.value('candidate').requestId, analyzeSave(snapshotFixture(), extractionContext)]);
         };
         await importCandidate('one');
+        const completeMap = saves.value('filteredMap')!;
+        const allBuildingTypes = saves.value('buildingTypes').map(type => type.id);
+        expect(saves.value('buildingFilter')).toEqual(allBuildingTypes);
+        const dispatcherType = saves.value('buildingTypes').find(type => type.name === 'Cargo Dispatcher')!;
+        expect(dispatcherType.count).toBe(4);
+        await dispatch(scenario, [appIds.events.SAVES_SET_MAP_BUILDING_FILTER, 'one', [dispatcherType.id]]);
+        expect(saves.value('buildingFilter')).toEqual([dispatcherType.id]);
+        expect(saves.value('buildingFilters')).toEqual({ one: [dispatcherType.id] });
+        expect(saves.value('filteredMap')!.entities.filter(entity => entity.detail)).toHaveLength(4);
+        expect(saves.value('filteredMap')!.links).toEqual([]);
+        expect(saves.value('filteredMap')!.coreLinks).toEqual([]);
+        await dispatch(scenario, [appIds.events.SAVES_SET_MAP_BUILDING_FILTER, 'one', []]);
+        expect(saves.value('buildingFilter')).toEqual([]);
+        expect(saves.value('buildingFilters')).toEqual({ one: [] });
+        expect(saves.value('filteredMap')!.entities).toEqual(completeMap.entities.filter(entity => !entity.detail));
+        expect(saves.value('filteredMap')!.links).toEqual([]);
+        expect(saves.value('filteredMap')!.coreLinks).toEqual([]);
+        await dispatch(scenario, [appIds.events.SAVES_SET_MAP_BUILDING_FILTER, 'one', [dispatcherType.id]]);
+        expect(saves.value('filteredMap')!.entities.filter(entity => entity.detail)).toHaveLength(4);
+        await dispatch(scenario, [appIds.events.SAVES_SET_MAP_BUILDING_FILTER, 'one', null]);
+        expect(saves.value('buildingFilter')).toEqual(allBuildingTypes);
+        expect(saves.value('buildingFilters')).toEqual({});
+        expect(saves.value('filteredMap')).toBe(completeMap);
         await dispatchAll(scenario, [
             [appIds.events.SAVES_SELECT_MAP_NODE, 'one', 200],
             [appIds.events.SAVES_SELECT_VIEW, 'overview'],

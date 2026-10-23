@@ -60,11 +60,20 @@ export function buildSaveMap(overview: SaveOverview, data: SaveGameData, buildin
         levelCountsByCore.set(core.core.id, levelCount);
     }
     const byId = new Map(entities.map(entity => [entity.id, entity]));
-    const coreLinks = new Map<string, SaveMapCoreLink>();
     for (const link of links) {
         const sender = byId.get(link.source)!, receiver = byId.get(link.target)!;
         sender.connectedBuildingId = link.target;
         receiver.connectedBuildingId = link.source;
+    }
+    return { entities, links, coreLinks: buildMapCoreLinks(entities, links), levelCountsByCore, stacks, buildingSize };
+}
+
+/** Aggregate only the supplied building links, including when the map is filtered. */
+export function buildMapCoreLinks(entities: readonly SaveMapEntity[], links: readonly SaveMapLink[]): SaveMapCoreLink[] {
+    const byId = new Map(entities.map(entity => [entity.id, entity]));
+    const coreLinks = new Map<string, SaveMapCoreLink>();
+    for (const link of links) {
+        const sender = byId.get(link.source)!, receiver = byId.get(link.target)!;
         const sourceCores = new Set(sender.detail!.cores.map(core => core.id));
         const targetCores = new Set(receiver.detail!.cores.map(core => core.id));
         const externalTargets = [...targetCores].filter(id => !sourceCores.has(id));
@@ -79,7 +88,7 @@ export function buildSaveMap(overview: SaveOverview, data: SaveGameData, buildin
         }
     }
     for (const route of coreLinks.values()) route.bidirectional = coreLinks.has(`${route.target}:${route.source}`);
-    return { entities, links, coreLinks: [...coreLinks.values()], levelCountsByCore, stacks, buildingSize };
+    return [...coreLinks.values()];
 }
 
 export type SaveMap = ReturnType<typeof buildSaveMap>;

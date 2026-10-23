@@ -17,6 +17,7 @@ export function createSavesFeatureState(): SavesFeatureState {
         savesMapSelectedNodes: {},
         savesMapDisplay: { ...defaultMapDisplay },
         savesMapLayers: { ...defaultMapLayers },
+        savesMapBuildingFilters: {},
         savesMapViewports: {},
         savesStorageError: null,
     };

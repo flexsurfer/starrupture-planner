@@ -2,6 +2,7 @@ import type { PlannerResource, PlannerResourceSummary, PlannerResourcePicker, Pl
 import type { MapDisplaySettings, MapLayers } from '@/features/saves/map-preferences';
 import type { SaveGameData } from '@/features/saves/game-data';
 import type { SaveMap } from '@/features/saves/map';
+import type { MapBuildingType } from '@/features/saves/map-filter';
 import type { UiText } from '@/shared/i18n/core';
 import type { RecipePresetState } from '@/features/planner/recipe-presets';
 import type { ArchiveSelection, PlannerArchive, TransferStatus } from '@/features/data-transfer/archive';
@@ -123,6 +124,7 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.savesMapSelectedNodes]: Record<string, number>;
         [stateKeys.savesMapDisplay]: MapDisplaySettings;
         [stateKeys.savesMapLayers]: MapLayers;
+        [stateKeys.savesMapBuildingFilters]: Record<string, string[]>;
         [stateKeys.savesMapViewports]: Record<string, SaveMapViewport>;
         [stateKeys.savesSelections]: Record<string, SaveWorkspaceSelection>;
         [stateKeys.savesStorageError]: SaveStorageError;
@@ -187,6 +189,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.SAVES_SELECT_MAP_NODE]: [workspaceId: string, nodeId: number | null];
         [appIds.events.SAVES_SET_MAP_DISPLAY]: [display: MapDisplaySettings];
         [appIds.events.SAVES_SET_MAP_LAYERS]: [layers: MapLayers];
+        [appIds.events.SAVES_SET_MAP_BUILDING_FILTER]: [workspaceId: string, buildingTypeIds: string[] | null];
         [appIds.events.SAVES_SELECT_VIEW]: [view: SaveView];
         [appIds.events.SAVES_SET_MAP_VIEWPORT]: [workspaceId: string, x: number, y: number, zoom: number];
         [appIds.events.SAVES_SELECT_CORE]: [workspaceId: string, coreId: number | null];
@@ -317,6 +320,10 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.SAVES_MAP_DISPLAY]: { params: []; result: MapDisplaySettings };
         [appIds.subscriptions.SAVES_MAP_BUILDING_SIZE]: { params: []; result: number };
         [appIds.subscriptions.SAVES_MAP_LAYERS]: { params: []; result: MapLayers };
+        [appIds.subscriptions.SAVES_MAP_BUILDING_FILTERS]: { params: []; result: Record<string, string[]> };
+        [appIds.subscriptions.SAVES_MAP_BUILDING_FILTER]: { params: [workspaceId: string]; result: string[] };
+        [appIds.subscriptions.SAVES_MAP_BUILDING_TYPES]: { params: [workspaceId: string]; result: MapBuildingType[] };
+        [appIds.subscriptions.SAVES_FILTERED_MAP]: { params: [workspaceId: string]; result: SaveMap | null };
         [appIds.subscriptions.SAVES_MAP_VIEWPORTS]: { params: []; result: Record<string, SaveMapViewport> };
         [appIds.subscriptions.SAVES_MAP_VIEWPORT]: { params: [workspaceId: string]; result: SaveMapViewport | null };
         [appIds.subscriptions.SAVES_SELECTIONS]: { params: []; result: Record<string, SaveWorkspaceSelection> };

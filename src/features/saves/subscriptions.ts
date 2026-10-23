@@ -4,6 +4,7 @@ import type { AppContracts } from '@/app/uklad/contracts';
 import { createSaveGameData } from './game-data';
 import { buildSaveOverview } from './overview';
 import { buildSaveMap } from './map';
+import { filterSaveMap, mapBuildingTypes } from './map-filter';
 import { getActiveSaveWorkspace, workspaceIds } from './workspace';
 
 export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
@@ -23,6 +24,10 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
         () => [[appIds.subscriptions.SAVES_MAP_DISPLAY]],
         ([display]) => display.buildingSize);
     registrar.regRootSub(appIds.subscriptions.SAVES_MAP_LAYERS, stateKeys.savesMapLayers);
+    registrar.regRootSub(appIds.subscriptions.SAVES_MAP_BUILDING_FILTERS, stateKeys.savesMapBuildingFilters);
+    registrar.regSub(appIds.subscriptions.SAVES_MAP_BUILDING_FILTER,
+        id => [[appIds.subscriptions.SAVES_MAP_BUILDING_FILTERS], [appIds.subscriptions.SAVES_MAP_BUILDING_TYPES, id]],
+        ([filters, types], id) => filters[id] ?? types.map(type => type.id));
     registrar.regRootSub(appIds.subscriptions.SAVES_MAP_VIEWPORTS, stateKeys.savesMapViewports);
     registrar.regSub(appIds.subscriptions.SAVES_MAP_VIEWPORT,
         () => [[appIds.subscriptions.SAVES_MAP_VIEWPORTS]],
@@ -43,6 +48,12 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
     registrar.regSub(appIds.subscriptions.SAVES_MAP,
         id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA], [appIds.subscriptions.SAVES_MAP_BUILDING_SIZE]],
         ([overview, data, buildingSize]) => overview ? buildSaveMap(overview, data, buildingSize) : null);
+    registrar.regSub(appIds.subscriptions.SAVES_MAP_BUILDING_TYPES,
+        id => [[appIds.subscriptions.SAVES_MAP, id]],
+        ([map]) => map ? mapBuildingTypes(map) : []);
+    registrar.regSub(appIds.subscriptions.SAVES_FILTERED_MAP,
+        id => [[appIds.subscriptions.SAVES_MAP, id], [appIds.subscriptions.SAVES_MAP_BUILDING_FILTER, id]],
+        ([map, selected]) => map ? filterSaveMap(map, selected) : null);
     registrar.regSub(appIds.subscriptions.SAVES_CORE_BY_ID,
         id => [[appIds.subscriptions.SAVES_OVERVIEW, id]],
         ([overview], _id, coreId) => overview?.cores.find(coreOverview => coreOverview.core.id === coreId) ?? null);

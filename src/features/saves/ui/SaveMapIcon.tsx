@@ -6,6 +6,7 @@ const paths = {
     map: <path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16" />,
     focus: <><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3" /></>,
     search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></>,
+    filter: <path d="M3 4h18l-7 8v7l-4 2v-9L3 4Z" />,
     cargo: <><circle cx="5" cy="6" r="2" /><circle cx="19" cy="18" r="2" /><path d="M7 6h10a4 4 0 0 1 0 8H7a4 4 0 0 0 0 8h5M19 4l2 2-2 2" /></>,
     bounds: <path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3" />,
     power: <path d="m13 2-9 12h7l-1 8 10-12h-8l1-8Z" />,

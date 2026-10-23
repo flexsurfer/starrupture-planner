@@ -108,8 +108,12 @@ describe('recipe preset controls', () => {
         const dialog = within(screen.getByRole('region', { name: 'Manage presets' }));
         expect(dialog.queryByRole('button', { name: 'Rename "Upgraded recipes"' })).not.toBeInTheDocument();
         expect(dialog.queryByRole('button', { name: 'Delete "Upgraded recipes"' })).not.toBeInTheDocument();
-        fireEvent.change(dialog.getByRole('combobox', { name: 'Default for new plans' }), { target: { value: V2_RECIPE_PRESET_ID } });
-        await waitFor(() => expect(harness.getState().pinnedRecipeSelections).toEqual({ plate: 'smelter-v2:0' }));
+        await act(async () => {
+            fireEvent.change(dialog.getByRole('combobox', { name: 'Default for new plans' }), { target: { value: V2_RECIPE_PRESET_ID } });
+            // A state commit can precede publication to React's subscriptions.
+            await harness.flush();
+        });
+        expect(harness.getState().pinnedRecipeSelections).toEqual({ plate: 'smelter-v2:0' });
         fireEvent.click(dialog.getByRole('button', { name: 'Done' }));
         expect(screen.getByRole('combobox', { name: 'Selected preset' })).toHaveDisplayValue('Upgraded recipes (Default)');
     });

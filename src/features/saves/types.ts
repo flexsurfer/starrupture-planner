@@ -51,6 +51,9 @@ export interface SavesFeatureState {
     savesMapSelectedNodes: Record<string, number>;
     savesMapDisplay: MapDisplaySettings;
     savesMapLayers: MapLayers;
+    /** Building-type selections are scoped to each save for this runtime session. */
+    /** Missing entries show all building types; an empty selection hides all buildings. */
+    savesMapBuildingFilters: Record<string, string[]>;
     savesMapViewports: Record<string, SaveMapViewport>;
     savesSelections: Record<string, SaveWorkspaceSelection>;
     savesStorageError: SaveStorageError;
