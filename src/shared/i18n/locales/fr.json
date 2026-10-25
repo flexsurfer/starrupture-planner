@@ -917,5 +917,21 @@
   "Level {level} · Buildings above or below": "Niveau {level} · Bâtiments au-dessus ou en dessous",
   "Shared across {cores}": "Partagé entre {cores}",
   "{count} shared": "{count} partagés",
-  "Shared resources": "Ressources partagées"
+  "Shared resources": "Ressources partagées",
+  "Compare level rewards and the supplies needed to unlock them.": "Comparez les récompenses des niveaux et les livraisons nécessaires pour les débloquer.",
+  "View levels": "Voir les niveaux",
+  "Hide levels": "Masquer les niveaux",
+  "{count} rewards": {
+    "one": "{count} récompense",
+    "other": "{count} récompenses"
+  },
+  "Level requirement": "Objectif du niveau",
+  "Supply required": "Livraison requise",
+  "Items needed": "Objets nécessaires",
+  "{points} G per item": "{points} G par objet",
+  "Each option below can complete this level on its own.": "Chacune des options ci-dessous suffit à elle seule pour terminer ce niveau.",
+  "No supply required": "Aucune livraison requise",
+  "No rewards listed": "Aucune récompense indiquée",
+  "Quantity unavailable": "Quantité indisponible",
+  "or": "ou"
 }

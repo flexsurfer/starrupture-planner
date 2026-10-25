@@ -108,6 +108,6 @@
     "/Game/Chimera/Weapons/AmmoTypes/I_ShotgunAmmoItem.I_ShotgunAmmoItem_C'/Game/Chimera/Weapons/AmmoTypes/I_ShotgunAmmoItem.Default__I_ShotgunAmmoItem_C'": "shotgun_ammo",
     "/Game/Chimera/Weapons/AmmoTypes/I_StandardAmmoItem.I_StandardAmmoItem_C'/Game/Chimera/Weapons/AmmoTypes/I_StandardAmmoItem.Default__I_StandardAmmoItem_C'": "standard_ammo"
   },
-  "mappingRevision": "sha256:251875733baf623147dfa703130203bcb16c54b97dc6f08f0b79c6d36e4e4978",
-  "catalogRevision": "sha256:3869cdb6fee3b0910f45d3ab1dff5502bcb056b8ecb0d475fcef9ec95cc2567f"
+  "mappingRevision": "sha256:ee7935681cd376ade342c81046b2d802e1d98f8d61194da8122e2b3e524c73c9",
+  "catalogRevision": "sha256:533f5c4bedb33b0d4f7b3da59de222bc63d8a73d0d88d02cc398efbafed789a4"
 }

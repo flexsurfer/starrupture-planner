@@ -231,7 +231,7 @@
   },
   {
     "id": "nanofiber",
-    "name": "Nanofiber",
+    "name": "Nanofibre",
     "type": "component"
   },
   {
@@ -271,7 +271,7 @@
   },
   {
     "id": "magicoilore",
-    "name": "Powerium",
+    "name": "Crude Oil",
     "type": "raw"
   },
   {
@@ -296,7 +296,7 @@
   },
   {
     "id": "quantumtranqualizer",
-    "name": "Quantum Tranquilizer",
+    "name": "Quantum Tranqualizer",
     "type": "component"
   },
   {
@@ -356,7 +356,7 @@
   },
   {
     "id": "scafolding",
-    "name": "Scaffolding",
+    "name": "Scafolding",
     "type": "component"
   },
   {
@@ -391,12 +391,12 @@
   },
   {
     "id": "ore_sulfur",
-    "name": "Sulfur Ore",
+    "name": "Sulphur Ore",
     "type": "raw"
   },
   {
     "id": "sulfuric_acid",
-    "name": "Sulfuric Acid",
+    "name": "Sulphuric Acid",
     "type": "component"
   },
   {

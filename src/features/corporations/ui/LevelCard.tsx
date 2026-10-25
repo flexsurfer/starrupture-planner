@@ -15,50 +15,72 @@ type LevelCardProps = {
 };
 
 export const LevelCard = ({ level, xp, components, rewards, itemsMap, corporationId }: LevelCardProps) => {
-    const { t , locale } = useTranslation();
+  const { t, formatNumber } = useTranslation();
   const runtime = useRuntime();
   const codex = useCodexView();
 
   return (
-    <section aria-label={t("Level {level}", { level: level })} className="min-w-0 overflow-hidden rounded-lg border border-base-300 bg-base-200">
-      <div className="flex items-center justify-between gap-2 border-b border-base-300 px-2 py-2 sm:px-3">
-        <h3 className="text-sm font-semibold text-base-content">{t("Level {level}", { level: level })}</h3>
-        {(xp ?? 0) > 0 && <span className="text-xs font-semibold text-info tabular-nums">{(xp ?? 0).toLocaleString(locale)} G</span>}
-      </div>
+    <section aria-label={t('Level {level}', { level })} className="corporation-level min-w-0 overflow-hidden rounded-lg border border-base-300 bg-base-100">
+      <header className="corporation-level-heading">
+        <h3 className="text-sm font-semibold">
+          <span className="sr-only">{t('Level {level}', { level })}</span>
+          <span className="flex items-center gap-2.5" aria-hidden="true">
+            <span>{t('Level')}</span>
+            <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-primary/30 bg-primary/15 text-xl font-bold tabular-nums">
+              {formatNumber(level)}
+            </span>
+          </span>
+        </h3>
+        {(xp ?? 0) > 0 && <div className="corporation-level-requirement">
+          <p className="text-xs text-base-content/75">{t('Level requirement')}</p>
+          <p className="mt-1 text-base font-bold text-info tabular-nums">{formatNumber(xp ?? 0)} G</p>
+        </div>}
+      </header>
 
-      {components.length > 0 && <div className="p-2 sm:p-3">
-        <p className="mb-1.5 text-[10px] font-medium text-base-content/60 sm:text-xs">
-          {components.length > 1 ? (codex ? t('Supply options') : t("Supply options · choose one to plan")) : t("Supply item")}
-        </p>
-        <div className={`grid gap-1.5 ${components.length > 1 ? 'xl:grid-cols-2' : ''}`}>
-          {components.map((component, index) => (
-            codex ? <div key={`${component.id}-${index}`} className="flex min-w-0 items-center gap-2 rounded-md border border-transparent bg-base-content/5 p-2">
-              <ComponentIcon component={component} itemsMap={itemsMap} />
-            </div> : <button
-              key={`${component.id}-${index}`}
-              type="button"
-              className="flex min-w-0 items-center gap-2 rounded-md border border-transparent bg-base-content/5 p-2 text-left hover:border-base-content/25 hover:bg-base-content/10 focus-visible:outline-2 focus-visible:outline-primary"
-              onClick={() => runtime.dispatch([appIds.events.PLANNER_OPEN_ITEM, component.id, { corporationId, level }])}
-              aria-label={t("Open {value} in planner for level {level}", { value: itemsMap[component.id]?.name || component.id, level: level })}
-              title={t("Open {value} in planner", { value: itemsMap[component.id]?.name || component.id })}
-            >
-              <ComponentIcon component={component} itemsMap={itemsMap} />
-              <span className="ml-auto shrink-0 text-[10px] text-base-content/50" aria-hidden="true">{t("Plan →")}</span>
-            </button>
-          ))}
-        </div>
-      </div>}
-
-      {rewards.length > 0 && <div className="border-t border-base-300 px-2 py-2 sm:px-3">
-        <h4 className="mb-1.5 text-[10px] font-medium text-base-content/60 sm:text-xs">{t("Rewards")}</h4>
-        <ul className="flex flex-wrap gap-1">
+      <div className="corporation-level-rewards p-4">
+        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <svg aria-hidden="true" className="size-4 shrink-0 text-success" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13M3 8h18v4H3zM5 12v9h14v-9M12 8H8a3 3 0 1 1 3-3l1 3Zm0 0h4a3 3 0 1 0-3-3l-1 3Z" />
+          </svg>
+          {t('Rewards')}
+        </h4>
+        {rewards.length > 0 ? <ul className="grid gap-2">
           {rewards.map((reward, index) => (
-            <li key={index} className="max-w-full rounded border border-transparent bg-base-content/5 px-1.5 py-1 text-[11px] leading-snug text-base-content/85 break-words sm:text-xs">
-              {reward.name}
+            <li key={index} className="flex items-start gap-2 text-sm leading-relaxed break-words">
+              <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-success/75" />
+              <span className="min-w-0">{reward.name}</span>
             </li>
           ))}
-        </ul>
-      </div>}
+        </ul> : <p className="text-sm text-base-content/70">{t('No rewards listed')}</p>}
+      </div>
+
+      <div className="min-w-0 p-4">
+        <h4 className="text-sm font-semibold">{components.length > 1 ? t('Supply options') : t('Supply required')}</h4>
+        {components.length > 1 && <p className="mt-1 text-xs leading-relaxed text-base-content/75">
+          {t('Each option below can complete this level on its own.')}
+        </p>}
+        {components.length > 0 ? <ul className="mt-3">
+          {components.map((component, index) => (
+            <li key={`${component.id}-${index}`}>
+              {index > 0 && <div className="flex items-center gap-3 py-1.5 text-xs text-base-content/65" aria-hidden="true">
+                <span className="h-px flex-1 bg-base-300" />{t('or')}<span className="h-px flex-1 bg-base-300" />
+              </div>}
+              <div className="corporation-supply-row rounded-lg border border-base-300 bg-base-200/50 p-3">
+                <ComponentIcon component={component} itemsMap={itemsMap} />
+                {!codex && <button
+                  type="button"
+                  className="corporation-plan-button btn btn-sm btn-outline min-h-9 border-base-content/25 text-base-content hover:border-primary hover:bg-primary/10 hover:text-primary"
+                  onClick={() => runtime.dispatch([appIds.events.PLANNER_OPEN_ITEM, component.id, { corporationId, level }])}
+                  aria-label={t('Open {value} in planner for level {level}', { value: itemsMap[component.id]?.name || component.id, level })}
+                  title={t('Open {value} in planner', { value: itemsMap[component.id]?.name || component.id })}
+                >
+                  {t('Plan')}<span aria-hidden="true">→</span>
+                </button>}
+              </div>
+            </li>
+          ))}
+        </ul> : <p className="mt-3 text-sm text-base-content/75">{t('No supply required')}</p>}
+      </div>
     </section>
   );
 };

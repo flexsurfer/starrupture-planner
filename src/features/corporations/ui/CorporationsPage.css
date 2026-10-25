@@ -1,0 +1,88 @@
+.corporations-page {
+  container: corporations / inline-size;
+}
+
+.corporation-level {
+  display: grid;
+}
+
+.corporation-level-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-base-300);
+  background: var(--color-base-200);
+}
+
+.corporation-level-requirement {
+  text-align: end;
+}
+
+.corporation-level-rewards {
+  border-bottom: 1px solid var(--color-base-300);
+}
+
+.corporation-supply-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.corporation-supply-item {
+  display: grid;
+  flex: 1 1 16rem;
+  grid-template-columns: auto minmax(0, 1fr) minmax(4.5rem, auto);
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.corporation-supply-quantity {
+  max-width: 8rem;
+  text-align: end;
+}
+
+.corporation-plan-button {
+  margin-inline-start: auto;
+}
+
+/* Use the available content width in both the page and the Codex dialog. */
+@container corporations (min-width: 54rem) {
+  .corporation-level {
+    grid-template-columns: 9rem minmax(0, 1fr) minmax(0, 1.8fr);
+  }
+
+  .corporation-level-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 1.5rem;
+    border-bottom: 0;
+    border-inline-end: 1px solid var(--color-base-300);
+  }
+
+  .corporation-level-requirement {
+    text-align: start;
+  }
+
+  .corporation-level-rewards {
+    border-bottom: 0;
+    border-inline-end: 1px solid var(--color-base-300);
+  }
+}
+
+@container corporations (max-width: 22rem) {
+  .corporation-supply-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .corporation-supply-quantity {
+    grid-column: 2;
+    max-width: none;
+    text-align: start;
+  }
+}

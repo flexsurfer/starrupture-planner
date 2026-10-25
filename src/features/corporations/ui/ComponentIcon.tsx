@@ -1,7 +1,6 @@
 import { useTranslation } from '@/shared/i18n';
 import type { CorporationComponent, Item } from '@/app/uklad/model';
 import { ItemImage } from '@/shared/ui';
-import { getItemCategoryColor } from '@/utils/itemColors';
 
 type ComponentIconProps = {
   component: CorporationComponent;
@@ -9,24 +8,28 @@ type ComponentIconProps = {
 };
 
 export const ComponentIcon = ({ component, itemsMap }: ComponentIconProps) => {
-  const { locale } = useTranslation();
+  const { t, formatNumber } = useTranslation();
   const item = itemsMap[component.id];
 
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-2">
-      <span className="shrink-0 [&>div]:size-8 [&_img]:size-8 sm:[&>div]:size-10 sm:[&_img]:size-10">
+    <div className="corporation-supply-item">
+      <div className="shrink-0 rounded-md bg-base-200 p-1">
         <ItemImage itemId={component.id} item={item} size="small" />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-xs font-medium leading-snug break-words sm:text-sm">{item?.name || component.id}</span>
-        <span className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-xs tabular-nums">
-          {component.cost != null && component.cost > 0 && <>
-            <span className="font-semibold" style={{ color: getItemCategoryColor(item?.type) }}>{component.cost.toLocaleString(locale)}</span>
-            <span className="text-base-content/60">×</span>
-          </>}
-          <span className="font-semibold text-info">{component.points.toLocaleString(locale)} G</span>
-        </span>
-      </span>
-    </span>
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold leading-snug break-words">{item?.name || component.id}</p>
+        <p className="mt-1 text-xs leading-relaxed text-base-content/75 tabular-nums">
+          {t('{points} G per item', { points: component.points })}
+        </p>
+      </div>
+      <div className="corporation-supply-quantity">
+        <p className="text-xs leading-snug text-base-content/75">{t('Items needed')}</p>
+        <p className="mt-0.5 text-xl font-bold leading-tight tabular-nums">
+          {component.cost != null
+            ? formatNumber(component.cost)
+            : <span className="text-xs font-normal">{t('Quantity unavailable')}</span>}
+        </p>
+      </div>
+    </div>
   );
 };

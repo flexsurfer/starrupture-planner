@@ -94,7 +94,7 @@
         "components": [
           {
             "id": "tube",
-            "points": 30
+            "points": 15
           }
         ],
         "rewards": [
@@ -165,7 +165,7 @@
         "components": [
           {
             "id": "liquid_helium",
-            "points": 120
+            "points": 50
           },
           {
             "id": "substancefhs-135-493",
@@ -191,7 +191,7 @@
           },
           {
             "id": "nanosyringe",
-            "points": 300
+            "points": 350
           }
         ],
         "rewards": [
@@ -209,11 +209,11 @@
         "components": [
           {
             "id": "syntheticprotein",
-            "points": 280
+            "points": 200
           },
           {
             "id": "organiccompound",
-            "points": 150
+            "points": 100
           }
         ],
         "rewards": [
@@ -235,7 +235,7 @@
           },
           {
             "id": "biofilament",
-            "points": 700
+            "points": 800
           }
         ],
         "rewards": [
@@ -485,7 +485,7 @@
           },
           {
             "id": "pseudorubberinsulator",
-            "points": 270
+            "points": 300
           }
         ],
         "rewards": [
@@ -500,11 +500,11 @@
         "components": [
           {
             "id": "plasticdust",
-            "points": 350
+            "points": 200
           },
           {
             "id": "scafolding",
-            "points": 600
+            "points": 700
           }
         ],
         "rewards": [
@@ -703,11 +703,11 @@
         "components": [
           {
             "id": "valve",
-            "points": 150
+            "points": 200
           },
           {
             "id": "uberwolfram",
-            "points": 100
+            "points": 60
           }
         ],
         "rewards": [
@@ -760,11 +760,11 @@
         "components": [
           {
             "id": "carbonsonar",
-            "points": 370
+            "points": 550
           },
           {
             "id": "ionstabilizer",
-            "points": 300
+            "points": 250
           }
         ],
         "rewards": [
@@ -786,7 +786,7 @@
           },
           {
             "id": "quantumtranqualizer",
-            "points": 450
+            "points": 400
           }
         ],
         "rewards": [
@@ -922,7 +922,7 @@
           },
           {
             "id": "nozzle",
-            "points": 150
+            "points": 200
           }
         ],
         "rewards": [
@@ -937,7 +937,7 @@
         "components": [
           {
             "id": "battery",
-            "points": 70
+            "points": 110
           },
           {
             "id": "goethiteore",
@@ -956,11 +956,11 @@
         "components": [
           {
             "id": "goethiteingot",
-            "points": 80
+            "points": 50
           },
           {
             "id": "generator",
-            "points": 180
+            "points": 250
           }
         ],
         "rewards": [
@@ -979,7 +979,7 @@
           },
           {
             "id": "pressure_tank",
-            "points": 280
+            "points": 450
           }
         ],
         "rewards": [
@@ -994,7 +994,7 @@
         "components": [
           {
             "id": "laser_emitter",
-            "points": 500
+            "points": 700
           },
           {
             "id": "grenade",
@@ -1017,7 +1017,7 @@
           },
           {
             "id": "basicfuel",
-            "points": 220
+            "points": 250
           }
         ],
         "rewards": [
@@ -1036,7 +1036,7 @@
           },
           {
             "id": "anti-radiationcovers",
-            "points": 350
+            "points": 400
           }
         ],
         "rewards": [
@@ -1221,7 +1221,7 @@
         "components": [
           {
             "id": "supermagnet",
-            "points": 90
+            "points": 150
           },
           {
             "id": "hardening_agent",
@@ -1240,7 +1240,7 @@
         "components": [
           {
             "id": "electromagnetic_coil",
-            "points": 110
+            "points": 160
           },
           {
             "id": "goethitelattice",
@@ -1259,7 +1259,7 @@
         "components": [
           {
             "id": "lens",
-            "points": 260
+            "points": 320
           },
           {
             "id": "reinforcedframe",
@@ -1281,15 +1281,15 @@
         "components": [
           {
             "id": "electromagnet",
-            "points": 350
+            "points": 500
           },
           {
             "id": "aerogel",
-            "points": 200
+            "points": 250
           },
           {
             "id": "uberoil",
-            "points": 300
+            "points": 150
           }
         ],
         "rewards": [
@@ -1331,7 +1331,7 @@
           },
           {
             "id": "ionthrusters",
-            "points": 600
+            "points": 450
           }
         ],
         "rewards": [

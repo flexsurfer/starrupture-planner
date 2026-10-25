@@ -917,5 +917,21 @@
   "Level {level} · Buildings above or below": "Level {level} · Buildings above or below",
   "Shared across {cores}": "Shared across {cores}",
   "{count} shared": "{count} shared",
-  "Shared resources": "Shared resources"
+  "Shared resources": "Shared resources",
+  "Compare level rewards and the supplies needed to unlock them.": "Compare level rewards and the supplies needed to unlock them.",
+  "View levels": "View levels",
+  "Hide levels": "Hide levels",
+  "{count} rewards": {
+    "one": "{count} reward",
+    "other": "{count} rewards"
+  },
+  "Level requirement": "Level requirement",
+  "Supply required": "Supply required",
+  "Items needed": "Items needed",
+  "{points} G per item": "{points} G per item",
+  "Each option below can complete this level on its own.": "Each option below can complete this level on its own.",
+  "No supply required": "No supply required",
+  "No rewards listed": "No rewards listed",
+  "Quantity unavailable": "Quantity unavailable",
+  "or": "or"
 }
