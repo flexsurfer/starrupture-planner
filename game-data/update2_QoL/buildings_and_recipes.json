@@ -558,7 +558,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "applicator_v2",
         "output": {
           "id": "applicator",
@@ -575,7 +575,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "calcite_sheets_v2",
         "output": {
           "id": "calcite_sheets",
@@ -588,7 +588,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "stabilizer_v2",
         "output": {
           "id": "stabilizer",
@@ -605,7 +605,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "titanium_beam_v2",
         "output": {
           "id": "titanium_beam",
@@ -618,7 +618,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "tube_v2",
         "output": {
           "id": "tube",
@@ -1421,7 +1421,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "chemicals_v2",
         "output": {
           "id": "chemicals",
@@ -1442,7 +1442,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "electronics_v2",
         "output": {
           "id": "electronics",
@@ -1463,7 +1463,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "glass_v2",
         "output": {
           "id": "glass",
@@ -1480,7 +1480,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "heat_sheet_v2",
         "output": {
           "id": "heat_sheet",
@@ -1501,7 +1501,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "inductor_v2",
         "output": {
           "id": "inductor",
@@ -1522,7 +1522,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "supermagnet_v2",
         "output": {
           "id": "supermagnet",
@@ -1543,7 +1543,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "synthetic_silicon_v2",
         "output": {
           "id": "synthetic_silicon",
@@ -1564,7 +1564,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "titanium_housing_v2",
         "output": {
           "id": "titanium_housing",
@@ -2806,7 +2806,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "epoxy_v2",
         "output": {
           "id": "epoxy",
@@ -2827,7 +2827,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "lens_v2",
         "output": {
           "id": "lens",
@@ -2848,7 +2848,7 @@
           }
         ]
       },
-	  {
+      {
         "id": "nanofiber_v2",
         "output": {
           "id": "nanofiber",
@@ -2905,7 +2905,7 @@
   },
   {
     "id": "combustionpowergenerator",
-    "name": "Chemical Generator",
+    "name": "Chemical generator",
     "type": "generator",
     "power": 8200,
     "heat": 400
