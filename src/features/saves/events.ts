@@ -4,12 +4,28 @@ import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { current } from '@ukladjs/core/vanilla';
 import { createSaveGameData } from './game-data';
+import { createDemoSnapshot } from './demo';
 import { coreKey } from './snapshot';
 import { createSaveImportState } from './state';
 import { createSaveWorkspace, getActiveSaveWorkspace, workspaceIds } from './workspace';
 import { validateSaveSnapshotCatalog, saveCollectionStorageBytes, MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, SaveWorkspaceLimitError } from './storage-schema';
 
 export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
+    registrar.regEvent(appIds.events.SAVES_OPEN_DEMO, ({ draftState }, name) => {
+        // The first-visit demo must never replace an imported factory or a pending import.
+        if (draftState.savesStorageError === 'load' || draftState.uiGameDataLoadPending
+            || !draftState.savesBuildingCatalog || draftState.savesImport.phase !== 'closed'
+            || Object.keys(draftState.savesWorkspaces).length > 0) return;
+        const data = createSaveGameData(draftState.buildingsList, draftState.itemsList, draftState.savesBuildingCatalog);
+        const workspace = createSaveWorkspace('demo-factory', name, createDemoSnapshot(draftState.appDataVersion, data));
+        workspace.isDemo = true;
+        draftState.savesWorkspaces[workspace.id] = workspace;
+        draftState.savesWorkspaceOrder = [workspace.id];
+        draftState.savesActiveWorkspaceId = workspace.id;
+        draftState.savesSelections[workspace.id] = { coreId: null };
+        draftState.savesSelectedView = 'map';
+        draftState.plannerComparisonCoreIds = [];
+    });
     registrar.regEvent(appIds.events.SAVES_IMPORT_OPEN, ({ draftState }, workspaceId) => {
         if (draftState.savesStorageError === 'load') return;
         if (!workspaceId) {
@@ -51,7 +67,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         let workspace;
         try {
             validateSaveSnapshotCatalog(snapshot, draftState.appDataVersion, createSaveGameData(draftState.buildingsList, draftState.itemsList, draftState.savesBuildingCatalog));
-            const name = previous?.name ?? (candidate.fileName!.replace(/\.sav$/i, '').trim().slice(0, 120) || 'Save');
+            const name = (previous?.isDemo ? undefined : previous?.name) ?? (candidate.fileName!.replace(/\.sav$/i, '').trim().slice(0, 120) || 'Save');
             workspace = createSaveWorkspace(workspaceId, name, snapshot);
         } catch (error) { candidate.error = error instanceof SaveWorkspaceLimitError ? 'save-storage-limit' : 'structure'; return; }
         if ((!previous && Object.keys(draftState.savesWorkspaces).length >= MAX_SAVE_WORKSPACES)
@@ -60,13 +76,13 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
             return;
         }
         const selectedId = draftState.savesSelections[workspaceId]?.coreId;
-        const selected = previous?.snapshot.cores.find(core => core.id === selectedId);
+        const selected = previous?.isDemo ? undefined : previous?.snapshot.cores.find(core => core.id === selectedId);
         const retainedSelection = selected && workspace.snapshot.cores.some(core => coreKey(core) === coreKey(selected)) ? selected.id : null;
         delete draftState.savesMapSelectedNodes[workspaceId];
         delete draftState.savesMapBuildingFilters[workspaceId];
         draftState.savesWorkspaces[workspaceId] = workspace;
-        if (!previous) {
-            draftState.savesWorkspaceOrder.push(workspaceId);
+        if (!previous) draftState.savesWorkspaceOrder.push(workspaceId);
+        if (!previous || previous.isDemo) {
             draftState.savesSelectedView = 'map';
             delete draftState.savesMapViewports[workspaceId];
         }

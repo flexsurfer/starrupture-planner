@@ -1,0 +1,1764 @@
+{
+  "schemaVersion": 1,
+  "gameData": {
+    "version": "update2_QoL",
+    "revision": "sha256:ee7935681cd376ade342c81046b2d802e1d98f8d61194da8122e2b3e524c73c9"
+  },
+  "savedAt": null,
+  "cores": [
+    {
+      "id": 803012,
+      "name": "Helium Outpost",
+      "powerNetworkId": 639,
+      "position": {
+        "x": -278100,
+        "y": -154900,
+        "z": 4230
+      },
+      "spawnTimeSeconds": 87025.546875,
+      "level": 0,
+      "bounds": {
+        "min": {
+          "x": -288100,
+          "y": -164900,
+          "z": -5770
+        },
+        "max": {
+          "x": -268100,
+          "y": -144900,
+          "z": 14230
+        }
+      },
+      "buildings": [
+        {
+          "id": 803084,
+          "name": null,
+          "powerNetworkId": 639,
+          "position": {
+            "x": -278300,
+            "y": -154000,
+            "z": 4230
+          },
+          "buildingTypeId": "habitat",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 900278,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -278730,
+            "y": -161020,
+            "z": 4020
+          },
+          "buildingTypeId": "helium_extractor",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "helium",
+            "nodePurity": "not-applicable"
+          }
+        },
+        {
+          "id": 900289,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -278400,
+            "y": -158789,
+            "z": 4016
+          },
+          "buildingTypeId": "helium_extractor",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "helium",
+            "nodePurity": "not-applicable"
+          }
+        },
+        {
+          "id": 900300,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -277825,
+            "y": -156820,
+            "z": 4017
+          },
+          "buildingTypeId": "helium_extractor",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "helium",
+            "nodePurity": "not-applicable"
+          }
+        }
+      ]
+    },
+    {
+      "id": 844256,
+      "name": "Wolfram Foundry",
+      "powerNetworkId": 370,
+      "position": {
+        "x": -299900,
+        "y": -178500,
+        "z": 3250
+      },
+      "spawnTimeSeconds": 88922.421875,
+      "level": 0,
+      "bounds": {
+        "min": {
+          "x": -309900,
+          "y": -188500,
+          "z": -6750
+        },
+        "max": {
+          "x": -289900,
+          "y": -168500,
+          "z": 13250
+        }
+      },
+      "buildings": [
+        {
+          "id": 417717,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -298900,
+            "y": -178200,
+            "z": 3040
+          },
+          "buildingTypeId": "habitat",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 417749,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -298900,
+            "y": -178200,
+            "z": 3460
+          },
+          "buildingTypeId": "habitat",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 417781,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -308468.0011004044,
+            "y": -178884.73555660894,
+            "z": 6902.197674014192
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_titanium",
+            "nodePurity": "normal"
+          }
+        },
+        {
+          "id": 417837,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -295600,
+            "y": -178200,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:0"
+          }
+        },
+        {
+          "id": 417847,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -295600,
+            "y": -177600,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:0"
+          }
+        },
+        {
+          "id": 417862,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -296500,
+            "y": -176700,
+            "z": 2760
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 417881,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -294502.18641695706,
+            "y": -173925.67842714014,
+            "z": 2679.3864506700884
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_wolfram",
+            "nodePurity": "normal"
+          }
+        },
+        {
+          "id": 418100,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -294207.2460224737,
+            "y": -171681.8213979015,
+            "z": 2755.094688601797
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_wolfram",
+            "nodePurity": "normal"
+          }
+        },
+        {
+          "id": 418212,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -292900,
+            "y": -172100,
+            "z": 2830
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 418445,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -292900,
+            "y": -172800,
+            "z": 2830
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:1"
+          }
+        },
+        {
+          "id": 418710,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -292900,
+            "y": -173400,
+            "z": 2830
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:1"
+          }
+        },
+        {
+          "id": 419178,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -295100,
+            "y": -177700,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 420376,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -294700,
+            "y": -177700,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 420421,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -294300,
+            "y": -177700,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 611473,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -297700,
+            "y": -178200,
+            "z": 3040
+          },
+          "buildingTypeId": "habitat",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 831652,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -298200,
+            "y": -176800,
+            "z": 3040
+          },
+          "buildingTypeId": "turret_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 833429,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -298800,
+            "y": -179600,
+            "z": 3040
+          },
+          "buildingTypeId": "turret_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 844841,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -309635.1303846835,
+            "y": -176915.54517825204,
+            "z": 7343.7231357577075
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_titanium",
+            "nodePurity": "pure"
+          }
+        },
+        {
+          "id": 852563,
+          "name": null,
+          "powerNetworkId": null,
+          "position": {
+            "x": -298510.9666343532,
+            "y": -170741.18897462497,
+            "z": 3219.599138247836
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_wolfram",
+            "nodePurity": "normal"
+          }
+        },
+        {
+          "id": 904133,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -292800,
+            "y": -171600,
+            "z": 2830
+          },
+          "buildingTypeId": "turret_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1181371,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -308600,
+            "y": -178200,
+            "z": 7030
+          },
+          "buildingTypeId": "turret_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1191146,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -290200,
+            "y": -175300,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:2"
+          }
+        },
+        {
+          "id": 1191164,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -290800,
+            "y": -175300,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:2"
+          }
+        },
+        {
+          "id": 1228097,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -292300,
+            "y": -173100,
+            "z": 2830
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1231509,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -292600,
+            "y": -174100,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:0"
+          }
+        },
+        {
+          "id": 1231560,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -292000,
+            "y": -174100,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:0"
+          }
+        },
+        {
+          "id": 1231622,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -291400,
+            "y": -174100,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:0"
+          }
+        },
+        {
+          "id": 1232895,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -291900,
+            "y": -174700,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1233092,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -291300,
+            "y": -174700,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1233279,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -292700,
+            "y": -174700,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1263925,
+          "name": null,
+          "powerNetworkId": 370,
+          "position": {
+            "x": -297300,
+            "y": -176500,
+            "z": 3040
+          },
+          "buildingTypeId": "craftertier2",
+          "configuration": {
+            "kind": "production",
+            "recipeId": null
+          }
+        }
+      ]
+    },
+    {
+      "id": 869888,
+      "name": "Titanium Works",
+      "powerNetworkId": 767,
+      "position": {
+        "x": -279700,
+        "y": -179700,
+        "z": 3810
+      },
+      "spawnTimeSeconds": 90342.476562,
+      "level": 0,
+      "bounds": {
+        "min": {
+          "x": -289700,
+          "y": -189700,
+          "z": -6190
+        },
+        "max": {
+          "x": -269700,
+          "y": -169700,
+          "z": 13810
+        }
+      },
+      "buildings": [
+        {
+          "id": 870818,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288900,
+            "y": -173500,
+            "z": 2760
+          },
+          "buildingTypeId": "package_receiver",
+          "configuration": {
+            "kind": "receiver"
+          }
+        },
+        {
+          "id": 870869,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288100,
+            "y": -173500,
+            "z": 2760
+          },
+          "buildingTypeId": "package_receiver",
+          "configuration": {
+            "kind": "receiver"
+          }
+        },
+        {
+          "id": 873476,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -287300,
+            "y": -173500,
+            "z": 2760
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 916536,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288100,
+            "y": -174100,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 916556,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288900,
+            "y": -174100,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 916599,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288100,
+            "y": -174500,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 916626,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288900,
+            "y": -174500,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 918196,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -276588.7214671131,
+            "y": -179459.05937137696,
+            "z": 4597.930232236309
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_titanium",
+            "nodePurity": "impure"
+          }
+        },
+        {
+          "id": 918346,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -272499.4815857788,
+            "y": -177163.9379758084,
+            "z": 5976.445741839469
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_titanium",
+            "nodePurity": "impure"
+          }
+        },
+        {
+          "id": 918432,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -277522.4167157294,
+            "y": -175218.3022735367,
+            "z": 4109.432555930897
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_titanium",
+            "nodePurity": "impure"
+          }
+        },
+        {
+          "id": 933727,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -280700,
+            "y": -176000,
+            "z": 2760
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:0"
+          }
+        },
+        {
+          "id": 933756,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -280700,
+            "y": -176600,
+            "z": 2760
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:0"
+          }
+        },
+        {
+          "id": 933787,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -280700,
+            "y": -177200,
+            "z": 2760
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:0"
+          }
+        },
+        {
+          "id": 936121,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -281800,
+            "y": -175200,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:2"
+          }
+        },
+        {
+          "id": 936181,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -281800,
+            "y": -175800,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:2"
+          }
+        },
+        {
+          "id": 936374,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -281800,
+            "y": -176400,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:2"
+          }
+        },
+        {
+          "id": 936546,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -281800,
+            "y": -174600,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:2"
+          }
+        },
+        {
+          "id": 938500,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -281800,
+            "y": -177000,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:6"
+          }
+        },
+        {
+          "id": 938538,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -281800,
+            "y": -177600,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:6"
+          }
+        },
+        {
+          "id": 941974,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -283000,
+            "y": -175200,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:9"
+          }
+        },
+        {
+          "id": 942009,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -283000,
+            "y": -176000,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:9"
+          }
+        },
+        {
+          "id": 942087,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -283000,
+            "y": -177600,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:9"
+          }
+        },
+        {
+          "id": 943114,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -283000,
+            "y": -176800,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:9"
+          }
+        },
+        {
+          "id": 947393,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -282900,
+            "y": -178900,
+            "z": 2760
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 958379,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -283500,
+            "y": -176900,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 958452,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -283500,
+            "y": -175300,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 962805,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -286600,
+            "y": -175300,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:7"
+          }
+        },
+        {
+          "id": 963040,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -286000,
+            "y": -175300,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:7"
+          }
+        },
+        {
+          "id": 963088,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -285400,
+            "y": -175300,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:7"
+          }
+        },
+        {
+          "id": 969800,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -284600,
+            "y": -176600,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:12"
+          }
+        },
+        {
+          "id": 969890,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -285600,
+            "y": -176600,
+            "z": 2760
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:12"
+          }
+        },
+        {
+          "id": 971395,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -286100,
+            "y": -175900,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 973559,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -285900,
+            "y": -177300,
+            "z": 2760
+          },
+          "buildingTypeId": "orbital_cargo_launcher",
+          "configuration": {
+            "kind": "launcher",
+            "itemId": "applicator"
+          }
+        },
+        {
+          "id": 973606,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -285500,
+            "y": -177300,
+            "z": 2760
+          },
+          "buildingTypeId": "orbital_cargo_launcher",
+          "configuration": {
+            "kind": "launcher",
+            "itemId": "applicator"
+          }
+        },
+        {
+          "id": 973631,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -284900,
+            "y": -177300,
+            "z": 2760
+          },
+          "buildingTypeId": "orbital_cargo_launcher",
+          "configuration": {
+            "kind": "launcher",
+            "itemId": "applicator"
+          }
+        },
+        {
+          "id": 973636,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -284500,
+            "y": -177300,
+            "z": 2760
+          },
+          "buildingTypeId": "orbital_cargo_launcher",
+          "configuration": {
+            "kind": "launcher",
+            "itemId": "applicator"
+          }
+        },
+        {
+          "id": 973673,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -283700,
+            "y": -178900,
+            "z": 2760
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 973870,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -282900,
+            "y": -179700,
+            "z": 2760
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 973926,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -283700,
+            "y": -179700,
+            "z": 2760
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1045930,
+          "name": null,
+          "powerNetworkId": 767,
+          "position": {
+            "x": -279700,
+            "y": -180500,
+            "z": 3810
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1046065,
+          "name": null,
+          "powerNetworkId": 767,
+          "position": {
+            "x": -279200,
+            "y": -179400,
+            "z": 3810
+          },
+          "buildingTypeId": "turret_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1047508,
+          "name": null,
+          "powerNetworkId": 767,
+          "position": {
+            "x": -275400,
+            "y": -179800,
+            "z": 4860
+          },
+          "buildingTypeId": "turret_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1195100,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -289200,
+            "y": -176500,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:7"
+          }
+        },
+        {
+          "id": 1195113,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288400,
+            "y": -176500,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:7"
+          }
+        },
+        {
+          "id": 1213137,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -289100,
+            "y": -177100,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1213188,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288300,
+            "y": -177100,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1236876,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -289400,
+            "y": -178100,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:9"
+          }
+        },
+        {
+          "id": 1236938,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288600,
+            "y": -178100,
+            "z": 2760
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:9"
+          }
+        },
+        {
+          "id": 1241902,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -289500,
+            "y": -178700,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 1241945,
+          "name": null,
+          "powerNetworkId": 772,
+          "position": {
+            "x": -288700,
+            "y": -178700,
+            "z": 2760
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        }
+      ]
+    },
+    {
+      "id": 891168,
+      "name": "Calcium Refinery",
+      "powerNetworkId": 616,
+      "position": {
+        "x": -281500,
+        "y": -125100,
+        "z": 3530
+      },
+      "spawnTimeSeconds": 91776.929688,
+      "level": 0,
+      "bounds": {
+        "min": {
+          "x": -291500,
+          "y": -135100,
+          "z": -6470
+        },
+        "max": {
+          "x": -271500,
+          "y": -115100,
+          "z": 13530
+        }
+      },
+      "buildings": [
+        {
+          "id": 797201,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -285111.1343857724,
+            "y": -127688.56307510719,
+            "z": 3869.8666720227584
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_calcium",
+            "nodePurity": "impure"
+          }
+        },
+        {
+          "id": 797223,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -282883.34103,
+            "y": -130129.24554999999,
+            "z": 3678.0746790000003
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_calcium",
+            "nodePurity": "impure"
+          }
+        },
+        {
+          "id": 797235,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -281433.3410296004,
+            "y": -131147.24555026385,
+            "z": 3792.0746792404934
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_calcium",
+            "nodePurity": "normal"
+          }
+        },
+        {
+          "id": 797290,
+          "name": null,
+          "powerNetworkId": null,
+          "position": {
+            "x": -275886.5440228186,
+            "y": -124147.71213623018,
+            "z": 3884.9656572039676
+          },
+          "buildingTypeId": "ore_excavator",
+          "configuration": {
+            "kind": "extractor",
+            "itemId": "ore_calcium",
+            "nodePurity": "impure"
+          }
+        },
+        {
+          "id": 881171,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -283500,
+            "y": -127400,
+            "z": 3530
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:2"
+          }
+        },
+        {
+          "id": 881229,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -283500,
+            "y": -128000,
+            "z": 3530
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:2"
+          }
+        },
+        {
+          "id": 881936,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -282600,
+            "y": -128400,
+            "z": 3530
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:4"
+          }
+        },
+        {
+          "id": 881963,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -282600,
+            "y": -127800,
+            "z": 3530
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:4"
+          }
+        },
+        {
+          "id": 882258,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -282600,
+            "y": -127200,
+            "z": 3530
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:4"
+          }
+        },
+        {
+          "id": 882315,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -282600,
+            "y": -126600,
+            "z": 3600
+          },
+          "buildingTypeId": "fabricator",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "fabricator:4"
+          }
+        },
+        {
+          "id": 884061,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -281700,
+            "y": -125900,
+            "z": 3530
+          },
+          "buildingTypeId": "package_dispatcher",
+          "configuration": {
+            "kind": "dispatcher",
+            "itemId": "calcite_sheets",
+            "receiverId": 870869
+          }
+        },
+        {
+          "id": 884871,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -281700,
+            "y": -126700,
+            "z": 3530
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 884898,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -281700,
+            "y": -127300,
+            "z": 3530
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 884927,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -281700,
+            "y": -127900,
+            "z": 3530
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 891254,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280500,
+            "y": -125200,
+            "z": 3530
+          },
+          "buildingTypeId": "habitat",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 891358,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280500,
+            "y": -124300,
+            "z": 3530
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 891448,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -281300,
+            "y": -124300,
+            "z": 3600
+          },
+          "buildingTypeId": "wind_turbine_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 893840,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280600,
+            "y": -129700,
+            "z": 3530
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:2"
+          }
+        },
+        {
+          "id": 893867,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280000,
+            "y": -129700,
+            "z": 3530
+          },
+          "buildingTypeId": "smelter",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "smelter:2"
+          }
+        },
+        {
+          "id": 894690,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280800,
+            "y": -128700,
+            "z": 3530
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:1"
+          }
+        },
+        {
+          "id": 894719,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280200,
+            "y": -128700,
+            "z": 3530
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:1"
+          }
+        },
+        {
+          "id": 894742,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -279400,
+            "y": -128700,
+            "z": 3530
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:1"
+          }
+        },
+        {
+          "id": 894790,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -278800,
+            "y": -128700,
+            "z": 3530
+          },
+          "buildingTypeId": "furnace",
+          "configuration": {
+            "kind": "production",
+            "recipeId": "furnace:1"
+          }
+        },
+        {
+          "id": 895417,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280700,
+            "y": -128100,
+            "z": 3530
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 895439,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280100,
+            "y": -128100,
+            "z": 3530
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 895456,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -279300,
+            "y": -128100,
+            "z": 3530
+          },
+          "buildingTypeId": "storage_depot_v1",
+          "configuration": {
+            "kind": "other"
+          }
+        },
+        {
+          "id": 895568,
+          "name": null,
+          "powerNetworkId": 616,
+          "position": {
+            "x": -280700,
+            "y": -127300,
+            "z": 3530
+          },
+          "buildingTypeId": "package_dispatcher",
+          "configuration": {
+            "kind": "dispatcher",
+            "itemId": "powder_calcium",
+            "receiverId": 870818
+          }
+        }
+      ]
+    }
+  ]
+}

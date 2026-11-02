@@ -102,6 +102,19 @@ it('persists map preferences but resets selected nodes and the camera for a new 
     expect(restored.harness.getState().savesMapViewports).toEqual({});
 });
 
+it('keeps sample data labeled as a demo after reloading the browser', async () => {
+    const storage = memoryStorageAdapter();
+    const app = await setup(storage);
+    await app.dispatch([appIds.events.SAVES_OPEN_DEMO, 'Demo factory']);
+    const demo = app.view.value('active');
+    expect(demo?.isDemo).toBe(true);
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const restored = await setup(storage);
+    expect(restored.view.value('active')).toEqual(demo);
+    expect(restored.view.value('persistence')).toBeNull();
+});
+
 it('persists independent planner allocations while comparison selection stays in the runtime', async () => {
     const storage = memoryStorageAdapter();
     const app = await setup(storage);

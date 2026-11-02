@@ -933,5 +933,14 @@
   "No supply required": "No supply required",
   "No rewards listed": "No rewards listed",
   "Quantity unavailable": "Quantity unavailable",
-  "or": "or"
+  "or": "or",
+  "Interactive Map": "Interactive Map",
+  "StarRupture Interactive Map": "StarRupture Interactive Map",
+  "Explore your own factory on an interactive StarRupture map. Import a save to find buildings, follow cargo connections, and inspect power networks and Core heat.": "Explore your own factory on an interactive StarRupture map. Import a save to find buildings, follow cargo connections, and inspect power networks and Core heat.",
+  "Map settings include cargo links, Core bounds and resource icons on buildings. Toggle Power networks to see connected buildings.": "Map settings include cargo links, Core bounds and resource icons on buildings. Toggle Power networks to see connected buildings.",
+  "Try a demo factory": "Try a demo factory",
+  "Demo factory": "Demo factory",
+  "Sample data. Import your save to explore your own factory.": "Sample data. Import your save to explore your own factory.",
+  "Import your save": "Import your save",
+  "Spoiler-free: a map of your factories from your save, not the game world. No hidden locations or points of interest are revealed.": "Spoiler-free: a map of your factories from your save, not the game world. No hidden locations or points of interest are revealed."
 }

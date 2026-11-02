@@ -5,7 +5,7 @@
    <img src="./assets/logo_black_bg.webp" width="100" />
 
 
-**Free StarRupture Tools, Production Calculator & Base Planner**
+**Free StarRupture Tools, Production Calculator & Factory Map**
 
 *Plan, optimize, and have fun with perfect resource management!* 🌌
 
@@ -22,7 +22,7 @@
 
 ## ✨ What is Rupture Planner?
 
-Rupture Planner is a **free, open-source collection of StarRupture tools**, including a **production calculator and base planner** for StarRupture (Star Rupture). Calculate resources, buildings and power, browse crafting recipes and corporation unlocks, and organize base logistics. Whether you're a casual builder or a min-maxing efficiency expert, this tool helps you:
+Rupture Planner is a **free, open-source collection of StarRupture tools**. Use **Planner** to calculate resources, buildings and power for your next build. Open **Factory Map** to explore the buildings and cargo connections in a saved factory. The reference catalogs cover items, crafting recipes and corporation unlocks.
 
 - 🏭 **Visualize complex production chains** with interactive flow diagrams
 - 📊 **Calculate exact building requirements** for any production target
@@ -99,7 +99,7 @@ npm install
 npm start
 ```
 
-Open `http://localhost:5173`; it opens the production planner directly. The local tool includes all five sections and the language selector in Global settings. 
+Open `http://localhost:5173` to start in **Planner**. To explore the map, open the **Factory Map** tab with **Update 2 QoL** selected. In an empty workspace, choose **Try a demo factory** to explore four curated Cores or **Choose save file** to import your own `.sav`. The language selector is in **Global settings**.
 
 Use `npm run dev` for development without opening the browser automatically. `npm start` and `START.bat` use the same fixed local address so browser-saved plans remain available between launches.
 

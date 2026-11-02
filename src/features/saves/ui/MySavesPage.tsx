@@ -55,13 +55,14 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
                         document.getElementById(`save-view-${next}`)?.focus();
                     }}>{t(label)}</button>)}
             </div>
-            <p className="order-last w-full px-2 pb-1 text-xs text-base-content/50 sm:order-none sm:ml-auto sm:w-auto sm:p-0">{t('Last updated: {date}', { date: updated })}</p>
+            <p className="order-last w-full px-2 pb-1 text-xs text-base-content/50 sm:order-none sm:ml-auto sm:w-auto sm:p-0">{workspace.isDemo ? t('Demo factory') : t('Last updated: {date}', { date: updated })}</p>
             <div className="ml-auto flex shrink-0 items-center gap-1 sm:ml-0">
                 <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7" disabled={disabled}
-                    onClick={() => runtime.dispatch([appIds.events.SAVES_IMPORT_OPEN, workspace.id])}>{t('Update')}</button>
+                    onClick={() => runtime.dispatch([appIds.events.SAVES_IMPORT_OPEN, workspace.id])}>{t(workspace.isDemo ? 'Import your save' : 'Update')}</button>
                 <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7 text-error" disabled={disabled} onClick={remove}>{t('Remove')}</button>
             </div>
         </div>
+        {workspace.isDemo && <p className="shrink-0 bg-primary/5 px-4 py-2 text-xs text-base-content/75">{t('Sample data. Import your save to explore your own factory.')}</p>}
         <div id={`save-panel-${view}`} role="tabpanel" aria-labelledby={`save-view-${view}`}
             className={view === 'map' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'min-h-0 flex-1 overflow-auto p-3 sm:p-4'}>
             {view === 'map' ? <SaveMap workspace={workspace} initialCoreId={mapSelections[workspace.id] ?? null} onOpenCore={openCore} />
@@ -81,6 +82,8 @@ export function MySavesPage() {
     const runtime = useRuntime();
     const workspace = useSubscription([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE]);
     const storageError = useSubscription([appIds.subscriptions.SAVES_STORAGE_ERROR]);
+    const catalog = useSubscription([appIds.subscriptions.SAVES_BUILDING_CATALOG]);
+    const loading = useSubscription([appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]);
     const disabled = storageError === 'load';
     useEffect(() => () => { runtime.dispatch([appIds.events.SAVES_IMPORT_CLOSE]); }, [runtime]);
     return <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-base-100">
@@ -92,14 +95,20 @@ export function MySavesPage() {
         {workspace ? <SaveOverview key={workspace.id} workspace={workspace} disabled={disabled} /> :
             <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4 sm:p-8">
                 <section className="my-auto w-full max-w-xl">
-                    <h1 className="text-center text-xl font-semibold">{t('Import your first save')}</h1>
-                    <p className="mb-5 mt-2 text-center text-sm text-base-content/60">{t('Explore your factory on an interactive StarRupture map. Import a save to find buildings, trace cargo connections, and inspect power networks and Core heat.')}</p>
+                    <h1 className="text-center text-xl font-semibold">{t('StarRupture Interactive Map')}</h1>
+                    <p className="mb-4 mt-2 text-center text-sm leading-relaxed text-base-content/75">{t('Explore your own factory on an interactive StarRupture map. Import a save to find buildings, follow cargo connections, and inspect power networks and Core heat.')}</p>
+                    <p className="mb-4 text-center text-sm leading-relaxed text-base-content/75">{t('Spoiler-free: a map of your factories from your save, not the game world. No hidden locations or points of interest are revealed.')}</p>
+                    <div className="mb-5 text-center">
+                        <button type="button" className="btn btn-outline btn-sm" disabled={disabled || loading || !catalog}
+                            onClick={() => runtime.dispatch([appIds.events.SAVES_OPEN_DEMO, t('Demo factory')])}>{t('Try a demo factory')}</button>
+                    </div>
                     <SaveImportCompatibility />
                     <SaveFileDropZone disabled={disabled} onFile={file => {
                         runtime.dispatch([appIds.events.SAVES_IMPORT_OPEN, crypto.randomUUID()]);
                         runtime.dispatch([appIds.events.SAVES_IMPORT_READ, file]);
                     }} />
                     <SaveFileLocation />
+                    <p className="mt-4 text-sm leading-relaxed text-base-content/70">{t('Map settings include cargo links, Core bounds and resource icons on buildings. Toggle Power networks to see connected buildings.')}</p>
                 </section>
             </div>}
         <SaveImportDialog />

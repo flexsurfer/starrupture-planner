@@ -63,7 +63,7 @@ it('opens tools directly and preserves URL, runtime and language across navigati
     fireEvent.click(screen.getAllByRole('link', { name: 'Factory Map' })[0]);
     await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.UI_ACTIVE_TAB])).toBe('mysaves'));
     expect(window.location.pathname).toBe('/map/');
-    expect(await screen.findByRole('heading', { name: 'Import your first save' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'StarRupture Interactive Map' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Choose save file' })).toBeEnabled();
 
     fireEvent.click(screen.getAllByRole('link', { name: 'My Bases' })[0]);

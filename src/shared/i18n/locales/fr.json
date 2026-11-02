@@ -933,5 +933,14 @@
   "No supply required": "Aucune livraison requise",
   "No rewards listed": "Aucune récompense indiquée",
   "Quantity unavailable": "Quantité indisponible",
-  "or": "ou"
+  "or": "ou",
+  "Interactive Map": "Carte interactive",
+  "StarRupture Interactive Map": "Carte interactive StarRupture",
+  "Explore your own factory on an interactive StarRupture map. Import a save to find buildings, follow cargo connections, and inspect power networks and Core heat.": "Explorez votre propre usine sur une carte interactive StarRupture. Importez une sauvegarde pour trouver des bâtiments, suivre les liaisons de fret et examiner les réseaux électriques et la chaleur des Core.",
+  "Map settings include cargo links, Core bounds and resource icons on buildings. Toggle Power networks to see connected buildings.": "Les paramètres de la carte incluent les liaisons de fret, les limites des Core et les icônes de ressources sur les bâtiments. Activez les réseaux électriques pour voir les bâtiments connectés.",
+  "Try a demo factory": "Essayer une usine de démonstration",
+  "Demo factory": "Usine de démonstration",
+  "Sample data. Import your save to explore your own factory.": "Données de démonstration. Importez votre sauvegarde pour explorer votre propre usine.",
+  "Import your save": "Importer votre sauvegarde",
+  "Spoiler-free: a map of your factories from your save, not the game world. No hidden locations or points of interest are revealed.": "Sans spoilers : une carte de vos usines issue de votre sauvegarde, et non du monde du jeu. Aucun lieu caché ni point d’intérêt n’est révélé."
 }

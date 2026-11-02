@@ -99,7 +99,7 @@ export function SaveImportDialog() {
     return <dialog ref={dialog} className="modal" aria-labelledby={`${id}-title`} onCancel={event => { event.preventDefault(); close(); }}
         onClick={event => { if (event.target === event.currentTarget) close(); }}>
         <div className="modal-box max-w-xl p-0">
-            <header className="border-b border-base-300 px-5 py-4"><h2 id={`${id}-title`} className="text-xl font-semibold">{t(existing ? 'Update save' : 'Import save')}</h2></header>
+            <header className="border-b border-base-300 px-5 py-4"><h2 id={`${id}-title`} className="text-xl font-semibold">{t(existing && !existing.isDemo ? 'Update save' : 'Import save')}</h2></header>
             <div className="p-5 sm:p-6">
                 <SaveImportCompatibility />
                 <p className="mb-4 text-sm text-base-content/60">{t('The save is decoded locally in your browser. Limits: {fileLimit} MiB per file and {decodedLimit} MiB after unpacking.', importLimits)}</p>

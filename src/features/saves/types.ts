@@ -27,6 +27,8 @@ export interface SaveWorkspace {
     schemaVersion: 1;
     id: string;
     name: string;
+    /** Marks the bundled demo until a successful save import replaces it. */
+    isDemo?: true;
     snapshot: SaveSnapshot;
 }
 

@@ -37,6 +37,45 @@ function setup(decodeSaveFile?: SaveImportDecoder) {
 const pendingFile = () => ({ name: 'sample.sav', size: 20, arrayBuffer: () => new Promise<ArrayBuffer>(() => {}) });
 const unrelatedState = (state: ReturnType<ReturnType<typeof setup>['harness']['getState']>) => ({ ...state, savesImport: undefined, savesWorkspaces: undefined, savesWorkspaceOrder: undefined, savesActiveWorkspaceId: undefined, savesSelections: undefined });
 
+it('opens the four curated demo Cores with their cargo, production, heat and power without changing plans', () => {
+    const { harness } = setup();
+    const initial = harness.getState();
+    harness.dispatchSync([appIds.events.SAVES_OPEN_DEMO, 'Demo factory']);
+    const workspace = harness.getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])!;
+    expect(workspace).toMatchObject({ name: 'Demo factory', isDemo: true });
+    expect(workspace.snapshot.cores.map(core => ({ id: core.id, name: core.name, buildings: core.buildings.length }))).toEqual([
+        { id: 803012, name: 'Helium Outpost', buildings: 4 },
+        { id: 844256, name: 'Wolfram Foundry', buildings: 31 },
+        { id: 869888, name: 'Titanium Works', buildings: 50 },
+        { id: 891168, name: 'Calcium Refinery', buildings: 27 },
+    ]);
+    const map = harness.getSubscriptionValue([appIds.subscriptions.SAVES_MAP, workspace.id])!;
+    expect(map.entities).toHaveLength(116);
+    expect(map.links).toEqual([
+        { source: 884061, target: 870869, item: { id: 'calcite_sheets', name: 'Calcite Sheets' } },
+        { source: 895568, target: 870818, item: { id: 'powder_calcium', name: 'Calcium Powder' } },
+    ]);
+    expect(map.coreLinks).toHaveLength(1);
+    const overview = harness.getSubscriptionValue([appIds.subscriptions.SAVES_OVERVIEW, workspace.id])!;
+    expect(overview.powerNetworks).toHaveLength(5);
+    expect(overview.cores.every(core => core.heat !== null && core.heat > 0 && core.heatCapacity !== null)).toBe(true);
+    expect(overview.buildingDetails.some(building => building.instance.configuration.kind === 'production')).toBe(true);
+    expect(unrelatedState(harness.getState())).toEqual(unrelatedState(initial));
+    harness.dispatchSync([appIds.events.SAVES_OPEN_DEMO, 'Another demo']);
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])).toEqual(workspace);
+});
+
+it.each(['storage', 'loading', 'catalog', 'import'] as const)('does not open a demo while %s is unavailable or busy', condition => {
+    const { harness } = setup();
+    if (condition === 'storage') harness.dispatchSync([appIds.events.SAVES_STORAGE_FAILED, 'load']);
+    if (condition === 'loading') harness.restoreState({ ...harness.getState(), uiGameDataLoadPending: true });
+    if (condition === 'catalog') harness.restoreState({ ...harness.getState(), savesBuildingCatalog: null });
+    if (condition === 'import') harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
+    const before = harness.getState();
+    harness.dispatchSync([appIds.events.SAVES_OPEN_DEMO, 'Demo factory']);
+    expect(harness.getState()).toEqual(before);
+});
+
 it('reads compressed bytes with the selected state catalog and automatically opens independent Saves data', async () => {
     const { harness } = setup();
     const initial = harness.getState();

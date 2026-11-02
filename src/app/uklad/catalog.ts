@@ -69,6 +69,7 @@ export const appIds = {
         PLANNER_CLEAR_BUILDING_COMPARISON: 'planner/clear-building-comparison',
 
         SAVES_STORAGE_FAILED: 'saves/storage-failed',
+        SAVES_OPEN_DEMO: 'saves/open-demo',
         SAVES_IMPORT_OPEN: 'saves/import-open',
         SAVES_IMPORT_CLOSE: 'saves/import-close',
         SAVES_IMPORT_READ: 'saves/import-read',

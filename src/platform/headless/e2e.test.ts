@@ -203,6 +203,15 @@ describe('headless application E2E', () => {
         await dispatch(scenario, [appIds.events.BASES_CREATE_BASE, 'Keep manual work']);
         await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'keep', 'Keep planner work', 'single']);
         const unrelated = { bases: saves.value('bases'), planner: saves.value('planner') };
+        await dispatch(scenario, [appIds.events.SAVES_OPEN_DEMO, 'Demo factory']);
+        expect(saves.value('active')).toMatchObject({ name: 'Demo factory', isDemo: true });
+        const demoId = saves.value('active')!.id;
+        const demoMap = mountView(scenario, 'Demo map', { map: [appIds.subscriptions.SAVES_MAP, demoId] } as const);
+        expect(demoMap.value('map')?.coreLinks).toHaveLength(1);
+        expect({ bases: saves.value('bases'), planner: saves.value('planner') }).toEqual(unrelated);
+        demoMap.unmount();
+        await dispatch(scenario, [appIds.events.SAVES_REMOVE_WORKSPACE, demoId]);
+        expect(saves.value('active')).toBeNull();
         const importCandidate = async (id: string) => {
             await dispatch(scenario, [appIds.events.SAVES_IMPORT_OPEN, id]);
             await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, { name: 'sample.sav', size: 10, arrayBuffer: async () => new ArrayBuffer(10) }]);

@@ -178,6 +178,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PLANNER_CLEAR_BUILDING_COMPARISON]: [];
 
         [appIds.events.SAVES_STORAGE_FAILED]: [error: Exclude<SaveStorageError, null>];
+        [appIds.events.SAVES_OPEN_DEMO]: [name: string];
         [appIds.events.SAVES_IMPORT_OPEN]: [workspaceId?: string];
         [appIds.events.SAVES_IMPORT_CLOSE]: [];
         [appIds.events.SAVES_IMPORT_READ]: [file: SaveFileSource];

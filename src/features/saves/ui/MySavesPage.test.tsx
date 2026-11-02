@@ -59,9 +59,36 @@ function saveFile(name = 'world') {
     return file;
 }
 
+it('lets a first visitor explore the demo and replace it with their own save', async () => {
+    const { runtime } = await setup();
+    const harness = createUkladTestHarness(runtime);
+    expect(screen.getByRole('heading', { level: 1, name: 'StarRupture Interactive Map' })).toBeVisible();
+    await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Try a demo factory' })); });
+    expect(screen.getByRole('tab', { name: 'Map' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Sample data. Import your save to explore your own factory.')).toBeVisible();
+    const demo = harness.getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])!;
+    expect(demo.isDemo).toBe(true);
+    await interact(() => {
+        runtime.dispatch([appIds.events.SAVES_SET_MAP_VIEWPORT, demo.id, 100, 100, 1]);
+        runtime.dispatch([appIds.events.SAVES_SELECT_MAP_NODE, demo.id, 870818]);
+        fireEvent.click(screen.getByRole('button', { name: 'Import your save' }));
+    });
+    expect(screen.getByRole('dialog', { name: 'Import save' })).toBeVisible();
+    await importSave('My factory');
+    const workspace = harness.getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])!;
+    expect(workspace.name).toBe('My factory');
+    expect(workspace.isDemo).toBeUndefined();
+    expect(harness.getState().savesMapViewports[workspace.id]).toBeUndefined();
+    expect(harness.getState().savesMapSelectedNodes[workspace.id]).toBeUndefined();
+    expect(screen.queryByText('Sample data. Import your save to explore your own factory.')).toBeNull();
+    expect(screen.queryByRole('heading', { level: 1, name: 'StarRupture Interactive Map' })).toBeNull();
+    await interact(() => { runtime.dispatch([appIds.events.SAVES_OPEN_DEMO, 'Demo factory']); });
+    expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])).toEqual(workspace);
+});
+
 it('opens the map after importing and removes the save only after confirmation', async () => {
     const { runtime } = await setup();
-    expect(screen.getByRole('heading', { name: 'Import your first save' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'StarRupture Interactive Map' })).toBeVisible();
     expect(screen.getByText('Experimental functionality')).toBeVisible();
     expect(screen.getByText(/Only tested with Update 2 QoL game data and .sav files from StarRupture 0.3.5/)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Import save' })).toBeNull();
@@ -83,8 +110,8 @@ it('opens the map after importing and removes the save only after confirmation',
     expect(screen.getByRole('button', { name: 'Update' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
     fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Remove save' }));
-    expect(await screen.findByRole('heading', { name: 'Import your first save' })).toBeVisible();
-    expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_TABS])).toEqual([]);
+    expect(await screen.findByRole('heading', { name: 'StarRupture Interactive Map' })).toBeVisible();
+    await waitFor(() => expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_TABS])).toEqual([]));
     await importSave('Another world');
     expect(screen.getByRole('tab', { name: 'Map' })).toHaveAttribute('aria-selected', 'true');
     expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])?.name).toBe('Another world');

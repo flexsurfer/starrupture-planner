@@ -100,6 +100,9 @@ export function assertSaveStorageLimits(workspaces: Record<string, SaveWorkspace
 }
 export function normalizeSaveWorkspace(value: unknown): SaveWorkspace {
     const workspace = workspaceParser(value);
+    const isDemo = (value as { isDemo?: unknown }).isDemo;
+    if (isDemo !== undefined && isDemo !== true) invalid();
+    if (isDemo) workspace.isDemo = true;
     if (localStorageBytes(workspace) > MAX_WORKSPACE_BYTES) throw new SaveWorkspaceLimitError();
     return workspace;
 }
