@@ -210,6 +210,13 @@ describe('headless application E2E', () => {
         expect(demoMap.value('map')?.coreLinks).toHaveLength(1);
         expect({ bases: saves.value('bases'), planner: saves.value('planner') }).toEqual(unrelated);
         demoMap.unmount();
+        await dispatch(scenario, [appIds.events.SAVES_SELECT_VIEW, 'storage']);
+        const demoStorage = mountView(scenario, 'Demo storage', { groups: [appIds.subscriptions.SAVES_STORAGE_GROUPS, demoId] } as const);
+        expect(saves.value('selectedView')).toBe('storage');
+        expect(demoStorage.value('groups')?.map(group => [group.cores[0].name, group.total])).toEqual([
+            ['Wolfram Foundry', 13600], ['Titanium Works', 4400], ['Calcium Refinery', 2400],
+        ]);
+        demoStorage.unmount();
         await dispatch(scenario, [appIds.events.SAVES_REMOVE_WORKSPACE, demoId]);
         expect(saves.value('active')).toBeNull();
         const importCandidate = async (id: string) => {
@@ -420,7 +427,7 @@ describe('headless application E2E', () => {
         view.unmount();
     });
 
-    it('reads and cancels an independent Saves candidate without changing manually tracked work', async () => {
+    it('finishes a retried save import without changing manually tracked work', async () => {
         // Hold IO at the boundary so the scenario controls each completion event.
         const scenario = createScenario({ effects: { decodeSaveFile: () => new Promise(() => {}) } });
         await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
@@ -446,10 +453,14 @@ describe('headless application E2E', () => {
         expect(view.value('review')).toMatchObject({ phase: 'select', error: 'compression' });
         await dispatch(scenario, [appIds.events.SAVES_IMPORT_READ, file]);
         const requestId = view.value('review').requestId;
+        const report = analyzeSave(transportFixture(), extractionContext);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, first, report]);
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_FAILED, first, 'read']);
         await dispatch(scenario, [appIds.events.SAVES_IMPORT_CLOSE]);
-        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, requestId, analyzeSave(transportFixture(), extractionContext)]);
+        expect(view.value('review')).toMatchObject({ phase: 'reading', requestId });
+        await dispatch(scenario, [appIds.events.SAVES_IMPORT_READY, requestId, report]);
         expect(view.value('review').phase).toBe('closed');
-        expect(view.value('active')).toBeNull();
+        expect(view.value('active')?.name).toBe('sample');
         expect({ bases: view.value('bases'), plans: view.value('plans'), grids: view.value('grids') }).toEqual(before);
         view.unmount();
     });

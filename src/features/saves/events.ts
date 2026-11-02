@@ -6,6 +6,7 @@ import { current } from '@ukladjs/core/vanilla';
 import { createSaveGameData } from './game-data';
 import { createDemoSnapshot } from './demo';
 import { coreKey } from './snapshot';
+import { saveViews } from './types';
 import { createSaveImportState } from './state';
 import { createSaveWorkspace, getActiveSaveWorkspace, workspaceIds } from './workspace';
 import { validateSaveSnapshotCatalog, saveCollectionStorageBytes, MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, SaveWorkspaceLimitError } from './storage-schema';
@@ -27,7 +28,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         draftState.plannerComparisonCoreIds = [];
     });
     registrar.regEvent(appIds.events.SAVES_IMPORT_OPEN, ({ draftState }, workspaceId) => {
-        if (draftState.savesStorageError === 'load') return;
+        if (draftState.savesStorageError === 'load' || draftState.savesImport.phase === 'reading') return;
         if (!workspaceId) {
             let index = draftState.savesImport.requestId + 1;
             do { workspaceId = `save-${index++}`; } while (Object.hasOwn(draftState.savesWorkspaces, workspaceId));
@@ -37,12 +38,12 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         return [[appIds.effects.savesCancelImport]];
     });
     registrar.regEvent(appIds.events.SAVES_IMPORT_CLOSE, ({ draftState }) => {
-        if (draftState.savesImport.phase === 'closed') return;
+        if (draftState.savesImport.phase !== 'select') return;
         draftState.savesImport = createSaveImportState(draftState.savesImport.requestId + 1);
         return [[appIds.effects.savesCancelImport]];
     });
     registrar.regEvent(appIds.events.SAVES_IMPORT_READ, ({ draftState }, file) => {
-        if (draftState.savesStorageError === 'load' || draftState.savesImport.phase === 'closed') return;
+        if (draftState.savesStorageError === 'load' || draftState.savesImport.phase !== 'select') return;
         if (draftState.uiGameDataLoadPending) return;
         if (!draftState.savesBuildingCatalog) { draftState.savesImport.error = 'mapping-version'; return; }
         const requestId = draftState.savesImport.requestId + 1;
@@ -168,7 +169,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         }
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_VIEW, ({ draftState }, view) => {
-        if (view === 'map' || view === 'overview' || view === 'power-networks') draftState.savesSelectedView = view;
+        if (saveViews.includes(view)) draftState.savesSelectedView = view;
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_CORE, ({ draftState }, id, coreId) => {
         const workspace = draftState.savesWorkspaces[id];

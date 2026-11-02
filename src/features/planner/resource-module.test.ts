@@ -24,7 +24,7 @@ const data: AppVersionedGameData = {
         { id: 'receiver', name: 'Receiver' }, { id: 'dispatcher', name: 'Dispatcher' },
     ],
     saveBuildingCatalog: { revision, kinds: { drill: 'extractor', factory: 'production', receiver: 'receiver', dispatcher: 'dispatcher' },
-        extractionRates: { 'drill:ore:normal': 60, 'drill:ore:pure': 120 } },
+        extractionRates: { 'drill:ore:normal': 60, 'drill:ore:pure': 120 }, stackSizes: {} },
 };
 function snapshot(): SaveSnapshot {
     const entity = { name: null, powerNetworkId: null, position: { x: 0, y: 0, z: 0 } };

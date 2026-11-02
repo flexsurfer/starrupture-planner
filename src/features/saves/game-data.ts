@@ -7,6 +7,7 @@ export interface SaveBuildingCatalog {
     revision: string;
     kinds: Record<string, SaveBuildingConfiguration['kind']>;
     extractionRates: Record<string, number | null>;
+    stackSizes: Record<string, number>;
 }
 
 export function createSaveBuildingCatalog(mappings: SaveMappings, buildings: Building[]): SaveBuildingCatalog {
@@ -15,13 +16,14 @@ export function createSaveBuildingCatalog(mappings: SaveMappings, buildings: Bui
     const extractionRates: SaveBuildingCatalog['extractionRates'] = {};
     for (const mapping of mappings.buildings.values()) {
         if (mapping.role === 'core') continue;
-        kinds[mapping.id] = mapping.extractor ? 'extractor' : mapping.role
-            ?? (byId.get(mapping.id)?.recipes?.length ? 'production' : 'other');
+        const building = byId.get(mapping.id);
+        const catalogKind = building?.type === 'storage' ? 'storage' : building?.recipes?.length ? 'production' : 'other';
+        kinds[mapping.id] = mapping.extractor ? 'extractor' : mapping.role ?? catalogKind;
         for (const recipe of mapping.extractor?.recipes.values() ?? []) {
             extractionRates[`${mapping.id}:${recipe.itemId}:${recipe.purity}`] = recipe.ratePerMinute;
         }
     }
-    return { revision: mappings.mappingRevision, kinds, extractionRates };
+    return { revision: mappings.mappingRevision, kinds, extractionRates, stackSizes: Object.fromEntries(mappings.stackSizes) };
 }
 
 /** Pure indexes over the selected catalogs; the runtime subscription owns their lifetime. */

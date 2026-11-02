@@ -87,7 +87,10 @@ export function SaveImportDialog() {
     const dialog = useRef<HTMLDialogElement>(null);
     const id = useId();
     const open = candidate.phase !== 'closed';
-    const close = () => runtime.dispatch([appIds.events.SAVES_IMPORT_CLOSE]);
+    const reading = candidate.phase === 'reading';
+    const close = () => {
+        if (!reading) runtime.dispatch([appIds.events.SAVES_IMPORT_CLOSE]);
+    };
     useEffect(() => {
         if (!open) return;
         const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -95,20 +98,32 @@ export function SaveImportDialog() {
         element?.showModal();
         return () => { element?.close(); if (previous?.isConnected) previous.focus(); };
     }, [open]);
+    useEffect(() => {
+        if (!reading || 'closedBy' in HTMLDialogElement.prototype) return;
+        // Without native closedby support, catch Escape even if disabling the file picker dropped focus.
+        const blockEscape = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            event.preventDefault();
+            event.stopPropagation();
+        };
+        document.addEventListener('keydown', blockEscape, true);
+        return () => document.removeEventListener('keydown', blockEscape, true);
+    }, [reading]);
     if (!open) return null;
-    return <dialog ref={dialog} className="modal" aria-labelledby={`${id}-title`} onCancel={event => { event.preventDefault(); close(); }}
+    return <dialog ref={dialog} className="modal" aria-labelledby={`${id}-title`} closedby={reading ? 'none' : 'closerequest'}
+        onCancel={event => { event.preventDefault(); close(); }}
         onClick={event => { if (event.target === event.currentTarget) close(); }}>
         <div className="modal-box max-w-xl p-0">
             <header className="border-b border-base-300 px-5 py-4"><h2 id={`${id}-title`} className="text-xl font-semibold">{t(existing && !existing.isDemo ? 'Update save' : 'Import save')}</h2></header>
             <div className="p-5 sm:p-6">
                 <SaveImportCompatibility />
                 <p className="mb-4 text-sm text-base-content/60">{t('The save is decoded locally in your browser. Limits: {fileLimit} MiB per file and {decodedLimit} MiB after unpacking.', importLimits)}</p>
-                <SaveFileDropZone busy={candidate.phase === 'reading'} fileName={candidate.fileName}
+                <SaveFileDropZone busy={reading} fileName={candidate.fileName}
                     onFile={file => runtime.dispatch([appIds.events.SAVES_IMPORT_READ, file])} />
                 <SaveFileLocation />
                 {candidate.error && <p role="alert" className="mt-4 text-sm text-error">{t(errors[candidate.error], importLimits)}</p>}
             </div>
-            <footer className="flex justify-end border-t border-base-300 px-5 py-3"><button type="button" className="btn btn-ghost btn-sm" onClick={close}>{t('Cancel import')}</button></footer>
+            <footer className="flex justify-end border-t border-base-300 px-5 py-3"><button type="button" className="btn btn-ghost btn-sm" disabled={reading} onClick={close}>{t('Cancel import')}</button></footer>
         </div>
     </dialog>;
 }

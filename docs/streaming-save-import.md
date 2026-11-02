@@ -23,7 +23,9 @@ source records never enter Uklad state or persistence.
 
 - Compressed file: 64 MiB.
 - Declared and actual unpacked bytes: 512 MiB.
-- Web import timeout: 120 seconds, with immediate worker termination on cancel.
+- Web import timeout: 120 seconds. While a save is being read, the import
+  dialog cannot be dismissed. Removing the target workspace, switching the
+  game data, or disposing the runtime still terminates the worker.
 - Source objects: up to 1,000,000 keys, subject to the key-character budget below.
   The 100,000-record limit per retained collection applies after unused world
   entities are discarded, so those entities do not count against analyzer inputs.

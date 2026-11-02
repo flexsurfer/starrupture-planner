@@ -87,6 +87,15 @@ const mappingFiles: Record<string, unknown> = { 'save_buildings_mappings.json': 
     'save_items_mappings.json': itemMappings, 'save_recipes_mappings.json': recipeMappings,
     'buildings_and_recipes.json': buildings, 'items_catalog.json': items };
 
+it('requires reviewed stack limits for inventory capacity', async () => {
+    const mappings = await loadSaveMappings('update2_QoL', async file => mappingFiles[file]);
+    expect(['helium', 'basic_building', 'standard_ammo'].map(id => mappings.stackSizes.get(id))).toEqual([100, 1000, 300]);
+    for (const change of [{ stackSizes: undefined, stackSizesRevision: undefined }, { stackSizes: { ...itemMappings.stackSizes, helium: 99 } }]) {
+        await expect(loadSaveMappings('update2_QoL', async file => file === 'save_items_mappings.json' ? { ...itemMappings, ...change } : mappingFiles[file]))
+            .rejects.toMatchObject({ code: 'mappings' });
+    }
+});
+
 it('pins complete catalogs and rejects recipe-rate changes under the same dataset label', async () => {
     const context = await loadSaveDecodeContext({ dataVersion: 'update2_QoL', buildings: buildings as Building[], items }, async file => mappingFiles[file]);
     expect(context.mappings.catalogRevision).toBe(buildingMappings.catalogRevision);

@@ -293,7 +293,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "basic_building": 4000
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "basic_building": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -307,7 +318,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "basic_building": 4000
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "basic_building": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -321,7 +343,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "basic_building": 4000
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "basic_building": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -467,7 +500,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "bar_wolfram": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "bar_wolfram": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -526,7 +570,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "powder_wolfram": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "powder_wolfram": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -540,7 +595,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "powder_wolfram": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "powder_wolfram": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -554,7 +620,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "powder_wolfram": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "powder_wolfram": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -651,7 +728,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "calcite_sheets": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "calcite_sheets": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -665,7 +753,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "powder_calcium": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "powder_calcium": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -679,7 +778,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "calcite_sheets": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "calcite_sheets": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -693,7 +803,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "powder_calcium": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "powder_calcium": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -964,7 +1085,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "tube": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "tube": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -978,7 +1110,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "tube": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "tube": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1067,7 +1210,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "glass": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "glass": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1255,7 +1409,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "synthetic_silicon": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "synthetic_silicon": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1269,7 +1434,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "synthetic_silicon": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "synthetic_silicon": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1313,7 +1489,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "chemicals": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "chemicals": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1327,7 +1514,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "chemicals": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "chemicals": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         }
       ]
@@ -1537,7 +1735,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "calcite_sheets": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "calcite_sheets": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1551,7 +1760,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "calcite_sheets": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "calcite_sheets": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1565,7 +1785,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "calcite_sheets": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "calcite_sheets": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1711,7 +1942,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "powder_calcium": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "powder_calcium": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1725,7 +1967,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "powder_calcium": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "powder_calcium": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {
@@ -1739,7 +1992,18 @@
           },
           "buildingTypeId": "storage_depot_v1",
           "configuration": {
-            "kind": "other"
+            "kind": "storage",
+            "items": {
+              "powder_calcium": 400
+            },
+            "complete": true,
+            "space": {
+              "freeByItem": {
+                "powder_calcium": 0
+              },
+              "flexibleSlots": 0,
+              "unrestrictedSlots": 0
+            }
           }
         },
         {

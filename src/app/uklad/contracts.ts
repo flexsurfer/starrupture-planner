@@ -61,6 +61,7 @@ import type { SaveSnapshot } from '@/features/saves/snapshot';
 import type { SaveImportErrorCode } from '@/features/saves/import-error';
 import type { SaveMapViewport, SaveView, SaveImportRequest, SaveImportState, SaveWorkspace, SaveWorkspaceSelection, SaveStorageError } from '@/features/saves/types';
 import type { SaveCoreOverview, SaveOverview } from '@/features/saves/overview';
+import type { SaveStorageGroup } from '@/features/saves/storage-inventory';
 
 export interface ConfirmationDialogOptions {
     confirmLabel?: UiText;
@@ -333,6 +334,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE]: { params: []; result: SaveWorkspace | null };
         [appIds.subscriptions.SAVES_WORKSPACE_BY_ID]: { params: [workspaceId: string]; result: SaveWorkspace | null };
         [appIds.subscriptions.SAVES_OVERVIEW]: { params: [workspaceId: string]; result: SaveOverview | null };
+        [appIds.subscriptions.SAVES_STORAGE_GROUPS]: { params: [workspaceId: string]; result: SaveStorageGroup[] | null };
         [appIds.subscriptions.SAVES_MAP]: { params: [workspaceId: string]; result: SaveMap | null };
         [appIds.subscriptions.SAVES_CORE_BY_ID]: { params: [workspaceId: string, coreId: number]; result: SaveCoreOverview | null };
         [appIds.subscriptions.SAVES_SELECTED_CORE]: { params: [workspaceId: string]; result: SaveCoreOverview | null };

@@ -38,7 +38,8 @@ export interface SaveWorkspaceSelection {
 
 export interface SaveMapViewport { x: number; y: number; zoom: number }
 
-export type SaveView = 'map' | 'overview' | 'power-networks';
+export const saveViews = ['map', 'overview', 'power-networks', 'storage'] as const;
+export type SaveView = typeof saveViews[number];
 
 export type SaveStorageError = 'load' | 'write' | null;
 

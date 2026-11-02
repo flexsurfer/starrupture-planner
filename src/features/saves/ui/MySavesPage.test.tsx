@@ -10,7 +10,7 @@ import { PERSIST_KEYS } from '@/platform/web/persistence';
 import { ConfirmationDialog } from '@/features/app-shell/ui/ConfirmationDialog';
 import { SaveImportError } from '../import-error';
 import { analyzeSave } from '../decoder/analyze';
-import { saveGameData, extractionContext, snapshotFixture, transportFixture, saveFixture, saveEntity, heliumItemAsset } from '../decoder/test-fixture';
+import { saveGameData, extractionContext, snapshotFixture, storageFixture, transportFixture, saveFixture, saveEntity, heliumItemAsset } from '../decoder/test-fixture';
 import { MySavesPage } from './MySavesPage';
 
 // Map rendering has its own suite; this suite exercises the save view navigation.
@@ -30,7 +30,7 @@ async function setup(error?: SaveImportError, save: unknown = snapshotFixture())
     const runtime = createAppRuntime();
     registerHeadlessApplication(runtime, { effects: { decodeSaveFile: async () => {
         if (error) throw error;
-        return analyzeSave(save, extractionContext);
+        return analyzeSave(await save, extractionContext);
     } } });
     const persistence = persist(runtime, { storage: memoryStorageAdapter(), keys: PERSIST_KEYS, prefix: 'saves-ui-test' });
     persistence.hydrate();
@@ -68,6 +68,14 @@ it('lets a first visitor explore the demo and replace it with their own save', a
     expect(screen.getByText('Sample data. Import your save to explore your own factory.')).toBeVisible();
     const demo = harness.getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])!;
     expect(demo.isDemo).toBe(true);
+    await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Storage' })); });
+    expect(screen.getByText('All storage was full when the game was saved.')).toBeVisible();
+    expect(screen.getAllByText('Storage full')).toHaveLength(3);
+    const foundry = within(screen.getByRole('article', { name: 'Wolfram Foundry' }));
+    const material = within(foundry.getByRole('row', { name: /^Basic Building Material/ }));
+    expect(material.getByText('Full')).toBeVisible();
+    expect(material.getByText('Buildings with room · 0/3')).toBeVisible();
+    expect(material.getByRole('cell', { name: '12,000 / 12,000' })).toBeVisible();
     await interact(() => {
         runtime.dispatch([appIds.events.SAVES_SET_MAP_VIEWPORT, demo.id, 100, 100, 1]);
         runtime.dispatch([appIds.events.SAVES_SELECT_MAP_NODE, demo.id, 870818]);
@@ -117,11 +125,33 @@ it('opens the map after importing and removes the save only after confirmation',
     expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])?.name).toBe('Another world');
 });
 
+it('keeps the save import open through backdrop clicks and Escape until decoding finishes', async () => {
+    let finish!: (save: ReturnType<typeof snapshotFixture>) => void;
+    await setup(undefined, new Promise(resolve => { finish = resolve; }));
+    fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile('Keep reading')] } });
+    const dialog = await screen.findByRole('dialog', { name: 'Import save' });
+    expect(await within(dialog).findByRole('status')).toHaveTextContent('Keep reading.sav');
+    expect(dialog).toHaveAttribute('closedby', 'none');
+
+    await interact(() => { fireEvent.click(dialog); });
+    expect(dialog).toBeVisible();
+    const escape = new Event('cancel', { cancelable: true });
+    await interact(() => { fireEvent(dialog, escape); });
+    expect(escape.defaultPrevented).toBe(true);
+    expect(dialog).toBeVisible();
+    expect(within(dialog).getByRole('button', { name: 'Cancel import' })).toBeDisabled();
+
+    await act(async () => { finish(snapshotFixture()); });
+    expect(await screen.findByRole('button', { name: 'Update' })).toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
+});
+
 it('shows controlled read errors, cancellation, hydration failure and unsaved changes', async () => {
     const { runtime } = await setup(new SaveImportError('compression'));
     fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
     const dialog = await screen.findByRole('dialog', { name: 'Import save' });
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('This file could not be decoded');
+    expect(dialog).toHaveAttribute('closedby', 'closerequest');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel import' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await act(async () => { runtime.dispatch([appIds.events.SAVES_STORAGE_FAILED, 'write']); });
@@ -310,24 +340,29 @@ it('updates the existing workspace without adding another or changing its identi
     expect(within(screen.getByRole('article', { name: 'Workshop' })).getByRole('meter', { name: 'Heat' })).toHaveAttribute('aria-valuetext', expect.stringMatching(/ \/ 4,000$/));
 });
 
-it('lists all power networks with per-Core building counts and opens Core details', async () => {
+it('previews one Core per power network and opens Core details from an expanded card', async () => {
     const save = saveFixture();
     await setup(undefined, save);
     await importSave('Power world');
     await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Power networks' })); });
     const panel = screen.getByRole('tabpanel', { name: 'Power networks' });
     expect(within(panel).getAllByRole('article')).toHaveLength(3);
-    const shared = within(panel).getByRole('article', { name: 'Power network 9' });
-    expect(within(shared).getByText('2 Cores · 2 buildings')).toBeVisible();
-    expect(within(shared).getByRole('row', { name: 'Workshop 1' })).toBeVisible();
-    expect(within(shared).getByRole('row', { name: 'Core 2 1' })).toBeVisible();
+    const shared = within(within(panel).getByRole('article', { name: 'Power network 9' }));
+    expect(shared.getByText('2 Cores · 2 buildings')).toBeVisible();
+    expect(shared.getByRole('row', { name: 'Workshop 1' })).toBeVisible();
+    expect(shared.queryByRole('row', { name: 'Core 2 1' })).toBeNull();
     expect(within(panel).getByRole('article', { name: 'Power network 7' })).toHaveTextContent('1 Core · 0 buildings');
     expect(within(panel).getByRole('article', { name: 'Power network 8' })).toHaveTextContent('1 Core · 0 buildings');
-    await interact(() => { fireEvent.click(within(shared).getByRole('button', { name: 'Open Core Core 2' })); });
+    expect(within(panel).getAllByRole('button', { name: /Show .* more/ })).toHaveLength(1);
+    fireEvent.click(shared.getByRole('button', { name: 'Show 1 more', expanded: false }));
+    expect(shared.getByRole('row', { name: 'Core 2 1' })).toBeVisible();
+    await interact(() => { fireEvent.click(shared.getByRole('button', { name: 'Open Core Core 2' })); });
     expect(screen.getByRole('tab', { name: 'Power networks' })).toHaveAttribute('aria-selected', 'true');
     const coreDialog = await screen.findByRole('dialog', { name: 'Core 2' });
     expect(coreDialog).toBeVisible();
     await interact(() => { fireEvent.click(within(coreDialog).getByRole('button', { name: 'Close' })); });
+    fireEvent.click(shared.getByRole('button', { name: 'Show less', expanded: true }));
+    expect(shared.queryByRole('row', { name: 'Core 2 1' })).toBeNull();
 
     await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Power networks' })); });
     expect(within(screen.getByRole('tabpanel', { name: 'Power networks' })).getAllByRole('article')).toHaveLength(3);
@@ -343,7 +378,68 @@ it('lists all power networks with per-Core building counts and opens Core detail
     expect(within(screen.getByRole('article', { name: 'Power network 8' })).getByRole('row', { name: 'Workshop 1' })).toBeVisible();
 });
 
-it('supports three-tab keyboard navigation and shows an empty power networks state', async () => {
+it('shows storage quantities by Core and replaces them when a save is updated', async () => {
+    const save = storageFixture();
+    save.itemData.Mass.entities['(ID=53)'].fragmentValues = ['/Script/Chimera.CrInventoryFragment(MainInventoryContainer=(Items=((SlotID=(ID=1)))))'];
+    save.itemData.Mass.entities['(ID=54)'].fragmentValues[0] = save.itemData.Mass.entities['(ID=54)'].fragmentValues[0].replace('Count=2)', 'Count=100)');
+    await setup(undefined, save);
+    await importSave('Warehouse world');
+    await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Storage' })); });
+    const workshop = within(screen.getByRole('article', { name: 'Workshop' }));
+    expect(workshop.getByText('2 storage buildings · 53 items')).toBeVisible();
+    expect(workshop.queryByText(/units? free/)).toBeNull();
+    expect(workshop.getAllByRole('columnheader').map(header => header.textContent)).toEqual(['Item', 'Stored / capacity']);
+    const helium = within(workshop.getByRole('row', { name: /^Helium-3/ }));
+    expect(helium.getByText('Buildings with room · 2/2')).toBeVisible();
+    expect(helium.getByRole('cell', { name: '42 / 300' })).toBeVisible();
+    expect(helium.queryByText('Full')).toBeNull();
+    expect(within(workshop.getByRole('row', { name: /^Calcite Sheets/ })).getByRole('cell', { name: '11 / 200' })).toBeVisible();
+    expect(within(screen.getByRole('article', { name: 'Core 2' })).getByText('Storage is empty.')).toBeVisible();
+    expect(within(screen.getByRole('article', { name: 'Core 2' })).getByText('1 flexible slot')).toBeVisible();
+    const shared = within(screen.getByRole('article', { name: 'Shared across Workshop + Core 2' }));
+    expect(within(shared.getByRole('row', { name: /^Calcite Sheets/ })).getByText('Buildings with room · 1/1')).toBeVisible();
+    expect(within(shared.getByRole('row', { name: /^Helium-3/ })).getByText('Full')).toBeVisible();
+    const unassigned = within(screen.getByRole('article', { name: 'Unassigned Core' }));
+    expect(within(unassigned.getByRole('row', { name: /^Helium-3/ })).getByText('Full')).toBeVisible();
+    expect(unassigned.getByText('Storage full')).toBeVisible();
+    expect(screen.queryByText('All storage was full when the game was saved.')).toBeNull();
+
+    save.itemData.Mass.entities['(ID=50)'].fragmentValues = [];
+    fireEvent.click(screen.getByRole('button', { name: 'Update' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Update save' });
+    fireEvent.change(within(dialog).getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(workshop.getByRole('row', { name: 'Helium-3 5' })).toBeVisible();
+    expect(workshop.getByText('Some storage quantities could not be read.')).toBeVisible();
+    expect(workshop.getByText('Available space is unknown.')).toBeVisible();
+    expect(workshop.queryByText(/53 items/)).toBeNull();
+});
+
+it('expands and collapses the item list in just the selected storage card', async () => {
+    const save = storageFixture();
+    const slots = [...extractionContext.mappings.items.keys()].slice(0, 12)
+        .map(asset => `(Item=(ItemDataBase="${asset}",Count=1))`);
+    const inventory = (count: number) => [`/Script/Chimera.CrInventoryFragment(MainInventoryContainer=(Items=(${slots.slice(0, count).join(',')})))`];
+    save.itemData.Mass.entities['(ID=52)'].fragmentValues = inventory(12);
+    save.itemData.Mass.entities['(ID=53)'].fragmentValues = inventory(5);
+    save.itemData.Mass.entities['(ID=54)'].fragmentValues = inventory(8);
+    await setup(undefined, save);
+    await importSave('Large warehouse');
+    await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Storage' })); });
+
+    const shared = within(screen.getByRole('article', { name: 'Shared across Workshop + Core 2' }));
+    const unassigned = within(screen.getByRole('article', { name: 'Unassigned Core' }));
+    expect(within(screen.getByRole('article', { name: 'Core 2' })).queryByRole('button')).toBeNull();
+    expect(shared.getAllByRole('rowheader')).toHaveLength(5);
+    fireEvent.click(shared.getByRole('button', { name: 'Show 7 more', expanded: false }));
+    expect(shared.getAllByRole('rowheader')).toHaveLength(12);
+    expect(unassigned.getAllByRole('rowheader')).toHaveLength(5);
+    expect(unassigned.getByRole('button', { name: 'Show 3 more', expanded: false })).toBeVisible();
+    fireEvent.click(shared.getByRole('button', { name: 'Show less', expanded: true }));
+    expect(shared.getAllByRole('rowheader')).toHaveLength(5);
+});
+
+it('supports keyboard navigation across all save views and their empty states', async () => {
     const save = saveFixture();
     save.itemData.Mass.electricitySubsystemState.nodeData = {} as typeof save.itemData.Mass.electricitySubsystemState.nodeData;
     await setup(undefined, save);
@@ -351,15 +447,16 @@ it('supports three-tab keyboard navigation and shows an empty power networks sta
     const overview = screen.getByRole('tab', { name: 'Overview' });
     const map = screen.getByRole('tab', { name: 'Map' });
     const networks = screen.getByRole('tab', { name: 'Power networks' });
+    const storage = screen.getByRole('tab', { name: 'Storage' });
     await interact(() => { fireEvent.keyDown(map, { key: 'End' }); });
-    expect(networks).toHaveFocus();
-    expect(networks).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('No power networks found in this save.')).toBeVisible();
-    await interact(() => { fireEvent.keyDown(networks, { key: 'ArrowRight' }); });
+    expect(storage).toHaveFocus();
+    expect(storage).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('No storage buildings found in this save.')).toBeVisible();
+    await interact(() => { fireEvent.keyDown(storage, { key: 'ArrowRight' }); });
     expect(map).toHaveFocus();
     await interact(() => { fireEvent.keyDown(map, { key: 'ArrowLeft' }); });
-    expect(networks).toHaveFocus();
-    await interact(() => { fireEvent.keyDown(networks, { key: 'Home' }); });
+    expect(storage).toHaveFocus();
+    await interact(() => { fireEvent.keyDown(storage, { key: 'Home' }); });
     expect(map).toHaveFocus();
     await interact(() => { fireEvent.keyDown(map, { key: 'ArrowRight' }); });
     expect(overview).toHaveFocus();

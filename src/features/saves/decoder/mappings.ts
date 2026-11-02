@@ -1,10 +1,10 @@
 import type { DataVersion } from '@/features/app-shell/data-version';
 import { SaveImportError } from '../import-error';
+import { isStorageQuantity, type SaveNodePurity } from '../snapshot';
 import type { SaveDecodeContext, SaveDataContext } from './types';
 import { sha256 } from './hash';
 
 export type SaveBuildingRole = 'core' | 'dispatcher' | 'receiver' | 'launcher';
-import type { SaveNodePurity } from '../snapshot';
 export interface SaveExtractionRecipe {
     itemId: string;
     purity: SaveNodePurity;
@@ -29,6 +29,7 @@ export interface SaveMappings {
     catalogRevision: string;
     buildings: ReadonlyMap<string, SaveBuildingMapping>;
     items: ReadonlyMap<string, string>;
+    stackSizes: ReadonlyMap<string, number>;
     recipes: ReadonlyMap<string, ReadonlyMap<string, SaveProductionRecipeMapping>>;
 }
 
@@ -70,6 +71,10 @@ export function parseSaveMappings(version: DataVersion, buildingData: unknown, i
     const mappings: SaveMappings = {
         dataVersion: version, steamBuildId: buildings.steamBuildId,
         mappingRevision: buildings.mappingRevision, catalogRevision: buildings.catalogRevision,
+        stackSizes: new Map(Object.entries(record(items.stackSizes)).map(([id, size]) => {
+            if (!isStorageQuantity(size)) throw new Error('Invalid item stack size');
+            return [id, size];
+        })),
         buildings: new Map(Object.entries(record(buildings.mappings)).map(([asset, value]) => {
             const entry = record(value);
             if (typeof entry.id !== 'string' || !entry.id
@@ -100,6 +105,9 @@ export function parseSaveMappings(version: DataVersion, buildingData: unknown, i
     };
     const buildingIds = new Set([...mappings.buildings.values()].map(building => building.id));
     const itemIds = new Set(mappings.items.values());
+    if (mappings.stackSizes.size !== itemIds.size || [...itemIds].some(id => !mappings.stackSizes.has(id))) {
+        throw new Error('Incomplete item stack sizes');
+    }
     for (const [buildingId, entries] of mappings.recipes) {
         if (!buildingIds.has(buildingId)) throw new Error('Unknown recipe building');
         for (const recipe of entries.values()) if (!itemIds.has(recipe.outputItemId) || recipe.inputItemIds.some(id => !itemIds.has(id))) {
@@ -122,6 +130,10 @@ export async function loadSaveMappings(version: DataVersion, readJson: (file: st
         });
         const bytes = new TextEncoder().encode(JSON.stringify([mappings.catalogRevision, ...sources]));
         if (await sha256(bytes) !== mappings.mappingRevision) throw new Error('Changed save mappings');
+        const itemData = record(items);
+        if (await sha256(new TextEncoder().encode(JSON.stringify([mappings.mappingRevision, itemData.stackSizes]))) !== itemData.stackSizesRevision) {
+            throw new Error('Changed item stack sizes');
+        }
         return mappings;
     } catch {
         throw new SaveImportError('mappings');
@@ -145,5 +157,6 @@ export async function loadSaveDecodeContext(context: SaveDataContext, readJson: 
     const buildingIds = catalogIds(context.buildings), itemIds = catalogIds(context.items);
     const bytes = new TextEncoder().encode(JSON.stringify([context.buildings, context.items]));
     if (await sha256(bytes) !== mappings.catalogRevision) throw new SaveImportError('catalog');
-    return { dataVersion: context.dataVersion, mappings, buildingIds, itemIds };
+    const storageBuildingIds = new Set(context.buildings.filter(building => building.type === 'storage').map(building => building.id));
+    return { dataVersion: context.dataVersion, mappings, buildingIds, storageBuildingIds, itemIds };
 }

@@ -1,13 +1,9 @@
 import { field, members } from './fragments';
+import { inventoryItemId, inventorySlots } from './inventory';
 
 /** The configured input filter identifies the item even when inventory is empty. */
 export function readLauncherItem(fragments: string[], items: ReadonlyMap<string, string>): string | null {
-    const prefix = '/Script/Chimera.CrInventoryFragment';
-    const fragmentsFound = fragments.filter(value => value.startsWith(`${prefix}(`));
-    if (fragmentsFound.length !== 1) return null;
-    const input = field(fragmentsFound[0].slice(prefix.length), 'InputInventoryContainer');
-    const slots = input && field(input, 'Items');
-    const entries = slots ? members(slots) : null;
+    const entries = inventorySlots(fragments, 'InputInventoryContainer');
     if (!entries) return null;
     const selected = new Set<string>();
     for (const slot of entries) {
@@ -18,11 +14,9 @@ export function readLauncherItem(fragments: string[], items: ReadonlyMap<string,
         const values = members(filter);
         if (!values) return null;
         for (const value of values) {
-            try {
-                const asset: unknown = JSON.parse(value);
-                if (typeof asset !== 'string' || !items.has(asset)) return null;
-                selected.add(items.get(asset)!);
-            } catch { return null; }
+            const id = inventoryItemId(value, items);
+            if (!id) return null;
+            selected.add(id);
         }
     }
     return selected.size === 1 ? [...selected][0] : null;

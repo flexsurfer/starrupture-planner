@@ -29,12 +29,34 @@ export const isValidSaveBounds = ({ min, max }: SaveBounds): boolean =>
         && max[axis] > min[axis] && Number.isFinite(max[axis] - min[axis]));
 
 export type SaveNodePurity = 'impure' | 'normal' | 'pure' | 'not-applicable';
+export interface SaveStorageSpace {
+    /** Spare units for each item in occupied or filtered slots. Shared slots contribute to each eligible item. */
+    freeByItem: Record<string, number>;
+    /** Empty enabled slots that accept multiple items, including unrestricted slots. */
+    flexibleSlots: number;
+    unrestrictedSlots: number;
+}
+
+export interface SaveStorageConfiguration {
+    kind: 'storage';
+    /** Unit counts by catalog item ID, summed across the building's occupied slots. */
+    items: Record<string, number>;
+    /** False when the inventory or any occupied slot could not be decoded. */
+    complete: boolean;
+    /** Null when usable space could not be determined from the game save. */
+    space: SaveStorageSpace | null;
+}
+
+export const isStorageQuantity = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isInteger(value) && value > 0 && value <= 0xffffffff;
+
 export type SaveBuildingConfiguration =
     | { kind: 'production'; recipeId: string | null }
     | { kind: 'extractor'; itemId: string | null; nodePurity: SaveNodePurity | null }
     | { kind: 'dispatcher'; itemId: string | null; receiverId: number | null }
     | { kind: 'receiver' }
     | { kind: 'launcher'; itemId: string | null }
+    | SaveStorageConfiguration
     | { kind: 'other' };
 
 export interface SaveBuilding {

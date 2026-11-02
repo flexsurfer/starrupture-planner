@@ -1,9 +1,9 @@
 import { createSaveWorkspace } from './workspace';
 import { analyzeSave } from './decoder/analyze';
-import { extractionContext, saveFixture } from './decoder/test-fixture';
+import { extractionContext, saveFixture, saveLookups, storageFixture } from './decoder/test-fixture';
 // @vitest-environment node
 import { expect, it } from 'vitest';
-import { assertSaveStorageLimits, jsonBytes, localStorageBytes, MAX_SAVES_BYTES, MAX_WORKSPACE_BYTES, normalizeSaveWorkspace, normalizeSaveWorkspaces, saveCollectionStorageBytes, SaveWorkspaceLimitError } from './storage-schema';
+import { assertSaveStorageLimits, jsonBytes, localStorageBytes, MAX_SAVES_BYTES, MAX_WORKSPACE_BYTES, normalizeSaveWorkspace, normalizeSaveWorkspaces, saveCollectionStorageBytes, SaveWorkspaceLimitError, validateSaveSnapshotCatalog } from './storage-schema';
 import { workspaceAtStorageBytes } from './storage-test-fixture';
 
 it('round-trips detached Core bounds and requires explicit nullable bounds', () => {
@@ -54,6 +54,31 @@ it('counts UTF-16 code units for storage, including surrogate pairs, separately 
     expect(localStorageBytes('界')).toBe(6);
     expect(localStorageBytes('😀')).toBe(8);
     expect(jsonBytes('界')).toBe(5);
+});
+
+it('validates stored item IDs and quantities before adopting a workspace', () => {
+    const workspace = createSaveWorkspace('one', 'World', analyzeSave(storageFixture(), extractionContext));
+    const config = workspace.snapshot.cores.flatMap(core => core.buildings).find(building => building.id === 50)!.configuration;
+    if (config.kind !== 'storage') throw new Error('Expected storage fixture');
+    for (const quantity of [-1, 0, 1.25, Infinity, 2 ** 32]) {
+        config.items = { helium: quantity };
+        expect(() => normalizeSaveWorkspace(workspace)).toThrow();
+    }
+    config.items = { constructor: 1 };
+    expect(() => normalizeSaveWorkspace(workspace)).toThrow();
+    config.items = { unknown: 1 };
+    expect(() => validateSaveSnapshotCatalog(workspace.snapshot, 'update2_QoL', saveLookups)).toThrow();
+    config.items = { helium: 1 };
+    const validSpace = { freeByItem: { helium: 99 }, flexibleSlots: 0, unrestrictedSlots: 0 };
+    for (const space of [undefined, { freeByItem: {}, flexibleSlots: 1 },
+        { ...validSpace, freeByItem: { helium: -1 } }, { ...validSpace, flexibleSlots: 0.5 },
+        { ...validSpace, freeByItem: { calcite_sheets: 0 } }, { ...validSpace, unrestrictedSlots: 1 },
+        { ...validSpace, flexibleSlots: 1 }]) {
+        Object.assign(config, { space });
+        expect(() => normalizeSaveWorkspace(workspace)).toThrow();
+    }
+    config.space = { ...validSpace, freeByItem: { unknown: 15 } };
+    expect(() => validateSaveSnapshotCatalog(workspace.snapshot, 'update2_QoL', saveLookups)).toThrow();
 });
 
 it('accepts a single save filling the 3 MiB budget and rejects one extra code unit during import and hydration', () => {

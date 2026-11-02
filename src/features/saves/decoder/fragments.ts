@@ -26,7 +26,11 @@ export function field(value: string, name: string): string | undefined {
 }
 
 export function fragmentFields(fragment: string, prefix: string): ReadonlyMap<string, string> | null {
-    const entries = members(fragment.slice(prefix.length));
+    return structFields(fragment.slice(prefix.length));
+}
+
+export function structFields(value: string): ReadonlyMap<string, string> | null {
+    const entries = members(value);
     if (!entries) return null;
     const fields = new Map<string, string>();
     for (const entry of entries) {

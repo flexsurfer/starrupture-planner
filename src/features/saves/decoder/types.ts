@@ -6,6 +6,7 @@ export interface SaveDataContext { dataVersion: DataVersion; buildings: Building
 export interface SaveDecodeContext {
     dataVersion: DataVersion;
     buildingIds: ReadonlySet<string>;
+    storageBuildingIds: ReadonlySet<string>;
     itemIds: ReadonlySet<string>;
     mappings: SaveMappings;
 }

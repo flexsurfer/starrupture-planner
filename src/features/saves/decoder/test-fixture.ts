@@ -14,6 +14,7 @@ const buildings = rawBuildings as Building[];
 export const saveContext: SaveDecodeContext = {
     mappings: parseSaveMappings('update2_QoL', buildingMappings, itemMappings, recipeMappings),
     itemIds: new Set(['helium', 'calcite_sheets', 'powder_calcium']),
+    storageBuildingIds: new Set(buildings.filter(building => building.type === 'storage').map(building => building.id)),
     dataVersion: 'update2_QoL', buildingIds: new Set(['smelter', 'fabricator', 'base_core']),
 };
 
@@ -90,6 +91,25 @@ export function transportFixture() {
 }
 
 export const extractionContext: SaveDecodeContext = { ...saveContext, buildingIds: new Set(buildings.map(building => building.id)), itemIds: new Set(items.map(item => item.id)) };
+
+export function storageFixture() {
+    const save = saveFixture();
+    const calcite = "/Game/Chimera/Items/I_CalciteSheets.I_CalciteSheets_C'/Game/Chimera/Items/I_CalciteSheets.Default__I_CalciteSheets_C'";
+    const stack = (asset: string, count: number) => `(Item=(ItemDataBase="${asset}",Count=${count}))`;
+    const inventory = (...slots: string[]) => [
+        `/Script/Chimera.CrInventoryFragment(InputInventoryContainer=(Items=(${stack(heliumItemAsset, 99)})),MainInventoryContainer=(Items=(${slots.join(',')})))`,
+    ];
+    const depot = 'ResourceRedistributor/DA_ResourceRedistributor.DA_ResourceRedistributor';
+    const entities = { ...save.itemData.Mass.entities, '(ID=2)': coreEntity(15),
+        '(ID=50)': saveEntity(depot, 0, inventory(stack(heliumItemAsset, 20), stack(heliumItemAsset, 17), `(ItemTypeFilter=("${calcite}"))`)),
+        '(ID=51)': saveEntity('Storage/DA_Storage.DA_Storage', 1, inventory(stack(heliumItemAsset, 5), stack(calcite, 11))),
+        '(ID=52)': saveEntity('UniversalStorage/DA_UniversalStorage.DA_UniversalStorage', 8, inventory(stack(calcite, 7), stack(heliumItemAsset, 100))),
+        '(ID=53)': saveEntity('StorageDepot/DA_StorageDepot.DA_StorageDepot', 20, inventory()),
+        '(ID=54)': saveEntity(depot, 70, inventory(stack(heliumItemAsset, 2))),
+        '(ID=55)': saveEntity('Smelter/DA_Smelter.DA_Smelter', 0, inventory(stack(heliumItemAsset, 500))),
+    };
+    return { ...save, itemData: { ...save.itemData, Mass: { ...save.itemData.Mass, entities } } };
+}
 
 export function extractorEntity(tier: 1 | 2, purity: 'impure' | 'normal' | 'pure', x = 0, fields = '') {
     const folder = tier === 1 ? 'MechanicalDrill' : 'MechanicalDrillTier2';

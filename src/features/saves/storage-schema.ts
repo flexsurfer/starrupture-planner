@@ -1,6 +1,6 @@
 import { isValidDataVersion } from '@/features/app-shell/data-version';
 import type { SaveGameData } from './game-data';
-import { isValidSaveBounds, type SaveBounds, type SaveSnapshot, type SaveBuildingConfiguration } from './snapshot';
+import { isStorageQuantity, isValidSaveBounds, type SaveBounds, type SaveSnapshot, type SaveBuildingConfiguration, type SaveStorageSpace } from './snapshot';
 import type { SaveWorkspace, SaveWorkspaceSelection } from './types';
 
 export const MAX_SAVE_WORKSPACES = 8;
@@ -36,6 +36,14 @@ const record = <T>(parse: Parser<T>, limit: number, keyParser = id): Parser<Reco
     return Object.fromEntries(entries.map(([key, entry]) => [keyParser(key), parse(entry)]));
 };
 const itemId = id;
+const storageQuantity: Parser<number> = value => isStorageQuantity(value) ? value : invalid();
+const storageSpace: Parser<SaveStorageSpace> = value => {
+    const space = object({ freeByItem: record(entry => entry === 0 ? 0 : storageQuantity(entry), 1000),
+        flexibleSlots: integer, unrestrictedSlots: integer })(value);
+    if (space.unrestrictedSlots > space.flexibleSlots) return invalid();
+    if (space.flexibleSlots > space.unrestrictedSlots && Object.values(space.freeByItem).filter(free => free > 0).length < 2) return invalid();
+    return space;
+};
 const coordinate: Parser<number> = value => typeof value === 'number' && Number.isFinite(value) ? value : invalid();
 const position = object({ x: coordinate, y: coordinate, z: coordinate });
 const bounds: Parser<SaveBounds | null> = value => {
@@ -50,6 +58,13 @@ const configuration: Parser<SaveBuildingConfiguration> = value => {
         case 'extractor': return object({ kind: oneOf('extractor'), itemId: nullable(itemId), nodePurity: nullable(oneOf('impure', 'normal', 'pure', 'not-applicable')) })(value);
         case 'dispatcher': return object({ kind: oneOf('dispatcher'), itemId: nullable(itemId), receiverId: nullable(integer) })(value);
         case 'launcher': return object({ kind: oneOf('launcher'), itemId: nullable(itemId) })(value);
+        case 'storage': {
+            const config = object({ kind: oneOf('storage'), items: record(storageQuantity, 1000),
+                complete: entry => typeof entry === 'boolean' ? entry : invalid(), space: nullable(storageSpace) })(value);
+            if (config.space && (!config.complete || Object.entries(config.space.freeByItem)
+                .some(([id, free]) => free === 0 && !Object.hasOwn(config.items, id)))) return invalid();
+            return config;
+        }
         default: return object({ kind: oneOf('receiver', 'other') })(value);
     }
 };
@@ -123,6 +138,8 @@ export function validateSaveSnapshotCatalog(snapshot: SaveSnapshot, version: str
         const config = building.configuration;
         if (!data.buildings.has(building.buildingTypeId) || data.metadata.kinds[building.buildingTypeId] !== config.kind) invalid();
         if ('itemId' in config && config.itemId !== null && !data.items.has(config.itemId)) invalid();
+        if (config.kind === 'storage' && [config.items, config.space?.freeByItem]
+            .some(counts => counts && Object.keys(counts).some(id => !data.items.has(id)))) invalid();
         if (config.kind === 'production' && config.recipeId !== null && data.recipes.get(config.recipeId)?.buildingId !== building.buildingTypeId) invalid();
     }
 }

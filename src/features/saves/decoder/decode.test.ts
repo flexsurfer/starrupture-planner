@@ -3,7 +3,7 @@ import { deflateSync } from 'node:zlib';
 import { expect, it, vi } from 'vitest';
 import { decodeSave, MAX_DECODED_SAVE_BYTES } from './decode';
 import { analyzeSave } from './analyze';
-import { extractionContext, saveFixture } from './test-fixture';
+import { extractionContext, saveFixture, storageFixture } from './test-fixture';
 
 function encode(value: unknown, declaredSize?: number): ArrayBuffer {
     const text = typeof value === 'string' ? value : JSON.stringify(value);
@@ -16,6 +16,15 @@ it('decodes the supported container directly into the app snapshot', async () =>
     expect(snapshot).toEqual(analyzeSave(saveFixture(), extractionContext));
     expect(snapshot.cores.map(core => core.buildings.map(building => building.id))).toEqual([[10], [11]]);
     expect(Object.keys(snapshot).sort()).toEqual(['cores', 'gameData', 'savedAt', 'schemaVersion']);
+});
+it('retains only the physical stock in the main inventory of each storage building', async () => {
+    const snapshot = await decodeSave(encode(storageFixture()), extractionContext);
+    const byId = new Map(snapshot.cores.flatMap(core => core.buildings.map(b => [b.id, b.configuration] as const)));
+    expect(byId.get(50)).toEqual({ kind: 'storage', items: { helium: 37 }, complete: true, space: { freeByItem: { helium: 163, calcite_sheets: 100 }, flexibleSlots: 0, unrestrictedSlots: 0 } });
+    expect(byId.get(51)).toEqual({ kind: 'storage', items: { helium: 5, calcite_sheets: 11 }, complete: true, space: { freeByItem: { helium: 95, calcite_sheets: 89 }, flexibleSlots: 0, unrestrictedSlots: 0 } });
+    expect(byId.get(52)).toEqual({ kind: 'storage', items: { calcite_sheets: 7, helium: 100 }, complete: true, space: { freeByItem: { calcite_sheets: 93, helium: 0 }, flexibleSlots: 0, unrestrictedSlots: 0 } });
+    expect(byId.get(53)).toEqual({ kind: 'storage', items: {}, complete: true, space: { freeByItem: {}, flexibleSlots: 0, unrestrictedSlots: 0 } });
+    expect(byId.get(55)).toEqual({ kind: 'production', recipeId: null });
 });
 it.each([
     ['invalid JSON', '{bad', undefined, 'structure'],

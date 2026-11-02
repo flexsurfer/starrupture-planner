@@ -52,6 +52,7 @@ function extractionMapping(building, catalogBuilding) {
     return { tier: config.tier, recipes: Object.fromEntries([...recipes].sort(([a], [b]) => a.localeCompare(b))) };
 }
 const outputs = [];
+const stackSizes = new Map();
 for (const [category, exported, catalogFile] of [
     ['buildings', buildings, 'buildings_and_recipes.json'],
     ['items', items, 'items_catalog.json'],
@@ -78,6 +79,10 @@ for (const [category, exported, catalogFile] of [
             }
             asset = `${row.source}'${defaultObject}'`;
             mapping = row.appId;
+            if (!Number.isSafeInteger(row.maxStack) || row.maxStack <= 0 || row.maxStack > 0xffffffff) {
+                throw new Error(`Invalid stack size: ${row.appId}`);
+            }
+            stackSizes.set(row.appId, row.maxStack);
         }
         if (mappings.has(asset)) throw new Error(`Duplicate ${category} asset: ${asset}`);
         mappings.set(asset, mapping);
@@ -116,6 +121,11 @@ outputs.push([resolve(destination, 'save_recipes_mappings.json'), {
     mappings: Object.fromEntries(Object.entries(recipeMappings).sort(([a], [b]) => a.localeCompare(b))),
 }]);
 const mappingRevision = hash([catalogRevision, ...outputs.map(([, data]) => data)]);
-// Validate both inputs before replacing either output.
-for (const [path, data] of outputs) await writeFile(path, `${JSON.stringify({ ...data, mappingRevision, catalogRevision }, null, 2)}\n`);
+// Stack sizes have their own fingerprint so adding capacity does not invalidate existing planner imports.
+const sizes = Object.fromEntries([...stackSizes].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
+for (const [path, data] of outputs) {
+    const extra = path === resolve(destination, 'save_items_mappings.json')
+        ? { stackSizes: sizes, stackSizesRevision: hash([mappingRevision, sizes]) } : {};
+    await writeFile(path, `${JSON.stringify({ ...data, mappingRevision, catalogRevision, ...extra }, null, 2)}\n`);
+}
 console.log(`recipes: ${Object.values(recipeMappings).reduce((count, recipes) => count + Object.keys(recipes).length, 0)} exact production identities`);

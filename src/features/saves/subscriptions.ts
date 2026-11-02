@@ -3,6 +3,7 @@ import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { createSaveGameData } from './game-data';
 import { buildSaveOverview } from './overview';
+import { groupStorageInventory } from './storage-inventory';
 import { buildSaveMap } from './map';
 import { filterSaveMap, mapBuildingTypes } from './map-filter';
 import { getActiveSaveWorkspace, workspaceIds } from './workspace';
@@ -45,6 +46,9 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
     registrar.regSub(appIds.subscriptions.SAVES_OVERVIEW,
         id => [[appIds.subscriptions.SAVES_WORKSPACE_BY_ID, id], [appIds.subscriptions.SAVES_GAME_DATA]],
         ([workspace, data]) => workspace ? buildSaveOverview(workspace, data) : null);
+    registrar.regSub(appIds.subscriptions.SAVES_STORAGE_GROUPS,
+        id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA]],
+        ([overview, data]) => overview ? groupStorageInventory(overview, data) : []);
     registrar.regSub(appIds.subscriptions.SAVES_MAP,
         id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA], [appIds.subscriptions.SAVES_MAP_BUILDING_SIZE]],
         ([overview, data, buildingSize]) => overview ? buildSaveMap(overview, data, buildingSize) : null);

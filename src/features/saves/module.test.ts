@@ -111,33 +111,25 @@ it('reports unavailable mappings before invoking a decoder with an unloaded cata
     expect(decode).not.toHaveBeenCalled();
 });
 
-it('aborts superseded reads and ignores completion or failure after closing', async () => {
-    const signals: AbortSignal[] = [];
-    const completions: ((report: SaveSnapshot) => void)[] = [];
-    const { harness } = setup((_request, signal) => {
-        signals.push(signal);
-        return new Promise(resolve => completions.push(resolve));
-    });
+it('finishes the original import despite close, reopen, and duplicate file requests', async () => {
+    let finish!: (report: SaveSnapshot) => void;
+    const decode = vi.fn<SaveImportDecoder>(() => new Promise(resolve => { finish = resolve; }));
+    const { harness } = setup(decode);
     const initial = unrelatedState(harness.getState());
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'original']);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
-    const first = harness.getState().savesImport.requestId;
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
-    const second = harness.getState().savesImport.requestId;
-    expect(signals[0].aborted).toBe(true);
-    const report = analyzeSave(saveFixture(), extractionContext);
-    completions[0](report);
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, first, report]);
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, first, 'read']);
-    await harness.flush();
-    expect(harness.getState().savesImport.phase).toBe('reading');
+    const reading = harness.getState().savesImport;
     harness.dispatchSync([appIds.events.SAVES_IMPORT_CLOSE]);
-    expect(signals[1].aborted).toBe(true);
-    completions[1](report);
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, second, report]);
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, second, 'read']);
-    await harness.flush();
-    expect(harness.getState().savesImport).toMatchObject({ phase: 'closed', error: null });
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'other']);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, { ...pendingFile(), name: 'other.sav' }]);
+    expect(harness.getState().savesImport).toEqual(reading);
+    expect(decode).toHaveBeenCalledTimes(1);
+    expect(decode.mock.calls[0][1].aborted).toBe(false);
+
+    const report = analyzeSave(saveFixture(), extractionContext);
+    finish(report);
+    await expect.poll(() => harness.getState().savesImport.phase).toBe('closed');
+    expect(harness.getState().savesWorkspaces.original.snapshot).toEqual(report);
     expect(unrelatedState(harness.getState())).toEqual(initial);
 });
 
@@ -206,9 +198,9 @@ it('preserves the previous snapshot on cancellation or invalid replacement and i
     };
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, start(), snapshot]);
     const before = harness.getState().savesWorkspaces.one;
-    const cancelled = start();
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'one']);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_CLOSE]);
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, cancelled, { ...snapshot, cores: [] }]);
+    expect(harness.getState().savesImport.phase).toBe('closed');
     expect(harness.getState().savesWorkspaces.one).toEqual(before);
     const invalid = structuredClone(snapshot);
     invalid.cores[0].spawnTimeSeconds = NaN;

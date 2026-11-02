@@ -2,6 +2,7 @@ import type { SaveBuilding, SaveBuildingConfiguration, SaveCore, SaveSnapshot, S
 import { fragmentFields } from './fragments';
 import { readCoreBounds } from './core-bounds';
 import { readLauncherItem } from './launchers';
+import { readStorageInventory } from './inventory';
 import type { SaveBuildingMapping } from './mappings';
 import { selectedRecipe } from './recipes';
 import { SaveImportError } from '../import-error';
@@ -43,6 +44,7 @@ function configuration(mapping: SaveBuildingMapping, fragments: string[], contex
     if (mapping.role === 'dispatcher') return { kind: 'dispatcher', itemId: null, receiverId: null };
     if (mapping.role === 'receiver') return { kind: 'receiver' };
     if (mapping.role === 'launcher') return { kind: 'launcher', itemId: knownItem(readLauncherItem(fragments, context.mappings.items)) };
+    if (context.storageBuildingIds.has(mapping.id)) return readStorageInventory(fragments, context);
     if (context.mappings.recipes.has(mapping.id)) {
         const recipe = asset ? context.mappings.recipes.get(mapping.id)?.get(asset) : undefined;
         return { kind: 'production', recipeId: recipe?.catalogRecipeId ?? null };

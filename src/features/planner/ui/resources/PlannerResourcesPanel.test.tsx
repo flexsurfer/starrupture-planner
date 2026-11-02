@@ -63,6 +63,7 @@ async function addSave(harness: ReturnType<typeof setup>['harness']) {
             ...structuredClone(TEST_GAME_DATA), saveBuildingCatalog: {
                 revision, kinds: { ore_excavator: 'extractor', smelter: 'production' },
                 extractionRates: { 'ore_excavator:iron-ore:normal': 60, 'ore_excavator:iron-ore:pure': 120, 'ore_excavator:copper-ore:normal': 45 },
+                stackSizes: {},
             },
         }]);
         harness.restoreState({ ...harness.getState(), savesWorkspaces: { world: createSaveWorkspace('world', 'World', snapshot) }, savesWorkspaceOrder: ['world'] });

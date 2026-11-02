@@ -146,9 +146,14 @@ export function nextPlannerResourceId(resources: PlannerResource[]): string {
     while (used.has(`resource-${index}`)) index++;
     return `resource-${index}`;
 }
-/** Non-security content fingerprint. Display-only renames preserve physical source identity. */
+/** Names and storage contents do not identify the planner's physical resource sources. */
 export function saveResourceSnapshotKey(snapshot: SaveSnapshot): string {
-    const text = JSON.stringify(snapshot, (key, value: unknown) => key === 'name' ? undefined : value);
+    const text = JSON.stringify(snapshot, (key, value: unknown) => {
+        if (key === 'name') return undefined;
+        // Warehouses have always been non-producing buildings from the planner's perspective.
+        if (key === 'configuration' && isRecord(value) && value.kind === 'storage') return { kind: 'other' };
+        return value;
+    });
     let hash = 2166136261;
     let second = 5381;
     for (let index = 0; index < text.length; index++) { hash = Math.imul(hash ^ text.charCodeAt(index), 16777619); second = Math.imul(second, 33) ^ text.charCodeAt(index); }

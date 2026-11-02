@@ -5,7 +5,7 @@ import { appIds, stateKeys } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerHeadlessApplication } from '@/platform/headless/register';
 import { analyzeSave } from '@/features/saves/decoder/analyze';
-import { saveGameData, extractionContext, snapshotFixture } from '@/features/saves/decoder/test-fixture';
+import { saveGameData, extractionContext, snapshotFixture, storageFixture } from '@/features/saves/decoder/test-fixture';
 import { localStorageBytes, MAX_SAVES_BYTES, saveCollectionStorageBytes } from '@/features/saves/storage-schema';
 import { workspaceAtStorageBytes } from '@/features/saves/storage-test-fixture';
 import { createSavesStorage, savesStorageKey } from './saves-storage';
@@ -113,6 +113,34 @@ it('keeps sample data labeled as a demo after reloading the browser', async () =
     const restored = await setup(storage);
     expect(restored.view.value('active')).toEqual(demo);
     expect(restored.view.value('persistence')).toBeNull();
+});
+
+it('keeps a pre-inventory factory usable and captures its inventory on the next import', async () => {
+    const snapshot = analyzeSave(storageFixture(), extractionContext);
+    const legacy = structuredClone(snapshot);
+    for (const building of legacy.cores.flatMap(core => core.buildings)) {
+        if (building.configuration.kind === 'storage') building.configuration = { kind: 'other' };
+    }
+    const storage = memoryStorageAdapter();
+    storage.setItem(key(stateKeys.savesWorkspaces), JSON.stringify({ v: 1, data: {
+        one: { schemaVersion: 1, id: 'one', name: 'Old factory', snapshot: legacy },
+    } }));
+    const app = await setup(storage);
+    expect(app.view.value('persistence')).toBeNull();
+    expect(app.harness.getSubscriptionValue([appIds.subscriptions.SAVES_STORAGE_GROUPS, 'one'])).toBeNull();
+    const picker = app.harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCE_PICKER_SOURCE, 'one']);
+    expect(picker?.compatible).toBe(true);
+    await app.dispatch([appIds.events.SAVES_IMPORT_OPEN, 'one']);
+    await app.dispatch([appIds.events.SAVES_IMPORT_READ, { name: 'world.sav', size: 10, arrayBuffer: async () => new ArrayBuffer(10) }]);
+    await app.dispatch([appIds.events.SAVES_IMPORT_READY, app.view.value('candidate').requestId, snapshot]);
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const restored = await setup(storage);
+    expect(restored.view.value('active')?.name).toBe('Old factory');
+    expect(restored.harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCE_PICKER_SOURCE, 'one'])?.snapshotKey).toBe(picker?.snapshotKey);
+    const restoredGroups = restored.harness.getSubscriptionValue([appIds.subscriptions.SAVES_STORAGE_GROUPS, 'one']);
+    expect(restoredGroups?.map(group => group.total)).toEqual([53, 107, 0, 2]);
+    expect(restoredGroups?.[0].items.find(item => item.id === 'helium')?.availability?.capacity).toBe(300);
 });
 
 it('persists independent planner allocations while comparison selection stays in the runtime', async () => {
