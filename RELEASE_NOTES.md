@@ -1,3 +1,26 @@
+# Release Notes — 2026-11-03
+
+## What's New
+
+### 🧮 Explore Factory Plans
+- Review each power network as a factory, with its installed production capacity and target rates supported by local extraction and incoming cargo.
+- Compare the network's production buildings with a plan, then open that plan in Planner with its rates, resources, and recipes.
+- Try a demo factory with four curated Cores before importing your own save. Factory plans are experimental.
+
+### 🗺️ Inspect Crowded Factory Maps
+- Filter buildings, adjust their displayed size, and use level and layer controls to inspect stacked or overlapping structures.
+
+### 📦 Inspect Storage in Factory Map
+- Review stored item quantities grouped by Core, including storage shared across Cores. See storage building counts, item capacity, how many buildings have room for each item, and whether flexible slots are available.
+
+### 📥 Import Larger Saves
+- Save imports now stream through a background worker to use less memory on large files. Imports support files up to 64 MiB compressed and 512 MiB unpacked.
+
+### 🎮 Updated Game Data and Corporation Catalog
+- Refreshed Update 2 QoL items, buildings, recipes, and save mappings.
+- Compare corporation level rewards with the supplies needed to unlock them.
+
+
 # Release Notes — 2026-10-16
 
 ## What's New
