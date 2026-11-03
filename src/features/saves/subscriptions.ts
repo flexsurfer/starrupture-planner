@@ -3,6 +3,7 @@ import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { createSaveGameData } from './game-data';
 import { buildSaveOverview } from './overview';
+import { buildFactoryPlans, getFactoryPlanBuildingRows } from './factory-plans';
 import { groupStorageInventory } from './storage-inventory';
 import { buildSaveMap } from './map';
 import { filterSaveMap, mapBuildingTypes } from './map-filter';
@@ -49,6 +50,17 @@ export const registerSavesSubscriptions: UkladModule<UkladRegistrar<AppContracts
     registrar.regSub(appIds.subscriptions.SAVES_STORAGE_GROUPS,
         id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA]],
         ([overview, data]) => overview ? groupStorageInventory(overview, data) : []);
+    registrar.regSub(appIds.subscriptions.SAVES_FACTORY_PLANS,
+        id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA],
+            [appIds.subscriptions.APP_DATA_VERSION], [appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]],
+        ([overview, data, version, loading]) => !loading && overview && overview.workspace.snapshot.gameData.version === version
+            && overview.workspace.snapshot.gameData.revision === data.metadata?.revision ? buildFactoryPlans(overview, data) : null);
+    registrar.regSub(appIds.subscriptions.SAVES_FACTORY_PLAN_BUILDING_ROWS,
+        id => [[appIds.subscriptions.SAVES_FACTORY_PLANS, id], [appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA]],
+        ([report, overview, data], _id, networkId) => {
+            const plan = report?.plans.find(plan => plan.networkId === networkId);
+            return plan && overview ? getFactoryPlanBuildingRows(plan, overview, data) : [];
+        });
     registrar.regSub(appIds.subscriptions.SAVES_MAP,
         id => [[appIds.subscriptions.SAVES_OVERVIEW, id], [appIds.subscriptions.SAVES_GAME_DATA], [appIds.subscriptions.SAVES_MAP_BUILDING_SIZE]],
         ([overview, data, buildingSize]) => overview ? buildSaveMap(overview, data, buildingSize) : null);

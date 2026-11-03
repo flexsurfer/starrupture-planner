@@ -2,11 +2,12 @@ import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useId, useState } from 'react';
 import { useSubscription } from '@/app/uklad/bindings';
-import { BuildingImage, ItemImage } from '@/shared/ui';
+import { ItemImage } from '@/shared/ui';
 import { useModalDialog } from '@/shared/ui/useModalDialog';
 import { getCategoryDisplayName } from '@/features/items/ui/hooks/useItemsData';
 import { getItemCategoryStyle } from '@/utils/itemColors';
 import { PlannerBuildingComparisonControl } from './PlannerBuildingComparisonControl';
+import { PlannerBuildingsTable } from './PlannerBuildingsTable';
 
 const STAT_TABS = ['buildings', 'items'] as const;
 
@@ -20,12 +21,11 @@ interface PlannerStatsModalProps {
  * Shows building counts, energy usage, and items used
  */
 export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, onClose }) => {
-    const { t, locale, formatNumber } = useTranslation();
+    const { t, locale } = useTranslation();
     // Get detailed stats from subscription
     const stats = useSubscription([appIds.subscriptions.PLANNER_STATS_DETAILED]);
     const buildingRows = useSubscription([appIds.subscriptions.PLANNER_STATS_BUILDING_ROWS]);
     const { coreNames } = useSubscription([appIds.subscriptions.PLANNER_BUILDING_COMPARISON]);
-    const comparing = coreNames.length > 0;
     const [activeTab, setActiveTab] = useState<typeof STAT_TABS[number]>('buildings');
     const closeModal = () => {
         setActiveTab('buildings');
@@ -100,56 +100,7 @@ export const PlannerStatsModal: React.FC<PlannerStatsModalProps> = ({ isOpen, on
                             <span className="text-base font-bold">🔥 {stats.totalHotness.toFixed(0)}</span>
                         </div>
                         <PlannerBuildingComparisonControl coreNames={coreNames} />
-                        <div className="border border-base-300 rounded-lg overflow-hidden bg-base-100 shadow-sm">
-                            <div className="overflow-y-auto max-h-[60vh] overflow-x-auto">
-                                <table className="table table-zebra w-full">
-                                    <thead className="sticky top-0 bg-base-200 z-10">
-                                        <tr>
-                                            <th>{t("Building")}</th>
-                                            <th className="text-right">{t(comparing ? 'Plan needs' : 'Count')}</th>
-                                            {comparing && <>
-                                                <th className="text-right">{t('In cores')}</th>
-                                                <th className="text-right">{t('To build')}</th>
-                                            </>}
-                                            <th className="text-right">{t("Power")}</th>
-                                            <th className="text-right">{t("Heat")}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {buildingRows.map(building => (
-                                            <tr key={building.buildingId}>
-                                                <td>
-                                                    <div className="flex items-center gap-2">
-                                                        <BuildingImage
-                                                            buildingId={building.buildingId}
-                                                            size="small"
-                                                            className="w-8 h-8"
-                                                        />
-                                                        <span className="font-medium">{building.buildingName}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="text-right font-semibold">
-                                                    {formatNumber(building.count)}
-                                                </td>
-                                                {comparing && <>
-                                                    <td className="text-right tabular-nums">{building.comparison ? formatNumber(building.comparison.existing) : '—'}</td>
-                                                    <td className={`text-right tabular-nums ${building.comparison && building.comparison.additional > 0 ? 'font-semibold text-warning' : 'text-base-content/40'}`}>
-                                                        {building.comparison ? formatNumber(building.comparison.additional) : '—'}
-                                                    </td>
-                                                </>}
-                                                <td className="text-right">
-                                                    ⚡ {building.totalPower.toFixed(0)}
-                                                </td>
-                                                <td className="text-right">
-                                                    🔥 {building.totalHeat.toFixed(0)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        {comparing && <p className="mt-2 text-xs text-base-content/50">{t('Only production buildings are compared, including those already in use.')}</p>}
+                        <PlannerBuildingsTable rows={buildingRows} comparisonScope={coreNames.length ? 'cores' : undefined} />
                     </div>
 
                     {/* Items Used */}

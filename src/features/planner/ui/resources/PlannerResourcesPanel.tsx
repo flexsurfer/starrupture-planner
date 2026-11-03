@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useSubscription } from '@/app/uklad/bindings';
 import { useTranslation } from '@/shared/i18n';
@@ -28,6 +28,7 @@ function PlannerResourcesPanelContent({ onClose, focusItemId, initialAmount, onC
     const itemsById = useSubscription([appIds.subscriptions.ITEMS_BY_ID_MAP]);
     const activeSave = useSubscription([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE]);
     const [showCores, setShowCores] = useState(false);
+    const factoryNoteId = useId();
     const coresOpen = showCores && !!activeSave;
     return <div className="planner-resources-panel flex h-full min-h-0 min-w-0 flex-col bg-base-100" aria-label={t('Resources used by this plan')}>
         <div className="flex shrink-0 items-center gap-2 border-b border-base-300 px-4 py-3">
@@ -50,8 +51,13 @@ function PlannerResourcesPanelContent({ onClose, focusItemId, initialAmount, onC
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
                 <div className="mb-3">
                     <ManualResourceForm key={focusItemId ?? ''} focusItemId={focusItemId} initialAmount={initialAmount} />
-                    {activeSave && <button type="button" className="btn btn-sm mt-2 h-auto min-h-8 w-full border-base-content/20 bg-base-200/30 py-1 text-xs font-medium text-base-content/70 shadow-none hover:border-base-content/40 hover:bg-base-200 hover:text-base-content"
-                        onClick={() => setShowCores(true)}>{t('or add from Factory Map')}<span aria-hidden="true">→</span></button>}
+                    {activeSave && <>
+                        <button type="button" aria-describedby={factoryNoteId} className="btn btn-sm mt-2 h-auto min-h-8 w-full border-base-content/20 bg-base-200/30 py-1 text-xs font-medium text-base-content/70 shadow-none hover:border-base-content/40 hover:bg-base-200 hover:text-base-content"
+                            onClick={() => setShowCores(true)}>{t('or add from Factory Map')}<span aria-hidden="true">→</span></button>
+                        <p id={factoryNoteId} className="mt-1 text-[11px] leading-tight text-base-content/55">
+                            {t('Factory Map resources don’t sync. Remove and re-add them after updating your .sav file.')}
+                        </p>
+                    </>}
                 </div>
                 {focusItemId && !groups.length && <p className="py-3 text-sm text-base-content/60">{t('No matching resources.')}</p>}
                 <div className="divide-y divide-base-content/5">

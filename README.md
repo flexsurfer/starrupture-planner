@@ -101,6 +101,10 @@ npm start
 
 Open `http://localhost:5173` to start in **Planner**. To explore the map, open the **Factory Map** tab with **Update 2 QoL** selected. In an empty workspace, choose **Try a demo factory** to explore four curated Cores or **Choose save file** to import your own `.sav`. The language selector is in **Global settings**.
 
+In **Factory Map → Factory plans** (experimental), networks with final products show their installed capacity and the target rates their detected inputs can support at the same output proportions. When several recipes make the same item, the plan prefers the highest tier configured on that network. If the preferred recipes cannot produce the target mix, it tries other recipes already configured there.
+
+**Compare buildings** counts production machines on that power network, even where Cores overlap. **Open in Planner** copies the rates, resources, and recipes into a multi-target plan. You can select Cores separately in Planner to compare buildings there.
+
 Use `npm run dev` for development without opening the browser automatically. `npm start` and `START.bat` use the same fixed local address so browser-saved plans remain available between launches.
 
 ### Build for Production

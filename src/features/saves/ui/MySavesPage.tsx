@@ -9,10 +9,12 @@ import { SaveImportDialog, SaveFileDropZone, SaveImportCompatibility, SaveFileLo
 import { SaveCoreDialog } from './SaveCoreDialog';
 import { SaveMap } from './SaveMap';
 import { SavePowerNetworks } from './SavePowerNetworks';
+import { SaveFactoryPlans } from './SaveFactoryPlans';
 import { SaveStorage } from './SaveStorage';
+import './SaveReports.css';
 
 const viewLabels: Record<SaveView, MessageKey> = {
-    map: 'Map', overview: 'Overview', 'power-networks': 'Power networks', storage: 'Storage',
+    map: 'Map', overview: 'Overview', 'power-networks': 'Power networks', storage: 'Storage', 'factory-plans': 'Factory plans',
 };
 
 function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disabled: boolean }) {
@@ -37,12 +39,12 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
         { confirmLabel: message('Remove save'), confirmButtonClass: 'btn-error' },
     ]);
     return <>
-        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 px-2 py-0.5">
-            <div className="tabs tabs-bordered tabs-sm" role="tablist" aria-label={t('Save view')}>
+        <div className="save-view-toolbar flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-base-content/10 px-2 py-1">
+            <div className="flex w-full flex-wrap gap-0.5 sm:w-auto" role="tablist" aria-label={t('Save view')}>
                 {saveViews.map((tab, index) => <button key={tab} type="button" role="tab"
                     id={`save-view-${tab}`} aria-controls={`save-panel-${tab}`} aria-selected={view === tab}
                     tabIndex={view === tab ? 0 : -1}
-                    className={`tab h-7 min-h-7 shrink-0 px-2 sm:px-3 text-xs font-semibold ${view === tab ? 'tab-active' : ''}`}
+                    className="save-view-tab min-h-8 cursor-pointer rounded-t px-1.5 text-[13px] font-medium text-base-content/75 hover:bg-base-content/5 focus-visible:outline-2 focus-visible:outline-primary sm:px-3 sm:text-sm"
                     onClick={() => setView(tab)} onKeyDown={event => {
                         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
                         event.preventDefault();
@@ -53,11 +55,11 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
                         document.getElementById(`save-view-${next}`)?.focus();
                     }}>{t(viewLabels[tab])}</button>)}
             </div>
-            <p className="order-last w-full px-2 pb-1 text-xs text-base-content/50 sm:order-none sm:ml-auto sm:w-auto sm:p-0">{workspace.isDemo ? t('Demo factory') : t('Last updated: {date}', { date: updated })}</p>
+            <p className="px-1.5 text-xs text-base-content/65 sm:ml-auto sm:p-0">{workspace.isDemo ? t('Demo factory') : t('Last updated: {date}', { date: updated })}</p>
             <div className="ml-auto flex shrink-0 items-center gap-1 sm:ml-0">
-                <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7" disabled={disabled}
+                <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7 text-(--save-action-ink)" disabled={disabled}
                     onClick={() => runtime.dispatch([appIds.events.SAVES_IMPORT_OPEN, workspace.id])}>{t(workspace.isDemo ? 'Import your save' : 'Update')}</button>
-                <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7 text-error" disabled={disabled} onClick={remove}>{t('Remove')}</button>
+                <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7 text-[color-mix(in_oklab,var(--color-error)_60%,var(--color-base-content))]" disabled={disabled} onClick={remove}>{t('Remove')}</button>
             </div>
         </div>
         {workspace.isDemo && <p className="shrink-0 bg-primary/5 px-4 py-2 text-xs text-base-content/75">{t('Sample data. Import your save to explore your own factory.')}</p>}
@@ -66,6 +68,7 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
             {view === 'map' && <SaveMap workspace={workspace} initialCoreId={mapSelections[workspace.id] ?? null} onOpenCore={openCore} />}
             {view === 'power-networks' && <SavePowerNetworks networks={overview?.powerNetworks ?? []} onOpenCore={openCore} />}
             {view === 'storage' && <SaveStorage workspaceId={workspace.id} />}
+            {view === 'factory-plans' && <SaveFactoryPlans workspaceId={workspace.id} />}
             {view === 'overview' && <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,23rem),1fr))] auto-rows-auto items-stretch gap-4">
                 {overview?.cores.map(coreOverview => <SaveCoreCard key={coreKey(coreOverview.core)} workspace={workspace} coreOverview={coreOverview}
                     name={coreName(coreOverview.core)} disabled={disabled} />)}

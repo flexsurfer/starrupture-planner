@@ -5,6 +5,14 @@ import type { PlannerProductionFlowResult } from './types';
 import { getPlannerInputBuildings } from './external-inputs';
 import { calculateMaxTargetFromInputs } from '@/utils/matchInputsCalculation';
 
+export interface PlannerResourceSource {
+    workspaceId: string;
+    snapshotKey: string;
+    buildingIds: number[];
+    /** Captured in building ID order; absent on older imports. */
+    buildingNames?: string[];
+}
+
 export interface PlannerResource {
     id: string;
     itemId: string;
@@ -15,7 +23,7 @@ export interface PlannerResource {
     coreName?: string;
     coreIds?: number[];
     /** Snapshot-local identity prevents the same physical source being added through another Core. */
-    source?: { workspaceId: string; snapshotKey: string; buildingIds: number[] };
+    source?: PlannerResourceSource;
 }
 export interface PlannerResourceSummary {
     itemId: string;
@@ -46,7 +54,7 @@ export interface PlannerResourcePicker {
 export interface PlannerResourceSelection { buildingId: number; ratePerMinute?: number }
 export interface PlannerCoreAllocation {
     coreId: number; coreName: string; coreIds?: number[]; itemId: string; ratePerMinute: number;
-    source?: PlannerResource['source'];
+    source: PlannerResourceSource & { buildingNames: string[] };
 }
 export interface PlannerResourceFit {
     available: boolean;
@@ -98,6 +106,11 @@ export function normalizePlannerResources(value: unknown, strict = false): Plann
                 if (strict) fail(); return [];
             }
             row.source = { workspaceId: source.workspaceId, snapshotKey: source.snapshotKey, buildingIds: [...source.buildingIds] };
+            if (source.buildingNames !== undefined) {
+                if (!Array.isArray(source.buildingNames) || source.buildingNames.length !== source.buildingIds.length || !source.buildingNames.every(validText)) {
+                    if (strict) fail();
+                } else row.source.buildingNames = [...source.buildingNames];
+            }
         }
         ids.add(row.id);
         return [row];
@@ -111,15 +124,16 @@ export function groupPlannerCoreAllocations(rows: PlannerCoreAllocation[]): Plan
         const previous = groups.get(key);
         if (previous) {
             previous.ratePerMinute += row.ratePerMinute;
-            if (previous.source && row.source) previous.source.buildingIds.push(...row.source.buildingIds);
-        } else groups.set(key, { ...row, ...(row.source ? { source: { ...row.source, buildingIds: [...row.source.buildingIds] } } : {}) });
+            previous.source.buildingIds.push(...row.source.buildingIds);
+            previous.source.buildingNames.push(...row.source.buildingNames);
+        } else groups.set(key, { ...row, source: { ...row.source, buildingIds: [...row.source.buildingIds], buildingNames: [...row.source.buildingNames] } });
     }
     return [...groups.values()];
 }
 export function hasPlannerCoreAllocation(resources: PlannerResource[], allocation: PlannerCoreAllocation): boolean {
     return resources.some(row => row.coreId === allocation.coreId && row.itemId === allocation.itemId
         && JSON.stringify(row.coreIds ?? [row.coreId]) === JSON.stringify(allocation.coreIds ?? [allocation.coreId])
-        && (!row.source || !allocation.source || row.source.workspaceId !== allocation.source.workspaceId || row.source.snapshotKey !== allocation.source.snapshotKey)
+        && (!row.source || row.source.workspaceId !== allocation.source.workspaceId || row.source.snapshotKey !== allocation.source.snapshotKey)
         // Ignore only floating-point addition noise (e.g. 0.1 + 0.2 vs 0.3).
         && Math.abs(row.ratePerMinute - allocation.ratePerMinute) <= Number.EPSILON * Math.max(1, row.ratePerMinute, allocation.ratePerMinute) * 8);
 }

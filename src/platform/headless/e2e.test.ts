@@ -159,6 +159,47 @@ afterAll(() => {
 });
 
 describe('headless application E2E', () => {
+    it('opens a current factory suggestion and keeps its plan independent of the source save', async () => {
+        const scenario = createScenario();
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
+        await dispatch(scenario, [appIds.events.SAVES_OPEN_DEMO, 'Demo']);
+        const view = mountView(scenario, 'Factory plans', {
+            report: [appIds.subscriptions.SAVES_FACTORY_PLANS, 'demo-factory'],
+            preview: [appIds.subscriptions.SAVES_FACTORY_PLAN_BUILDING_ROWS, 'demo-factory', 616],
+            active: [appIds.subscriptions.PLANNER_ACTIVE_TAB],
+        } as const);
+        const key = view.value('report')!.snapshotKey;
+        const open = (snapshot: string) => dispatch(scenario, [appIds.events.PLANNER_OPEN_FACTORY_PLAN,
+            'demo-factory', snapshot, 616, 'refinery', 'Calcium Refinery', 'table']);
+        await open('superseded-snapshot');
+        expect(view.value('active')).toBeNull();
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'playtest', TEST_GAME_DATA]);
+        expect(view.value('report')).toBeNull();
+        expect(view.value('preview')).toEqual([]);
+        await open(key);
+        expect(view.value('active')).toBeNull();
+        await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL']);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'previous', 'Previous plan', 'single']);
+        const core = view.value('report')!.plans.find(plan => plan.networkId === 616)!.cores[0];
+        await dispatch(scenario, [appIds.events.PLANNER_SET_COMPARISON_CORES, 'demo-factory', key, [core.id]]);
+        const stats = mountView(scenario, 'Planner building statistics', {
+            comparison: [appIds.subscriptions.PLANNER_BUILDING_COMPARISON],
+            rows: [appIds.subscriptions.PLANNER_STATS_BUILDING_ROWS],
+        } as const);
+        expect(stats.value('comparison').coreNames).toEqual(['Calcium Refinery']);
+        await open(key);
+        const projected = view.value('active');
+        expect(projected).toMatchObject({ id: 'refinery', mode: 'multi', activeView: 'table', resources: [{ ratePerMinute: 240 }] });
+        expect(stats.value('comparison')).toEqual({ coreNames: [], rows: [] });
+        expect(stats.value('rows').find(row => row.buildingId === 'fabricator')).toMatchObject({ count: 5, comparison: null });
+        expect(view.value('preview').find(row => row.buildingId === 'fabricator')).toMatchObject({ count: 5, comparison: { existing: 4, additional: 1 } });
+        await dispatch(scenario, [appIds.events.SAVES_REMOVE_WORKSPACE, 'demo-factory']);
+        expect(view.value('report')).toBeNull();
+        expect(view.value('preview')).toEqual([]);
+        expect(stats.value('comparison').coreNames).toEqual([]);
+        expect(view.value('active')).toEqual(projected);
+    });
+
     it('opens independent save workspaces, preserves intent across tabs and a reload, and reports storage failures', async () => {
         const memory = memoryStorageAdapter();
         let failWrites = false;

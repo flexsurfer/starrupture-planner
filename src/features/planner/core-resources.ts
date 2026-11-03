@@ -44,7 +44,7 @@ export function prepareCoreResourceSelection(picker: PlannerResourcePicker, sele
         if (imported.has(id)) continue;
         allocations.push({ coreId: core.coreId, coreName: core.name, ...(core.coreIds.length > 1 ? { coreIds: core.coreIds } : {}),
             itemId: building.itemId, ratePerMinute: rate,
-            source: { workspaceId: picker.workspaceId, snapshotKey: picker.snapshotKey, buildingIds: [id] } });
+            source: { workspaceId: picker.workspaceId, snapshotKey: picker.snapshotKey, buildingIds: [id], buildingNames: [building.buildingName] } });
     }
     const grouped = groupPlannerCoreAllocations(allocations);
     return grouped.every(row => isValidResourceRate(row.ratePerMinute)) ? grouped : null;

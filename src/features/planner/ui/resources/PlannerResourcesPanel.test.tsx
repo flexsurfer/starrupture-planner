@@ -61,7 +61,7 @@ async function addSave(harness: ReturnType<typeof setup>['harness']) {
     await act(async () => {
         harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'playtest', {
             ...structuredClone(TEST_GAME_DATA), saveBuildingCatalog: {
-                revision, kinds: { ore_excavator: 'extractor', smelter: 'production' },
+                revision, kinds: { ore_excavator: 'extractor', smelter: 'production' }, tiers: { ore_excavator: 1 },
                 extractionRates: { 'ore_excavator:iron-ore:normal': 60, 'ore_excavator:iron-ore:pure': 120, 'ore_excavator:copper-ore:normal': 45 },
                 stackSizes: {},
             },
@@ -212,11 +212,13 @@ it('shows an empty filtered list until the node selection is cleared', async () 
     expect(screen.getByLabelText('Item')).toBeEnabled();
 });
 
-it('adds buildings across cores directly without save selection, metadata, or replacement', async () => {
+it('shows the Core and building names for imported resources, even after the save is removed', async () => {
     const { harness } = setup();
     await addSave(harness);
     await act(async () => harness.dispatchSync([appIds.events.PLANNER_ADD_MANUAL_RESOURCE, 'iron-ore', 5]));
-    fireEvent.click(screen.getByRole('button', { name: 'or add from Factory Map' }));
+    const addFromMap = screen.getByRole('button', { name: 'or add from Factory Map' });
+    expect(addFromMap).toHaveAccessibleDescription('Factory Map resources don’t sync. Remove and re-add them after updating your .sav file.');
+    fireEvent.click(addFromMap);
     expect(screen.queryByRole('combobox', { name: 'Choose a save' })).not.toBeInTheDocument();
     expect(screen.queryByText('World')).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Select Iron Ore from North drill'));
@@ -228,8 +230,9 @@ it('adds buildings across cores directly without save selection, metadata, or re
     fireEvent.click(screen.getByRole('heading', { name: 'Iron Ore' }));
     expect(screen.getAllByLabelText('Resource amount for Iron Ore')).toHaveLength(3);
     expect(screen.getByText('North')).toBeVisible();
-    expect(screen.queryByText('North drill')).not.toBeInTheDocument();
+    expect(screen.getByText('North drill')).toBeVisible();
     expect(screen.getByText('South')).toBeVisible();
+    expect(screen.getByText('South drill')).toBeVisible();
     expect(screen.queryByText('Saved sources')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Replace from save' })).not.toBeInTheDocument();
     expect(screen.queryByText(/Captured/)).not.toBeInTheDocument();
@@ -239,6 +242,9 @@ it('adds buildings across cores directly without save selection, metadata, or re
     expect(screen.getByRole('button', { name: /Add selected resources/ })).toBeDisabled();
     await act(async () => harness.dispatchSync([appIds.events.SAVES_REMOVE_WORKSPACE, 'world']));
     expect(screen.queryByRole('button', { name: 'or add from Factory Map' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Factory Map resources don’t sync/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('heading', { name: 'Iron Ore' }));
+    expect(screen.getByText('North drill')).toBeVisible();
     expect(screen.getAllByLabelText('Resource amount for Iron Ore')).toHaveLength(3);
     expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_EXTERNAL_INPUTS])).toEqual({ 'iron-ore': 165 });
 });
@@ -311,6 +317,8 @@ it('marks imported physical sources as already added while keeping other buildin
     await waitFor(() => expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_RESOURCES])).toMatchObject([
         { id: 'resource-1', coreId: 1, coreName: 'North', itemId: 'iron-ore', ratePerMinute: 120, enabled: true },
     ]));
+    fireEvent.click(screen.getByRole('heading', { name: 'Iron Ore' }));
+    expect(screen.getByText('North drill · Spare drill')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'or add from Factory Map' }));
     selectNorth();
     expect(screen.getByRole('button', { name: /Add selected resources/ })).toBeDisabled();

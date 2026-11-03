@@ -1,6 +1,7 @@
 import type { PlannerResource, PlannerResourceSummary, PlannerResourcePicker, PlannerResourceSelection, PlannerResourceFit, PlannerBuildingComparison } from '@/features/planner/resources';
 import type { MapDisplaySettings, MapLayers } from '@/features/saves/map-preferences';
 import type { SaveGameData } from '@/features/saves/game-data';
+import type { FactoryPlans } from '@/features/saves/factory-plans';
 import type { SaveMap } from '@/features/saves/map';
 import type { MapBuildingType } from '@/features/saves/map-filter';
 import type { UiText } from '@/shared/i18n/core';
@@ -174,6 +175,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PLANNER_SET_RESOURCE_ENABLED]: [id: string, enabled: boolean];
         [appIds.events.PLANNER_REMOVE_RESOURCE]: [id: string];
         [appIds.events.PLANNER_IMPORT_CORE_RESOURCES]: [workspaceId: string, snapshotKey: string, selections: PlannerResourceSelection[]];
+        [appIds.events.PLANNER_OPEN_FACTORY_PLAN]: [workspaceId: string, snapshotKey: string, networkId: number, tabId: string, name: string, view: PlannerView];
         [appIds.events.PLANNER_APPLY_RESOURCE_FIT]: [];
         [appIds.events.PLANNER_SET_COMPARISON_CORES]: [workspaceId: string, snapshotKey: string, coreIds: number[]];
         [appIds.events.PLANNER_CLEAR_BUILDING_COMPARISON]: [];
@@ -335,6 +337,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.subscriptions.SAVES_WORKSPACE_BY_ID]: { params: [workspaceId: string]; result: SaveWorkspace | null };
         [appIds.subscriptions.SAVES_OVERVIEW]: { params: [workspaceId: string]; result: SaveOverview | null };
         [appIds.subscriptions.SAVES_STORAGE_GROUPS]: { params: [workspaceId: string]; result: SaveStorageGroup[] | null };
+        [appIds.subscriptions.SAVES_FACTORY_PLANS]: { params: [workspaceId: string]; result: FactoryPlans | null };
+        [appIds.subscriptions.SAVES_FACTORY_PLAN_BUILDING_ROWS]: { params: [workspaceId: string, networkId: number]; result: PlannerStatsBuildingRow[] };
         [appIds.subscriptions.SAVES_MAP]: { params: [workspaceId: string]; result: SaveMap | null };
         [appIds.subscriptions.SAVES_CORE_BY_ID]: { params: [workspaceId: string, coreId: number]; result: SaveCoreOverview | null };
         [appIds.subscriptions.SAVES_SELECTED_CORE]: { params: [workspaceId: string]; result: SaveCoreOverview | null };

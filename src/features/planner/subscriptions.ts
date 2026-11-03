@@ -6,9 +6,9 @@ import type { AppContracts } from '@/app/uklad/contracts';
 import { buildProductionFlow, buildMultiTargetProductionFlow } from '@/features/planner/production-flow';
 import type {
     CorporationLevelInfo,
-    PlannerBuildingStats,
     PlannerDetailedStatsItem,
 } from '@/features/planner/types';
+import { getPlannerBuildingStats } from './building-stats';
 import { buildPlannerFlowGraph } from './flow-graph';
 import { getFlowNodeId, getTargetNodeIds } from './flow-node';
 import { buildRecipeOptionsForOutputItems, collectRecipeOutputItems } from './recipe-options';
@@ -219,23 +219,6 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
             const resourceNodes = productionFlow.nodes.filter(node => node.nodeType !== 'target');
             const buildingNodes = resourceNodes.filter(node => node.nodeType !== 'input');
             const targetNodeIds = getTargetNodeIds(productionFlow.nodes, selectedItemId);
-            const buildingMap = new Map<string, PlannerBuildingStats>();
-            for (const node of buildingNodes) {
-                const existing = buildingMap.get(node.buildingId);
-                if (existing) {
-                    existing.count += Math.ceil(node.buildingCount);
-                    existing.totalPower += node.totalPower;
-                    existing.totalHeat += node.totalHeat;
-                } else {
-                    buildingMap.set(node.buildingId, {
-                        buildingId: node.buildingId,
-                        buildingName: node.buildingName,
-                        count: Math.ceil(node.buildingCount),
-                        totalPower: node.totalPower,
-                        totalHeat: node.totalHeat,
-                    });
-                }
-            }
 
             const itemsByType = new Map<string, PlannerDetailedStatsItem[]>();
             // Include recipe consumption and separate target demand. Terminal target
@@ -287,7 +270,7 @@ export const registerPlannerSubscriptions: UkladModule<UkladRegistrar<AppContrac
                         || (a.nodeType !== 'target' && b.nodeType !== 'target'
                             ? a.buildingName.localeCompare(b.buildingName) || a.recipeIndex - b.recipeIndex : 0)),
                 })).filter(group => group.nodes.length > 0),
-                buildingStats: Array.from(buildingMap.values()).sort((a, b) => b.count - a.count),
+                buildingStats: getPlannerBuildingStats(buildingNodes),
                 totalEnergy: buildingNodes.reduce((sum, node) => sum + node.totalPower, 0),
                 totalHotness: buildingNodes.reduce((sum, node) => sum + node.totalHeat, 0),
                 totalBuildings: buildingNodes.reduce((sum, node) => sum + Math.ceil(node.buildingCount), 0),

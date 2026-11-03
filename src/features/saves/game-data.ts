@@ -6,6 +6,7 @@ import type { SaveBuildingConfiguration, SaveNodePurity } from './snapshot';
 export interface SaveBuildingCatalog {
     revision: string;
     kinds: Record<string, SaveBuildingConfiguration['kind']>;
+    tiers: Record<string, number>;
     extractionRates: Record<string, number | null>;
     stackSizes: Record<string, number>;
 }
@@ -13,9 +14,11 @@ export interface SaveBuildingCatalog {
 export function createSaveBuildingCatalog(mappings: SaveMappings, buildings: Building[]): SaveBuildingCatalog {
     const byId = new Map(buildings.map(building => [building.id, building]));
     const kinds: SaveBuildingCatalog['kinds'] = {};
+    const tiers: SaveBuildingCatalog['tiers'] = {};
     const extractionRates: SaveBuildingCatalog['extractionRates'] = {};
     for (const mapping of mappings.buildings.values()) {
         if (mapping.role === 'core') continue;
+        if (mapping.tier !== null) tiers[mapping.id] = mapping.tier;
         const building = byId.get(mapping.id);
         const catalogKind = building?.type === 'storage' ? 'storage' : building?.recipes?.length ? 'production' : 'other';
         kinds[mapping.id] = mapping.extractor ? 'extractor' : mapping.role ?? catalogKind;
@@ -23,7 +26,7 @@ export function createSaveBuildingCatalog(mappings: SaveMappings, buildings: Bui
             extractionRates[`${mapping.id}:${recipe.itemId}:${recipe.purity}`] = recipe.ratePerMinute;
         }
     }
-    return { revision: mappings.mappingRevision, kinds, extractionRates, stackSizes: Object.fromEntries(mappings.stackSizes) };
+    return { revision: mappings.mappingRevision, kinds, tiers, extractionRates, stackSizes: Object.fromEntries(mappings.stackSizes) };
 }
 
 /** Pure indexes over the selected catalogs; the runtime subscription owns their lifetime. */

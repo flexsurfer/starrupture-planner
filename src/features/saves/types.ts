@@ -38,7 +38,7 @@ export interface SaveWorkspaceSelection {
 
 export interface SaveMapViewport { x: number; y: number; zoom: number }
 
-export const saveViews = ['map', 'overview', 'power-networks', 'storage'] as const;
+export const saveViews = ['map', 'overview', 'power-networks', 'storage', 'factory-plans'] as const;
 export type SaveView = typeof saveViews[number];
 
 export type SaveStorageError = 'load' | 'write' | null;

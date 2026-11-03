@@ -1,10 +1,14 @@
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
+import { current } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { createSaveGameData } from '@/features/saves/game-data';
 import { buildSaveOverview } from '@/features/saves/overview';
 import { getActiveSaveWorkspace } from '@/features/saves/workspace';
-import { getActivePlannerTab } from './state';
+import { buildFactoryPlans } from '@/features/saves/factory-plans';
+import { factoryTargetsFromRates } from '@/features/saves/factory-fit';
+import { availableName } from '@/utils/availableName';
+import { createPlannerTab, getActivePlannerTab } from './state';
 import { buildCoreResourcePicker, prepareCoreResourceSelection } from './core-resources';
 import { getPlannerResourceFit, hasPlannerCoreAllocation, isValidResourceRate, nextPlannerResourceId, plannerTargetIds, saveResourceSnapshotKey, type PlannerResource } from './resources';
 
@@ -55,6 +59,27 @@ export const registerPlannerResourceEvents: UkladModule<UkladRegistrar<AppContra
         if (!tab) return;
         const fit = getPlannerResourceFit(tab, draftState.buildingsList);
         if (fit.available && fit.targetAmount !== null) tab.targetAmount = fit.targetAmount;
+    });
+    registrar.regEvent(appIds.events.PLANNER_OPEN_FACTORY_PLAN, ({ draftState }, workspaceId, snapshotKey, networkId, tabId, name, view) => {
+        const active = getActiveSaveWorkspace(draftState);
+        if (!active || active.id !== workspaceId || !Number.isSafeInteger(networkId) || draftState.uiGameDataLoadPending
+            || active.snapshot.gameData.version !== draftState.appDataVersion || active.snapshot.gameData.revision !== draftState.savesBuildingCatalog?.revision
+            || !tabId.trim() || !name.trim() || (view !== 'graph' && view !== 'table') || draftState.plannerTabs.some(tab => tab.id === tabId)) return;
+        const data = createSaveGameData(current(draftState.buildingsList), current(draftState.itemsList), draftState.savesBuildingCatalog);
+        const overview = buildSaveOverview(current(active), data);
+        const report = buildFactoryPlans(overview, data, networkId);
+        const plan = report.plans[0];
+        if (report.snapshotKey !== snapshotKey || !plan?.targetRates) return;
+        const tab = createPlannerTab(tabId, availableName(name, new Set(draftState.plannerTabs.map(tab => tab.name))), 'multi', view);
+        tab.multiTargets = factoryTargetsFromRates(plan.targetRates);
+        tab.recipeSelections = plan.recipeSelections;
+        tab.resources = plan.resources;
+        draftState.plannerTabs.push(tab);
+        draftState.plannerActiveTabId = tab.id;
+        draftState.plannerComparisonCoreIds = [];
+        draftState.plannerTabCreation = null;
+        draftState.plannerTargetWarning = null;
+        draftState.uiActiveTab = 'planner';
     });
     registrar.regEvent(appIds.events.PLANNER_SET_COMPARISON_CORES, ({ draftState }, workspaceId, snapshotKey, coreIds) => {
         const tab = getActivePlannerTab(draftState);

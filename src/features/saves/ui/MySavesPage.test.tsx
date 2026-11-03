@@ -37,7 +37,7 @@ async function setup(error?: SaveImportError, save: unknown = snapshotFixture())
     runtime.dispatch([appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
     owners.push({ runtime, persistence });
     render(<UkladProvider runtime={runtime}><MySavesPage /><ConfirmationDialog /></UkladProvider>);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Choose save file' })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Try a demo factory' })).toBeEnabled());
     return { runtime, persistence };
 }
 
@@ -70,11 +70,13 @@ it('lets a first visitor explore the demo and replace it with their own save', a
     expect(demo.isDemo).toBe(true);
     await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Storage' })); });
     expect(screen.getByText('All storage was full when the game was saved.')).toBeVisible();
-    expect(screen.getAllByText('Storage full')).toHaveLength(3);
+    expect(screen.queryByRole('heading', { name: 'Storage' })).toBeNull();
+    expect(screen.queryByText('Storage full')).toBeNull();
     const foundry = within(screen.getByRole('article', { name: 'Wolfram Foundry' }));
     const material = within(foundry.getByRole('row', { name: /^Basic Building Material/ }));
-    expect(material.getByText('Full')).toBeVisible();
-    expect(material.getByText('Buildings with room · 0/3')).toBeVisible();
+    expect(material.queryByText('Full')).toBeNull();
+    expect(foundry.getByRole('columnheader', { name: 'Buildings with room' })).toBeVisible();
+    expect(material.getByRole('cell', { name: '0/3' })).toBeVisible();
     expect(material.getByRole('cell', { name: '12,000 / 12,000' })).toBeVisible();
     await interact(() => {
         runtime.dispatch([appIds.events.SAVES_SET_MAP_VIEWPORT, demo.id, 100, 100, 1]);
@@ -92,6 +94,96 @@ it('lets a first visitor explore the demo and replace it with their own save', a
     expect(screen.queryByRole('heading', { level: 1, name: 'StarRupture Interactive Map' })).toBeNull();
     await interact(() => { runtime.dispatch([appIds.events.SAVES_OPEN_DEMO, 'Demo factory']); });
     expect(harness.getSubscriptionValue([appIds.subscriptions.SAVES_ACTIVE_WORKSPACE])).toEqual(workspace);
+});
+
+it('opens the demo refinery as a separate multi-target plan with its shared calcium supply and configured recipes', async () => {
+    const { runtime } = await setup();
+    const harness = createUkladTestHarness(runtime);
+    await interact(() => {
+        runtime.dispatch([appIds.events.PLANNER_CREATE_TAB, 'existing', 'My plan', 'single']);
+        fireEvent.click(screen.getByRole('button', { name: 'Try a demo factory' }));
+    });
+    await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Factory plans' })); });
+    const refinery = within(screen.getByRole('article', { name: 'Power network 616' }));
+    expect(screen.queryByRole('heading', { name: 'Factory plans' })).toBeNull();
+    expect(refinery.getByRole('columnheader', { name: 'Installed capacity /min' })).toBeVisible();
+    expect(refinery.getByRole('columnheader', { name: 'Target rate /min' })).toBeVisible();
+    expect(refinery.getByRole('row', { name: 'Calcite Sheets 240 288' })).toBeVisible();
+    const compare = refinery.getByRole('button', { name: 'Compare buildings' });
+    expect(compare).toHaveAttribute('aria-expanded', 'false');
+    expect(refinery.queryByRole('table', { name: 'Buildings' })).toBeNull();
+    await interact(() => { fireEvent.click(compare); });
+    expect(compare).toHaveAttribute('aria-expanded', 'true');
+    const table = within(refinery.getByRole('table', { name: 'Buildings' }));
+    expect(table.getAllByRole('columnheader').map(cell => cell.textContent)).toEqual(['Building', 'Plan needs', 'On this network', 'To build']);
+    expect(table.getByRole('row', { name: 'Fabricator 5 4 1' })).toBeVisible();
+    await interact(() => { fireEvent.click(compare); });
+    expect(refinery.queryByRole('table', { name: 'Buildings' })).toBeNull();
+    expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS])).toEqual([]);
+    await interact(() => { fireEvent.click(refinery.getByRole('button', { name: 'Open in Planner' })); });
+    expect(harness.getState().uiActiveTab).toBe('planner');
+    expect(harness.getState().plannerTabs.map(tab => tab.name)).toEqual(['My plan', 'Power network 616']);
+    expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])).toMatchObject({
+        mode: 'multi', multiTargets: [{ itemId: 'calcite_sheets', amount: 288 }, { itemId: 'powder_calcium', amount: 288 }],
+        recipeSelections: { block_calcium: 'smelter:2', calcite_sheets: 'fabricator:4', powder_calcium: 'furnace:1' },
+        resources: [{ itemId: 'ore_calcium', ratePerMinute: 240, enabled: true, coreName: 'Calcium Refinery' }],
+    });
+    const flow = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_PRODUCTION_FLOW]);
+    expect(flow.nodes.find(node => node.outputItem === 'ore_calcium')).toMatchObject({ nodeType: 'input', buildingCount: 1 });
+    expect(flow.nodes.find(node => node.outputItem === 'block_calcium')).toMatchObject({ buildingCount: 4 });
+});
+
+it('explains a recipe fallback and opens Planner with the recipe and rate shown on the card', async () => {
+    const save = snapshotFixture();
+    for (const id of [101, 200, 201]) {
+        Object.assign(save.itemData.Mass.electricitySubsystemState.nodeData, {
+            [`(UId=(ID=${id}))`]: { handle: { iD: id }, subGraph: { subGraphId: 42 } },
+        });
+    }
+    const { runtime } = await setup(undefined, save);
+    await importSave('Workshop');
+    await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Factory plans' })); });
+    const card = within(screen.getByRole('article', { name: 'Power network 42' }));
+    expect(card.getByText('The preferred recipes need Goethite Ore. This plan uses other configured recipes for Tube.')).toBeVisible();
+    expect(card.getByRole('row', { name: 'Tube 600 320' })).toBeVisible();
+    await interact(() => { fireEvent.click(card.getByRole('button', { name: 'Open in Planner' })); });
+    const harness = createUkladTestHarness(runtime);
+    expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])).toMatchObject({
+        multiTargets: [{ itemId: 'tube', amount: 320 }], recipeSelections: { tube: 'fabricator:9' },
+    });
+});
+
+it('opens a fitted plan only when the network covers its required input', async () => {
+    const save = snapshotFixture();
+    const { runtime } = await setup(undefined, save);
+    await importSave('Workshop');
+    const openPlans = () => interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Factory plans' })); });
+    const network = () => within(screen.getByRole('article', { name: 'Power network 9' }));
+    await openPlans();
+    expect(network().getByText('Missing supply for Titanium Ore.')).toBeVisible();
+    expect(network().getByRole('button', { name: 'Open in Planner' })).toBeDisabled();
+    expect(network().queryByRole('button', { name: 'Compare buildings' })).toBeNull();
+
+    // The same Cores also cover a smelter and a Fabricator v.2 on another network.
+    save.itemData.Mass.entities['(ID=210)'] = save.itemData.Mass.entities['(ID=10)'];
+    Object.assign(save.itemData.Mass.electricitySubsystemState.nodeData, {
+        '(UId=(ID=101))': { handle: { iD: 101 }, subGraph: { subGraphId: 9 } },
+        '(UId=(ID=210))': { handle: { iD: 210 }, subGraph: { subGraphId: 8 } },
+        '(UId=(ID=201))': { handle: { iD: 201 }, subGraph: { subGraphId: 8 } },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Update' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Update save' });
+    fireEvent.change(within(dialog).getByLabelText('Choose save file'), { target: { files: [saveFile('Workshop')] } });
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
+    await openPlans();
+    expect(network().getByRole('row', { name: 'Titanium Bar 60 120' })).toBeVisible();
+    await interact(() => { fireEvent.click(network().getByRole('button', { name: 'Compare buildings' })); });
+    // Only the one smelter on network 9 counts, even though both Cores cover it.
+    expect(network().getByRole('row', { name: 'Smelter 2 1 1' })).toBeVisible();
+    expect(network().getByRole('row', { name: 'Fabricator 0 1 0' })).toBeVisible();
+    expect(network().queryByRole('row', { name: /^Fabricator v\.2 / })).toBeNull();
+    await interact(() => { fireEvent.click(network().getByRole('button', { name: 'Open in Planner' })); });
+    expect(createUkladTestHarness(runtime).getSubscriptionValue([appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS])).toEqual([]);
 });
 
 it('opens the map after importing and removes the save only after confirmation', async () => {
@@ -387,21 +479,21 @@ it('shows storage quantities by Core and replaces them when a save is updated', 
     await interact(() => { fireEvent.click(screen.getByRole('tab', { name: 'Storage' })); });
     const workshop = within(screen.getByRole('article', { name: 'Workshop' }));
     expect(workshop.getByText('2 storage buildings · 53 items')).toBeVisible();
+    expect(workshop.queryByText('Space available')).toBeNull();
     expect(workshop.queryByText(/units? free/)).toBeNull();
-    expect(workshop.getAllByRole('columnheader').map(header => header.textContent)).toEqual(['Item', 'Stored / capacity']);
+    expect(workshop.getAllByRole('columnheader').map(header => header.textContent)).toEqual(['Item', 'Buildings with room', 'Stored / capacity']);
     const helium = within(workshop.getByRole('row', { name: /^Helium-3/ }));
-    expect(helium.getByText('Buildings with room · 2/2')).toBeVisible();
+    expect(helium.getByRole('cell', { name: '2/2' })).toBeVisible();
     expect(helium.getByRole('cell', { name: '42 / 300' })).toBeVisible();
     expect(helium.queryByText('Full')).toBeNull();
     expect(within(workshop.getByRole('row', { name: /^Calcite Sheets/ })).getByRole('cell', { name: '11 / 200' })).toBeVisible();
     expect(within(screen.getByRole('article', { name: 'Core 2' })).getByText('Storage is empty.')).toBeVisible();
     expect(within(screen.getByRole('article', { name: 'Core 2' })).getByText('1 flexible slot')).toBeVisible();
     const shared = within(screen.getByRole('article', { name: 'Shared across Workshop + Core 2' }));
-    expect(within(shared.getByRole('row', { name: /^Calcite Sheets/ })).getByText('Buildings with room · 1/1')).toBeVisible();
-    expect(within(shared.getByRole('row', { name: /^Helium-3/ })).getByText('Full')).toBeVisible();
+    expect(within(shared.getByRole('row', { name: /^Calcite Sheets/ })).getByRole('cell', { name: '1/1' })).toBeVisible();
+    expect(within(shared.getByRole('row', { name: /^Helium-3/ })).queryByText('Full')).toBeNull();
     const unassigned = within(screen.getByRole('article', { name: 'Unassigned Core' }));
-    expect(within(unassigned.getByRole('row', { name: /^Helium-3/ })).getByText('Full')).toBeVisible();
-    expect(unassigned.getByText('Storage full')).toBeVisible();
+    expect(unassigned.queryByText('Storage full')).toBeNull();
     expect(screen.queryByText('All storage was full when the game was saved.')).toBeNull();
 
     save.itemData.Mass.entities['(ID=50)'].fragmentValues = [];
@@ -448,15 +540,21 @@ it('supports keyboard navigation across all save views and their empty states', 
     const map = screen.getByRole('tab', { name: 'Map' });
     const networks = screen.getByRole('tab', { name: 'Power networks' });
     const storage = screen.getByRole('tab', { name: 'Storage' });
+    const plans = screen.getByRole('tab', { name: 'Factory plans' });
     await interact(() => { fireEvent.keyDown(map, { key: 'End' }); });
+    expect(plans).toHaveFocus();
+    expect(screen.getByRole('tabpanel', { name: 'Factory plans' })).toHaveTextContent('No power networks with final products were found in this save.');
+    await interact(() => { fireEvent.keyDown(plans, { key: 'ArrowLeft' }); });
     expect(storage).toHaveFocus();
     expect(storage).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('No storage buildings found in this save.')).toBeVisible();
     await interact(() => { fireEvent.keyDown(storage, { key: 'ArrowRight' }); });
+    expect(plans).toHaveFocus();
+    await interact(() => { fireEvent.keyDown(plans, { key: 'ArrowRight' }); });
     expect(map).toHaveFocus();
     await interact(() => { fireEvent.keyDown(map, { key: 'ArrowLeft' }); });
-    expect(storage).toHaveFocus();
-    await interact(() => { fireEvent.keyDown(storage, { key: 'Home' }); });
+    expect(plans).toHaveFocus();
+    await interact(() => { fireEvent.keyDown(plans, { key: 'Home' }); });
     expect(map).toHaveFocus();
     await interact(() => { fireEvent.keyDown(map, { key: 'ArrowRight' }); });
     expect(overview).toHaveFocus();

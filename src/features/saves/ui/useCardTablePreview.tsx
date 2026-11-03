@@ -10,7 +10,7 @@ export function useCardTablePreview<Row>(rows: readonly Row[], limit: number) {
     return {
         tableId,
         visibleRows: expanded ? rows : rows.slice(0, limit),
-        toggleButton: moreCount > 0 && <button type="button" className="btn btn-ghost btn-sm mt-auto self-start"
+        toggleButton: moreCount > 0 && <button type="button" className="save-report-disclosure save-report-accent btn btn-ghost btn-sm mt-auto self-start"
             aria-expanded={expanded} aria-controls={tableId} onClick={() => setExpanded(wasExpanded => !wasExpanded)}>
             {expanded ? t('Show less') : t('Show {count} more', { count: moreCount })}
         </button>,

@@ -4,7 +4,7 @@ import type { AppContracts } from '@/app/uklad/contracts';
 import { buildCoreCoverage } from '@/features/saves/coverage';
 import { buildCoreResourcePicker } from './core-resources';
 import { aggregatePlannerResources, buildPlannerResourceSummary, getPlannerResourceFit } from './resources';
-import type { PlannerStatsBuildingRow } from './types';
+import { compareProductionBuildings, getPlannerStatsBuildingRows } from './building-stats';
 
 export const registerPlannerResourceSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
     registrar.regRootSub(appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS, stateKeys.plannerComparisonCoreIds);
@@ -49,36 +49,12 @@ export const registerPlannerResourceSubscriptions: UkladModule<UkladRegistrar<Ap
             const ordered = [...workspace.snapshot.cores].sort((a, b) => a.spawnTimeSeconds - b.spawnTimeSeconds || a.id - b.id);
             const cores = ordered.filter(core => coreIds.includes(core.id));
             if (cores.length !== coreIds.length) return { coreNames: [], rows: [] };
-            const counts = new Map<string, number>();
             const { buildingsByCore } = buildCoreCoverage(ordered);
-            const unique = new Map(cores.flatMap(core => buildingsByCore.get(core.id)!.map(building => [building.id, building] as const)));
-            for (const building of unique.values()) if (building.configuration.kind === 'production') {
-                counts.set(building.buildingTypeId, (counts.get(building.buildingTypeId) ?? 0) + 1);
-            }
             const coreNames = cores.map(core => core.name?.trim() || `Core ${ordered.indexOf(core) + 1}`);
-            const names = new Map(buildings.map(building => [building.id, building.name]));
-            const productionIds = new Set(buildings.filter(building => metadata?.kinds[building.id]
-                ? metadata.kinds[building.id] === 'production' : building.recipes?.some(recipe => recipe.inputs.length > 0)).map(building => building.id));
-            const required = new Map<string, number>();
-            for (const node of flow.nodes) if (node.nodeType === 'production' && productionIds.has(node.buildingId)) required.set(node.buildingId, (required.get(node.buildingId) ?? 0) + Math.ceil(node.buildingCount));
-            const ids = [...new Set([...counts.keys(), ...required.keys()])];
-            return { coreNames, rows: ids.map(buildingTypeId => {
-                const existing = counts.get(buildingTypeId) ?? 0;
-                const planned = required.get(buildingTypeId) ?? 0;
-                return { buildingTypeId, name: names.get(buildingTypeId) ?? buildingTypeId, existing, planned,
-                    additional: Math.max(0, planned - existing), spare: Math.max(0, existing - planned) };
-            }).sort((a, b) => a.name.localeCompare(b.name)) };
+            const covered = cores.flatMap(core => buildingsByCore.get(core.id)!);
+            return { coreNames, rows: compareProductionBuildings(flow.nodes, covered, buildings, metadata) };
         });
     registrar.regSub(appIds.subscriptions.PLANNER_STATS_BUILDING_ROWS,
         () => [[appIds.subscriptions.PLANNER_STATS_DETAILED], [appIds.subscriptions.PLANNER_BUILDING_COMPARISON]],
-        ([stats, comparison]) => {
-            const rows = new Map<string, PlannerStatsBuildingRow>(stats.buildingStats.map(building => [building.buildingId, { ...building, comparison: null }]));
-            for (const row of comparison.rows) {
-                const building = rows.get(row.buildingTypeId) ?? {
-                    buildingId: row.buildingTypeId, buildingName: row.name, count: 0, totalPower: 0, totalHeat: 0,
-                };
-                rows.set(row.buildingTypeId, { ...building, comparison: { existing: row.existing, additional: row.additional } });
-            }
-            return [...rows.values()];
-        });
+        ([stats, comparison]) => getPlannerStatsBuildingRows(stats.buildingStats, comparison.rows));
 };

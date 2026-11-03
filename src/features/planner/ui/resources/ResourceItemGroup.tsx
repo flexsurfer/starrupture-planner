@@ -2,9 +2,19 @@ import { appIds } from '@/app/uklad/catalog';
 import { useRuntime } from '@/app/uklad/bindings';
 import { useTranslation } from '@/shared/i18n';
 import { ItemImage } from '@/shared/ui';
-import type { PlannerResourceSummary } from '../../resources';
+import type { PlannerResourceSource, PlannerResourceSummary } from '../../resources';
 import { ResourceRateField } from './ResourceRateField';
 import { SharedCoverage } from '@/shared/ui/SharedCoverage';
+
+function SourceBuildings({ source }: { source: PlannerResourceSource }) {
+    const { t } = useTranslation();
+    const counts = new Map<string, number>();
+    for (const name of source.buildingNames ?? []) counts.set(name, (counts.get(name) ?? 0) + 1);
+    const label = counts.size
+        ? Array.from(counts, ([name, count]) => count === 1 ? name : t('{name} ×{count}', { name, count })).join(' · ')
+        : t('{count} buildings', { count: source.buildingIds.length });
+    return <p className="truncate text-[11px] leading-tight text-base-content/55" title={label}>{label}</p>;
+}
 
 export function ResourceItemGroup({ group, focused, color }: { group: PlannerResourceSummary; focused: boolean; color: string }) {
     const { t, formatNumber } = useTranslation();
@@ -47,6 +57,7 @@ export function ResourceItemGroup({ group, focused, color }: { group: PlannerRes
                         {row.coreIds && row.coreIds.length > 1 && <SharedCoverage names={row.coreName} />}
                         <span className="truncate">{row.coreName ?? t('Manual')}</span>
                     </p>
+                    {row.source && <SourceBuildings source={row.source} />}
                 </div>
                 <ResourceRateField value={row.ratePerMinute} label={t('Resource amount for {name}', { name: group.name })}
                     onChange={amount => runtime.dispatch([appIds.events.PLANNER_SET_RESOURCE_RATE, row.id, amount])} />
