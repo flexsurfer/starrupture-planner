@@ -19,7 +19,8 @@ const errors: Record<NonNullable<SaveImportState['error']>, MessageKey> = {
     'size-mismatch': 'This file could not be decoded as a supported StarRupture save.', structure: 'This file could not be decoded as a supported StarRupture save.',
     'unsupported-browser': 'This browser does not support save import.',
     read: 'Could not read this save. Try choosing the file again.', timeout: 'Reading the save timed out. Try again.',
-    catalog: 'This save cannot be imported with the supported game data.', mappings: 'This save cannot be imported with the supported game data.',
+    catalog: 'Could not load game data. Check your connection and reload the page.',
+    mappings: 'Could not load game data. Check your connection and reload the page.',
     'mapping-version': 'This save cannot be imported with the supported game data.', 'workspace-limit': 'There is no room for another save. Remove a save and try again.',
     'save-storage-limit': 'This save is too large to store in this browser.',
 };

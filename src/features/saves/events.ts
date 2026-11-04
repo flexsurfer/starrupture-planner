@@ -3,6 +3,7 @@ import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { current } from '@ukladjs/core/vanilla';
+import { hasSaveMappings } from '@/features/app-shell/data-version';
 import { createSaveGameData } from './game-data';
 import { createDemoSnapshot } from './demo';
 import { coreKey } from './snapshot';
@@ -45,7 +46,10 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
     registrar.regEvent(appIds.events.SAVES_IMPORT_READ, ({ draftState }, file) => {
         if (draftState.savesStorageError === 'load' || draftState.savesImport.phase !== 'select') return;
         if (draftState.uiGameDataLoadPending) return;
-        if (!draftState.savesBuildingCatalog) { draftState.savesImport.error = 'mapping-version'; return; }
+        if (!draftState.savesBuildingCatalog) {
+            draftState.savesImport.error = hasSaveMappings(draftState.appDataVersion) ? 'mappings' : 'mapping-version';
+            return;
+        }
         const requestId = draftState.savesImport.requestId + 1;
         const targetWorkspaceId = draftState.savesImport.targetWorkspaceId;
         draftState.savesImport = { requestId, targetWorkspaceId, phase: 'reading', fileName: file.name, error: null };

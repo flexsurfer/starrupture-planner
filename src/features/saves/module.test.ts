@@ -101,13 +101,15 @@ it('reads compressed bytes with the selected state catalog and automatically ope
     expect(unrelatedState(harness.getState())).toEqual(unrelatedState(initial));
 });
 
-it('reports unavailable mappings before invoking a decoder with an unloaded catalog', () => {
+it.each([
+    ['update2_QoL', 'mappings'], ['earlyaccess', 'mapping-version'],
+] as const)('reports unavailable mappings for %s before invoking the decoder', (appDataVersion, error) => {
     const decode = vi.fn<SaveImportDecoder>();
     const { harness } = setup(decode);
-    harness.restoreState({ ...harness.getState(), savesBuildingCatalog: null, buildingsList: [], itemsList: [] });
+    harness.restoreState({ ...harness.getState(), appDataVersion, savesBuildingCatalog: null, buildingsList: [], itemsList: [] });
     harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
-    expect(harness.getState().savesImport).toMatchObject({ phase: 'select', error: 'mapping-version' });
+    expect(harness.getState().savesImport).toMatchObject({ phase: 'select', error });
     expect(decode).not.toHaveBeenCalled();
 });
 

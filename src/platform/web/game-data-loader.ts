@@ -13,13 +13,14 @@ const FILES = {
 
 export { gameDataBundleToAppVersioned, type GameDataBundle };
 
-function gameDataFileUrl(version: DataVersion, file: string): string {
-    const base = import.meta.env.BASE_URL;
-    const prefix = base.endsWith('/') ? base : `${base}/`;
-    return `${prefix}game-data/${version}/${file}`;
-}
+// Vite gives changed files new URLs in both the page and the save worker.
+const gameDataUrls = import.meta.glob<string>('./*/*.json', {
+    base: '../../../assets/game-data', query: '?url&no-inline', import: 'default', eager: true,
+});
 
-async function fetchJson<T>(url: string): Promise<T> {
+async function fetchGameData<T>(version: DataVersion, file: string): Promise<T> {
+    const url = gameDataUrls[`./${version}/${file}`];
+    if (!url) throw new Error(`Missing game data file: ${version}/${file}`);
     const res = await fetch(url);
     if (!res.ok) {
         throw new Error(`Failed to load ${url} (${res.status})`);
@@ -30,22 +31,23 @@ async function fetchJson<T>(url: string): Promise<T> {
 const cache = new Map<DataVersion, GameDataBundle>();
 
 export function loadWebSaveContext(context: SaveDataContext) {
-    return loadSaveDecodeContext(context, file => fetchJson(gameDataFileUrl(context.dataVersion, file)));
+    return loadSaveDecodeContext(context, file => fetchGameData(context.dataVersion, file));
 }
 
 export async function loadGameDataVersion(version: DataVersion): Promise<GameDataBundle> {
     const hit = cache.get(version);
     if (hit) return hit;
 
+    const expectsMappings = hasSaveMappings(version);
     const [items, buildings, corporations, mappings] = await Promise.all([
-        fetchJson<unknown>(gameDataFileUrl(version, FILES.items)),
-        fetchJson<unknown>(gameDataFileUrl(version, FILES.buildings)),
-        fetchJson<RawCorporationsData>(gameDataFileUrl(version, FILES.corporations)),
-        hasSaveMappings(version) ? loadSaveMappings(version, file => fetchJson(gameDataFileUrl(version, file))).catch(() => null) : null,
+        fetchGameData<unknown>(version, FILES.items),
+        fetchGameData<unknown>(version, FILES.buildings),
+        fetchGameData<RawCorporationsData>(version, FILES.corporations),
+        expectsMappings ? loadSaveMappings(version, file => fetchGameData(version, file)).catch(() => null) : null,
     ]);
 
     const bundle: GameDataBundle = { items, buildings, corporations,
         saveBuildingCatalog: mappings ? createSaveBuildingCatalog(mappings, buildings as Building[]) : null };
-    cache.set(version, bundle);
+    if (!expectsMappings || mappings) cache.set(version, bundle);
     return bundle;
 }
