@@ -1,7 +1,9 @@
 import { TokenParser, TokenType, type ParsedTokenInfo } from '@streamparser/json';
 import { assertSaveImportLimit, SaveImportError, type SaveImportDiagnostic } from '../import-error';
+import { MAX_SAVE_ACTIVE_KEY_CHARS, MAX_SAVE_POWER_NETWORK_RECORDS, MAX_SAVE_PROJECTION_CHARS } from '../import-limits';
 import type { SaveDecodeContext } from './types';
 import { createJsonTokenizer } from './json-tokens';
+import { entityId, handle } from './handles';
 
 type RecordValue = Record<string, unknown>;
 const record = (value: unknown): RecordValue | null => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : null;
@@ -23,20 +25,12 @@ const requiredPaths = ['$', '$.itemData', '$.itemData.Mass', entityPath];
 
 // Budgets apply while reading, before a large token/record can accumulate in the parser.
 const MAX_RECORD_CHARS = 8 * 1024 * 1024;
-const MAX_PROJECTION_CHARS = 16 * 1024 * 1024;
-const MAX_ACTIVE_KEY_CHARS = 4 * 1024 * 1024;
 // Source objects include world entities that are discarded before analysis.
 const MAX_OBJECT_KEYS = 1_000_000;
 const MAX_RETAINED_RECORDS = 100_000;
-const fragmentPrefixes = [
-    '/Script/AuActorPlacement.AuAPMassFragment(',
-    '/Script/Chimera.CrMassBuildingBaseCoreFragment(',
-    '/Script/Chimera.CrCraftingFragment(',
-    '/Script/Chimera.CrInventoryFragment(',
-];
 
 /** Retain analyzer inputs only; discard unrelated records and fragments. */
-function projectEntity(value: unknown, context: SaveDecodeContext): RecordValue | undefined {
+function projectEntity(value: unknown, context: SaveDecodeContext): { value: RecordValue; isCore: boolean } | undefined {
     const entity = record(value), spawn = record(entity?.spawnData);
     const asset = spawn?.entityConfigDataPath;
     if (typeof asset !== 'string') return;
@@ -47,14 +41,21 @@ function projectEntity(value: unknown, context: SaveDecodeContext): RecordValue 
     assertSaveImportLimit('entity-fragment-count', fragments.length, 4096);
     for (const fragment of fragments) assertSaveImportLimit('entity-fragment-chars', fragment.length, 1024 * 1024);
     const point = record(record(spawn?.transform)?.translation);
-    return {
+    const isCore = mapping.role === 'core';
+    const needsInventory = !isCore && (context.storageBuildingIds.has(mapping.id) || mapping.role === 'launcher');
+    const needsRecipe = !isCore && (Boolean(mapping.extractor) || context.mappings.recipes.has(mapping.id));
+    return { isCore, value: {
         spawnData: { entityConfigDataPath: asset, transform: { translation: { x: scalar(point?.x), y: scalar(point?.y), z: scalar(point?.z) } } },
-        fragmentValues: fragments.filter(fragment => fragmentPrefixes.some(prefix => fragment.startsWith(prefix))),
-    };
+        fragmentValues: fragments.filter(fragment =>
+            (isCore && (fragment.startsWith('/Script/AuActorPlacement.AuAPMassFragment(')
+                || fragment.startsWith('/Script/Chimera.CrMassBuildingBaseCoreFragment(')))
+            || (needsRecipe && fragment.startsWith('/Script/Chimera.CrCraftingFragment('))
+            || (needsInventory && fragment.startsWith('/Script/Chimera.CrInventoryFragment('))),
+    } };
 }
 
 interface Container {
-    key: string | number | undefined;
+    path: string;
     object: boolean;
     nextKey: string | number | undefined;
     expectsKey: boolean;
@@ -79,8 +80,51 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
     const containers: Container[] = [];
     const required = new Set(requiredPaths);
     const counts = new Map<string, number>();
+    const entityIds = new Set<number>(), coreIds = new Set<number>();
+    const networks = new Map<number, number | null>(), coreLevels = new Map<number, number | null>();
+    const networkRecord = (id: number, value: number | null) => ({ handle: { iD: id }, subGraph: { subGraphId: value } });
+    const levelRecord = (id: number, value: number | null) => ({ baseCore: { iD: id }, upgradeLevel: value });
+    type MetadataRecord = typeof networkRecord | typeof levelRecord;
+    let entitiesComplete = false;
     let previous: TokenType | undefined;
     let inputChars = 0, projectionChars = 0, activeKeyChars = 0;
+
+    const projectedChars = (key: string, value: unknown) => key.length + JSON.stringify(value).length;
+    const reserve = (chars: number) => {
+        projectionChars += chars;
+        assertSaveImportLimit('projection-chars', projectionChars, MAX_SAVE_PROJECTION_CHARS);
+    };
+    const retain = (target: RecordValue, key: string, value: unknown) => {
+        reserve(projectedChars(key, value));
+        target[key] = value;
+    };
+    // Store a single scalar per handle, including sticky nulls for conflicting evidence.
+    // Budget the eventual analyzer record as well, without retaining all its wrapper objects.
+    const retainMetadata = (target: Map<number, number | null>, relevantIds: Set<number>, project: MetadataRecord,
+        id: number | null, value: number | null) => {
+        if (id === null || (entitiesComplete && !relevantIds.has(id))) return;
+        const present = target.has(id), previous = target.get(id) ?? null;
+        const next = present && previous !== value ? null : value;
+        reserve(projectedChars(String(id), project(id, next)) - (present ? projectedChars(String(id), project(id, previous)) : 0));
+        target.set(id, next);
+    };
+    const pruneMetadata = (target: Map<number, number | null>, relevantIds: Set<number>, project: MetadataRecord) => {
+        for (const [id, value] of target) {
+            if (relevantIds.has(id)) continue;
+            projectionChars -= projectedChars(String(id), project(id, value));
+            target.delete(id);
+        }
+    };
+    const finishEntities = () => {
+        entitiesComplete = true;
+        pruneMetadata(networks, entityIds, networkRecord);
+        pruneMetadata(coreLevels, coreIds, levelRecord);
+        for (const key of Object.keys(names)) {
+            if (Object.hasOwn(entities, key)) continue;
+            projectionChars -= projectedChars(key, names[key]);
+            delete names[key];
+        }
+    };
 
     const guard = ({ token, value, offset }: ParsedTokenInfo.ParsedTokenInfo) => {
         const parent = containers.at(-1);
@@ -92,7 +136,7 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             activeKeyChars += key.length;
             parent.keyChars += key.length;
             assertSaveImportLimit('json-key-chars', key.length, 2048);
-            assertSaveImportLimit('json-active-key-chars', activeKeyChars, MAX_ACTIVE_KEY_CHARS);
+            assertSaveImportLimit('json-active-key-chars', activeKeyChars, MAX_SAVE_ACTIVE_KEY_CHARS);
             assertSaveImportLimit('json-object-keys', parent.keys.size + 1, MAX_OBJECT_KEYS);
             parent.keys.add(key);
             parent.nextKey = key;
@@ -109,9 +153,10 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             if (previous === TokenType.COMMA) throw new SaveImportError('structure');
             activeKeyChars -= containers.pop()?.keyChars ?? 0;
         } else if (token !== TokenType.COLON) {
-            const keys = [...containers.slice(1).map(container => container.key), ...(parent ? [parent.nextKey] : [])];
             // A period in a source key must never masquerade as a nested selector.
-            const path = keys.every(key => typeof key === 'string' && !key.includes('.')) ? ['$', ...keys].join('.') : '';
+            const path = parent
+                ? parent.path && typeof parent.nextKey === 'string' && !parent.nextKey.includes('.') ? `${parent.path}.${parent.nextKey}` : ''
+                : '$';
             if (path === '$.version') throw new SaveImportError('mapping-version');
             if (requiredPaths.includes(path)) {
                 if (token !== TokenType.LEFT_BRACE) throw new SaveImportError('structure');
@@ -120,9 +165,8 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             if (path === transportPath && token !== TokenType.LEFT_BRACE) throw new SaveImportError('transport');
             if (token === TokenType.LEFT_BRACE || token === TokenType.LEFT_BRACKET) {
                 assertSaveImportLimit('json-depth', containers.length + 1, 128);
-                const parentKeys = containers.slice(1).map(container => container.key);
-                const parentPath = parentKeys.every(key => typeof key === 'string' && !key.includes('.')) ? ['$', ...parentKeys].join('.') : '';
-                containers.push({ key: parent?.nextKey, object: token === TokenType.LEFT_BRACE,
+                const parentPath = parent?.path ?? '$';
+                containers.push({ path, object: token === TokenType.LEFT_BRACE,
                     nextKey: token === TokenType.LEFT_BRACKET ? 0 : undefined, expectsKey: token === TokenType.LEFT_BRACE,
                     keys: new Set(), keyChars: 0, members: 0,
                     recordStart: paths.includes(path) || collectionPaths.includes(parentPath) ? offset : null });
@@ -130,7 +174,12 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
         }
         previous = token;
     };
-    const tokenizer = createJsonTokenizer(token => { guard(token); parser.write(token); });
+    const tokenizer = createJsonTokenizer(token => {
+        const endsEntities = token.token === TokenType.RIGHT_BRACE && containers.at(-1)?.path === entityPath;
+        guard(token);
+        parser.write(token);
+        if (endsEntities) finishEntities();
+    });
 
     parser.onValue = ({ value, key, parent, stack }) => {
         const path = ['$', ...stack.slice(1).map(entry => entry.key)].join('.');
@@ -142,25 +191,37 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
         }
         // Optional maps must be objects, and Core level records must be an array.
         if (path === levelPath ? !Array.isArray(parent) : typeof key !== 'string' || Array.isArray(parent)) return;
+        if (!collectionPaths.includes(path)) return;
         const source = record(value);
-        let projected: unknown;
-        switch (path) {
-            case entityPath: projected = projectEntity(value, context); break;
-            case networkPath: projected = { handle: { iD: scalar(record(source?.handle)?.iD) },
-                subGraph: { subGraphId: scalar(record(source?.subGraph)?.subGraphId) } }; break;
-            case namePath: projected = typeof value === 'string' ? value : null; break;
-            case levelPath: projected = { baseCore: { iD: scalar(record(source?.baseCore)?.iD) }, upgradeLevel: scalar(source?.upgradeLevel) }; break;
-            case transportPath: projected = source ? { item: scalar(source.item), receiver: { iD: scalar(record(source.receiver)?.iD) } } : null; break;
-            default: return;
-        }
-        if (projected === undefined) return;
+        const entity = path === entityPath ? projectEntity(value, context) : undefined;
+        if (path === entityPath && !entity) return;
         const count = (counts.get(path) ?? 0) + 1;
-        assertSaveImportLimit(collectionDiagnostics[path], count, MAX_RETAINED_RECORDS);
+        // Source metadata is bounded even if it is invalid, irrelevant, or duplicates a handle.
+        assertSaveImportLimit(collectionDiagnostics[path], count, path === networkPath ? MAX_SAVE_POWER_NETWORK_RECORDS : MAX_RETAINED_RECORDS);
         counts.set(path, count);
-        projectionChars += JSON.stringify(projected).length + String(key).length;
-        assertSaveImportLimit('projection-chars', projectionChars, MAX_PROJECTION_CHARS);
-        if (path === levelPath) levels.push(projected);
-        else ({ [entityPath]: entities, [networkPath]: nodes, [namePath]: names, [transportPath]: connections })[path][String(key)] = projected;
+        switch (path) {
+            case entityPath: {
+                retain(entities, String(key), entity!.value);
+                const id = entityId(String(key));
+                if (id !== null) { entityIds.add(id); if (entity!.isCore) coreIds.add(id); }
+                break;
+            }
+            case networkPath:
+                retainMetadata(networks, entityIds, networkRecord, handle(record(source?.handle)?.iD), handle(record(source?.subGraph)?.subGraphId));
+                break;
+            case namePath:
+                if (typeof value === 'string' && entityId(String(key)) !== null && (!entitiesComplete || Object.hasOwn(entities, String(key)))) {
+                    retain(names, String(key), value);
+                }
+                break;
+            case levelPath:
+                retainMetadata(coreLevels, coreIds, levelRecord, handle(record(source?.baseCore)?.iD), handle(source?.upgradeLevel));
+                break;
+            case transportPath:
+                // Unknown senders/receivers must still reach the analyzer's transport validation.
+                retain(connections, String(key), source ? { item: scalar(source.item), receiver: { iD: scalar(record(source.receiver)?.iD) } } : null);
+                break;
+        }
     };
 
     return {
@@ -185,6 +246,9 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             try { tokenizer.end(); if (!parser.isEnded) parser.end(); }
             catch (error) { throw error instanceof SaveImportError ? error : new SaveImportError('structure'); }
             if (required.size) throw new SaveImportError('structure');
+            for (const [id, value] of networks) nodes[String(id)] = networkRecord(id, value);
+            for (const [id, value] of coreLevels) levels.push(levelRecord(id, value));
+            networks.clear(); coreLevels.clear();
             return projection;
         },
     };

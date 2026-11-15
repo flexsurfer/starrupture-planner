@@ -46,6 +46,11 @@ it.each([
 ])('rejects %s', async (_name, value, size, error) => {
     await expect(decodeSave(encode(value, size), extractionContext)).rejects.toMatchObject({ code: error });
 });
+it('accepts a declared 1 GiB at the size gate and still verifies its actual length', async () => {
+    expect(MAX_DECODED_SAVE_BYTES).toBe(1024 * 1024 * 1024);
+    await expect(decodeSave(encode(saveFixture(), 1024 * 1024 * 1024), extractionContext))
+        .rejects.toMatchObject({ code: 'size-mismatch' });
+});
 it('rejects truncated zlib data and honors cancellation', async () => {
     const bytes = encode(saveFixture());
     await expect(decodeSave(bytes.slice(0, -5), extractionContext)).rejects.toMatchObject({ code: 'compression' });

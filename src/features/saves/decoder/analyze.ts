@@ -6,13 +6,13 @@ import { readStorageInventory } from './inventory';
 import type { SaveBuildingMapping } from './mappings';
 import { selectedRecipe } from './recipes';
 import { assertSaveImportLimit, SaveImportError, type SaveImportDiagnostic } from '../import-error';
+import { MAX_SAVE_POWER_NETWORK_RECORDS } from '../import-limits';
+import { entityId, handle } from './handles';
 import type { SaveDecodeContext } from './types';
 
 type RecordValue = Record<string, unknown>;
 const record = (value: unknown): RecordValue | null => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : null;
 const number = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null;
-const handle = (value: unknown): number | null => Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) < 4294967295 ? Number(value) : null;
-const entityId = (key: string) => /^\(ID=(0|[1-9]\d*)\)$/.test(key) ? handle(Number(key.slice(4, -1))) : null;
 function text(value: unknown, subcode: SaveImportDiagnostic['subcode'], max = 512): string | null {
     if (typeof value !== 'string' || !value.length) return null;
     assertSaveImportLimit(subcode, value.length, max);
@@ -55,7 +55,7 @@ function configuration(mapping: SaveBuildingMapping, fragments: string[], contex
 /** A unique known grid is useful app data; missing or conflicting evidence stays unknown. */
 function powerNetworks(mass: RecordValue): Map<number, number | null> {
     const nodes = Object.values(record(record(mass.electricitySubsystemState)?.nodeData) ?? {});
-    assertSaveImportLimit('power-network-records', nodes.length, 100_000);
+    assertSaveImportLimit('power-network-records', nodes.length, MAX_SAVE_POWER_NETWORK_RECORDS);
     const result = new Map<number, number | null>();
     for (const value of nodes) {
         const node = record(value);

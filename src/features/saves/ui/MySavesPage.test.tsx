@@ -258,14 +258,14 @@ it('shows controlled read errors, cancellation, hydration failure and unsaved ch
 
 it.each([
     ['file-size', 'Choose a .sav file no larger than 64 MiB.'],
-    ['decoded-size', 'This save expands beyond the 512 MiB import limit when unpacked.'],
+    ['decoded-size', 'This save expands beyond the 1,024 MiB import limit when unpacked.'],
     ['complexity', 'Save import stopped at an internal limit.'],
 ] as const)('explains the %s limit separately', async (code, message) => {
     await setup(new SaveImportError(code));
     fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
     const dialog = await screen.findByRole('dialog', { name: 'Import save' });
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(message);
-    expect(within(dialog).getByText(/Limits: 64 MiB per file and 512 MiB after unpacking/)).toBeVisible();
+    expect(within(dialog).getByText(/Limits: 64 MiB per file and 1,024 MiB after unpacking/)).toBeVisible();
 });
 
 it('copies the full diagnostic from a failed import and resets copy feedback on retry', async () => {

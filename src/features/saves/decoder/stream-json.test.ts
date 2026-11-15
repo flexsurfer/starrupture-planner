@@ -2,7 +2,7 @@
 import { expect, it } from 'vitest';
 import { createSaveJsonParser } from './stream-json';
 import { analyzeSave } from './analyze';
-import { extractionContext, extractionFixture, saveFixture, snapshotFixture, transportFixture, saveEntity, heliumItemAsset } from './test-fixture';
+import { extractionContext, extractionFixture, saveFixture, snapshotFixture, storageFixture, transportFixture, saveEntity, heliumItemAsset } from './test-fixture';
 
 function parse(text: string, chunkSize = 4096) {
     const parser = createSaveJsonParser(extractionContext);
@@ -11,7 +11,7 @@ function parse(text: string, chunkSize = 4096) {
     return parser.end();
 }
 
-it.each([saveFixture, transportFixture, extractionFixture, snapshotFixture].map(fixture => ({ name: fixture.name, fixture })))('matches the full analyzer for $name', ({ fixture }) => {
+it.each([saveFixture, transportFixture, extractionFixture, snapshotFixture, storageFixture].map(fixture => ({ name: fixture.name, fixture })))('matches the full analyzer for $name', ({ fixture }) => {
     const save = fixture();
     expect(analyzeSave(parse(JSON.stringify(save)), extractionContext)).toEqual(analyzeSave(save, extractionContext));
 });
@@ -59,13 +59,82 @@ it('imports known buildings after more than 100,000 discarded world entities', (
     expect(analyzeSave(projection, extractionContext)).toEqual(expected);
 });
 
-it('still rejects more than 100,000 retained records in a collection', () => {
+it('bounds source electricity records at 500,000 even when every record is discarded', () => {
     const input = { itemData: { Mass: { entities: {}, electricitySubsystemState: {
-        nodeData: Object.fromEntries(Array.from({ length: 100_001 }, (_, index) => [`(UId=(ID=${index}))`, null])),
+        nodeData: Object.fromEntries(Array.from({ length: 500_001 }, (_, index) => [`(UId=(ID=${index}))`, null])),
     } } } };
     expect(() => parse(JSON.stringify(input))).toThrow(expect.objectContaining({ code: 'complexity', diagnostic: {
-        subcode: 'power-network-records', actual: 100_001, limit: 100_000,
+        subcode: 'power-network-records', actual: 500_001, limit: 500_000,
     } }));
+});
+
+it('keeps the 100,000-record budget for other metadata collections', () => {
+    const save = { itemData: { Mass: { entities: {} }, CrBuildingCustomNameSubsystem: {
+        customNames: Object.fromEntries(Array.from({ length: 100_001 }, (_, index) => [`(ID=${index})`, null])),
+    } } };
+    expect(() => parse(JSON.stringify(save))).toThrow(expect.objectContaining({ diagnostic: {
+        subcode: 'custom-name-records', actual: 100_001, limit: 100_000,
+    } }));
+});
+
+it.each([true, false])('filters metadata while preserving conflicts and invalid references (metadata first: %s)', metadataFirst => {
+    const save = saveFixture();
+    Object.assign(save.itemData.Mass.electricitySubsystemState.nodeData, {
+        unrelated: { handle: { iD: 500 }, subGraph: { subGraphId: 7 } },
+        same: { handle: { iD: 1 }, subGraph: { subGraphId: 7 } },
+        conflict: { handle: { iD: 10 }, subGraph: { subGraphId: 12 } },
+        repeated: { handle: { iD: 10 }, subGraph: { subGraphId: 9 } },
+        invalid: { handle: { iD: 11 }, subGraph: { subGraphId: 4294967295 } },
+        afterInvalid: { handle: { iD: 11 }, subGraph: { subGraphId: 9 } },
+        stringHandle: { handle: { iD: '1' }, subGraph: { subGraphId: 9 } },
+    });
+    Object.assign(save.itemData.CrBuildingCustomNameSubsystem.customNames, {
+        '(ID=500)': 'unused name'.repeat(100), '(ID=01)': 'alias', '(ID=10)': 'Smelter 🏭',
+    });
+    save.itemData.BaseCoreReplicationHelperSaveData.baseCoreSaveData.push(
+        { baseCore: { iD: 1 }, upgradeLevel: 0 }, { baseCore: { iD: 2 }, upgradeLevel: 2 },
+        { baseCore: { iD: 2 }, upgradeLevel: 3 }, { baseCore: { iD: 10 }, upgradeLevel: 1 },
+        { baseCore: { iD: 500 }, upgradeLevel: 1 },
+    );
+    const { Mass, ...metadata } = save.itemData;
+    save.itemData = metadataFirst ? { ...metadata, Mass } : { Mass, ...metadata };
+    const { entities, electricitySubsystemState } = Mass;
+    save.itemData.Mass = metadataFirst ? { electricitySubsystemState, entities } : { entities, electricitySubsystemState };
+    const projection = parse(JSON.stringify(save), 7);
+    expect(projection).toMatchObject({ itemData: {
+        Mass: { electricitySubsystemState: { nodeData: {
+            '1': { handle: { iD: 1 }, subGraph: { subGraphId: 7 } },
+            '10': { handle: { iD: 10 }, subGraph: { subGraphId: null } },
+            '11': { handle: { iD: 11 }, subGraph: { subGraphId: null } },
+        } } },
+        CrBuildingCustomNameSubsystem: { customNames: { '(ID=1)': 'Workshop', '(ID=10)': 'Smelter 🏭' } },
+        BaseCoreReplicationHelperSaveData: { baseCoreSaveData: [
+            { baseCore: { iD: 1 }, upgradeLevel: 0 }, { baseCore: { iD: 2 }, upgradeLevel: null },
+        ] },
+    } });
+    expect(JSON.stringify(projection)).not.toMatch(/unused name|alias|"iD":500/);
+    expect(analyzeSave(projection, extractionContext)).toEqual(analyzeSave(save, extractionContext));
+});
+
+it('discards fragments according to building role while preserving storage, recipes and Core identity', () => {
+    const save = storageFixture();
+    const original = analyzeSave(save, extractionContext);
+    for (const entity of Object.values(save.itemData.Mass.entities)) {
+        const mapping = extractionContext.mappings.buildings.get(entity.spawnData.entityConfigDataPath);
+        if (mapping?.role !== 'core') entity.fragmentValues.push('/Script/AuActorPlacement.AuAPMassFragment(UNUSED_IDENTITY)');
+        if (!mapping || !extractionContext.storageBuildingIds.has(mapping.id)) entity.fragmentValues.push('/Script/Chimera.CrInventoryFragment(UNUSED_INVENTORY)');
+        if (!mapping || !extractionContext.mappings.recipes.has(mapping.id)) entity.fragmentValues.push('/Script/Chimera.CrCraftingFragment(UNUSED_RECIPE)');
+    }
+    const projection = parse(JSON.stringify(save));
+    expect(JSON.stringify(projection)).not.toContain('UNUSED_');
+    expect(analyzeSave(projection, extractionContext)).toEqual(original);
+    expect(analyzeSave(projection, extractionContext)).toEqual(analyzeSave(save, extractionContext));
+});
+
+it('still validates dangling transport links instead of discarding them as unused metadata', () => {
+    const save = transportFixture();
+    save.itemData.CrPackageTransportReplicator.senderConnections['(ID=999)'] = { receiver: { iD: 30 }, item: heliumItemAsset };
+    expect(() => analyzeSave(parse(JSON.stringify(save)), extractionContext)).toThrow('transport');
 });
 
 it.each([
@@ -144,20 +213,22 @@ it('bounds selected records, unexpected timestamp containers and retained object
     const parser = createSaveJsonParser(extractionContext);
     parser.write(encode('{"ignored":{'));
     expect(() => {
-        for (let i = 0; i < 2200; i++) parser.write(encode(`${JSON.stringify(`${i}-${'k'.repeat(2040)}`)}:0,`));
+        for (let i = 0; i < 8500; i++) parser.write(encode(`${JSON.stringify(`${i}-${'k'.repeat(2040)}`)}:0,`));
     }).toThrow(expect.objectContaining({ diagnostic: {
-        subcode: 'json-active-key-chars', actual: expect.any(Number), limit: 4 * 1024 * 1024,
+        subcode: 'json-active-key-chars', actual: expect.any(Number), limit: 16 * 1024 * 1024,
     } }));
 });
 
 it('reports the compact projection limit independently of individual fragment and record limits', () => {
-    const save = saveFixture();
     const prefix = '/Script/Chimera.CrInventoryFragment(';
     const fragment = prefix + 'x'.repeat(1024 * 1024 - prefix.length - 1) + ')';
-    Object.assign(save.itemData.Mass.entities, Object.fromEntries(Array.from({ length: 20 }, (_, index) => [
-        `(ID=${index + 100})`, saveEntity('Smelter/DA_Smelter.DA_Smelter', 0, [fragment]),
-    ])));
-    expect(() => parse(JSON.stringify(save))).toThrow(expect.objectContaining({ code: 'complexity', diagnostic: {
-        subcode: 'projection-chars', actual: expect.any(Number), limit: 16 * 1024 * 1024,
+    const entity = JSON.stringify(saveEntity('Storage/DA_Storage.DA_Storage', 0, [fragment]));
+    const parser = createSaveJsonParser(extractionContext), encode = new TextEncoder();
+    parser.write(encode.encode('{"itemData":{"Mass":{"entities":{'));
+    const write = (index: number) => parser.write(encode.encode(`${index ? ',' : ''}"(ID=${index})":${entity}`));
+    // The former 16 Mi-character budget must no longer reject these retained fragments.
+    for (let index = 0; index < 20; index++) write(index);
+    expect(() => { for (let index = 20; index < 70; index++) write(index); }).toThrow(expect.objectContaining({ code: 'complexity', diagnostic: {
+        subcode: 'projection-chars', actual: expect.any(Number), limit: 64 * 1024 * 1024,
     } }));
 });
