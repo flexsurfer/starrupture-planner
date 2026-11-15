@@ -221,5 +221,5 @@ export const appIds = {
         BASES_OVERVIEW_PLAN_ROWS: 'bases/overview-plan-rows', BASES_OVERVIEW_MATERIAL_BALANCE_ROWS: 'bases/overview-material-balance-rows', BASES_OVERVIEW_BUILDING_COVERAGE_ROWS: 'bases/overview-building-coverage-rows',
         BASES_PRODUCTION_TABLE: 'bases/production-table',
     },
-    effects: { savesReadImport: 'saves/import-decode-file', savesCancelImport: 'saves/import-cancel-read', downloadArchive: 'data-transfer/download-archive', readArchive: 'data-transfer/read-archive', setTheme: 'ui/set-theme-in-dom', loadGameData: 'app/load-game-data' },
+    effects: { savesReadImport: 'saves/import-decode-file', savesCancelImport: 'saves/import-cancel-read', savesTrackImport: 'saves/track-import', downloadArchive: 'data-transfer/download-archive', readArchive: 'data-transfer/read-archive', setTheme: 'ui/set-theme-in-dom', loadGameData: 'app/load-game-data' },
 } as const;

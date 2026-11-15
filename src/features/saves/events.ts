@@ -11,6 +11,18 @@ import { saveViews } from './types';
 import { createSaveImportState } from './state';
 import { createSaveWorkspace, getActiveSaveWorkspace, workspaceIds } from './workspace';
 import { validateSaveSnapshotCatalog, saveCollectionStorageBytes, MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, SaveWorkspaceLimitError } from './storage-schema';
+import { saveImportMode, saveImportSummary, type SaveImportMetrics, type SaveImportTelemetry, type SaveImportFailureStage } from './import-telemetry';
+import type { SaveImportDiagnostic } from './import-error';
+import type { SaveImportState, SaveWorkspace } from './types';
+
+function trackImportFailure(metrics: SaveImportMetrics | undefined, previous: SaveWorkspace | undefined,
+    error: NonNullable<SaveImportState['error']>, stage: SaveImportFailureStage, diagnostic?: SaveImportDiagnostic,
+): [typeof appIds.effects.savesTrackImport, SaveImportTelemetry][] {
+    return metrics ? [[appIds.effects.savesTrackImport, {
+        ...metrics, mode: saveImportMode(previous), outcome: 'failure', error, stage,
+        ...(error === 'complexity' && diagnostic ? { diagnostic: { ...diagnostic } } : {}),
+    }]] : [];
+}
 
 export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = registrar => {
     registrar.regEvent(appIds.events.SAVES_OPEN_DEMO, ({ draftState }, name) => {
@@ -49,7 +61,8 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         if (!draftState.savesBuildingCatalog) {
             draftState.savesImport.error = hasSaveMappings(draftState.appDataVersion) ? 'mappings' : 'mapping-version';
             draftState.savesImport.diagnostic = null;
-            return;
+            return trackImportFailure({ dataVersion: draftState.appDataVersion, fileBytes: file.size, durationMs: 0 },
+                draftState.savesWorkspaces[draftState.savesImport.targetWorkspaceId ?? ''], draftState.savesImport.error, 'prepare');
         }
         const requestId = draftState.savesImport.requestId + 1;
         const targetWorkspaceId = draftState.savesImport.targetWorkspaceId;
@@ -59,7 +72,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
             buildings: current(draftState.buildingsList), items: current(draftState.itemsList),
         }]];
     });
-    registrar.regEvent(appIds.events.SAVES_IMPORT_READY, ({ draftState }, requestId, snapshot) => {
+    registrar.regEvent(appIds.events.SAVES_IMPORT_READY, ({ draftState }, requestId, snapshot, metrics) => {
         const candidate = draftState.savesImport;
         if (candidate.phase !== 'reading' || candidate.requestId !== requestId) return;
         if (draftState.savesStorageError === 'load') {
@@ -75,11 +88,14 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
             validateSaveSnapshotCatalog(snapshot, draftState.appDataVersion, createSaveGameData(draftState.buildingsList, draftState.itemsList, draftState.savesBuildingCatalog));
             const name = (previous?.isDemo ? undefined : previous?.name) ?? (candidate.fileName!.replace(/\.sav$/i, '').trim().slice(0, 120) || 'Save');
             workspace = createSaveWorkspace(workspaceId, name, snapshot);
-        } catch (error) { candidate.error = error instanceof SaveWorkspaceLimitError ? 'save-storage-limit' : 'structure'; return; }
+        } catch (error) {
+            candidate.error = error instanceof SaveWorkspaceLimitError ? 'save-storage-limit' : 'structure';
+            return trackImportFailure(metrics, previous, candidate.error, 'workspace');
+        }
         if ((!previous && Object.keys(draftState.savesWorkspaces).length >= MAX_SAVE_WORKSPACES)
             || saveCollectionStorageBytes({ ...draftState.savesWorkspaces, [workspaceId]: workspace }) > MAX_SAVES_BYTES) {
             candidate.error = 'workspace-limit';
-            return;
+            return trackImportFailure(metrics, previous, candidate.error, 'workspace');
         }
         const selectedId = draftState.savesSelections[workspaceId]?.coreId;
         const selected = previous?.isDemo ? undefined : previous?.snapshot.cores.find(core => core.id === selectedId);
@@ -96,13 +112,17 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         draftState.savesActiveWorkspaceId = workspaceId;
         draftState.savesSelections[workspaceId] = { coreId: retainedSelection };
         draftState.savesImport = createSaveImportState(requestId + 1);
-        return [[appIds.effects.savesCancelImport]];
+        // Only accepted snapshots count as successful imports, after all workspace limits pass.
+        return metrics ? [[appIds.effects.savesTrackImport, {
+            ...metrics, mode: saveImportMode(previous), outcome: 'success', ...saveImportSummary(workspace),
+        }], [appIds.effects.savesCancelImport]] : [[appIds.effects.savesCancelImport]];
     });
-    registrar.regEvent(appIds.events.SAVES_IMPORT_FAILED, ({ draftState }, requestId, error, diagnostic) => {
+    registrar.regEvent(appIds.events.SAVES_IMPORT_FAILED, ({ draftState }, requestId, error, diagnostic, metrics) => {
         if (draftState.savesImport.phase !== 'reading' || draftState.savesImport.requestId !== requestId) return;
         draftState.savesImport.phase = 'select';
         draftState.savesImport.error = error;
         draftState.savesImport.diagnostic = error === 'complexity' && diagnostic ? { ...diagnostic } : null;
+        return trackImportFailure(metrics, draftState.savesWorkspaces[draftState.savesImport.targetWorkspaceId ?? ''], error, 'decode', diagnostic);
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_WORKSPACE, ({ draftState }, id) => {
         if (draftState.savesStorageError !== 'load' && Object.hasOwn(draftState.savesWorkspaces, id) && draftState.savesActiveWorkspaceId !== id) {

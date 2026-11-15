@@ -2,6 +2,7 @@ import { message, UiMessageError } from '@/shared/i18n/core';
 import { readSaveFile } from '@/features/saves/reader';
 import { decodeSave } from '@/features/saves/decoder/decode';
 import { registerSaveImportEffects, type SaveImportDecoder } from '@/platform/shared/save-import-effects';
+import type { SaveImportTelemetry } from '@/features/saves/import-telemetry';
 import { parseArchive, prepareArchiveImport, type PlannerArchive } from '@/features/data-transfer/archive';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
@@ -10,6 +11,7 @@ import { gameDataBundleToAppVersioned, loadHeadlessGameDataVersion, loadHeadless
 
 export interface HeadlessEffectOptions {
     decodeSaveFile?: SaveImportDecoder;
+    onSaveImport?: (telemetry: SaveImportTelemetry) => void;
     onExport?: (archive: PlannerArchive) => void;
     createImportId?: () => string;
     loadGameDataVersion?: typeof loadHeadlessGameDataVersion;
@@ -28,12 +30,15 @@ export function createHeadlessEffects({
     },
     loadGameDataVersion = loadHeadlessGameDataVersion,
     onExport,
+    onSaveImport = () => {},
     createImportId = () => crypto.randomUUID(),
     onThemeChange = () => {},
     onLoadError = (error) => console.error('Failed to load bundled game data:', error),
 }: HeadlessEffectOptions = {}): UkladModule<UkladRegistrar<AppContracts>> {
     return (registrar) => {
         const disposeSaveImport = registerSaveImportEffects(registrar, decodeSaveFile);
+        // Automation and tests may record outcomes; headless imports never send analytics.
+        registrar.regEffect(appIds.effects.savesTrackImport, telemetry => onSaveImport(telemetry));
         registrar.regEffect(appIds.effects.downloadArchive, (archive, runtime) => {
             // Headless exports go to an explicit sink; no browser download is implied.
             if (onExport) onExport(archive);

@@ -12,14 +12,18 @@ import { analyzeSave } from './decoder/analyze';
 import { SaveImportError } from './import-error';
 import type { SaveSnapshot } from './snapshot';
 import { saveGameData, snapshotFixture, extractionContext, saveFixture } from './decoder/test-fixture';
+import type { SaveImportTelemetry } from './import-telemetry';
+import { localStorageBytes, MAX_SAVE_WORKSPACES, MAX_WORKSPACE_BYTES } from './storage-schema';
+import { createSaveWorkspace } from './workspace';
 
 const runtimes: ReturnType<typeof createAppRuntime>[] = [];
 afterEach(() => runtimes.splice(0).forEach(runtime => runtime.dispose()));
 
 function setup(decodeSaveFile?: SaveImportDecoder) {
     const runtime = createAppRuntime();
+    const imports = vi.fn<(telemetry: SaveImportTelemetry) => void>();
     runtimes.push(runtime);
-    registerHeadlessApplication(runtime, { effects: { decodeSaveFile } });
+    registerHeadlessApplication(runtime, { effects: { decodeSaveFile, onSaveImport: imports } });
     const harness = createUkladTestHarness(runtime);
     // Includes active attached production, multi-output Planner tabs, linked buildings and energy groups.
     const state = archiveFixture();
@@ -31,7 +35,7 @@ function setup(decodeSaveFile?: SaveImportDecoder) {
     state.productionPlanModalState = { ...state.productionPlanModalState, isOpen: true, baseId: 'target', editSectionId: 'production' };
     harness.restoreState(state);
     harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
-    return { runtime, harness };
+    return { runtime, harness, imports };
 }
 
 const pendingFile = () => ({ name: 'sample.sav', size: 20, arrayBuffer: () => new Promise<ArrayBuffer>(() => {}) });
@@ -105,18 +109,21 @@ it.each([
     ['update2_QoL', 'mappings'], ['earlyaccess', 'mapping-version'],
 ] as const)('reports unavailable mappings for %s before invoking the decoder', (appDataVersion, error) => {
     const decode = vi.fn<SaveImportDecoder>();
-    const { harness } = setup(decode);
+    const { harness, imports } = setup(decode);
     harness.restoreState({ ...harness.getState(), appDataVersion, savesBuildingCatalog: null, buildingsList: [], itemsList: [] });
     harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
     expect(harness.getState().savesImport).toMatchObject({ phase: 'select', error });
     expect(decode).not.toHaveBeenCalled();
+    expect(imports).toHaveBeenCalledExactlyOnceWith({
+        outcome: 'failure', error, stage: 'prepare', mode: 'new', dataVersion: appDataVersion, fileBytes: 20, durationMs: 0,
+    });
 });
 
 it('finishes the original import despite close, reopen, and duplicate file requests', async () => {
     let finish!: (report: SaveSnapshot) => void;
     const decode = vi.fn<SaveImportDecoder>(() => new Promise(resolve => { finish = resolve; }));
-    const { harness } = setup(decode);
+    const { harness, imports } = setup(decode);
     const initial = unrelatedState(harness.getState());
     harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'original']);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
@@ -133,11 +140,13 @@ it('finishes the original import despite close, reopen, and duplicate file reque
     await expect.poll(() => harness.getState().savesImport.phase).toBe('closed');
     expect(harness.getState().savesWorkspaces.original.snapshot).toEqual(report);
     expect(unrelatedState(harness.getState())).toEqual(initial);
+    expect(imports).toHaveBeenCalledOnce();
+    expect(imports.mock.calls[0][0]).toMatchObject({ outcome: 'success', mode: 'new' });
 });
 
 it('rejects invalid files before invoking the decoder and preserves existing work on decode failure', async () => {
     const decode = vi.fn<SaveImportDecoder>(async () => { throw new SaveImportError('compression'); });
-    const { harness } = setup(decode);
+    const { harness, imports } = setup(decode);
     const initial = unrelatedState(harness.getState());
     harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, { ...pendingFile(), name: 'backup.json' }]);
@@ -146,6 +155,112 @@ it('rejects invalid files before invoking the decoder and preserves existing wor
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
     await expect.poll(() => harness.getState().savesImport.error).toBe('compression');
     expect(unrelatedState(harness.getState())).toEqual(initial);
+    expect(imports.mock.calls.map(([entry]) => [entry.outcome, 'error' in entry && entry.error])).toEqual([
+        ['failure', 'extension'], ['failure', 'compression'],
+    ]);
+});
+
+it('reports accepted new, updated and demo-replacement imports with aggregate measurements only', async () => {
+    const report = analyzeSave(saveFixture(), extractionContext);
+    const { harness, imports } = setup(async () => structuredClone(report));
+    harness.dispatchSync([appIds.events.SAVES_OPEN_DEMO, 'Private demo name']);
+    expect(imports).not.toHaveBeenCalled();
+    for (const [id, mode] of [['first', 'new'], ['first', 'update'], ['demo-factory', 'replace-demo']] as const) {
+        harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, id]);
+        harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, { ...pendingFile(), name: 'Private player name.sav', size: 32_431_209 }]);
+        const requestId = harness.getState().savesImport.requestId;
+        await expect.poll(() => harness.getState().savesImport.phase).toBe('closed');
+        const result = imports.mock.lastCall![0];
+        expect(result).toEqual({
+            outcome: 'success', mode, dataVersion: 'update2_QoL', dataRevision: report.gameData.revision,
+            fileBytes: 32_431_209, durationMs: expect.any(Number), coreCount: 2, buildingCount: 2, powerNetworkCount: 3,
+            workspaceBytes: localStorageBytes(harness.getState().savesWorkspaces[id]),
+        });
+        expect(result.durationMs).toBeGreaterThanOrEqual(0);
+        const metrics = { dataVersion: 'update2_QoL', fileBytes: 32_431_209, durationMs: 10 } as const;
+        // Repeated and contradictory completions of an accepted request must not be counted again.
+        const count = imports.mock.calls.length;
+        harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, requestId, report, metrics]);
+        harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, requestId, 'read', undefined, metrics]);
+        expect(imports).toHaveBeenCalledTimes(count);
+    }
+    expect(imports).toHaveBeenCalledTimes(3);
+});
+
+it('reports each failed attempt and a later successful retry, keeping exact limit diagnostics', async () => {
+    const diagnostic = { subcode: 'building-name-chars', actual: 513, limit: 512 } as const;
+    const report = analyzeSave(saveFixture(), extractionContext);
+    const decode = vi.fn<SaveImportDecoder>().mockRejectedValueOnce(new SaveImportError('complexity', diagnostic))
+        .mockResolvedValueOnce(report);
+    const { harness, imports } = setup(decode);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
+    const requestId = harness.getState().savesImport.requestId;
+    await expect.poll(() => imports.mock.calls.length).toBe(1);
+    expect(imports.mock.calls[0][0]).toEqual({
+        outcome: 'failure', mode: 'new', dataVersion: 'update2_QoL', fileBytes: 20, durationMs: expect.any(Number),
+        stage: 'decode', error: 'complexity', diagnostic,
+    });
+    const metrics = { dataVersion: 'update2_QoL', fileBytes: 20, durationMs: 10 } as const;
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, requestId, 'complexity', diagnostic, metrics]);
+    expect(imports).toHaveBeenCalledOnce();
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, requestId, 'read', undefined, metrics]);
+    await expect.poll(() => imports.mock.calls.length).toBe(2);
+    expect(imports.mock.calls[1][0]).toMatchObject({ outcome: 'success' });
+});
+
+it.each(['structure', 'save-storage-limit', 'workspace-limit', 'collection-bytes'] as const)(
+    'does not count a decoded save as successful when workspace adoption fails: %s', async reason => {
+        const report = analyzeSave(saveFixture(), extractionContext);
+        if (reason === 'structure') report.gameData.revision = 'invalid';
+        if (reason === 'save-storage-limit' || reason === 'collection-bytes') {
+            // Valid unique buildings that exceed the workspace or combined collection budget.
+            const count = reason === 'save-storage-limit' ? 5_000 : 1_500;
+            const building = report.cores[0].buildings[0];
+            report.cores[0].buildings = Array.from({ length: count }, (_, i) => ({ ...building, id: i + 1_000, name: 'x'.repeat(512) }));
+        }
+        const { harness, imports } = setup(async () => report);
+        if (reason === 'workspace-limit') {
+            const workspaces = Object.fromEntries(Array.from({ length: MAX_SAVE_WORKSPACES }, (_, i) =>
+                [`save-${i}`, createSaveWorkspace(`save-${i}`, 'Existing', report)]));
+            harness.restoreState({ ...harness.getState(), savesWorkspaces: workspaces });
+        }
+        if (reason === 'collection-bytes') {
+            const workspace = createSaveWorkspace('existing', 'Existing', report);
+            expect(localStorageBytes(workspace)).toBeLessThan(MAX_WORKSPACE_BYTES);
+            harness.restoreState({ ...harness.getState(), savesWorkspaces: { existing: workspace } });
+        }
+        harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'new-save']);
+        harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
+        const error = reason === 'collection-bytes' ? 'workspace-limit' : reason;
+        await expect.poll(() => harness.getState().savesImport.error).toBe(error);
+        expect(imports).toHaveBeenCalledExactlyOnceWith({
+            outcome: 'failure', mode: 'new', dataVersion: 'update2_QoL', fileBytes: 20, durationMs: expect.any(Number),
+            stage: 'workspace', error,
+        });
+        expect(harness.getState().savesWorkspaces['new-save']).toBeUndefined();
+    },
+);
+
+it.each(['catalog', 'removed', 'disposed'] as const)('does not report cancelled imports or late results after %s', async reason => {
+    let finish!: (report: SaveSnapshot) => void;
+    const decode = vi.fn<SaveImportDecoder>(() => new Promise(resolve => { finish = resolve; }));
+    const { runtime, harness, imports } = setup(decode);
+    if (reason === 'removed') harness.restoreState({ ...harness.getState(), savesWorkspaces: {
+        cancelled: createSaveWorkspace('cancelled', 'Existing', analyzeSave(saveFixture(), extractionContext)),
+    } });
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'cancelled']);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
+    if (reason === 'catalog') harness.dispatchSync([appIds.events.APP_SET_DATA_VERSION, 'update1', {
+        ...structuredClone(saveGameData), saveBuildingCatalog: null,
+    }]);
+    if (reason === 'removed') harness.dispatchSync([appIds.events.SAVES_REMOVE_WORKSPACE, 'cancelled']);
+    if (reason === 'disposed') runtime.dispose();
+    expect(decode.mock.calls[0][1].aborted).toBe(true);
+    finish(analyzeSave(saveFixture(), extractionContext));
+    await new Promise(resolve => setImmediate(resolve));
+    expect(imports).not.toHaveBeenCalled();
 });
 
 it('keeps limit diagnostics for the active import and clears them on retry, another failure and close', async () => {

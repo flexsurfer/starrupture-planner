@@ -60,6 +60,7 @@ import { appIds, stateKeys } from './catalog';
 import type { SaveFileSource } from '@/features/saves/reader';
 import type { SaveSnapshot } from '@/features/saves/snapshot';
 import type { SaveImportDiagnostic, SaveImportErrorCode } from '@/features/saves/import-error';
+import type { SaveImportMetrics, SaveImportTelemetry } from '@/features/saves/import-telemetry';
 import type { SaveMapViewport, SaveView, SaveImportRequest, SaveImportState, SaveWorkspace, SaveWorkspaceSelection, SaveStorageError } from '@/features/saves/types';
 import type { SaveCoreOverview, SaveOverview } from '@/features/saves/overview';
 import type { SaveStorageGroup } from '@/features/saves/storage-inventory';
@@ -185,8 +186,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.SAVES_IMPORT_OPEN]: [workspaceId?: string];
         [appIds.events.SAVES_IMPORT_CLOSE]: [];
         [appIds.events.SAVES_IMPORT_READ]: [file: SaveFileSource];
-        [appIds.events.SAVES_IMPORT_READY]: [requestId: number, report: SaveSnapshot];
-        [appIds.events.SAVES_IMPORT_FAILED]: [requestId: number, error: SaveImportErrorCode, diagnostic?: SaveImportDiagnostic];
+        [appIds.events.SAVES_IMPORT_READY]: [requestId: number, report: SaveSnapshot, metrics?: SaveImportMetrics];
+        [appIds.events.SAVES_IMPORT_FAILED]: [requestId: number, error: SaveImportErrorCode, diagnostic?: SaveImportDiagnostic, metrics?: SaveImportMetrics];
         [appIds.events.SAVES_SELECT_WORKSPACE]: [workspaceId: string];
         [appIds.events.SAVES_RENAME_WORKSPACE]: [workspaceId: string, name: string];
         [appIds.events.SAVES_REMOVE_WORKSPACE]: [workspaceId: string];
@@ -296,6 +297,7 @@ export interface AppContracts extends UkladContracts {
     effects: {
         [appIds.effects.savesReadImport]: SaveImportRequest;
         [appIds.effects.savesCancelImport]: undefined;
+        [appIds.effects.savesTrackImport]: SaveImportTelemetry;
         [appIds.effects.downloadArchive]: PlannerArchive;
         [appIds.effects.readArchive]: string;
         [appIds.effects.setTheme]: 'light' | 'dark';
