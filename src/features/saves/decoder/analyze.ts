@@ -5,7 +5,7 @@ import { readLauncherItem } from './launchers';
 import { readStorageInventory } from './inventory';
 import type { SaveBuildingMapping } from './mappings';
 import { selectedRecipe } from './recipes';
-import { SaveImportError } from '../import-error';
+import { assertSaveImportLimit, SaveImportError, type SaveImportDiagnostic } from '../import-error';
 import type { SaveDecodeContext } from './types';
 
 type RecordValue = Record<string, unknown>;
@@ -13,9 +13,9 @@ const record = (value: unknown): RecordValue | null => value !== null && typeof 
 const number = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null;
 const handle = (value: unknown): number | null => Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) < 4294967295 ? Number(value) : null;
 const entityId = (key: string) => /^\(ID=(0|[1-9]\d*)\)$/.test(key) ? handle(Number(key.slice(4, -1))) : null;
-function text(value: unknown, max = 512): string | null {
+function text(value: unknown, subcode: SaveImportDiagnostic['subcode'], max = 512): string | null {
     if (typeof value !== 'string' || !value.length) return null;
-    if (value.length > max) throw new SaveImportError('complexity');
+    assertSaveImportLimit(subcode, value.length, max);
     return value;
 }
 function position(value: unknown): SavePosition {
@@ -55,7 +55,7 @@ function configuration(mapping: SaveBuildingMapping, fragments: string[], contex
 /** A unique known grid is useful app data; missing or conflicting evidence stays unknown. */
 function powerNetworks(mass: RecordValue): Map<number, number | null> {
     const nodes = Object.values(record(record(mass.electricitySubsystemState)?.nodeData) ?? {});
-    if (nodes.length > 100_000) throw new SaveImportError('complexity');
+    assertSaveImportLimit('power-network-records', nodes.length, 100_000);
     const result = new Map<number, number | null>();
     for (const value of nodes) {
         const node = record(value);
@@ -71,7 +71,7 @@ function coreLevels(itemData: RecordValue): Map<number, number | null> {
     const entries = record(itemData.BaseCoreReplicationHelperSaveData)?.baseCoreSaveData;
     const result = new Map<number, number | null>();
     if (!Array.isArray(entries)) return result;
-    if (entries.length > 100_000) throw new SaveImportError('complexity');
+    assertSaveImportLimit('core-level-records', entries.length, 100_000);
     for (const value of entries) {
         const entry = record(value);
         const id = handle(record(entry?.baseCore)?.iD);
@@ -88,7 +88,7 @@ function connectTransport(itemData: RecordValue, buildings: SaveBuilding[], cont
     const connections = record(raw);
     if (!connections) throw new SaveImportError('transport');
     const entries = Object.entries(connections);
-    if (entries.length > 100_000) throw new SaveImportError('complexity');
+    assertSaveImportLimit('transport-records', entries.length, 100_000);
     const byId = new Map(buildings.map(building => [building.id, building]));
     const receivers = new Set<number>();
     for (const [key, value] of entries) {
@@ -96,7 +96,7 @@ function connectTransport(itemData: RecordValue, buildings: SaveBuilding[], cont
         const link = record(value);
         if (!sender || sender.configuration.kind !== 'dispatcher' || !link) throw new SaveImportError('transport');
         const config = sender.configuration;
-        const item = text(link.item, 2048);
+        const item = text(link.item, 'transport-item-chars', 2048);
         const itemId = item ? context.mappings.items.get(item) : undefined;
         config.itemId = itemId && context.itemIds.has(itemId) ? itemId : null;
         const rawReceiver = record(link.receiver)?.iD;
@@ -121,7 +121,7 @@ export function analyzeSave(value: unknown, context: SaveDecodeContext): SaveSna
     // The supported container has no explicit format version; do not guess at a different schema.
     if (root.version !== undefined) throw new SaveImportError('mapping-version');
     const entries = Object.entries(entities);
-    if (entries.length > 100_000) throw new SaveImportError('complexity');
+    assertSaveImportLimit('entity-records', entries.length, 100_000);
     const names = record(record(itemData.CrBuildingCustomNameSubsystem)?.customNames);
     const networks = powerNetworks(mass);
     const levels = coreLevels(itemData);
@@ -130,15 +130,16 @@ export function analyzeSave(value: unknown, context: SaveDecodeContext): SaveSna
     const ids = new Set<number>();
     for (const [key, value] of entries) {
         const entity = record(value), spawn = record(entity?.spawnData);
-        const asset = text(spawn?.entityConfigDataPath, 2048);
+        const asset = text(spawn?.entityConfigDataPath, 'entity-asset-chars', 2048);
         const mapping = asset ? context.mappings.buildings.get(asset) : undefined;
         if (!mapping || !context.buildingIds.has(mapping.id)) continue;
         const id = entityId(key);
         if (id === null || ids.has(id)) throw new SaveImportError(mapping.role === 'core' ? 'core-identity' : 'structure');
         ids.add(id);
         const fragments = Array.isArray(entity?.fragmentValues) ? entity.fragmentValues.filter((value): value is string => typeof value === 'string') : [];
-        if (fragments.length > 4096 || fragments.some(fragment => fragment.length > 1024 * 1024)) throw new SaveImportError('complexity');
-        const common = { id, name: text(names?.[key]), powerNetworkId: networks.get(id) ?? null,
+        assertSaveImportLimit('entity-fragment-count', fragments.length, 4096);
+        for (const fragment of fragments) assertSaveImportLimit('entity-fragment-chars', fragment.length, 1024 * 1024);
+        const common = { id, name: text(names?.[key], 'building-name-chars'), powerNetworkId: networks.get(id) ?? null,
             position: position(record(spawn?.transform)?.translation) };
         if (mapping.role === 'core') {
             const core: SaveCore = { ...common, spawnTimeSeconds: spawnTime(fragments), level: levels.get(id) ?? null,
@@ -151,7 +152,7 @@ export function analyzeSave(value: unknown, context: SaveDecodeContext): SaveSna
     cores.sort((a, b) => a.id - b.id);
     buildings.sort((a, b) => a.id - b.id);
     if (buildings.length && !cores.length) throw new SaveImportError('position');
-    if (buildings.length * cores.length > 10_000_000) throw new SaveImportError('complexity');
+    assertSaveImportLimit('building-core-comparisons', buildings.length * cores.length, 10_000_000);
     for (const entry of buildings) {
         // All Cores participate. Exact ties choose the lowest Core ID, independently of source order.
         let nearest = cores[0], closest = Infinity;
@@ -164,5 +165,5 @@ export function analyzeSave(value: unknown, context: SaveDecodeContext): SaveSna
     }
     connectTransport(itemData, buildings, context);
     return { schemaVersion: 1, gameData: { version: context.dataVersion, revision: context.mappings.mappingRevision },
-        savedAt: text(root.timestamp), cores };
+        savedAt: text(root.timestamp, 'timestamp-chars'), cores };
 }

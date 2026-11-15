@@ -17,6 +17,16 @@ it('decodes the supported container directly into the app snapshot', async () =>
     expect(snapshot.cores.map(core => core.buildings.map(building => building.id))).toEqual([[10], [11]]);
     expect(Object.keys(snapshot).sort()).toEqual(['cores', 'gameData', 'savedAt', 'schemaVersion']);
 });
+it('preserves the analyzer diagnostic through decompression and distinguishes long names from timestamps', async () => {
+    for (const field of ['name', 'timestamp'] as const) {
+        const save = saveFixture();
+        if (field === 'name') save.itemData.CrBuildingCustomNameSubsystem.customNames['(ID=1)'] = 'x'.repeat(513);
+        else save.timestamp = 'x'.repeat(513);
+        await expect(decodeSave(encode(save), extractionContext)).rejects.toMatchObject({ code: 'complexity', diagnostic: {
+            subcode: field === 'name' ? 'building-name-chars' : 'timestamp-chars', actual: 513, limit: 512,
+        } });
+    }
+});
 it('retains only the physical stock in the main inventory of each storage building', async () => {
     const snapshot = await decodeSave(encode(storageFixture()), extractionContext);
     const byId = new Map(snapshot.cores.flatMap(core => core.buildings.map(b => [b.id, b.configuration] as const)));

@@ -43,6 +43,57 @@ The UI distinguishes compressed-size, unpacked-size, complexity, and storage
 failures, with English, German, French, and Polish messages. Displayed size
 limits come from the decoder constants.
 
+## Complexity diagnostics
+
+Every complexity check attaches a stable `subcode`, the observed `actual` value,
+and its `limit`. The worker delivers these as plain data to the transient import
+state. The dialog shows the diagnostic and a **Copy error message** button, with
+instructions to send the copied report in Discord. Clipboard failure leaves the
+text selectable and explains manual copying. Reports contain the localized error
+description and locale-independent diagnostic IDs and exact numbers, for example:
+
+```text
+Rupture Planner
+Save import stopped at an internal limit.
+
+error: complexity
+subcode: projection-chars
+actual: 16780000
+limit: 16777216
+```
+
+The report contains only the error description, subcode and counters. It excludes
+filenames, user names, source keys and save contents. Starting another import or
+closing the dialog clears the previous diagnostic.
+
+| Subcode | Measured value |
+| --- | --- |
+| `json-token-chars` | Source characters in one JSON token, including quotes/escapes |
+| `json-key-chars` | Decoded length of one object key |
+| `json-active-key-chars` | Total decoded key length across open containers |
+| `json-object-keys` | Keys in one source object, including the offending key |
+| `json-container-separators` | Comma separators in one source container |
+| `json-depth` | Container nesting depth, including the new container |
+| `json-record-chars` | Characters read since a selected record started, checked per chunk |
+| `projection-chars` | Sum of serialized projected values and their key lengths |
+| `entity-records` | Entity records passed to the analyzer |
+| `power-network-records` | Electricity node records |
+| `custom-name-records` | Custom-name records |
+| `core-level-records` | Core-level records |
+| `transport-records` | Sender connection records |
+| `entity-asset-chars` | Length of an entity asset path |
+| `entity-fragment-count` | String fragments on a known entity, before filtering |
+| `entity-fragment-chars` | Length of one fragment on a known entity, before filtering |
+| `building-name-chars` | Length of a building or Core name |
+| `timestamp-chars` | Length of the save timestamp |
+| `transport-item-chars` | Length of a sender connection's item asset path |
+| `building-core-comparisons` | Building count multiplied by Core count |
+
+Character counters use JavaScript UTF-16 string lengths, not bytes. `actual` is
+the value observed at the first failing check; streaming counters need not be the
+full-file total and may include the current read chunk. These diagnostics preserve
+the existing import thresholds and rejection order.
+
 ## Reproduce the measurements
 
 Run each benchmark mode in a separate process:

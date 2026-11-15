@@ -1,7 +1,7 @@
 import type { MapDisplaySettings, MapLayers } from './map-preferences';
 import type { SaveBuildingCatalog } from './game-data';
 import type { SaveDataContext } from './decoder/types';
-import type { SaveImportErrorCode } from './import-error';
+import type { SaveImportDiagnostic, SaveImportErrorCode } from './import-error';
 import type { SaveSnapshot } from './snapshot';
 import type { SaveFileSource } from './reader';
 
@@ -20,6 +20,7 @@ export interface SaveImportState {
     phase: 'closed' | 'select' | 'reading';
     fileName: string | null;
     error: SaveImportErrorCode | 'workspace-limit' | 'save-storage-limit' | null;
+    diagnostic: SaveImportDiagnostic | null;
 }
 
 /** Snapshot replacement and user intent are scoped to this workspace. */

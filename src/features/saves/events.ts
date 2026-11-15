@@ -48,11 +48,12 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         if (draftState.uiGameDataLoadPending) return;
         if (!draftState.savesBuildingCatalog) {
             draftState.savesImport.error = hasSaveMappings(draftState.appDataVersion) ? 'mappings' : 'mapping-version';
+            draftState.savesImport.diagnostic = null;
             return;
         }
         const requestId = draftState.savesImport.requestId + 1;
         const targetWorkspaceId = draftState.savesImport.targetWorkspaceId;
-        draftState.savesImport = { requestId, targetWorkspaceId, phase: 'reading', fileName: file.name, error: null };
+        draftState.savesImport = { requestId, targetWorkspaceId, phase: 'reading', fileName: file.name, error: null, diagnostic: null };
         return [[appIds.effects.savesReadImport, {
             requestId, targetWorkspaceId, file, dataVersion: draftState.appDataVersion,
             buildings: current(draftState.buildingsList), items: current(draftState.itemsList),
@@ -97,10 +98,11 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         draftState.savesImport = createSaveImportState(requestId + 1);
         return [[appIds.effects.savesCancelImport]];
     });
-    registrar.regEvent(appIds.events.SAVES_IMPORT_FAILED, ({ draftState }, requestId, error) => {
+    registrar.regEvent(appIds.events.SAVES_IMPORT_FAILED, ({ draftState }, requestId, error, diagnostic) => {
         if (draftState.savesImport.phase !== 'reading' || draftState.savesImport.requestId !== requestId) return;
         draftState.savesImport.phase = 'select';
         draftState.savesImport.error = error;
+        draftState.savesImport.diagnostic = error === 'complexity' && diagnostic ? { ...diagnostic } : null;
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_WORKSPACE, ({ draftState }, id) => {
         if (draftState.savesStorageError !== 'load' && Object.hasOwn(draftState.savesWorkspaces, id) && draftState.savesActiveWorkspaceId !== id) {

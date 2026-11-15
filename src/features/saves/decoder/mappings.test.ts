@@ -1,11 +1,11 @@
 import type { Building } from '@/app/uklad/model';
 // @vitest-environment node
 import { expect, it, vi } from 'vitest';
-import buildings from '../../../../assets/game-data/update2_QoL/buildings_and_recipes.json';
-import items from '../../../../assets/game-data/update2_QoL/items_catalog.json';
-import buildingMappings from '../../../../assets/game-data/update2_QoL/save_buildings_mappings.json';
-import itemMappings from '../../../../assets/game-data/update2_QoL/save_items_mappings.json';
-import recipeMappings from '../../../../assets/game-data/update2_QoL/save_recipes_mappings.json';
+import buildings from '../../../../game-data/update2_QoL/buildings_and_recipes.json';
+import items from '../../../../game-data/update2_QoL/items_catalog.json';
+import buildingMappings from '../../../../game-data/update2_QoL/save_buildings_mappings.json';
+import itemMappings from '../../../../game-data/update2_QoL/save_items_mappings.json';
+import recipeMappings from '../../../../game-data/update2_QoL/save_recipes_mappings.json';
 import { loadHeadlessSaveMappings } from '@/platform/headless/game-data-loader';
 import { DATA_VERSIONS } from '@/features/app-shell/data-version';
 import { loadSaveDecodeContext, loadSaveMappings, parseSaveMappings } from './mappings';

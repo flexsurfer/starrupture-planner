@@ -4,6 +4,7 @@ import { useRuntime, useSubscription } from '@/app/uklad/bindings';
 import { useTranslation, type MessageKey } from '@/shared/i18n';
 import type { SaveImportState } from '../types';
 import { MAX_SAVE_BYTES, MAX_DECODED_SAVE_BYTES } from '../import-limits';
+import { SaveImportLimitError } from './SaveImportLimitError';
 
 const importLimits = { fileLimit: MAX_SAVE_BYTES / (1024 * 1024), decodedLimit: MAX_DECODED_SAVE_BYTES / (1024 * 1024) };
 
@@ -14,7 +15,7 @@ const errors: Record<NonNullable<SaveImportState['error']>, MessageKey> = {
     selection: 'Choose a .sav game save.', extension: 'Choose a .sav game save.',
     'file-size': 'Choose a .sav file no larger than {fileLimit} MiB.',
     'decoded-size': 'This save expands beyond the {decodedLimit} MiB import limit when unpacked.',
-    complexity: 'This save contains too many objects or entries that are too large to import.',
+    complexity: 'Save import stopped at an internal limit.',
     compression: 'This file could not be decoded as a supported StarRupture save.',
     'size-mismatch': 'This file could not be decoded as a supported StarRupture save.', structure: 'This file could not be decoded as a supported StarRupture save.',
     'unsupported-browser': 'This browser does not support save import.',
@@ -122,7 +123,8 @@ export function SaveImportDialog() {
                 <SaveFileDropZone busy={reading} fileName={candidate.fileName}
                     onFile={file => runtime.dispatch([appIds.events.SAVES_IMPORT_READ, file])} />
                 <SaveFileLocation />
-                {candidate.error && <p role="alert" className="mt-4 text-sm text-error">{t(errors[candidate.error], importLimits)}</p>}
+                {candidate.error === 'complexity' ? <SaveImportLimitError key={candidate.requestId} diagnostic={candidate.diagnostic} />
+                    : candidate.error && <p role="alert" className="mt-4 text-sm text-error">{t(errors[candidate.error], importLimits)}</p>}
             </div>
             <footer className="flex justify-end border-t border-base-300 px-5 py-3"><button type="button" className="btn btn-ghost btn-sm" disabled={reading} onClick={close}>{t('Cancel import')}</button></footer>
         </div>

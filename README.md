@@ -148,12 +148,12 @@ starrupture-planner/
 │   └── icons/
 │       ├── buildings/     # Building icons
 │       └── items/         # Item icons
+├── game-data/            # Versioned JSON files imported with hashed URLs
 ├── 🏗️ src/
 │   ├── components/        # React components
 │   │   ├── planner/       # Production planner logic
 │   │   └── ui/           # Reusable UI components
-│   ├── state/            # Reflex state management
-│   └── data/             # Game data (JSON)
+│   └── state/            # Reflex state management
 ├── 📦 dist/              # Production build
 └── ⚙️ config files       # Vite, TypeScript, ESLint
 ```
@@ -247,9 +247,12 @@ to add a language or new UI copy. Validate catalogs with `npm run test:i18n`.
 
 ### 🎨 Adding New Game Data
 
-Game data lives in `src/data/`:
+Game data lives in the top-level `game-data/<version>/` directories:
 - `items_catalog.json` - All game items
 - `buildings_and_recipes.json` - Buildings and their recipes
+
+Keep these files outside `assets/`, which Vite uses as its public directory.
+The web loader imports their URLs so production builds emit separate JSON files with content hashes.
 
 To add new items/buildings:
 1. Update the JSON files

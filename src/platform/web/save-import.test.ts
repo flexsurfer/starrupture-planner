@@ -30,6 +30,16 @@ it('transfers bytes to a worker, returns its report, and releases the worker', a
     expect(worker.terminate).toHaveBeenCalledOnce();
 });
 
+it('preserves structured limit diagnostics when reconstructing a worker error', async () => {
+    vi.stubGlobal('Worker', TestWorker);
+    const diagnostic = { subcode: 'projection-chars', actual: 16_780_000, limit: 16_777_216 };
+    const pending = readSaveInWorker(request(), new AbortController().signal);
+    await vi.waitFor(() => expect(TestWorker.instances).toHaveLength(1));
+    TestWorker.instances[0].onmessage?.({ data: structuredClone({ error: 'complexity', diagnostic }) } as MessageEvent);
+    await expect(pending).rejects.toMatchObject({ code: 'complexity', diagnostic });
+    expect(TestWorker.instances[0].terminate).toHaveBeenCalledOnce();
+});
+
 it('terminates a running worker on cancellation', async () => {
     vi.stubGlobal('Worker', TestWorker);
     const controller = new AbortController();

@@ -23,7 +23,7 @@ it('loads version-specific save metadata with the selected catalogs and caches t
         extractionRates: { 'ore_excavator:ore_titanium:pure': 240 },
     });
     expect(fetchJson.mock.calls).toHaveLength(6);
-    expect(fetchJson.mock.calls.every(([url]) => url.startsWith(`${import.meta.env.BASE_URL}assets/game-data/update2_QoL/`))).toBe(true);
+    expect(fetchJson.mock.calls.every(([url]) => url.startsWith(`${import.meta.env.BASE_URL}game-data/update2_QoL/`))).toBe(true);
     expect(await loadGameDataVersion('update2_QoL')).toBe(bundle);
     expect(fetchJson.mock.calls).toHaveLength(6);
 });
@@ -44,5 +44,5 @@ it('loads older selected catalogs without requesting missing mappings or substit
     expect(bundle.saveBuildingCatalog).toBeNull();
     expect(bundle.buildings).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'smelter' })]));
     expect(fetchJson.mock.calls).toHaveLength(3);
-    expect(fetchJson.mock.calls.every(([url]) => url.startsWith(`${import.meta.env.BASE_URL}assets/game-data/earlyaccess/`))).toBe(true);
+    expect(fetchJson.mock.calls.every(([url]) => url.startsWith(`${import.meta.env.BASE_URL}game-data/earlyaccess/`))).toBe(true);
 });

@@ -1,7 +1,7 @@
 import type { UkladRegistrar } from '@ukladjs/core/vanilla';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { appIds } from '@/app/uklad/catalog';
-import { SaveImportError } from '@/features/saves/import-error';
+import { saveImportFailure } from '@/features/saves/import-error';
 import { validateSaveFile } from '@/features/saves/reader';
 import type { SaveSnapshot } from '@/features/saves/snapshot';
 import type { SaveImportRequest } from '@/features/saves/types';
@@ -23,8 +23,9 @@ export function registerSaveImportEffects(registrar: UkladRegistrar<AppContracts
                 const report = await decode(request, active.signal);
                 if (!active.signal.aborted) runtime.dispatch([appIds.events.SAVES_IMPORT_READY, request.requestId, report]);
             } catch (error) {
+                const failure = saveImportFailure(error);
                 if (!active.signal.aborted) runtime.dispatch([appIds.events.SAVES_IMPORT_FAILED, request.requestId,
-                    error instanceof SaveImportError ? error.code : 'read']);
+                    failure.error, failure.diagnostic]);
             } finally {
                 if (controller === active) controller = null;
             }

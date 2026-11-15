@@ -1,5 +1,5 @@
 import { readSaveFile, validateSaveFile } from '@/features/saves/reader';
-import { SaveImportError } from '@/features/saves/import-error';
+import { saveImportFailure, SaveImportError } from '@/features/saves/import-error';
 import { SAVE_IMPORT_TIMEOUT_MS } from '@/features/saves/import-limits';
 import type { SaveImportDecoder } from '@/platform/shared/save-import-effects';
 import type { SaveWorkerInput, SaveWorkerResult } from './save-import-worker';
@@ -16,7 +16,7 @@ export const readSaveInWorker: SaveImportDecoder = (request, signal) => new Prom
         signal.removeEventListener('abort', abort);
         worker?.terminate();
         if (result && 'report' in result) resolve(result.report);
-        else reject(new SaveImportError(result && 'error' in result ? result.error : 'read'));
+        else reject(result && 'error' in result ? new SaveImportError(result.error, result.diagnostic) : new SaveImportError('read'));
     };
     const abort = () => finish();
     const timer = setTimeout(() => finish({ error: 'timeout' }), SAVE_IMPORT_TIMEOUT_MS);
@@ -37,5 +37,5 @@ export const readSaveInWorker: SaveImportDecoder = (request, signal) => new Prom
         // Structural sources used by headless/test adapters retain their byte-based path.
         if (request.file instanceof Blob) start({ file: request.file, context });
         else start({ bytes: await readSaveFile(request.file, signal), context });
-    })().catch(error => finish({ error: error instanceof SaveImportError ? error.code : 'read' }));
+    })().catch(error => finish(saveImportFailure(error)));
 });

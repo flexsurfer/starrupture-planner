@@ -86,7 +86,7 @@ function setup({ withBounds = true, networkIds = {}, snapshot: exampleSnapshot, 
     }, replaceSnapshot: async (nextSnapshot = analyzeSave(snapshotFixture(), extractionContext)) => {
         workspace = createSaveWorkspace('one', 'World', nextSnapshot);
         await act(async () => {
-            harness.restoreState({ ...harness.getState(), savesImport: { requestId: 50, targetWorkspaceId: 'one', phase: 'reading', fileName: 'World.sav', error: null } });
+            harness.restoreState({ ...harness.getState(), savesImport: { requestId: 50, targetWorkspaceId: 'one', phase: 'reading', fileName: 'World.sav', error: null, diagnostic: null } });
             harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, 50, workspace.snapshot]);
             workspace = harness.getState().savesWorkspaces.one;
             result.rerender(view());

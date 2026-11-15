@@ -2,7 +2,7 @@ import { defaultMapDisplay, defaultMapLayers } from './map-preferences';
 import type { SaveImportState, SavesFeatureState } from './types';
 
 export function createSaveImportState(requestId = 0): SaveImportState {
-    return { requestId, targetWorkspaceId: null, phase: 'closed', fileName: null, error: null };
+    return { requestId, targetWorkspaceId: null, phase: 'closed', fileName: null, error: null, diagnostic: null };
 }
 
 export function createSavesFeatureState(): SavesFeatureState {

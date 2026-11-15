@@ -101,14 +101,15 @@ src/
 │   ├── ItemsPage.tsx   # Items catalog page
 │   ├── RecipesPage.tsx # Recipes browser page
 │   └── TabLayout.tsx   # Main layout component
-├── state/              # Reflex state management
-│   ├── db.ts          # Data models and store
-│   ├── events.ts      # State events
-│   ├── effects.ts     # Side effects
-│   └── subs.ts        # Subscriptions
-└── assets/            # Static assets
-    └── data/          # Game data JSON files
+└── state/              # Reflex state management
+    ├── db.ts          # Data models and store
+    ├── events.ts      # State events
+    ├── effects.ts     # Side effects
+    └── subs.ts        # Subscriptions
 ```
+
+The top-level `assets/` directory holds public static assets. Versioned game data lives
+in the top-level `game-data/<version>/` directories and is imported as URLs with content hashes.
 
 ## 🎮 Game Data Format
 

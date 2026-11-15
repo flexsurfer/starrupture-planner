@@ -1,5 +1,5 @@
 import { TokenType, type ParsedTokenInfo } from '@streamparser/json';
-import { SaveImportError } from '../import-error';
+import { assertSaveImportLimit } from '../import-error';
 
 const punctuation: Record<string, TokenType> = {
     '{': TokenType.LEFT_BRACE, '}': TokenType.RIGHT_BRACE, '[': TokenType.LEFT_BRACKET,
@@ -17,7 +17,7 @@ export function createJsonTokenizer(onToken: (token: ParsedTokenInfo.ParsedToken
     let parts: string[] = [];
     const append = (part: string) => {
         tokenLength += part.length;
-        if (tokenLength > MAX_TOKEN_CHARS) throw new SaveImportError('complexity');
+        assertSaveImportLimit('json-token-chars', tokenLength, MAX_TOKEN_CHARS);
         parts.push(part);
     };
     const finish = () => {

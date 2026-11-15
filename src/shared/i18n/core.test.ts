@@ -4,7 +4,8 @@ import { normalizeLocale } from './locales';
 import english from './locales/en.json';
 
 const placeholders = (text: string) => [...new Set(text.match(/\{\w+\}/g) ?? [])].sort();
-const protectedTerms = ['Core', 'StarRupture', 'Rupture Planner', 'Discord', 'GitHub', 'MW', 'G', 'Copy', 'Ctrl+V', 'V.2'];
+// Preserve game/product names, units and shortcuts; UI verbs such as "Copy" are translated.
+const protectedTerms = ['Core', 'StarRupture', 'Rupture Planner', 'Discord', 'GitHub', 'MW', 'G', 'Ctrl+V', 'V.2'];
 const forms = (entry: string | PluralMessage) => typeof entry === 'string' ? [entry] : Object.values(entry);
 
 describe('UI localization', () => {

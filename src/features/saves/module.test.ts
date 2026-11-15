@@ -148,6 +148,28 @@ it('rejects invalid files before invoking the decoder and preserves existing wor
     expect(unrelatedState(harness.getState())).toEqual(initial);
 });
 
+it('keeps limit diagnostics for the active import and clears them on retry, another failure and close', async () => {
+    const diagnostic = { subcode: 'projection-chars', actual: 16_780_000, limit: 16_777_216 } as const;
+    const decode = vi.fn<SaveImportDecoder>().mockRejectedValueOnce(new SaveImportError('complexity', diagnostic))
+        .mockImplementation(() => new Promise(() => {}));
+    const { harness } = setup(decode);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
+    const first = harness.getState().savesImport.requestId;
+    await expect.poll(() => harness.getSubscriptionValue([appIds.subscriptions.SAVES_IMPORT])).toMatchObject({
+        phase: 'select', error: 'complexity', diagnostic,
+    });
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
+    expect(harness.getState().savesImport).toMatchObject({ phase: 'reading', error: null, diagnostic: null });
+    const second = harness.getState().savesImport.requestId;
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, first, 'complexity', diagnostic]);
+    expect(harness.getState().savesImport).toMatchObject({ phase: 'reading', error: null, diagnostic: null });
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, second, 'read']);
+    expect(harness.getState().savesImport).toMatchObject({ phase: 'select', error: 'read', diagnostic: null });
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_CLOSE]);
+    expect(harness.getState().savesImport).toMatchObject({ phase: 'closed', error: null, diagnostic: null });
+});
+
 it.each(['version', 'revision'] as const)('rejects a snapshot with an unsupported catalog %s', field => {
     const { harness } = setup(() => new Promise(() => {}));
     harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);

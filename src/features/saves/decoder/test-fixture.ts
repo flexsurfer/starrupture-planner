@@ -1,12 +1,12 @@
 import type { Building } from '@/app/uklad/model';
-import corporations from '../../../../assets/game-data/update2_QoL/corporations_components.json';
+import corporations from '../../../../game-data/update2_QoL/corporations_components.json';
 import { createSaveBuildingCatalog, createSaveGameData } from '../game-data';
 import type { SaveDecodeContext } from './types';
-import buildingMappings from '../../../../assets/game-data/update2_QoL/save_buildings_mappings.json';
-import itemMappings from '../../../../assets/game-data/update2_QoL/save_items_mappings.json';
-import recipeMappings from '../../../../assets/game-data/update2_QoL/save_recipes_mappings.json';
-import rawBuildings from '../../../../assets/game-data/update2_QoL/buildings_and_recipes.json';
-import items from '../../../../assets/game-data/update2_QoL/items_catalog.json';
+import buildingMappings from '../../../../game-data/update2_QoL/save_buildings_mappings.json';
+import itemMappings from '../../../../game-data/update2_QoL/save_items_mappings.json';
+import recipeMappings from '../../../../game-data/update2_QoL/save_recipes_mappings.json';
+import rawBuildings from '../../../../game-data/update2_QoL/buildings_and_recipes.json';
+import items from '../../../../game-data/update2_QoL/items_catalog.json';
 import { parseSaveMappings } from './mappings';
 
 const buildings = rawBuildings as Building[];

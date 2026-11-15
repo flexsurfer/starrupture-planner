@@ -22,6 +22,7 @@ afterEach(async () => {
     for (const owner of owners.splice(0)) { await owner.persistence.dispose(); owner.runtime.dispose(); }
     Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
     Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+    vi.unstubAllGlobals();
 });
 
 async function setup(error?: SaveImportError, save: unknown = snapshotFixture()) {
@@ -258,13 +259,32 @@ it('shows controlled read errors, cancellation, hydration failure and unsaved ch
 it.each([
     ['file-size', 'Choose a .sav file no larger than 64 MiB.'],
     ['decoded-size', 'This save expands beyond the 512 MiB import limit when unpacked.'],
-    ['complexity', 'This save contains too many objects or entries that are too large to import.'],
+    ['complexity', 'Save import stopped at an internal limit.'],
 ] as const)('explains the %s limit separately', async (code, message) => {
     await setup(new SaveImportError(code));
     fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
     const dialog = await screen.findByRole('dialog', { name: 'Import save' });
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(message);
     expect(within(dialog).getByText(/Limits: 64 MiB per file and 512 MiB after unpacking/)).toBeVisible();
+});
+
+it('copies the full diagnostic from a failed import and resets copy feedback on retry', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const diagnostic = { subcode: 'projection-chars', actual: 16_780_000, limit: 16_777_216 } as const;
+    await setup(new SaveImportError('complexity', diagnostic));
+    fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile('private-world')] } });
+    const dialog = await screen.findByRole('dialog', { name: 'Import save' });
+    const error = await within(dialog).findByRole('alert');
+    expect(error).toHaveTextContent('subcode: projection-chars');
+    expect(error).toHaveTextContent('actual: 16780000');
+    expect(error).toHaveTextContent('limit: 16777216');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Copy error message' }));
+    expect(await within(dialog).findByRole('status')).toHaveTextContent('Copied');
+    expect(writeText).toHaveBeenCalledWith('Rupture Planner\nSave import stopped at an internal limit.\n\nerror: complexity\nsubcode: projection-chars\nactual: 16780000\nlimit: 16777216');
+    await interact(() => { fireEvent.change(within(dialog).getByLabelText('Choose save file'), { target: { files: [saveFile()] } }); });
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('subcode: projection-chars');
+    expect(within(dialog).queryByRole('status')).toBeNull();
 });
 
 it('retains the selected view across page remounts only for the current runtime session', async () => {

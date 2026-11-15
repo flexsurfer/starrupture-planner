@@ -63,7 +63,9 @@ it('still rejects more than 100,000 retained records in a collection', () => {
     const input = { itemData: { Mass: { entities: {}, electricitySubsystemState: {
         nodeData: Object.fromEntries(Array.from({ length: 100_001 }, (_, index) => [`(UId=(ID=${index}))`, null])),
     } } } };
-    expect(() => parse(JSON.stringify(input))).toThrow('complexity');
+    expect(() => parse(JSON.stringify(input))).toThrow(expect.objectContaining({ code: 'complexity', diagnostic: {
+        subcode: 'power-network-records', actual: 100_001, limit: 100_000,
+    } }));
 });
 
 it.each([
@@ -103,19 +105,26 @@ it('preserves empty saves and the handling of malformed optional metadata', () =
 });
 
 it('bounds nesting and an unfinished oversized token before the entire input is read', () => {
-    expect(() => parse(`{"ignored":${'['.repeat(129)}`)).toThrow('complexity');
+    expect(() => parse(`{"ignored":${'['.repeat(129)}`)).toThrow(expect.objectContaining({ code: 'complexity', diagnostic: {
+        subcode: 'json-depth', actual: 129, limit: 128,
+    } }));
     const parser = createSaveJsonParser(extractionContext);
     const bytes = new TextEncoder();
     parser.write(bytes.encode('{"ignored":"'));
     const chunk = bytes.encode('a'.repeat(64 * 1024));
-    expect(() => { for (let i = 0; i < 130; i++) parser.write(chunk); }).toThrow('complexity');
+    expect(() => { for (let i = 0; i < 130; i++) parser.write(chunk); }).toThrow(expect.objectContaining({ diagnostic: {
+        subcode: 'json-token-chars', actual: 4 * 1024 * 1024 + 1, limit: 4 * 1024 * 1024,
+    } }));
 });
 
 it('preserves fragment-count and fragment-size checks before discarding running state', () => {
-    for (const fragments of [Array.from({ length: 4097 }, () => 'unused'), ['a'.repeat(1024 * 1024 + 1)]]) {
+    for (const [fragments, diagnostic] of [
+        [Array.from({ length: 4097 }, () => 'unused'), { subcode: 'entity-fragment-count', actual: 4097, limit: 4096 }],
+        [['a'.repeat(1024 * 1024 + 1)], { subcode: 'entity-fragment-chars', actual: 1024 * 1024 + 1, limit: 1024 * 1024 }],
+    ] as const) {
         const save = saveFixture();
-        save.itemData.Mass.entities['(ID=10)'].fragmentValues = fragments;
-        expect(() => parse(JSON.stringify(save))).toThrow('complexity');
+        save.itemData.Mass.entities['(ID=10)'].fragmentValues = [...fragments];
+        expect(() => parse(JSON.stringify(save))).toThrow(expect.objectContaining({ code: 'complexity', diagnostic }));
     }
 });
 
@@ -125,12 +134,30 @@ it('bounds selected records, unexpected timestamp containers and retained object
         const parser = createSaveJsonParser(extractionContext);
         parser.write(encode(prefix));
         const chunk = encode(`${JSON.stringify('x'.repeat(64 * 1024))},`);
-        expect(() => { for (let i = 0; i < 140; i++) parser.write(chunk); }).toThrow('complexity');
+        expect(() => { for (let i = 0; i < 140; i++) parser.write(chunk); }).toThrow(expect.objectContaining({ diagnostic: {
+            subcode: 'json-record-chars', actual: expect.any(Number), limit: 8 * 1024 * 1024,
+        } }));
     }
-    expect(() => parse(`{"${'k'.repeat(2049)}":0}`)).toThrow('complexity');
+    expect(() => parse(`{"${'k'.repeat(2049)}":0}`)).toThrow(expect.objectContaining({ diagnostic: {
+        subcode: 'json-key-chars', actual: 2049, limit: 2048,
+    } }));
     const parser = createSaveJsonParser(extractionContext);
     parser.write(encode('{"ignored":{'));
     expect(() => {
         for (let i = 0; i < 2200; i++) parser.write(encode(`${JSON.stringify(`${i}-${'k'.repeat(2040)}`)}:0,`));
-    }).toThrow('complexity');
+    }).toThrow(expect.objectContaining({ diagnostic: {
+        subcode: 'json-active-key-chars', actual: expect.any(Number), limit: 4 * 1024 * 1024,
+    } }));
+});
+
+it('reports the compact projection limit independently of individual fragment and record limits', () => {
+    const save = saveFixture();
+    const prefix = '/Script/Chimera.CrInventoryFragment(';
+    const fragment = prefix + 'x'.repeat(1024 * 1024 - prefix.length - 1) + ')';
+    Object.assign(save.itemData.Mass.entities, Object.fromEntries(Array.from({ length: 20 }, (_, index) => [
+        `(ID=${index + 100})`, saveEntity('Smelter/DA_Smelter.DA_Smelter', 0, [fragment]),
+    ])));
+    expect(() => parse(JSON.stringify(save))).toThrow(expect.objectContaining({ code: 'complexity', diagnostic: {
+        subcode: 'projection-chars', actual: expect.any(Number), limit: 16 * 1024 * 1024,
+    } }));
 });

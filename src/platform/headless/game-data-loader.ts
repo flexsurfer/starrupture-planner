@@ -24,11 +24,11 @@ export function loadHeadlessSaveContext(context: SaveDataContext) {
 }
 
 async function readJson<T>(version: DataVersion, file: string): Promise<T> {
-    const path = resolve(process.cwd(), 'assets', 'game-data', version, file);
+    const path = resolve(process.cwd(), 'game-data', version, file);
     return JSON.parse(await readFile(path, 'utf8')) as T;
 }
 
-/** Reads the bundled public game data without requiring a browser or network access. */
+/** Reads the game-data source files without requiring a browser or network access. */
 export async function loadHeadlessGameDataVersion(version: DataVersion): Promise<GameDataBundle> {
     const hit = cache.get(version);
     if (hit) return hit;

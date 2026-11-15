@@ -6,7 +6,7 @@ import { buildMultiTargetProductionFlow, buildProductionFlow } from './productio
 import type { Building, FlowNode } from './types';
 
 const buildings = JSON.parse(readFileSync(
-    new URL('../../../assets/game-data/update2_QoL/buildings_and_recipes.json', import.meta.url),
+    new URL('../../../game-data/update2_QoL/buildings_and_recipes.json', import.meta.url),
     'utf8',
 )) as Building[];
 

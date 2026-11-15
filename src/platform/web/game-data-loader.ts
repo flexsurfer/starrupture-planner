@@ -13,9 +13,9 @@ const FILES = {
 
 export { gameDataBundleToAppVersioned, type GameDataBundle };
 
-// Vite gives changed files new URLs in both the page and the save worker.
+// Keep these files outside publicDir so Vite emits hashed URLs for the page and save worker.
 const gameDataUrls = import.meta.glob<string>('./*/*.json', {
-    base: '../../../assets/game-data', query: '?url&no-inline', import: 'default', eager: true,
+    base: '../../../game-data', query: '?url&no-inline', import: 'default', eager: true,
 });
 
 async function fetchGameData<T>(version: DataVersion, file: string): Promise<T> {

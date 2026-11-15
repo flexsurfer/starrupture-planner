@@ -14,7 +14,7 @@ if (buildings.schemaVersion !== 1 || items.schemaVersion !== 1
     || !/^[a-zA-Z0-9_]+$/.test(buildings.appDataVersion)) {
     throw new Error('Mapping exports must use the same supported schema, game build, and app data version.');
 }
-const destination = resolve('assets/game-data', buildings.appDataVersion);
+const destination = resolve('game-data', buildings.appDataVersion);
 const [buildingCatalog, itemCatalog] = await Promise.all(['buildings_and_recipes.json', 'items_catalog.json']
     .map(file => readJson(resolve(destination, file))));
 const tiers = { ore_excavator: 1, mechanicaldrilltier2: 2, fabricator: 1, craftertier2: 2,

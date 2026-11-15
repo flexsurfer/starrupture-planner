@@ -228,7 +228,7 @@ describe('independent planner resources', () => {
         const originalFlow = structuredClone(flow());
         expect(harness.getState().plannerComparisonCoreIds).toEqual([1, 2]);
         const changed = snapshot(); changed.cores.shift(); changed.savedAt = '20261015130000';
-        harness.restoreState({ ...harness.getState(), savesImport: { requestId: 10, targetWorkspaceId: 'world', phase: 'reading', fileName: 'new.sav', error: null } });
+        harness.restoreState({ ...harness.getState(), savesImport: { requestId: 10, targetWorkspaceId: 'world', phase: 'reading', fileName: 'new.sav', error: null, diagnostic: null } });
         harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, 10, changed]);
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', key, [{ buildingId: 20 }]]);
         expect(resources()).toEqual(originalResources);

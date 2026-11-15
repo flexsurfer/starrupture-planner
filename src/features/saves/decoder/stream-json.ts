@@ -1,5 +1,5 @@
 import { TokenParser, TokenType, type ParsedTokenInfo } from '@streamparser/json';
-import { SaveImportError } from '../import-error';
+import { assertSaveImportLimit, SaveImportError, type SaveImportDiagnostic } from '../import-error';
 import type { SaveDecodeContext } from './types';
 import { createJsonTokenizer } from './json-tokens';
 
@@ -14,6 +14,10 @@ const namePath = '$.itemData.CrBuildingCustomNameSubsystem.customNames';
 const levelPath = '$.itemData.BaseCoreReplicationHelperSaveData.baseCoreSaveData';
 const transportPath = '$.itemData.CrPackageTransportReplicator.senderConnections';
 const collectionPaths = [entityPath, networkPath, namePath, levelPath, transportPath];
+const collectionDiagnostics: Record<string, SaveImportDiagnostic['subcode']> = {
+    [entityPath]: 'entity-records', [networkPath]: 'power-network-records', [namePath]: 'custom-name-records',
+    [levelPath]: 'core-level-records', [transportPath]: 'transport-records',
+};
 const paths = ['$.timestamp', '$.version', ...collectionPaths.map(path => `${path}.*`)];
 const requiredPaths = ['$', '$.itemData', '$.itemData.Mass', entityPath];
 
@@ -36,11 +40,12 @@ function projectEntity(value: unknown, context: SaveDecodeContext): RecordValue 
     const entity = record(value), spawn = record(entity?.spawnData);
     const asset = spawn?.entityConfigDataPath;
     if (typeof asset !== 'string') return;
-    if (asset.length > 2048) throw new SaveImportError('complexity');
+    assertSaveImportLimit('entity-asset-chars', asset.length, 2048);
     const mapping = context.mappings.buildings.get(asset);
     if (!mapping || !context.buildingIds.has(mapping.id)) return;
     const fragments = Array.isArray(entity?.fragmentValues) ? entity.fragmentValues.filter((entry): entry is string => typeof entry === 'string') : [];
-    if (fragments.length > 4096 || fragments.some(fragment => fragment.length > 1024 * 1024)) throw new SaveImportError('complexity');
+    assertSaveImportLimit('entity-fragment-count', fragments.length, 4096);
+    for (const fragment of fragments) assertSaveImportLimit('entity-fragment-chars', fragment.length, 1024 * 1024);
     const point = record(record(spawn?.transform)?.translation);
     return {
         spawnData: { entityConfigDataPath: asset, transform: { translation: { x: scalar(point?.x), y: scalar(point?.y), z: scalar(point?.z) } } },
@@ -86,7 +91,9 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             if (key === '__proto__' || parent.keys.has(key)) throw new SaveImportError('structure');
             activeKeyChars += key.length;
             parent.keyChars += key.length;
-            if (key.length > 2048 || activeKeyChars > MAX_ACTIVE_KEY_CHARS || parent.keys.size >= MAX_OBJECT_KEYS) throw new SaveImportError('complexity');
+            assertSaveImportLimit('json-key-chars', key.length, 2048);
+            assertSaveImportLimit('json-active-key-chars', activeKeyChars, MAX_ACTIVE_KEY_CHARS);
+            assertSaveImportLimit('json-object-keys', parent.keys.size + 1, MAX_OBJECT_KEYS);
             parent.keys.add(key);
             parent.nextKey = key;
             parent.expectsKey = false;
@@ -94,7 +101,7 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             if (parent) {
                 parent.expectsKey = parent.object;
                 if (!parent.object) parent.nextKey = Number(parent.nextKey) + 1;
-                if (++parent.members > 1_000_000) throw new SaveImportError('complexity');
+                assertSaveImportLimit('json-container-separators', ++parent.members, 1_000_000);
             }
         } else if (token === TokenType.RIGHT_BRACE || token === TokenType.RIGHT_BRACKET) {
             // keepStack:false removes object members; explicitly reject a trailing comma
@@ -112,7 +119,7 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
             }
             if (path === transportPath && token !== TokenType.LEFT_BRACE) throw new SaveImportError('transport');
             if (token === TokenType.LEFT_BRACE || token === TokenType.LEFT_BRACKET) {
-                if (containers.length >= 128) throw new SaveImportError('complexity');
+                assertSaveImportLimit('json-depth', containers.length + 1, 128);
                 const parentKeys = containers.slice(1).map(container => container.key);
                 const parentPath = parentKeys.every(key => typeof key === 'string' && !key.includes('.')) ? ['$', ...parentKeys].join('.') : '';
                 containers.push({ key: parent?.nextKey, object: token === TokenType.LEFT_BRACE,
@@ -148,10 +155,10 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
         }
         if (projected === undefined) return;
         const count = (counts.get(path) ?? 0) + 1;
-        if (count > MAX_RETAINED_RECORDS) throw new SaveImportError('complexity');
+        assertSaveImportLimit(collectionDiagnostics[path], count, MAX_RETAINED_RECORDS);
         counts.set(path, count);
         projectionChars += JSON.stringify(projected).length + String(key).length;
-        if (projectionChars > MAX_PROJECTION_CHARS) throw new SaveImportError('complexity');
+        assertSaveImportLimit('projection-chars', projectionChars, MAX_PROJECTION_CHARS);
         if (path === levelPath) levels.push(projected);
         else ({ [entityPath]: entities, [networkPath]: nodes, [namePath]: names, [transportPath]: connections })[path][String(key)] = projected;
     };
@@ -165,8 +172,9 @@ export function createSaveJsonParser(context: SaveDecodeContext) {
                 try { text = decoder.decode(part, { stream: true }); }
                 catch { throw new SaveImportError('compression'); }
                 inputChars += text.length;
-                if (containers.some(container => container.recordStart !== null
-                    && inputChars - container.recordStart > MAX_RECORD_CHARS)) throw new SaveImportError('complexity');
+                for (const container of containers) {
+                    if (container.recordStart !== null) assertSaveImportLimit('json-record-chars', inputChars - container.recordStart, MAX_RECORD_CHARS);
+                }
                 try { tokenizer.write(text); }
                 catch (error) { throw error instanceof SaveImportError ? error : new SaveImportError('structure'); }
             }
