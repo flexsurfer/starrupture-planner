@@ -1,5 +1,4 @@
-/// <reference types="vitest" />
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import { createSharedViteConfig } from './vite.shared'
 
 export default defineConfig({
