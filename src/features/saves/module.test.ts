@@ -13,7 +13,8 @@ import { SaveImportError } from './import-error';
 import type { SaveSnapshot } from './snapshot';
 import { saveGameData, snapshotFixture, extractionContext, saveFixture } from './decoder/test-fixture';
 import type { SaveImportTelemetry } from './import-telemetry';
-import { localStorageBytes, MAX_SAVE_WORKSPACES, MAX_WORKSPACE_BYTES } from './storage-schema';
+import { saveWorkspaceStorageBytes, MAX_SAVE_WORKSPACES, MAX_WORKSPACE_BYTES } from './storage-schema';
+import { workspaceWithRandomNames } from './storage-test-fixture';
 import { createSaveWorkspace } from './workspace';
 
 const runtimes: ReturnType<typeof createAppRuntime>[] = [];
@@ -174,7 +175,7 @@ it('reports accepted new, updated and demo-replacement imports with aggregate me
         expect(result).toEqual({
             outcome: 'success', mode, dataVersion: 'update2_QoL', dataRevision: report.gameData.revision,
             fileBytes: 32_431_209, durationMs: expect.any(Number), coreCount: 2, buildingCount: 2, powerNetworkCount: 3,
-            workspaceBytes: localStorageBytes(harness.getState().savesWorkspaces[id]),
+            workspaceBytes: saveWorkspaceStorageBytes(harness.getState().savesWorkspaces[id]),
         });
         expect(result.durationMs).toBeGreaterThanOrEqual(0);
         const metrics = { dataVersion: 'update2_QoL', fileBytes: 32_431_209, durationMs: 10 } as const;
@@ -216,9 +217,7 @@ it.each(['structure', 'save-storage-limit', 'workspace-limit', 'collection-bytes
         if (reason === 'structure') report.gameData.revision = 'invalid';
         if (reason === 'save-storage-limit' || reason === 'collection-bytes') {
             // Valid unique buildings that exceed the workspace or combined collection budget.
-            const count = reason === 'save-storage-limit' ? 5_000 : 1_500;
-            const building = report.cores[0].buildings[0];
-            report.cores[0].buildings = Array.from({ length: count }, (_, i) => ({ ...building, id: i + 1_000, name: 'x'.repeat(512) }));
+            report.cores = workspaceWithRandomNames(reason === 'save-storage-limit' ? 4000 : 1800).snapshot.cores;
         }
         const { harness, imports } = setup(async () => report);
         if (reason === 'workspace-limit') {
@@ -228,7 +227,7 @@ it.each(['structure', 'save-storage-limit', 'workspace-limit', 'collection-bytes
         }
         if (reason === 'collection-bytes') {
             const workspace = createSaveWorkspace('existing', 'Existing', report);
-            expect(localStorageBytes(workspace)).toBeLessThan(MAX_WORKSPACE_BYTES);
+            expect(saveWorkspaceStorageBytes(workspace)).toBeLessThan(MAX_WORKSPACE_BYTES);
             harness.restoreState({ ...harness.getState(), savesWorkspaces: { existing: workspace } });
         }
         harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN, 'new-save']);

@@ -5,7 +5,7 @@ import { registerWebApplication } from '@/app/uklad/register';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { localeFromPreferences } from '@/shared/i18n/locales';
 import { migrateLegacyStorage } from '@/platform/web/legacy-storage/legacy-storage-migration';
-import { PERSIST_KEYS, SAVES_PERSIST_ROOTS } from './persistence';
+import { SAVES_PERSIST_ROOTS } from './persistence';
 import { createSavesStorage } from './saves-storage';
 import { appIds } from '@/app/uklad/catalog';
 
@@ -24,7 +24,7 @@ const savesStorage = createSavesStorage(localStorageAdapter(), PERSIST_PREFIX);
 export const persistence = persist(runtime, {
     storage: savesStorage.storage,
     prefix: PERSIST_PREFIX,
-    keys: PERSIST_KEYS,
+    keys: savesStorage.keys,
     onError: ({ phase, key }) => {
         if (phase === 'write' || phase === 'serialize') {
             if (key && SAVES_PERSIST_ROOTS.some(root => root === key)) runtime.dispatch([appIds.events.SAVES_STORAGE_FAILED, 'write']);

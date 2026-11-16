@@ -1,6 +1,5 @@
 import type { DataVersion } from '@/features/app-shell/data-version';
 import type { SaveImportDiagnostic } from './import-error';
-import { localStorageBytes } from './storage-schema';
 import type { SaveImportState, SaveWorkspace } from './types';
 
 /** Measurements from the reader; no file handles or save contents cross this boundary. */
@@ -24,7 +23,7 @@ export const saveImportMode = (previous?: SaveWorkspace): SaveImportMode =>
     previous?.isDemo ? 'replace-demo' : previous ? 'update' : 'new';
 
 /** Count only retained objects. Names, IDs, positions and inventory contents are never reported. */
-export function saveImportSummary(workspace: SaveWorkspace) {
+export function saveImportSummary(workspace: SaveWorkspace, workspaceBytes: number) {
     const networks = new Set<number>();
     let buildingCount = 0;
     for (const core of workspace.snapshot.cores) {
@@ -39,6 +38,6 @@ export function saveImportSummary(workspace: SaveWorkspace) {
         coreCount: workspace.snapshot.cores.length,
         buildingCount,
         powerNetworkCount: networks.size,
-        workspaceBytes: localStorageBytes(workspace),
+        workspaceBytes,
     };
 }

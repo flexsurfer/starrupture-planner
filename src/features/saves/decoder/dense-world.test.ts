@@ -6,7 +6,7 @@ import { decodeSave } from './decode';
 import { createSaveJsonParser } from './stream-json';
 import { extractionContext, saveEntity, saveFixture, snapshotFixture } from './test-fixture';
 import { createSaveWorkspace } from '../workspace';
-import { MAX_SAVES_BYTES, saveCollectionStorageBytes } from '../storage-schema';
+import { MAX_SAVES_BYTES, saveCollectionStorageBytes, serializeSaveWorkspaces, deserializeSaveWorkspaces } from '../storage-schema';
 
 function encode(text: string): ArrayBuffer {
     const header = Buffer.alloc(4);
@@ -75,4 +75,6 @@ it('imports 5,000 production buildings with large unused inventories and preserv
     expect(snapshot.cores.reduce((sum, core) => sum + core.buildings.length, 0)).toBe(5002);
     const workspace = createSaveWorkspace('dense', 'Dense factory', snapshot);
     expect(saveCollectionStorageBytes({ dense: workspace })).toBeLessThan(MAX_SAVES_BYTES);
+    const stored = JSON.parse(JSON.stringify(serializeSaveWorkspaces({ dense: workspace })));
+    expect(deserializeSaveWorkspaces(stored).dense.snapshot).toStrictEqual(workspace.snapshot);
 }, 20_000);

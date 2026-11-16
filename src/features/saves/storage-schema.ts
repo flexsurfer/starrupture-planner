@@ -2,15 +2,11 @@ import { isValidDataVersion } from '@/features/app-shell/data-version';
 import type { SaveGameData } from './game-data';
 import { isStorageQuantity, isValidSaveBounds, type SaveBounds, type SaveSnapshot, type SaveBuildingConfiguration, type SaveStorageSpace } from './snapshot';
 import type { SaveWorkspace, SaveWorkspaceSelection } from './types';
+import { decodeSaveWorkspaces, isCompressedSaveStorage, prepareSaveWorkspacesStorage, saveStorageDataBytes } from './storage-codec';
+import { MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, MAX_WORKSPACE_BYTES, SaveWorkspaceLimitError } from './storage-limits';
 
-export const MAX_SAVE_WORKSPACES = 8;
-// UTF-16 budgets leave localStorage space for the Planner, My Bases and settings.
-export const MAX_SAVES_BYTES = 3 * 1024 * 1024;
-// A single save can use the shared budget; the collection also counts its Persist envelope.
-export const MAX_WORKSPACE_BYTES = MAX_SAVES_BYTES;
-export class SaveWorkspaceLimitError extends Error {
-    constructor() { super('My Saves storage limit exceeded'); }
-}
+export { MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, MAX_WORKSPACE_BYTES, SaveWorkspaceLimitError } from './storage-limits';
+export { localStorageBytes, saveCollectionStorageBytes, saveWorkspaceStorageBytes } from './storage-codec';
 
 type Parser<T> = (value: unknown) => T;
 const invalid = (): never => { throw new Error('Invalid My Saves storage schema'); };
@@ -106,25 +102,66 @@ const workspaceParser: Parser<SaveWorkspace> = object({
     snapshot: normalizeSaveSnapshot,
 });
 export const jsonBytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).byteLength;
-export const localStorageBytes = (value: unknown) => JSON.stringify(value).length * 2;
-export const saveCollectionStorageBytes = (value: unknown) => localStorageBytes({ v: 1, data: value });
-export function assertSaveStorageLimits(workspaces: Record<string, SaveWorkspace>) {
-    if (Object.keys(workspaces).length > MAX_SAVE_WORKSPACES
-        || Object.values(workspaces).some(workspace => localStorageBytes(workspace) > MAX_WORKSPACE_BYTES)
-        || saveCollectionStorageBytes(workspaces) > MAX_SAVES_BYTES) throw new SaveWorkspaceLimitError();
+// Only collections prepared for immediate runtime adoption enter this one-use handoff.
+// Weak keys do not retain abandoned imports or runtimes without persistence attached.
+const preparedImports = new WeakMap<Record<string, SaveWorkspace>, ReturnType<typeof prepareSaveWorkspacesStorage>>();
+export function serializeSaveWorkspaces(workspaces: Record<string, SaveWorkspace>) {
+    const prepared = preparedImports.get(workspaces);
+    if (prepared !== undefined) {
+        preparedImports.delete(workspaces);
+        return prepared;
+    }
+    if (Object.keys(workspaces).length > MAX_SAVE_WORKSPACES) throw new SaveWorkspaceLimitError();
+    const encoded = prepareSaveWorkspacesStorage(workspaces);
+    if (saveStorageDataBytes(encoded) > MAX_SAVES_BYTES) throw new SaveWorkspaceLimitError();
+    return encoded;
 }
-export function normalizeSaveWorkspace(value: unknown): SaveWorkspace {
+export function assertSaveStorageLimits(workspaces: Record<string, SaveWorkspace>) {
+    serializeSaveWorkspaces(workspaces);
+}
+function parseWorkspace(value: unknown): SaveWorkspace {
     const workspace = workspaceParser(value);
     const isDemo = (value as { isDemo?: unknown }).isDemo;
     if (isDemo !== undefined && isDemo !== true) invalid();
     if (isDemo) workspace.isDemo = true;
-    if (localStorageBytes(workspace) > MAX_WORKSPACE_BYTES) throw new SaveWorkspaceLimitError();
     return workspace;
 }
-export function normalizeSaveWorkspaces(value: unknown): Record<string, SaveWorkspace> {
-    const workspaces = record(normalizeSaveWorkspace, MAX_SAVE_WORKSPACES)(value);
-    assertSaveStorageLimits(workspaces);
+export function normalizeSaveWorkspace(value: unknown): SaveWorkspace {
+    return normalizeSaveWorkspaceWithStorage(value).workspace;
+}
+/** Prepare once; the caller must transfer the workspace without modifying it. */
+export function normalizeSaveWorkspaceWithStorage(value: unknown) {
+    const workspace = parseWorkspace(value);
+    const storage = prepareSaveWorkspacesStorage({ [workspace.id]: workspace });
+    const storageBytes = saveStorageDataBytes(storage);
+    if (storageBytes > MAX_WORKSPACE_BYTES) throw new SaveWorkspaceLimitError();
+    return { workspace, storage, storageBytes };
+}
+/** Adopt the returned collection as-is so Persist can consume its checked representation. */
+export function prepareSaveWorkspaceCollection(workspaces: Record<string, SaveWorkspace>, prepared: ReturnType<typeof normalizeSaveWorkspaceWithStorage>) {
+    const next = { ...workspaces, [prepared.workspace.id]: prepared.workspace };
+    const count = Object.keys(next).length;
+    if (count > MAX_SAVE_WORKSPACES) throw new SaveWorkspaceLimitError();
+    const storage = count === 1 ? prepared.storage : serializeSaveWorkspaces(next);
+    if (saveStorageDataBytes(storage) > MAX_SAVES_BYTES) throw new SaveWorkspaceLimitError();
+    preparedImports.set(next, storage);
+    return next;
+}
+function parseWorkspaces(value: unknown): Record<string, SaveWorkspace> {
+    const workspaces = record(parseWorkspace, MAX_SAVE_WORKSPACES)(value);
     for (const [key, workspace] of Object.entries(workspaces)) if (workspace.id !== key) invalid();
+    return workspaces;
+}
+export function normalizeSaveWorkspaces(value: unknown): Record<string, SaveWorkspace> {
+    const workspaces = parseWorkspaces(value);
+    assertSaveStorageLimits(workspaces);
+    return workspaces;
+}
+export function deserializeSaveWorkspaces(value: unknown): Record<string, SaveWorkspace> {
+    const workspaces = parseWorkspaces(decodeSaveWorkspaces(value));
+    // Compressed input already passed its encoded/decoded bounds. Legacy input uses its original JSON budget.
+    // Loading validates the stored representation without recompressing it into a different representation.
+    if (!isCompressedSaveStorage(value) && saveStorageDataBytes(workspaces) > MAX_SAVES_BYTES) throw new SaveWorkspaceLimitError();
     return workspaces;
 }
 export const normalizeSavesOrder = (value: unknown) => [...new Set(array(id, MAX_SAVE_WORKSPACES)(value))];

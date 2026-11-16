@@ -50,14 +50,82 @@ File handles, parser state, and source records never enter Uklad state or persis
   (8 Mi characters, checked per chunk), object keys (2,048 characters each and
   16 Mi characters across open containers), and the compact projection including
   pending metadata (64 Mi serialized characters).
-- A single stored save can use the full 3 MiB shared budget, measured as UTF-16
-  JSON including the persistence envelope. Streaming does not expand localStorage
-  capacity or guarantee that a factory with many more retained buildings will
-  fit. IndexedDB is a separate change.
+- Up to eight stored saves share 3 MiB, measured as UTF-16 code units of the
+  selected JSON or gzip + base64 representation including the persistence envelope. A single
+  save can use that entire budget. The expanded collection is bounded to 64 MiB
+  of UTF-8 snapshot JSON, separately from the 1 GiB source-file import limit.
 
 The UI distinguishes compressed-size, unpacked-size, complexity, and storage
 failures, with English, German, French, and Polish messages. Displayed size
 limits come from the decoder constants.
+
+## Snapshot persistence
+
+The runtime keeps the existing typed workspace and snapshot objects. Only the
+`savesWorkspaces` persistence root is encoded: UTF-8 JSON is compressed with gzip
+and stored as base64 in `{ v: 1, data: { encoding: "gzip-base64", version: 1,
+payload: "..." } }`. Encoding uses a fixed gzip timestamp so size calculations
+and synchronous Uklad persistence write exactly the same representation.
+If gzip + base64 would be larger in UTF-16 storage, plain JSON is retained instead.
+This matters for Unicode-heavy names, whose UTF-8 encoding and base64 overhead
+can make compression exceed the budget even when the original JSON fits.
+Other persisted roots retain their existing formats and storage keys.
+
+Existing plain `{ v: 1, data: workspaces }` records still load, validate, and
+detach through the same snapshot schema. Hydration checks their original JSON
+budget without compressing them and does not rewrite them; the next workspace
+edit stores whichever representation is smaller. Snapshot fields,
+coordinate precision, Unicode names, inventories, and references are preserved.
+
+Import admission, collection limits, and serialization all measure the selected
+payload. Successful-import telemetry reports `workspaceBytes` for that workspace
+stored alone, including its collection key and persistence envelope. This now
+measures the selected storage representation including its wrapper.
+Collection compression means individual workspace measurements are not additive.
+
+Import admission prepares the standalone workspace once and reuses its measured
+size for telemetry. If it is the only workspace, its encoded representation also
+serves as the collection; otherwise the combined collection is encoded once.
+The checked collection is adopted as a new runtime root using plain snapshots,
+without traversing the previous factories through Immer drafts. A weak, one-use
+handoff keyed by that exact root lets Persist consume the prepared representation
+for its immediate synchronous write. Encoded data never enters application state.
+Later edits get a new root and serialize normally; ordinary mutable inputs to the
+serializer are never cached. Rejected or abandoned imports do not retain a runtime.
+
+In three production-mode Node measurements using the same eight-workspace,
+32 MiB fixture, synchronous import-update time fell from a median of 1.505 s to
+0.584 s (about 61% less). This reduces main-thread work while retaining the
+existing synchronous durability model; the remaining preparation is synchronous.
+
+Reads check the encoding version, encoded size, expanded length, gzip checksum,
+UTF-8, and the existing workspace schema. An extra byte in the bounded output
+buffer detects streams that exceed their declared expanded size. Corrupt data
+continues to trigger the existing load error and remains in storage for recovery.
+Native storage quota failures retain the previous durable value and report the
+existing write error.
+
+The browser storage adapter and its matching Persist key configuration share a
+one-time handoff of the validated collection. Persist receives a small in-memory
+envelope, consumes that collection, and releases the adapter's reference. Loading
+therefore decompresses, parses, and normalizes each collection once and never
+recompresses it. The handoff is scoped to one persistence attachment and is never
+written to storage. Later invalid Saves metadata still preserves earlier valid
+reads and allows unrelated settings to persist.
+
+For the reported `1_1.sav` (61 Cores and 3,744 buildings), the complete persisted
+envelope measured 1,650,728 bytes as plain JSON and 181,092 bytes with this codec
+(1.57 MiB to 0.17 MiB, about 89% smaller). Eight copies with distinct workspace
+IDs used 1,440,668 bytes (1.37 MiB). Both legacy loading and compressed round
+trips restored identical normalized snapshots. These figures use synthetic
+workspace IDs/names; the user's save contents are not checked into the repo.
+
+Hydration regression measurements used five local Node runs through the real
+Persist attachment. Eight synthetic workspaces expanded to 32 MiB of JSON and
+occupied 0.77 MiB in storage. Removing duplicate decoding/normalization and both
+recompression passes reduced median hydration time from 1.877 s to 0.591 s.
+A separate Unicode-heavy fixture occupied 1,882,890 bytes as plain JSON but
+4,527,260 bytes as gzip + base64; it now loads and remains editable in plain form.
 
 ## Complexity diagnostics
 

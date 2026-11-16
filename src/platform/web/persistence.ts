@@ -7,7 +7,7 @@ import { normalizePlannerActiveTabId, normalizePlannerTabs } from './planner-tab
 import { normalizeBases } from './legacy-storage/bases-storage';
 import { normalizePinnedRecipeSelections } from './legacy-storage/pinned-recipes-storage';
 import { normalizeRecipePresets } from './legacy-storage/recipe-presets-storage';
-import { assertSaveStorageLimits, normalizeSaveWorkspaces, normalizeSavesOrder, normalizeSavesActiveId, normalizeSavesSelections } from '@/features/saves/storage-schema';
+import { serializeSaveWorkspaces, deserializeSaveWorkspaces, normalizeSavesOrder, normalizeSavesActiveId, normalizeSavesSelections } from '@/features/saves/storage-schema';
 
 export const SAVES_PERSIST_ROOTS = [stateKeys.savesWorkspaces, stateKeys.savesWorkspaceOrder, stateKeys.savesActiveWorkspaceId, stateKeys.savesSelections] as const;
 
@@ -15,10 +15,8 @@ export const SAVES_PERSIST_ROOTS = [stateKeys.savesWorkspaces, stateKeys.savesWo
 export const PERSIST_KEYS = [
     { key: stateKeys.savesMapDisplay, deserialize: normalizeMapDisplay },
     { key: stateKeys.savesMapLayers, deserialize: normalizeMapLayers },
-    { key: stateKeys.savesWorkspaces, deserialize: normalizeSaveWorkspaces, serialize: value => {
-        assertSaveStorageLimits(value);
-        return value as unknown as PersistData;
-    } },
+    { key: stateKeys.savesWorkspaces, deserialize: deserializeSaveWorkspaces,
+        serialize: value => serializeSaveWorkspaces(value) as unknown as PersistData },
     { key: stateKeys.savesWorkspaceOrder, deserialize: normalizeSavesOrder },
     { key: stateKeys.savesActiveWorkspaceId, deserialize: normalizeSavesActiveId },
     { key: stateKeys.savesSelections, deserialize: normalizeSavesSelections },

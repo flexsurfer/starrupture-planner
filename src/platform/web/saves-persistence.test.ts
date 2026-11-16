@@ -1,30 +1,41 @@
 import { localStorageAdapter, memoryStorageAdapter, persist, type SyncPersistStorage } from '@ukladjs/persist';
 import { createUkladHeadlessScenario, createUkladTestHarness } from '@ukladjs/core/testing';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+import * as fflate from 'fflate';
 import { appIds, stateKeys } from '@/app/uklad/catalog';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { registerHeadlessApplication } from '@/platform/headless/register';
 import { analyzeSave } from '@/features/saves/decoder/analyze';
 import { saveGameData, extractionContext, snapshotFixture, storageFixture } from '@/features/saves/decoder/test-fixture';
-import { localStorageBytes, MAX_SAVES_BYTES, saveCollectionStorageBytes } from '@/features/saves/storage-schema';
-import { workspaceAtStorageBytes } from '@/features/saves/storage-test-fixture';
+import { deserializeSaveWorkspaces, MAX_SAVES_BYTES, saveCollectionStorageBytes } from '@/features/saves/storage-schema';
+import { workspaceAtStorageBytes, workspaceWithUnicodeNames } from '@/features/saves/storage-test-fixture';
+import { encodeSaveWorkspaces } from '@/features/saves/storage-codec';
+import { createSaveWorkspace } from '@/features/saves/workspace';
+import type { SaveImportTelemetry } from '@/features/saves/import-telemetry';
 import { createSavesStorage, savesStorageKey } from './saves-storage';
-import { PERSIST_KEYS } from './persistence';
 import { createArchive, parseArchive } from '@/features/data-transfer/archive';
+
+vi.mock('fflate', async importOriginal => {
+    const actual = await importOriginal<typeof import('fflate')>();
+    return { ...actual, gzipSync: vi.fn(actual.gzipSync), gunzipSync: vi.fn(actual.gunzipSync) };
+});
 
 const owners: { scenario: ReturnType<typeof createUkladHeadlessScenario<import('@/app/uklad/contracts').AppContracts>>; persistence: ReturnType<typeof persist> }[] = [];
 afterEach(async () => {
     for (const owner of owners.splice(0)) { owner.persistence.dispose(); await owner.scenario.dispose(); }
     localStorage.clear();
+    vi.clearAllMocks();
 });
 const prefix = 'saves-persistence-test';
 const key = (root: string) => root.startsWith('saves') ? savesStorageKey(prefix, root) : `${prefix}/${root}`;
+const readWorkspaces = (storage: SyncPersistStorage) => deserializeSaveWorkspaces(JSON.parse(storage.getItem(key(stateKeys.savesWorkspaces))!).data);
 
 async function setup(storage: SyncPersistStorage = memoryStorageAdapter()) {
     const runtime = createAppRuntime();
-    registerHeadlessApplication(runtime, { effects: { decodeSaveFile: () => new Promise(() => {}) } });
+    const imports = vi.fn<(telemetry: SaveImportTelemetry) => void>();
+    registerHeadlessApplication(runtime, { effects: { decodeSaveFile: () => new Promise(() => {}), onSaveImport: imports } });
     const savesStorage = createSavesStorage(storage, prefix);
-    const persistence = persist(runtime, { storage: savesStorage.storage, keys: PERSIST_KEYS, prefix,
+    const persistence = persist(runtime, { storage: savesStorage.storage, keys: savesStorage.keys, prefix,
         onError: ({ phase }) => runtime.dispatch([appIds.events.SAVES_STORAGE_FAILED, phase === 'write' || phase === 'serialize' ? 'write' : 'load']),
     });
     const scenario = createUkladHeadlessScenario(runtime);
@@ -45,7 +56,7 @@ async function setup(storage: SyncPersistStorage = memoryStorageAdapter()) {
         await dispatch([appIds.events.SAVES_IMPORT_READY, view.value('candidate').requestId, analyzeSave(snapshotFixture(), extractionContext)]);
         await dispatch([appIds.events.SAVES_RENAME_WORKSPACE, id, id]);
     };
-    return { scenario, persistence, view, dispatch, adopt, harness: createUkladTestHarness(runtime) };
+    return { scenario, persistence, view, dispatch, adopt, imports, harness: createUkladTestHarness(runtime) };
 }
 
 it('round-trips Saves through the standard localStorage adapter alongside existing settings', async () => {
@@ -60,7 +71,10 @@ it('round-trips Saves through the standard localStorage adapter alongside existi
     await app.dispatch([appIds.events.SAVES_SELECT_CORE, 'two', 2]);
     await app.dispatch([appIds.events.SAVES_SELECT_WORKSPACE, 'one']);
     expect(app.view.value('persistence')).toBeNull();
-    const data = JSON.parse(localStorage.getItem(key(stateKeys.savesWorkspaces))!).data;
+    const raw = localStorage.getItem(key(stateKeys.savesWorkspaces))!;
+    expect(JSON.parse(raw).data).toMatchObject({ encoding: 'gzip-base64', version: 1, payload: expect.any(String) });
+    expect(raw.length * 2).toBe(saveCollectionStorageBytes(app.harness.getState().savesWorkspaces));
+    const data = readWorkspaces(storage);
     expect(Object.keys(data.one).sort()).toEqual(['id', 'name', 'schemaVersion', 'snapshot']);
     expect(data.one.name).toBe('My world');
     expect(data.one.snapshot).not.toHaveProperty('catalog');
@@ -71,6 +85,7 @@ it('round-trips Saves through the standard localStorage adapter alongside existi
     app.persistence.dispose();
     await app.scenario.dispose();
     const restored = await setup(storage);
+    expect(restored.harness.getState().savesWorkspaces).toStrictEqual(data);
     expect(restored.view.value('active')).toEqual(expected);
     expect(restored.view.value('selection')?.core.id).toBe(1);
     expect(restored.view.value('selection')?.core.bounds).toEqual({ min: { x: -10, y: -10, z: -10 }, max: { x: 10, y: 10, z: 10 } });
@@ -113,6 +128,124 @@ it('keeps sample data labeled as a demo after reloading the browser', async () =
     const restored = await setup(storage);
     expect(restored.view.value('active')).toEqual(demo);
     expect(restored.view.value('persistence')).toBeNull();
+});
+
+it('loads legacy JSON without rewriting it and upgrades on the next edit while preserving every snapshot', async () => {
+    const storage = memoryStorageAdapter();
+    const workspaces = {
+        one: createSaveWorkspace('one', '工場 🏭', analyzeSave(snapshotFixture(), extractionContext)),
+        two: createSaveWorkspace('two', 'Inventory', analyzeSave(storageFixture(), extractionContext)),
+    };
+    const original = JSON.stringify({ v: 1, data: workspaces });
+    storage.setItem(key(stateKeys.savesWorkspaces), original);
+    storage.setItem(key(stateKeys.savesWorkspaceOrder), JSON.stringify({ v: 1, data: ['two', 'one'] }));
+    storage.setItem(key(stateKeys.savesActiveWorkspaceId), JSON.stringify({ v: 1, data: 'one' }));
+    storage.setItem(key(stateKeys.savesSelections), JSON.stringify({ v: 1, data: { one: { coreId: 1 } } }));
+    const app = await setup(storage);
+    expect(app.view.value('persistence')).toBeNull();
+    expect(app.harness.getState().savesWorkspaces).toStrictEqual(workspaces);
+    expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(original);
+    await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Updated 🏭']);
+    const raw = storage.getItem(key(stateKeys.savesWorkspaces))!;
+    expect(JSON.parse(raw).data.encoding).toBe('gzip-base64');
+    expect(raw.length * 2).toBe(saveCollectionStorageBytes(app.harness.getState().savesWorkspaces));
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const restored = await setup(storage);
+    expect(restored.harness.getState().savesWorkspaces).toStrictEqual({ ...workspaces, one: { ...workspaces.one, name: 'Updated 🏭' } });
+    expect(restored.harness.getState().savesWorkspaceOrder).toEqual(['two', 'one']);
+    expect(restored.view.value('active')?.id).toBe('one');
+    expect(restored.view.value('selection')?.core.id).toBe(1);
+});
+
+it('keeps a legacy Unicode-heavy save loadable and editable when compression expands it', async () => {
+    const storage = localStorageAdapter();
+    const workspaces = { one: workspaceWithUnicodeNames() };
+    const original = JSON.stringify({ v: 1, data: workspaces });
+    storage.setItem(key(stateKeys.savesWorkspaces), original);
+    const app = await setup(storage);
+    expect(app.view.value('persistence')).toBeNull();
+    expect(app.harness.getState().savesWorkspaces).toStrictEqual(workspaces);
+    expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(original);
+    await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Renamed 工場']);
+    const expected = { one: { ...workspaces.one, name: 'Renamed 工場' } };
+    const raw = storage.getItem(key(stateKeys.savesWorkspaces))!;
+    expect(JSON.parse(raw).data).toStrictEqual(expected);
+    expect(raw.length * 2).toBe(saveCollectionStorageBytes(expected));
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const restored = await setup(storage);
+    expect(restored.view.value('persistence')).toBeNull();
+    expect(restored.harness.getState().savesWorkspaces).toStrictEqual(expected);
+});
+
+it('decompresses and validates a large collection once without recompressing during hydration', async () => {
+    const template = workspaceAtStorageBytes(8 * 1024 * 1024);
+    const workspaces = Object.fromEntries(Array.from({ length: 8 }, (_, index) => {
+        const id = `save-${index}`;
+        return [id, { ...template, id }];
+    }));
+    const raw = JSON.stringify({ v: 1, data: encodeSaveWorkspaces(workspaces) });
+    const storage = memoryStorageAdapter({ [key(stateKeys.savesWorkspaces)]: raw });
+    const gunzip = vi.mocked(fflate.gunzipSync).mockClear(), gzip = vi.mocked(fflate.gzipSync).mockClear();
+    const app = await setup(storage);
+    expect(app.view.value('persistence')).toBeNull();
+    expect({ decompress: gunzip.mock.calls.length, compress: gzip.mock.calls.length }).toEqual({ decompress: 1, compress: 0 });
+    expect(app.harness.getState().savesWorkspaces).toStrictEqual(workspaces);
+    expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(raw);
+}, 15_000);
+
+it.each([1, 8])('reuses import preparation for telemetry and immediate persistence with %i workspaces', async count => {
+    const template = workspaceAtStorageBytes(8 * 1024 * 1024);
+    const workspaces = count === 1 ? {} : Object.fromEntries(Array.from({ length: count }, (_, index) => {
+        const id = index ? `save-${index}` : 'one';
+        return [id, { ...template, id }];
+    }));
+    const storage = memoryStorageAdapter({ [key(stateKeys.savesWorkspaces)]: JSON.stringify({ v: 1, data: encodeSaveWorkspaces(workspaces) }) });
+    const app = await setup(storage);
+    const unchanged = app.harness.getState().savesWorkspaces['save-1'];
+    await app.dispatch([appIds.events.SAVES_IMPORT_OPEN, 'one']);
+    await app.dispatch([appIds.events.SAVES_IMPORT_READ, { name: 'sample.sav', size: 10, arrayBuffer: () => new Promise(() => {}) }]);
+    const snapshot = structuredClone(template.snapshot);
+    snapshot.cores[0].name = 'Updated factory';
+    const gzip = vi.mocked(fflate.gzipSync).mockClear();
+    app.harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, app.view.value('candidate').requestId, snapshot,
+        { dataVersion: 'update2_QoL', fileBytes: 10, durationMs: 1 }]);
+    // The standalone workspace is encoded once; only a larger collection needs another encoding.
+    expect(gzip).toHaveBeenCalledTimes(count === 1 ? 1 : 2);
+    expect(app.harness.getState().savesImport.phase).toBe('closed');
+    expect(app.imports).toHaveBeenCalledOnce();
+    expect(app.imports.mock.calls[0][0]).toMatchObject({ outcome: 'success', workspaceBytes: expect.any(Number) });
+    const committed = app.harness.getState().savesWorkspaces;
+    expect(readWorkspaces(storage)).toStrictEqual(committed);
+    expect(committed.one.snapshot).toStrictEqual(snapshot);
+    expect(committed['save-1']).toBe(unchanged);
+    expect(committed.one).not.toHaveProperty('storage');
+    await app.scenario.settle();
+
+    // A subsequent edit must encode its new root, never replay the import's prepared value.
+    gzip.mockClear();
+    app.harness.dispatchSync([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Renamed after import']);
+    expect(gzip).toHaveBeenCalledOnce();
+    expect(readWorkspaces(storage).one.name).toBe('Renamed after import');
+    await app.scenario.settle();
+}, 15_000);
+
+it('reuses a prepared plain representation when a Unicode-heavy import expands under compression', async () => {
+    const snapshot = workspaceWithUnicodeNames().snapshot;
+    const storage = memoryStorageAdapter();
+    const app = await setup(storage);
+    await app.dispatch([appIds.events.SAVES_IMPORT_OPEN, 'one']);
+    await app.dispatch([appIds.events.SAVES_IMPORT_READ, { name: 'sample.sav', size: 10, arrayBuffer: () => new Promise(() => {}) }]);
+    const gzip = vi.mocked(fflate.gzipSync).mockClear();
+    app.harness.dispatchSync([appIds.events.SAVES_IMPORT_READY, app.view.value('candidate').requestId, snapshot,
+        { dataVersion: 'update2_QoL', fileBytes: 10, durationMs: 1 }]);
+    expect(gzip).toHaveBeenCalledOnce();
+    const raw = storage.getItem(key(stateKeys.savesWorkspaces))!;
+    expect(JSON.parse(raw).data).toStrictEqual(app.harness.getState().savesWorkspaces);
+    expect(readWorkspaces(storage).one.snapshot).toStrictEqual(snapshot);
+    expect(app.imports.mock.calls[0][0]).toMatchObject({ outcome: 'success', workspaceBytes: raw.length * 2 });
+    await app.scenario.settle();
 });
 
 it('keeps a pre-inventory factory usable and captures its inventory on the next import', async () => {
@@ -189,8 +322,8 @@ it('rejects incomplete workspaces without rewriting stored data', async () => {
     await app.adopt();
     app.persistence.dispose();
     await app.scenario.dispose();
-    const envelope = JSON.parse(storage.getItem(key(stateKeys.savesWorkspaces))!);
-    for (const core of envelope.data.one.snapshot.cores) delete core.bounds;
+    const envelope = { v: 1, data: readWorkspaces(storage) };
+    for (const core of envelope.data.one.snapshot.cores) Reflect.deleteProperty(core, 'bounds');
     const legacy = JSON.stringify(envelope);
     storage.setItem(key(stateKeys.savesWorkspaces), legacy);
     const restored = await setup(storage);
@@ -204,10 +337,10 @@ it('commits consecutive edits synchronously without a storage queue or flush bar
     const app = await setup(memory);
     await app.adopt();
     app.harness.dispatchSync([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'First edit']);
-    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.name).toBe('First edit');
+    expect(readWorkspaces(memory).one.name).toBe('First edit');
     await app.scenario.settle();
     app.harness.dispatchSync([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Latest edit']);
-    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.name).toBe('Latest edit');
+    expect(readWorkspaces(memory).one.name).toBe('Latest edit');
     await app.scenario.settle();
     expect(app.view.value('persistence')).toBeNull();
 });
@@ -227,7 +360,13 @@ it('reports quota failure without losing committed data, and persists subsequent
     await app.adopt();
     const original = memory.getItem(key(stateKeys.savesWorkspaces));
     failing = true;
-    await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'New name']);
+    const updated = analyzeSave(snapshotFixture(), extractionContext);
+    updated.cores[0].name = 'Updated despite quota failure';
+    await app.dispatch([appIds.events.SAVES_IMPORT_OPEN, 'one']);
+    await app.dispatch([appIds.events.SAVES_IMPORT_READ, { name: 'sample.sav', size: 10, arrayBuffer: () => new Promise(() => {}) }]);
+    const gzip = vi.mocked(fflate.gzipSync).mockClear();
+    await app.dispatch([appIds.events.SAVES_IMPORT_READY, app.view.value('candidate').requestId, updated]);
+    expect(gzip).toHaveBeenCalledOnce();
     expect(app.view.value('persistence')).toBe('write');
     expect(memory.getItem(key(stateKeys.savesWorkspaces))).toBe(original);
     await app.dispatch([appIds.events.SAVES_SELECT_CORE, 'one', 1]);
@@ -236,7 +375,8 @@ it('reports quota failure without losing committed data, and persists subsequent
     expect(app.view.value('persistence')).toBe('write');
     failing = false;
     await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Recovered name']);
-    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.name).toBe('Recovered name');
+    expect(readWorkspaces(memory).one.name).toBe('Recovered name');
+    expect(readWorkspaces(memory).one.snapshot).toStrictEqual(updated);
 });
 
 it('keeps corrupt stored schemas untouched and blocks edits instead of replacing them with empty workspaces', async () => {
@@ -250,24 +390,61 @@ it('keeps corrupt stored schemas untouched and blocks edits instead of replacing
     expect(memory.getItem(key(stateKeys.savesWorkspaces))).toBe(corrupt);
 });
 
-it('reloads a save near 3 MiB, preserves it when an edit exceeds the budget, and recovers after reducing the data', async () => {
+it('retains a validated collection when later Saves metadata fails without blocking unrelated persistence', async () => {
+    const workspace = createSaveWorkspace('one', 'Stored world', analyzeSave(snapshotFixture(), extractionContext));
+    const raw = JSON.stringify({ v: 1, data: encodeSaveWorkspaces({ one: workspace }) });
+    const badOrder = JSON.stringify({ v: 1, data: [123] });
+    const storage = memoryStorageAdapter({
+        [key(stateKeys.savesWorkspaces)]: raw,
+        [key(stateKeys.savesWorkspaceOrder)]: badOrder,
+    });
+    const app = await setup(storage);
+    expect(app.view.value('persistence')).toBe('load');
+    expect(app.view.value('one')).toStrictEqual(workspace);
+    await app.dispatch([appIds.events.UI_SET_LOCALE, 'de']);
+    expect(JSON.parse(storage.getItem(key(stateKeys.uiLocale))!).data).toBe('de');
+    expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(raw);
+    expect(storage.getItem(key(stateKeys.savesWorkspaceOrder))).toBe(badOrder);
+});
+
+it('preserves corrupt compressed storage and unrelated settings instead of overwriting the save', async () => {
+    const storage = memoryStorageAdapter();
+    const app = await setup(storage);
+    await app.adopt();
+    app.persistence.dispose();
+    await app.scenario.dispose();
+    const envelope = JSON.parse(storage.getItem(key(stateKeys.savesWorkspaces))!);
+    const bytes = Uint8Array.from(atob(envelope.data.payload), char => char.charCodeAt(0));
+    bytes[bytes.length - 8] ^= 1;
+    envelope.data.payload = btoa(String.fromCharCode(...bytes));
+    const corrupt = JSON.stringify(envelope);
+    storage.setItem(key(stateKeys.savesWorkspaces), corrupt);
+    storage.setItem(key(stateKeys.uiTheme), JSON.stringify({ v: 1, data: 'dark' }));
+    const restored = await setup(storage);
+    expect(restored.view.value('persistence')).toBe('load');
+    expect(restored.harness.getState().uiTheme).toBe('dark');
+    await restored.adopt();
+    expect(restored.view.value('tabs')).toEqual([]);
+    expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(corrupt);
+});
+
+it('persists and reloads snapshots above the old uncompressed 3 MiB limit', async () => {
     const storage = localStorageAdapter();
-    const envelopeBytes = saveCollectionStorageBytes({ one: null }) - localStorageBytes(null);
-    const original = JSON.stringify({ v: 1, data: { one: workspaceAtStorageBytes(MAX_SAVES_BYTES - envelopeBytes - 40) } });
+    const expected = workspaceAtStorageBytes(MAX_SAVES_BYTES + 1024 * 1024);
+    const original = JSON.stringify({ v: 1, data: encodeSaveWorkspaces({ one: expected }) });
     storage.setItem(key(stateKeys.savesWorkspaces), original);
     const app = await setup(storage);
     expect(app.view.value('persistence')).toBeNull();
     expect(app.view.value('one')?.name).toBe('one');
-    await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'x'.repeat(120)]);
-    expect(app.view.value('persistence')).toBe('write');
-    expect(storage.getItem(key(stateKeys.savesWorkspaces))).toBe(original);
-    await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'one']);
-    expect(JSON.parse(storage.getItem(key(stateKeys.savesWorkspaces))!).data.one.name).toBe('one');
+    await app.dispatch([appIds.events.SAVES_RENAME_WORKSPACE, 'one', 'Large factory']);
+    expect(app.view.value('persistence')).toBeNull();
+    expect(storage.getItem(key(stateKeys.savesWorkspaces))!.length * 2).toBeLessThan(MAX_SAVES_BYTES);
+    expect(readWorkspaces(storage).one.snapshot).toStrictEqual(expected.snapshot);
     app.persistence.dispose();
     await app.scenario.dispose();
     const restored = await setup(storage);
     expect(restored.view.value('persistence')).toBeNull();
-    expect(restored.view.value('one')).toEqual(JSON.parse(original).data.one);
+    expect(restored.view.value('one')).toStrictEqual({ ...expected, name: 'Large factory' });
 });
 
 it('starts fresh instead of migrating experimental schemas', async () => {
@@ -279,5 +456,5 @@ it('starts fresh instead of migrating experimental schemas', async () => {
     expect(app.view.value('tabs')).toEqual([]);
     await app.adopt();
     expect(app.view.value('tabs')).toEqual([{ id: 'one', name: 'one' }]);
-    expect(JSON.parse(memory.getItem(key(stateKeys.savesWorkspaces))!).data.one.schemaVersion).toBe(1);
+    expect(readWorkspaces(memory).one.schemaVersion).toBe(1);
 });

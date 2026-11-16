@@ -4,7 +4,7 @@ import { extractionContext, saveFixture, saveLookups, storageFixture } from './d
 // @vitest-environment node
 import { expect, it } from 'vitest';
 import { assertSaveStorageLimits, jsonBytes, localStorageBytes, MAX_SAVES_BYTES, MAX_WORKSPACE_BYTES, normalizeSaveWorkspace, normalizeSaveWorkspaces, saveCollectionStorageBytes, SaveWorkspaceLimitError, validateSaveSnapshotCatalog } from './storage-schema';
-import { workspaceAtStorageBytes } from './storage-test-fixture';
+import { workspaceAtStorageBytes, workspaceWithRandomNames } from './storage-test-fixture';
 
 it('round-trips detached Core bounds and requires explicit nullable bounds', () => {
     const workspace = createSaveWorkspace('one', 'World', analyzeSave(saveFixture(), extractionContext));
@@ -81,14 +81,19 @@ it('validates stored item IDs and quantities before adopting a workspace', () =>
     expect(() => validateSaveSnapshotCatalog(workspace.snapshot, 'update2_QoL', saveLookups)).toThrow();
 });
 
-it('accepts a single save filling the 3 MiB budget and rejects one extra code unit during import and hydration', () => {
-    const envelopeBytes = saveCollectionStorageBytes({ one: null }) - localStorageBytes(null);
-    const workspace = workspaceAtStorageBytes(3 * 1024 * 1024 - envelopeBytes);
-    expect(saveCollectionStorageBytes({ one: workspace })).toBe(3 * 1024 * 1024);
+it('accepts a save above the old JSON budget when its compressed representation fits', () => {
+    const workspace = workspaceAtStorageBytes(4 * 1024 * 1024);
+    expect(localStorageBytes(workspace)).toBeGreaterThan(MAX_SAVES_BYTES);
+    expect(saveCollectionStorageBytes({ one: workspace })).toBeLessThan(MAX_SAVES_BYTES);
     expect(normalizeSaveWorkspace(workspace)).toEqual(workspace);
     expect(() => assertSaveStorageLimits({ one: workspace })).not.toThrow();
     expect(normalizeSaveWorkspaces({ one: workspace })).toEqual({ one: workspace });
-    workspace.snapshot.cores[0].buildings.at(-1)!.name += 'x';
+});
+
+it('rejects a single save exceeding the compressed budget during import, serialization and hydration', () => {
+    const workspace = workspaceWithRandomNames(4000);
+    expect(saveCollectionStorageBytes({ one: workspace })).toBeGreaterThan(MAX_SAVES_BYTES);
+    expect(() => normalizeSaveWorkspace(workspace)).toThrow(SaveWorkspaceLimitError);
     expect(() => assertSaveStorageLimits({ one: workspace })).toThrow(SaveWorkspaceLimitError);
     expect(() => normalizeSaveWorkspaces({ one: workspace })).toThrow(SaveWorkspaceLimitError);
 });
@@ -105,11 +110,11 @@ it('drops obsolete geometry metadata before applying the workspace storage limit
 });
 
 it('rejects a collection above 3 MiB even when every workspace fits, including the Persist envelope', () => {
-    const records = Object.fromEntries(['one', 'two', 'three', 'four'].map(id => [id, workspaceAtStorageBytes(MAX_SAVES_BYTES / 4, id)]));
-    expect(Object.values(records).every(workspace => localStorageBytes(workspace) <= MAX_WORKSPACE_BYTES)).toBe(true);
+    const records = Object.fromEntries(['one', 'two'].map((id, index) => [id, workspaceWithRandomNames(1800, id, index + 1)]));
+    expect(Object.values(records).every(workspace => saveCollectionStorageBytes({ [workspace.id]: workspace }) <= MAX_WORKSPACE_BYTES)).toBe(true);
     expect(saveCollectionStorageBytes(records)).toBeGreaterThan(MAX_SAVES_BYTES);
     expect(() => normalizeSaveWorkspaces(records)).toThrow(SaveWorkspaceLimitError);
-    delete records.four;
+    delete records.two;
     expect(() => normalizeSaveWorkspaces(records)).not.toThrow();
 });
 

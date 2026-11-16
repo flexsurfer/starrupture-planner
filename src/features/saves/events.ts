@@ -9,8 +9,8 @@ import { createDemoSnapshot } from './demo';
 import { coreKey } from './snapshot';
 import { saveViews } from './types';
 import { createSaveImportState } from './state';
-import { createSaveWorkspace, getActiveSaveWorkspace, workspaceIds } from './workspace';
-import { validateSaveSnapshotCatalog, saveCollectionStorageBytes, MAX_SAVE_WORKSPACES, MAX_SAVES_BYTES, SaveWorkspaceLimitError } from './storage-schema';
+import { createSaveWorkspace, prepareSaveWorkspace, getActiveSaveWorkspace, workspaceIds } from './workspace';
+import { validateSaveSnapshotCatalog, prepareSaveWorkspaceCollection, SaveWorkspaceLimitError } from './storage-schema';
 import { saveImportMode, saveImportSummary, type SaveImportMetrics, type SaveImportTelemetry, type SaveImportFailureStage } from './import-telemetry';
 import type { SaveImportDiagnostic } from './import-error';
 import type { SaveImportState, SaveWorkspace } from './types';
@@ -83,26 +83,31 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         if (!workspaceId) return;
         const previous = draftState.savesWorkspaces[workspaceId];
         candidate.phase = 'select';
-        let workspace;
+        let prepared;
         try {
             validateSaveSnapshotCatalog(snapshot, draftState.appDataVersion, createSaveGameData(draftState.buildingsList, draftState.itemsList, draftState.savesBuildingCatalog));
             const name = (previous?.isDemo ? undefined : previous?.name) ?? (candidate.fileName!.replace(/\.sav$/i, '').trim().slice(0, 120) || 'Save');
-            workspace = createSaveWorkspace(workspaceId, name, snapshot);
+            prepared = prepareSaveWorkspace(workspaceId, name, snapshot);
         } catch (error) {
             candidate.error = error instanceof SaveWorkspaceLimitError ? 'save-storage-limit' : 'structure';
             return trackImportFailure(metrics, previous, candidate.error, 'workspace');
         }
-        if ((!previous && Object.keys(draftState.savesWorkspaces).length >= MAX_SAVE_WORKSPACES)
-            || saveCollectionStorageBytes({ ...draftState.savesWorkspaces, [workspaceId]: workspace }) > MAX_SAVES_BYTES) {
+        let workspaces;
+        try {
+            // Serialize plain snapshots instead of creating drafts throughout every saved factory.
+            workspaces = prepareSaveWorkspaceCollection(current(draftState.savesWorkspaces), prepared);
+        } catch (error) {
+            if (!(error instanceof SaveWorkspaceLimitError)) throw error;
             candidate.error = 'workspace-limit';
             return trackImportFailure(metrics, previous, candidate.error, 'workspace');
         }
+        const { workspace, storageBytes } = prepared;
         const selectedId = draftState.savesSelections[workspaceId]?.coreId;
         const selected = previous?.isDemo ? undefined : previous?.snapshot.cores.find(core => core.id === selectedId);
         const retainedSelection = selected && workspace.snapshot.cores.some(core => coreKey(core) === coreKey(selected)) ? selected.id : null;
         delete draftState.savesMapSelectedNodes[workspaceId];
         delete draftState.savesMapBuildingFilters[workspaceId];
-        draftState.savesWorkspaces[workspaceId] = workspace;
+        draftState.savesWorkspaces = workspaces;
         if (!previous) draftState.savesWorkspaceOrder.push(workspaceId);
         if (!previous || previous.isDemo) {
             draftState.savesSelectedView = 'map';
@@ -114,7 +119,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         draftState.savesImport = createSaveImportState(requestId + 1);
         // Only accepted snapshots count as successful imports, after all workspace limits pass.
         return metrics ? [[appIds.effects.savesTrackImport, {
-            ...metrics, mode: saveImportMode(previous), outcome: 'success', ...saveImportSummary(workspace),
+            ...metrics, mode: saveImportMode(previous), outcome: 'success', ...saveImportSummary(workspace, storageBytes),
         }], [appIds.effects.savesCancelImport]] : [[appIds.effects.savesCancelImport]];
     });
     registrar.regEvent(appIds.events.SAVES_IMPORT_FAILED, ({ draftState }, requestId, error, diagnostic, metrics) => {
