@@ -118,6 +118,7 @@ type ProductionPlanModalInputSelectorData = {
  */
 export interface AppContracts extends UkladContracts {
     state: {
+        [stateKeys.appAvailableVersion]: string | null;
         [stateKeys.savesBuildingCatalog]: AppState['savesBuildingCatalog'];
         [stateKeys.savesImport]: SaveImportState;
         [stateKeys.savesWorkspaces]: Record<string, SaveWorkspace>;
@@ -171,6 +172,8 @@ export interface AppContracts extends UkladContracts {
         [stateKeys.productionPlanModalState]: AppState['productionPlanModalState'];
     };
     events: {
+        [appIds.events.APP_UPDATE_AVAILABLE]: [version: string | null];
+        [appIds.events.APP_RELOAD_FOR_UPDATE]: [];
         [appIds.events.PLANNER_ADD_MANUAL_RESOURCE]: [itemId: string, ratePerMinute: number];
         [appIds.events.PLANNER_SET_RESOURCE_RATE]: [id: string, ratePerMinute: number];
         [appIds.events.PLANNER_SET_RESOURCE_ENABLED]: [id: string, enabled: boolean];
@@ -295,6 +298,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PRODUCTION_PLAN_MODAL_SUBMIT]: [];
     };
     effects: {
+        [appIds.effects.reloadForUpdate]: string;
         [appIds.effects.savesReadImport]: SaveImportRequest;
         [appIds.effects.savesCancelImport]: undefined;
         [appIds.effects.savesTrackImport]: SaveImportTelemetry;
@@ -304,6 +308,7 @@ export interface AppContracts extends UkladContracts {
         [appIds.effects.loadGameData]: DataVersion;
     };
     subscriptions: {
+        [appIds.subscriptions.APP_AVAILABLE_VERSION]: { params: []; result: string | null };
         [appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS]: { params: []; result: number[] };
         [appIds.subscriptions.PLANNER_RESOURCES]: { params: []; result: PlannerResource[] };
         [appIds.subscriptions.PLANNER_RESOURCE_ITEMS]: { params: []; result: AppState['itemsList'] };

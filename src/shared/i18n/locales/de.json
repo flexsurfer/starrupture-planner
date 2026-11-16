@@ -1,4 +1,8 @@
 {
+  "App version: {version}": "App-Version: {version}",
+  "App version: {version} · Build: {release}": "App-Version: {version} · Build: {release}",
+  "App update available: {version}": "App-Update verfügbar: {version}",
+  "Reload to update": "Zum Aktualisieren neu laden",
   " — Used in this node": " – In diesem Knoten verwendet",
   " · {value}/min left": " · {value}/min verbleibend",
   " · Insufficient": " · Unzureichend",

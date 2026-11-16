@@ -10,6 +10,7 @@ import type { AppContracts } from '@/app/uklad/contracts';
 import { gameDataBundleToAppVersioned, loadHeadlessGameDataVersion, loadHeadlessSaveContext } from './game-data-loader';
 
 export interface HeadlessEffectOptions {
+    onReloadForUpdate?: (version: string) => void;
     decodeSaveFile?: SaveImportDecoder;
     onSaveImport?: (telemetry: SaveImportTelemetry) => void;
     onExport?: (archive: PlannerArchive) => void;
@@ -24,6 +25,8 @@ export interface HeadlessEffectOptions {
  * do nothing because a headless runtime has no document to update.
  */
 export function createHeadlessEffects({
+    // Headless runtimes have no browser document to reload; callers may record the intent.
+    onReloadForUpdate = () => {},
     decodeSaveFile = async (request, signal) => {
         const [bytes, context] = await Promise.all([readSaveFile(request.file, signal), loadHeadlessSaveContext(request)]);
         return decodeSave(bytes, context, signal);
@@ -36,6 +39,7 @@ export function createHeadlessEffects({
     onLoadError = (error) => console.error('Failed to load bundled game data:', error),
 }: HeadlessEffectOptions = {}): UkladModule<UkladRegistrar<AppContracts>> {
     return (registrar) => {
+        registrar.regEffect(appIds.effects.reloadForUpdate, version => onReloadForUpdate(version));
         const disposeSaveImport = registerSaveImportEffects(registrar, decodeSaveFile);
         // Automation and tests may record outcomes; headless imports never send analytics.
         registrar.regEffect(appIds.effects.savesTrackImport, telemetry => onSaveImport(telemetry));

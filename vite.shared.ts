@@ -16,9 +16,18 @@ function appRelease(): string {
 }
 
 export function createSharedViteConfig(): UserConfig {
+  const builtAt = new Date().toISOString()
+  // Private website changes may not change Git HEAD. Every build needs its own version.
+  const version = process.env.VITE_APP_VERSION?.trim()
+    || builtAt.slice(0, 19).replaceAll('-', '.').replace('T', '-').replaceAll(':', '')
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9.+_-]{0,63}$/.test(version)) {
+    throw new Error('VITE_APP_VERSION must be 1–64 letters, digits, dots, plus signs, underscores or hyphens.')
+  }
+  const buildInfo = { version, release: appRelease(), builtAt }
   return {
   define: {
-    'import.meta.env.VITE_APP_RELEASE': JSON.stringify(appRelease()),
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(version),
+    'import.meta.env.VITE_APP_RELEASE': JSON.stringify(buildInfo.release),
     // Only the private website build may opt in; standalone builds always stay off.
     'import.meta.env.VITE_UMAMI_ENABLED': JSON.stringify('false'),
   },
@@ -27,7 +36,15 @@ export function createSharedViteConfig(): UserConfig {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), {
+    name: 'app-version',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify(buildInfo) + '\n' })
+    },
+    transformIndexHtml() {
+      return [{ tag: 'meta', attrs: { name: 'app-version', content: version }, injectTo: 'head' }]
+    },
+  }],
   build: {
     rollupOptions: {
       output: {

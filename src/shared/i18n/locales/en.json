@@ -1,4 +1,8 @@
 {
+  "App version: {version}": "App version: {version}",
+  "App version: {version} · Build: {release}": "App version: {version} · Build: {release}",
+  "App update available: {version}": "App update available: {version}",
+  "Reload to update": "Reload to update",
   " — Used in this node": " — Used in this node",
   " · {value}/min left": " · {value}/min left",
   " · Insufficient": " · Insufficient",

@@ -9,6 +9,16 @@ import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 
 export const registerAppShellEvents: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regEvent(appIds.events.APP_UPDATE_AVAILABLE, ({ draftState }, version) => {
+        draftState.appAvailableVersion = version;
+    });
+
+    registrar.regEvent(appIds.events.APP_RELOAD_FOR_UPDATE, ({ draftState }) => {
+        if (draftState.appAvailableVersion) {
+            return [[appIds.effects.reloadForUpdate, draftState.appAvailableVersion]];
+        }
+    });
+
     registrar.regEvent(appIds.events.UI_SET_LOCALE, ({ draftState }, locale) => {
         draftState.uiLocale = normalizeLocale(locale);
     });

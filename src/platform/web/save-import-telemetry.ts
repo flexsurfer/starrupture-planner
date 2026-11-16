@@ -1,4 +1,5 @@
 import type { SaveImportTelemetry } from '@/features/saves/import-telemetry';
+import { getAppRelease, getAppVersion } from '@/features/app-shell/app-version';
 
 type EventData = Record<string, string | number>;
 interface UmamiTracker {
@@ -14,7 +15,8 @@ export function trackSaveImport(telemetry: SaveImportTelemetry): void {
         if (typeof umami?.track !== 'function') return;
         // Explicit allowlist: never spread a snapshot, file, exception or external payload here.
         const data: EventData = {
-            release: import.meta.env.VITE_APP_RELEASE ?? 'unknown',
+            app_version: getAppVersion(),
+            release: getAppRelease(),
             data_version: telemetry.dataVersion,
             mode: telemetry.mode,
             file_bytes: telemetry.fileBytes,

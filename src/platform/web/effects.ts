@@ -9,8 +9,10 @@ import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
 import { appIds } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 import { gameDataBundleToAppVersioned, loadGameDataVersion } from '@/platform/web/game-data-loader';
+import { reloadForUpdate } from './app-updates';
 
 export const registerWebEffects: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regEffect(appIds.effects.reloadForUpdate, reloadForUpdate);
     const disposeSaveImport = registerSaveImportEffects(registrar, readSaveInWorker);
     registrar.regEffect(appIds.effects.savesTrackImport, trackSaveImport);
     registrar.regEffect(appIds.effects.downloadArchive, (archive, runtime) => {

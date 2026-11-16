@@ -3,6 +3,7 @@ import { appIds, stateKeys } from '@/app/uklad/catalog';
 import type { AppContracts } from '@/app/uklad/contracts';
 
 export const registerAppShellSubscriptions: UkladModule<UkladRegistrar<AppContracts>> = (registrar) => {
+    registrar.regRootSub(appIds.subscriptions.APP_AVAILABLE_VERSION, stateKeys.appAvailableVersion);
     registrar.regRootSub(appIds.subscriptions.APP_DATA_VERSION, stateKeys.appDataVersion);
     registrar.regRootSub(appIds.subscriptions.APP_DATA_VERSIONS, stateKeys.appDataVersions);
     registrar.regRootSub(appIds.subscriptions.UI_LOCALE, stateKeys.uiLocale);

@@ -4,6 +4,7 @@
  * Feature modules import these values; no feature owns a second ids file.
  */
 export const stateKeys = {
+    appAvailableVersion: 'appAvailableVersion',
     savesBuildingCatalog: 'savesBuildingCatalog',
     savesImport: 'savesImport',
     savesWorkspaces: 'savesWorkspaces',
@@ -59,6 +60,8 @@ export const stateKeys = {
 
 export const appIds = {
     events: {
+        APP_UPDATE_AVAILABLE: 'app/update-available',
+        APP_RELOAD_FOR_UPDATE: 'app/reload-for-update',
         PLANNER_ADD_MANUAL_RESOURCE: 'planner/add-manual-resource',
         PLANNER_SET_RESOURCE_RATE: 'planner/set-resource-rate',
         PLANNER_SET_RESOURCE_ENABLED: 'planner/set-resource-enabled',
@@ -135,6 +138,7 @@ export const appIds = {
         PRODUCTION_PLAN_MODAL_OPEN: 'production-plan-modal/open', PRODUCTION_PLAN_MODAL_CLOSE: 'production-plan-modal/close', PRODUCTION_PLAN_MODAL_SET_NAME: 'production-plan-modal/set-name', PRODUCTION_PLAN_MODAL_SET_SELECTED_ITEM: 'production-plan-modal/set-selected-item', PRODUCTION_PLAN_MODAL_SET_TARGET_AMOUNT: 'production-plan-modal/set-target-amount', PRODUCTION_PLAN_MODAL_SET_SELECTED_CORPORATION_LEVEL: 'production-plan-modal/set-selected-corporation-level', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTION: 'production-plan-modal/set-recipe-selection', PRODUCTION_PLAN_MODAL_SET_RECIPE_SELECTIONS: 'production-plan-modal/set-recipe-selections', PRODUCTION_PLAN_MODAL_TOGGLE_INPUT: 'production-plan-modal/toggle-input', PRODUCTION_PLAN_MODAL_LINK_OUTPUT_INPUT: 'production-plan-modal/link-output-input', PRODUCTION_PLAN_MODAL_SET_MATCH_INPUTS: 'production-plan-modal/set-match-inputs', PRODUCTION_PLAN_MODAL_SUBMIT: 'production-plan-modal/submit',
     },
     subscriptions: {
+        APP_AVAILABLE_VERSION: 'app/available-version',
         PLANNER_COMPARISON_CORE_IDS: 'planner/comparison-core-ids',
         PLANNER_RESOURCES: 'planner/resources',
         PLANNER_RESOURCE_ITEMS: 'planner/resource-items',
@@ -221,5 +225,5 @@ export const appIds = {
         BASES_OVERVIEW_PLAN_ROWS: 'bases/overview-plan-rows', BASES_OVERVIEW_MATERIAL_BALANCE_ROWS: 'bases/overview-material-balance-rows', BASES_OVERVIEW_BUILDING_COVERAGE_ROWS: 'bases/overview-building-coverage-rows',
         BASES_PRODUCTION_TABLE: 'bases/production-table',
     },
-    effects: { savesReadImport: 'saves/import-decode-file', savesCancelImport: 'saves/import-cancel-read', savesTrackImport: 'saves/track-import', downloadArchive: 'data-transfer/download-archive', readArchive: 'data-transfer/read-archive', setTheme: 'ui/set-theme-in-dom', loadGameData: 'app/load-game-data' },
+    effects: { reloadForUpdate: 'app/reload-for-update', savesReadImport: 'saves/import-decode-file', savesCancelImport: 'saves/import-cancel-read', savesTrackImport: 'saves/track-import', downloadArchive: 'data-transfer/download-archive', readArchive: 'data-transfer/read-archive', setTheme: 'ui/set-theme-in-dom', loadGameData: 'app/load-game-data' },
 } as const;

@@ -159,6 +159,28 @@ afterAll(() => {
 });
 
 describe('headless application E2E', () => {
+    it('offers a new deployment without interrupting a plan and reloads only on request', async () => {
+        const onReloadForUpdate = vi.fn();
+        const scenario = createScenario({ effects: { onReloadForUpdate } });
+        const shell = mountView(scenario, 'App update notice', {
+            availableVersion: [appIds.subscriptions.APP_AVAILABLE_VERSION],
+            activePlan: [appIds.subscriptions.PLANNER_ACTIVE_TAB],
+        } as const);
+        await dispatch(scenario, [appIds.events.PLANNER_CREATE_TAB, 'update-test', 'Current plan', 'single']);
+        const plan = shell.value('activePlan');
+        await dispatch(scenario, [appIds.events.APP_RELOAD_FOR_UPDATE]);
+        expect(onReloadForUpdate).not.toHaveBeenCalled();
+        await dispatch(scenario, [appIds.events.APP_UPDATE_AVAILABLE, '2026.11.16-130000']);
+        expect(shell.value('availableVersion')).toBe('2026.11.16-130000');
+        expect(shell.value('activePlan')).toEqual(plan);
+        expect(onReloadForUpdate).not.toHaveBeenCalled();
+        await dispatch(scenario, [appIds.events.APP_RELOAD_FOR_UPDATE]);
+        expect(onReloadForUpdate).toHaveBeenCalledExactlyOnceWith('2026.11.16-130000');
+        await dispatch(scenario, [appIds.events.APP_UPDATE_AVAILABLE, null]);
+        expect(shell.value('availableVersion')).toBeNull();
+        expect(shell.value('activePlan')).toEqual(plan);
+    });
+
     it('opens a current factory suggestion and keeps its plan independent of the source save', async () => {
         const scenario = createScenario();
         await dispatch(scenario, [appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);

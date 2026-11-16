@@ -13,6 +13,7 @@ import { createProductionPlanModalFeatureState } from '@/features/production-pla
 /** Creates state owned by exactly one Uklad runtime. */
 export function createAppState(initialLocale: string = DEFAULT_LOCALE): AppState {
     return {
+        appAvailableVersion: null,
         ...createSavesFeatureState(),
         ...createDataTransferState(),
         appDataVersion: DEFAULT_DATA_VERSION,

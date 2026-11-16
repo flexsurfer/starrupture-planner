@@ -7,7 +7,10 @@ const success = {
     fileBytes: 32_431_209, durationMs: 1234, coreCount: 4, buildingCount: 200, powerNetworkCount: 7, workspaceBytes: 90_000,
 } as const satisfies SaveImportTelemetry;
 
-beforeEach(() => vi.stubEnv('VITE_UMAMI_ENABLED', 'true'));
+beforeEach(() => {
+    vi.stubEnv('VITE_UMAMI_ENABLED', 'true');
+    vi.stubEnv('VITE_APP_VERSION', '2026.11.16-120000');
+});
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 it.each(['false', undefined, '', '1'] as const)('does not use an existing tracker without the website build flag (%s)', flag => {
@@ -28,6 +31,7 @@ it('sends one flat success event with an explicit allowlist and the build releas
     trackSaveImport(input);
     await Promise.resolve();
     expect(track).toHaveBeenCalledExactlyOnceWith('save_import_succeeded', {
+        app_version: '2026.11.16-120000',
         release: 'abc123', data_version: 'update2_QoL', data_revision: 'catalog-revision', mode: 'new',
         file_bytes: 32_431_209, duration_ms: 1234, core_count: 4, building_count: 200, power_network_count: 7, workspace_bytes: 90_000,
     });
@@ -41,6 +45,7 @@ it('sends exact limit diagnostics without including raw error messages or unrela
     trackSaveImport({ outcome: 'failure', mode: 'update', dataVersion: 'update2_QoL', fileBytes: 30_000_000,
         durationMs: 10_000, error: 'complexity', stage: 'decode', diagnostic });
     expect(track).toHaveBeenCalledExactlyOnceWith('save_import_failed', {
+        app_version: '2026.11.16-120000',
         release: 'abc123', data_version: 'update2_QoL', mode: 'update', file_bytes: 30_000_000, duration_ms: 10_000,
         error: 'complexity', stage: 'decode', subcode: 'projection-chars', actual: 16_780_000, limit: 16_777_216,
     });

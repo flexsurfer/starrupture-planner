@@ -217,6 +217,7 @@ export interface CreateProductionPlanModalState {
 }
 
 export interface AppState extends PlannerFeatureState, DataTransferState, SavesFeatureState {
+    appAvailableVersion: string | null;
     appDataVersion: DataVersion;
     appDataVersions: { id: DataVersion; label: string }[];
     /** Populated as versions are fetched from `/game-data/{version}/`. */

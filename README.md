@@ -165,6 +165,26 @@ in the terminal. For hosting, serve `dist/` over HTTP with a fallback to
 `index.html` for application routes such as `/planner/` and `/map/`. Opening
 `index.html` directly through `file://` is not supported.
 
+The header shows the loaded app version (`YYYY.MM.DD-HHMMSS`, UTC build time).
+Each build emits the same version in `version.json` and the JavaScript bundle;
+`VITE_APP_VERSION` can supply a release label instead (use a new label for every
+deployment). The Git revision remains available in the version tooltip via
+`VITE_APP_RELEASE` or the current commit.
+
+Production tabs check `version.json` on startup, every five minutes while visible,
+and when returning to the tab or reconnecting. A different deployment displays
+**Reload to update**; it never reloads automatically. The button preserves the
+current route and adds a query to bypass the browser's cached document URL. This
+does not guarantee bypassing the hosting CDN's cache. Saved plans
+and settings use the existing local storage and are not cleared. Development
+servers do not poll for updates.
+
+When configuring your host, serve HTML with `Cache-Control: no-cache`,
+`version.json` with `Cache-Control: no-store`, and content-hashed `/assets/` files
+with `Cache-Control: public, max-age=31536000, immutable`. Retain replaced hashed
+assets temporarily so cached documents and open tabs can still load their lazy
+chunks. [Vite documents this deployment issue](https://vite.dev/guide/build#load-error-handling).
+
 ## Development
 
 The app uses React and TypeScript, Vite, Tailwind CSS and DaisyUI, React Flow and

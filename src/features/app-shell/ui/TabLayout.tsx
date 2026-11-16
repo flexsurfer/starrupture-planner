@@ -27,6 +27,7 @@ import { AppBrand } from './AppBrand';
 import { CodexMenu } from './CodexMenu';
 import type { CodexSection } from './codex-sections';
 import { CodexDialog } from './CodexDialog';
+import { AppUpdateNotice } from './AppUpdateNotice';
 
 const tabs: { id: TabType; label: MessageKey; icon: SectionIconName }[] = [
   { id: 'planner', label: 'Planner', icon: 'planner' },
@@ -205,6 +206,8 @@ const TabLayout = ({ homePath = DEFAULT_TOOL_PATH, footer }: ToolShellOptions) =
               <CodexMenu active={codexActive} visible={!tabsFitHeader} compact onOpen={setCodexSection} />
             </nav>
         </div>
+
+        <AppUpdateNotice />
 
         {/* Tab Content */}
         <main className="relative isolate flex-1 min-h-0 overflow-y-auto bg-base-100">

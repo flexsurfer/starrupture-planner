@@ -1,4 +1,8 @@
 {
+  "App version: {version}": "Wersja aplikacji: {version}",
+  "App version: {version} · Build: {release}": "Wersja aplikacji: {version} · Kompilacja: {release}",
+  "App update available: {version}": "Dostępna aktualizacja aplikacji: {version}",
+  "Reload to update": "Odśwież, aby zaktualizować",
   " — Used in this node": " – Używane w tym węźle",
   " · {value}/min left": " · pozostało {value}/min",
   " · Insufficient": " · Niewystarczające",
