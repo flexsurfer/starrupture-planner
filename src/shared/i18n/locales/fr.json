@@ -3,6 +3,7 @@
   "App version: {version} · Build: {release}": "Version de l’application : {version} · Build : {release}",
   "App update available: {version}": "Mise à jour de l’application disponible : {version}",
   "Reload to update": "Recharger pour mettre à jour",
+  "An outdated game data version is selected. Recommended version: {version}.": "Une version obsolète des données du jeu est sélectionnée. Version recommandée : {version}.",
   " — Used in this node": " · Utilisé dans ce nœud",
   " · {value}/min left": " · {value}/min restantes",
   " · Insufficient": " · Insuffisant",

@@ -8,6 +8,8 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}', 'test/**/*.{test,spec}.{ts,tsx}'],
     globals: true,
     environment: 'jsdom',
+    // Let jsdom provide browser storage instead of Node 25+'s native globals.
+    execArgv: ['--no-experimental-webstorage'],
     setupFiles: ['./test/setup.ts'],
     coverage: {
       provider: 'v8',
