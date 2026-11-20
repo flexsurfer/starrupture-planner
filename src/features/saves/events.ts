@@ -12,15 +12,16 @@ import { createSaveImportState } from './state';
 import { createSaveWorkspace, prepareSaveWorkspace, getActiveSaveWorkspace, workspaceIds } from './workspace';
 import { validateSaveSnapshotCatalog, prepareSaveWorkspaceCollection, SaveWorkspaceLimitError } from './storage-schema';
 import { saveImportMode, saveImportSummary, type SaveImportMetrics, type SaveImportTelemetry, type SaveImportFailureStage } from './import-telemetry';
-import type { SaveImportDiagnostic } from './import-error';
+import { copySaveImportDiagnostic, type SaveImportDiagnostic } from './import-error';
 import type { SaveImportState, SaveWorkspace } from './types';
 
 function trackImportFailure(metrics: SaveImportMetrics | undefined, previous: SaveWorkspace | undefined,
     error: NonNullable<SaveImportState['error']>, stage: SaveImportFailureStage, diagnostic?: SaveImportDiagnostic,
 ): [typeof appIds.effects.savesTrackImport, SaveImportTelemetry][] {
+    const details = copySaveImportDiagnostic(error, diagnostic);
     return metrics ? [[appIds.effects.savesTrackImport, {
         ...metrics, mode: saveImportMode(previous), outcome: 'failure', error, stage,
-        ...(error === 'complexity' && diagnostic ? { diagnostic: { ...diagnostic } } : {}),
+        ...(details ? { diagnostic: details } : {}),
     }]] : [];
 }
 
@@ -126,7 +127,7 @@ export const registerSavesEvents: UkladModule<UkladRegistrar<AppContracts>> = re
         if (draftState.savesImport.phase !== 'reading' || draftState.savesImport.requestId !== requestId) return;
         draftState.savesImport.phase = 'select';
         draftState.savesImport.error = error;
-        draftState.savesImport.diagnostic = error === 'complexity' && diagnostic ? { ...diagnostic } : null;
+        draftState.savesImport.diagnostic = copySaveImportDiagnostic(error, diagnostic) ?? null;
         return trackImportFailure(metrics, draftState.savesWorkspaces[draftState.savesImport.targetWorkspaceId ?? ''], error, 'decode', diagnostic);
     });
     registrar.regEvent(appIds.events.SAVES_SELECT_WORKSPACE, ({ draftState }, id) => {

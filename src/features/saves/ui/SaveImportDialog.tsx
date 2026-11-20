@@ -1,31 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
-import { useTranslation, type MessageKey } from '@/shared/i18n';
-import type { SaveImportState } from '../types';
+import { useTranslation } from '@/shared/i18n';
 import { MAX_SAVE_BYTES, MAX_DECODED_SAVE_BYTES } from '../import-limits';
-import { SaveImportLimitError } from './SaveImportLimitError';
+import { SaveImportErrorPanel } from './SaveImportErrorPanel';
 
 const importLimits = { fileLimit: MAX_SAVE_BYTES / (1024 * 1024), decodedLimit: MAX_DECODED_SAVE_BYTES / (1024 * 1024) };
-
-const errors: Record<NonNullable<SaveImportState['error']>, MessageKey> = {
-    'core-identity': 'A Core identity could not be read.',
-    position: 'A building could not be assigned to its nearest Core.',
-    transport: 'Cargo connections must pair one dispatcher with one receiver.',
-    selection: 'Choose a .sav game save.', extension: 'Choose a .sav game save.',
-    'file-size': 'Choose a .sav file no larger than {fileLimit} MiB.',
-    'decoded-size': 'This save expands beyond the {decodedLimit} MiB import limit when unpacked.',
-    complexity: 'Save import stopped at an internal limit.',
-    compression: 'This file could not be decoded as a supported StarRupture save.',
-    'size-mismatch': 'This file could not be decoded as a supported StarRupture save.', structure: 'This file could not be decoded as a supported StarRupture save.',
-    'unsupported-browser': 'This browser does not support save import.',
-    read: 'Could not read this save. Try choosing the file again.', timeout: 'Reading the save timed out. Try again.',
-    catalog: 'Could not load game data. Check your connection and reload the page.',
-    mappings: 'Could not load game data. Check your connection and reload the page.',
-    'mapping-version': 'This save cannot be imported with the supported game data.', 'workspace-limit': 'There is no room for another save. Remove a save and try again.',
-    'save-storage-limit': 'This save is too large to store in this browser.',
-};
-
 
 export function SaveImportCompatibility() {
     const { t } = useTranslation();
@@ -78,6 +58,13 @@ export function SaveFileLocation() {
         <h3 id={`${id}-location`} className="text-sm font-semibold">{t('Where to find .sav files')}</h3>
         <code className="mt-2 block break-all select-text text-xs">{'C:\\Program Files (x86)\\Steam\\userdata\\[SteamNumber]\\1631270\\remote\\Saved\\SaveGames'}</code>
         <p className="mt-2 text-xs leading-relaxed text-base-content/60">{t('Open this folder in File Explorer, replacing [SteamNumber] with your Steam account folder number. If Steam is installed elsewhere, use that installation folder instead.')}</p>
+        <p className="mt-2 text-xs leading-relaxed text-base-content/60">{t('Then open the folder for the game version or branch you play, such as {mainBranch}, {testBranch}, or {updateBranch}. Choose a .sav file inside, for example {firstSave}, {secondSave}, or {autoSave}.', {
+            mainBranch: 'earlyaccess', testBranch: 'test', updateBranch: 'update3',
+            firstSave: '0.sav', secondSave: '1.sav', autoSave: 'AutoSave114.sav',
+        })}</p>
+        <p className="mt-2 text-xs leading-relaxed text-base-content/60">{t('Import only the .sav file. {saveDataFile} and .met files are not needed by the planner. Do not rename them to .sav.', {
+            saveDataFile: 'SaveData.dat',
+        })}</p>
     </section>;
 }
 
@@ -123,8 +110,7 @@ export function SaveImportDialog() {
                 <SaveFileDropZone busy={reading} fileName={candidate.fileName}
                     onFile={file => runtime.dispatch([appIds.events.SAVES_IMPORT_READ, file])} />
                 <SaveFileLocation />
-                {candidate.error === 'complexity' ? <SaveImportLimitError key={candidate.requestId} diagnostic={candidate.diagnostic} />
-                    : candidate.error && <p role="alert" className="mt-4 text-sm text-error">{t(errors[candidate.error], importLimits)}</p>}
+                {candidate.error && <SaveImportErrorPanel key={candidate.requestId} error={candidate.error} diagnostic={candidate.diagnostic} />}
             </div>
             <footer className="flex justify-end border-t border-base-300 px-5 py-3"><button type="button" className="btn btn-ghost btn-sm" disabled={reading} onClick={close}>{t('Cancel import')}</button></footer>
         </div>

@@ -1,5 +1,5 @@
 import { SaveImportError } from './import-error';
-import { MAX_SAVE_BYTES } from './import-limits';
+import { MAX_SAVE_BYTES, MAX_DECODED_SAVE_BYTES } from './import-limits';
 export { MAX_SAVE_BYTES } from './import-limits';
 
 /** File handles and bytes stay outside application state and persistence. */
@@ -12,7 +12,9 @@ export interface SaveFileSource {
 export function validateSaveFile(file: Pick<SaveFileSource, 'name' | 'size'>): void {
     if (!/\.sav$/i.test(file.name)) throw new SaveImportError('extension');
     if (!Number.isSafeInteger(file.size) || file.size < 0 || file.size > MAX_SAVE_BYTES) throw new SaveImportError('file-size');
-    if (file.size < 6) throw new SaveImportError('compression');
+    if (file.size < 6) throw new SaveImportError('format', {
+        phase: 'header', decodedBytes: 0, decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+    });
 }
 
 /** Validate and read a file. This module knows nothing about the save's contents. */

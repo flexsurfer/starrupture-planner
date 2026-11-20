@@ -5,7 +5,7 @@ import { readLauncherItem } from './launchers';
 import { readStorageInventory } from './inventory';
 import type { SaveBuildingMapping } from './mappings';
 import { selectedRecipe } from './recipes';
-import { assertSaveImportLimit, SaveImportError, type SaveImportDiagnostic } from '../import-error';
+import { assertSaveImportLimit, SaveImportError, type SaveImportComplexityDiagnostic } from '../import-error';
 import { MAX_SAVE_POWER_NETWORK_RECORDS } from '../import-limits';
 import { entityId, handle } from './handles';
 import type { SaveDecodeContext } from './types';
@@ -13,7 +13,7 @@ import type { SaveDecodeContext } from './types';
 type RecordValue = Record<string, unknown>;
 const record = (value: unknown): RecordValue | null => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : null;
 const number = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null;
-function text(value: unknown, subcode: SaveImportDiagnostic['subcode'], max = 512): string | null {
+function text(value: unknown, subcode: SaveImportComplexityDiagnostic['subcode'], max = 512): string | null {
     if (typeof value !== 'string' || !value.length) return null;
     assertSaveImportLimit(subcode, value.length, max);
     return value;

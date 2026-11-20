@@ -188,10 +188,12 @@ it('reports accepted new, updated and demo-replacement imports with aggregate me
     expect(imports).toHaveBeenCalledTimes(3);
 });
 
-it('reports each failed attempt and a later successful retry, keeping exact limit diagnostics', async () => {
-    const diagnostic = { subcode: 'building-name-chars', actual: 513, limit: 512 } as const;
+it.each([
+    { error: 'complexity', diagnostic: { subcode: 'building-name-chars', actual: 513, limit: 512 } },
+    { error: 'declared-size', diagnostic: { phase: 'header', declaredBytes: 1_073_741_825, decodedBytes: 0, decodedLimitBytes: 1_073_741_824 } },
+] as const)('reports a $error attempt and a successful retry, keeping exact diagnostics', async ({ error, diagnostic }) => {
     const report = analyzeSave(saveFixture(), extractionContext);
-    const decode = vi.fn<SaveImportDecoder>().mockRejectedValueOnce(new SaveImportError('complexity', diagnostic))
+    const decode = vi.fn<SaveImportDecoder>().mockRejectedValueOnce(new SaveImportError(error, diagnostic))
         .mockResolvedValueOnce(report);
     const { harness, imports } = setup(decode);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
@@ -200,10 +202,10 @@ it('reports each failed attempt and a later successful retry, keeping exact limi
     await expect.poll(() => imports.mock.calls.length).toBe(1);
     expect(imports.mock.calls[0][0]).toEqual({
         outcome: 'failure', mode: 'new', dataVersion: 'update2_QoL', fileBytes: 20, durationMs: expect.any(Number),
-        stage: 'decode', error: 'complexity', diagnostic,
+        stage: 'decode', error, diagnostic,
     });
     const metrics = { dataVersion: 'update2_QoL', fileBytes: 20, durationMs: 10 } as const;
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, requestId, 'complexity', diagnostic, metrics]);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, requestId, error, diagnostic, metrics]);
     expect(imports).toHaveBeenCalledOnce();
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, requestId, 'read', undefined, metrics]);
@@ -262,21 +264,23 @@ it.each(['catalog', 'removed', 'disposed'] as const)('does not report cancelled 
     expect(imports).not.toHaveBeenCalled();
 });
 
-it('keeps limit diagnostics for the active import and clears them on retry, another failure and close', async () => {
-    const diagnostic = { subcode: 'projection-chars', actual: 16_780_000, limit: 16_777_216 } as const;
-    const decode = vi.fn<SaveImportDecoder>().mockRejectedValueOnce(new SaveImportError('complexity', diagnostic))
+it.each([
+    { error: 'complexity', diagnostic: { subcode: 'projection-chars', actual: 16_780_000, limit: 16_777_216 } },
+    { error: 'format', diagnostic: { phase: 'header', decodedBytes: 0, decodedLimitBytes: 1_073_741_824 } },
+] as const)('keeps $error diagnostics for the active import and clears them on retry, another failure and close', async ({ error, diagnostic }) => {
+    const decode = vi.fn<SaveImportDecoder>().mockRejectedValueOnce(new SaveImportError(error, diagnostic))
         .mockImplementation(() => new Promise(() => {}));
     const { harness } = setup(decode);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_OPEN]);
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
     const first = harness.getState().savesImport.requestId;
     await expect.poll(() => harness.getSubscriptionValue([appIds.subscriptions.SAVES_IMPORT])).toMatchObject({
-        phase: 'select', error: 'complexity', diagnostic,
+        phase: 'select', error, diagnostic,
     });
     harness.dispatchSync([appIds.events.SAVES_IMPORT_READ, pendingFile()]);
     expect(harness.getState().savesImport).toMatchObject({ phase: 'reading', error: null, diagnostic: null });
     const second = harness.getState().savesImport.requestId;
-    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, first, 'complexity', diagnostic]);
+    harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, first, error, diagnostic]);
     expect(harness.getState().savesImport).toMatchObject({ phase: 'reading', error: null, diagnostic: null });
     harness.dispatchSync([appIds.events.SAVES_IMPORT_FAILED, second, 'read']);
     expect(harness.getState().savesImport).toMatchObject({ phase: 'select', error: 'read', diagnostic: null });

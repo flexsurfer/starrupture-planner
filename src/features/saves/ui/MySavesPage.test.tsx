@@ -7,7 +7,9 @@ import { createAppRuntime } from '@/app/uklad/runtime';
 import { UkladProvider } from '@/app/uklad/bindings';
 import { registerHeadlessApplication } from '@/platform/headless/register';
 import { PERSIST_KEYS } from '@/platform/web/persistence';
+import type { DataVersion } from '@/features/app-shell/data-version';
 import { ConfirmationDialog } from '@/features/app-shell/ui/ConfirmationDialog';
+import VersionSelector from '@/features/app-shell/ui/VersionSelector';
 import { SaveImportError } from '../import-error';
 import { analyzeSave } from '../decoder/analyze';
 import { saveGameData, extractionContext, snapshotFixture, storageFixture, transportFixture, saveFixture, saveEntity, heliumItemAsset } from '../decoder/test-fixture';
@@ -37,7 +39,7 @@ async function setup(error?: SaveImportError, save: unknown = snapshotFixture())
     persistence.hydrate();
     runtime.dispatch([appIds.events.APP_SET_DATA_VERSION, 'update2_QoL', structuredClone(saveGameData)]);
     owners.push({ runtime, persistence });
-    render(<UkladProvider runtime={runtime}><MySavesPage /><ConfirmationDialog /></UkladProvider>);
+    render(<UkladProvider runtime={runtime}><VersionSelector /><MySavesPage /><ConfirmationDialog /></UkladProvider>);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Try a demo factory' })).toBeEnabled());
     return { runtime, persistence };
 }
@@ -59,6 +61,41 @@ function saveFile(name = 'world') {
     Object.defineProperty(file, 'arrayBuffer', { value: async () => new ArrayBuffer(9) });
     return file;
 }
+
+function selectDataVersion(version: DataVersion) {
+    fireEvent.change(screen.getByRole('combobox', { name: 'Game data version' }), { target: { value: version } });
+}
+
+it('replaces the save picker with version guidance until the latest data is selected', async () => {
+    await setup();
+    selectDataVersion('update1');
+    const notice = await screen.findByRole('status');
+    expect(notice).toHaveTextContent('To import a save, select the latest game data version (Update 2 QoL) from the dropdown at the top of the app.');
+    expect(screen.queryByRole('region', { name: 'Save import' })).toBeNull();
+    expect(screen.queryByLabelText('Choose save file')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Where to find .sav files' })).toBeNull();
+
+    selectDataVersion('update2_QoL');
+    expect(await screen.findByRole('button', { name: 'Choose save file' })).toBeEnabled();
+    expect(notice).not.toBeInTheDocument();
+    await importSave('Workshop');
+});
+
+it.each(['Import your save', 'Update'])('hides the workspace action “%s” on versions without save mappings', async action => {
+    await setup();
+    if (action === 'Update') await importSave('Workshop');
+    else await interact(() => { fireEvent.click(screen.getByRole('button', { name: 'Try a demo factory' })); });
+    expect(screen.getByRole('button', { name: action })).toBeEnabled();
+
+    selectDataVersion('playtest');
+    expect(await screen.findByRole('status')).toHaveTextContent('Update 2 QoL');
+    expect(screen.queryByRole('button', { name: action })).toBeNull();
+    expect(screen.getByRole('tabpanel', { name: 'Map' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeEnabled();
+
+    selectDataVersion('update2_QoL');
+    expect(await screen.findByRole('button', { name: action })).toBeEnabled();
+});
 
 it('lets a first visitor explore the demo and replace it with their own save', async () => {
     const { runtime } = await setup();
@@ -243,7 +280,7 @@ it('shows controlled read errors, cancellation, hydration failure and unsaved ch
     const { runtime } = await setup(new SaveImportError('compression'));
     fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
     const dialog = await screen.findByRole('dialog', { name: 'Import save' });
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('This file could not be decoded');
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('This save could not be unpacked');
     expect(dialog).toHaveAttribute('closedby', 'closerequest');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel import' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -260,12 +297,35 @@ it.each([
     ['file-size', 'Choose a .sav file no larger than 64 MiB.'],
     ['decoded-size', 'This save expands beyond the 1,024 MiB import limit when unpacked.'],
     ['complexity', 'Save import stopped at an internal limit.'],
+    ['format', 'This file is not a supported StarRupture save.'],
+    ['size-header', "The save's size information is invalid or does not match its contents."],
+    ['size-mismatch', "The save's size information is invalid or does not match its contents."],
+    ['declared-size', 'This file reports an unpacked size above the 1,024 MiB import limit.'],
+    ['extension', 'SaveData.dat and .met files cannot be imported.'],
 ] as const)('explains the %s limit separately', async (code, message) => {
     await setup(new SaveImportError(code));
     fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile()] } });
     const dialog = await screen.findByRole('dialog', { name: 'Import save' });
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(message);
     expect(within(dialog).getByText(/Limits: 64 MiB per file and 1,024 MiB after unpacking/)).toBeVisible();
+    expect(within(dialog).getByRole('button', { name: 'Copy error message' })).toBeEnabled();
+});
+
+it('copies header diagnostics delivered through the import effect without private file data', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const diagnostic = { phase: 'header', declaredBytes: 1_073_741_825, decodedBytes: 0, decodedLimitBytes: 1_073_741_824 } as const;
+    await setup(new SaveImportError('declared-size', diagnostic));
+    fireEvent.change(screen.getByLabelText('Choose save file'), { target: { files: [saveFile('private-world')] } });
+    const dialog = await screen.findByRole('dialog', { name: 'Import save' });
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Its size information may be incorrect.');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Copy error message' }));
+    expect(await within(dialog).findByRole('status')).toHaveTextContent('Copied');
+    const report = writeText.mock.calls[0][0];
+    for (const line of ['error: declared-size', 'decode_phase: header', 'declared_bytes: 1073741825', 'decoded_bytes: 0', 'decoded_limit_bytes: 1073741824']) {
+        expect(report).toContain(line);
+    }
+    expect(report).not.toContain('private-world');
 });
 
 it('copies the full diagnostic from a failed import and resets copy feedback on retry', async () => {

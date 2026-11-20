@@ -1,7 +1,8 @@
 # Streaming save import
 
 Browser imports send the immutable `File` to a worker. The worker reads the
-four-byte decoded-length header, streams the remaining zlib data through
+first six bytes, validates the zlib header before interpreting the four-byte
+decoded-length prefix, and streams the zlib data through
 `DecompressionStream`, and parses JSON incrementally. The headless byte API
 uses the same decoder.
 
@@ -55,9 +56,33 @@ File handles, parser state, and source records never enter Uklad state or persis
   save can use that entire budget. The expanded collection is bounded to 64 MiB
   of UTF-8 snapshot JSON, separately from the 1 GiB source-file import limit.
 
-The UI distinguishes compressed-size, unpacked-size, complexity, and storage
-failures, with English, German, French, and Polish messages. Displayed size
-limits come from the decoder constants.
+The UI distinguishes compressed-size, declared unpacked-size, actual unpacked-size,
+format, invalid length, complexity, and storage failures, with English, German,
+French, and Polish messages. Displayed size limits come from the decoder constants.
+
+## Container validation and recovery
+
+The zlib header must specify DEFLATE, a window of at most 32 KiB, a valid modulo-31
+header checksum, and no preset dictionary. These checks run before the first
+four bytes are used as a length. Files containing plain JSON, an unrelated
+`GVAS` header, or other unsupported data therefore fail as `format` instead of
+being mistaken for a save larger than 1 GiB. This is a header preflight; streaming
+decompression still verifies the payload and its checksum.
+
+| Error | Meaning |
+| --- | --- |
+| `format` | Missing, invalid, or unsupported container/zlib header |
+| `size-header` | Recognized container with a zero declared length |
+| `declared-size` | Recognized container claims more than the unpacked limit; output has not been measured |
+| `decoded-size` | Observed decompressed output exceeds the unpacked limit |
+| `size-mismatch` | Observed output disagrees with the declared length |
+| `compression` | Unpacking or UTF-8 decoding failed |
+
+Format and invalid-length messages suggest selecting an original `.sav` or
+creating a fresh in-game save. The file-location instructions explain branch
+folders such as `earlyaccess`, `test`, and `update3`, with `0.sav`, `1.sav`, and
+`AutoSave114.sav` as filename examples. `SaveData.dat` and `.met` files are not
+planner inputs and should not be renamed to `.sav`.
 
 ## Snapshot persistence
 
@@ -127,13 +152,14 @@ recompression passes reduced median hydration time from 1.877 s to 0.591 s.
 A separate Unicode-heavy fixture occupied 1,882,890 bytes as plain JSON but
 4,527,260 bytes as gzip + base64; it now loads and remains editable in plain form.
 
-## Complexity diagnostics
+## Import diagnostics
 
 Every complexity check attaches a stable `subcode`, the observed `actual` value,
 and its `limit`. The worker delivers these as plain data to the transient import
-state. The dialog shows the diagnostic and a **Copy error message** button, with
-instructions to send the copied report in Discord. Clipboard failure leaves the
-text selectable and explains manual copying. Reports contain the localized error
+state. Every import error offers **Technical details** and a **Copy error message**
+button, with instructions to share the report in Discord if the problem persists.
+Clipboard failure opens the selectable details and explains manual copying.
+Reports contain the localized error
 description and locale-independent diagnostic IDs and exact numbers, for example:
 
 ```text
@@ -146,9 +172,17 @@ actual: 67110000
 limit: 67108864
 ```
 
-The report contains only the error description, subcode and counters. It excludes
-filenames, user names, source keys and save contents. Starting another import or
-closing the dialog clears the previous diagnostic.
+Decoder failures also attach `decode_phase` (`header`, `decompression`, `parse`,
+or `analysis`), `decoded_bytes` observed so far, and `decoded_limit_bytes`.
+`declared_bytes` is present only after recognizing the container header and
+remains an unverified claim. A header rejection reports zero decoded bytes.
+The existing top-level telemetry `stage` still identifies preparation, decoding,
+or workspace adoption; `decode_phase` narrows the decoding stage.
+
+Telemetry and copied reports share the same field allowlist. They exclude
+filenames, raw headers, user names, source keys, exception text, and save contents.
+Starting another import or closing the dialog clears the previous diagnostic;
+late results from an older attempt remain ignored.
 
 | Subcode | Measured value |
 | --- | --- |

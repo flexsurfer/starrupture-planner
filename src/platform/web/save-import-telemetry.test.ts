@@ -62,6 +62,26 @@ it('does not attach stale diagnostics to non-complexity errors or send invalid n
     for (const key of ['file_bytes', 'subcode', 'actual', 'limit']) expect(data).not.toHaveProperty(key);
 });
 
+it.each(['format', 'declared-size', 'decoded-size'] as const)('reports %s phase and byte counts using only safe diagnostic fields', error => {
+    const track = vi.fn();
+    vi.stubGlobal('umami', { track });
+    vi.stubEnv('VITE_APP_RELEASE', 'abc123');
+    const diagnostic = {
+        phase: error === 'decoded-size' ? 'decompression' as const : 'header' as const,
+        ...(error === 'format' ? {} : { declaredBytes: 1_073_741_825 }),
+        decodedBytes: error === 'decoded-size' ? 1_073_741_826 : 0, decodedLimitBytes: 1_073_741_824,
+        fileName: 'private.sav', header: 'private header', source: 'private contents',
+    };
+    trackSaveImport({ outcome: 'failure', mode: 'new', dataVersion: 'update2_QoL', fileBytes: 2119,
+        durationMs: 188, error, stage: 'decode', diagnostic });
+    expect(track).toHaveBeenCalledExactlyOnceWith('save_import_failed', {
+        app_version: '2026.11.16-120000', release: 'abc123', data_version: 'update2_QoL',
+        mode: 'new', file_bytes: 2119, duration_ms: 188, error, stage: 'decode',
+        decode_phase: diagnostic.phase, decoded_bytes: diagnostic.decodedBytes, decoded_limit_bytes: diagnostic.decodedLimitBytes,
+        ...(error === 'format' ? {} : { declared_bytes: diagnostic.declaredBytes }),
+    });
+});
+
 it.each(['missing', 'throws', 'rejects', 'pending'] as const)('keeps imports independent of analytics when the tracker %s', async mode => {
     const track = vi.fn(() => {
         if (mode === 'throws') throw new Error('Tracker failed');

@@ -1,5 +1,5 @@
 import { TokenParser, TokenType, type ParsedTokenInfo } from '@streamparser/json';
-import { assertSaveImportLimit, SaveImportError, type SaveImportDiagnostic } from '../import-error';
+import { assertSaveImportLimit, SaveImportError, type SaveImportComplexityDiagnostic } from '../import-error';
 import { MAX_SAVE_ACTIVE_KEY_CHARS, MAX_SAVE_POWER_NETWORK_RECORDS, MAX_SAVE_PROJECTION_CHARS } from '../import-limits';
 import type { SaveDecodeContext } from './types';
 import { createJsonTokenizer } from './json-tokens';
@@ -16,7 +16,7 @@ const namePath = '$.itemData.CrBuildingCustomNameSubsystem.customNames';
 const levelPath = '$.itemData.BaseCoreReplicationHelperSaveData.baseCoreSaveData';
 const transportPath = '$.itemData.CrPackageTransportReplicator.senderConnections';
 const collectionPaths = [entityPath, networkPath, namePath, levelPath, transportPath];
-const collectionDiagnostics: Record<string, SaveImportDiagnostic['subcode']> = {
+const collectionDiagnostics: Record<string, SaveImportComplexityDiagnostic['subcode']> = {
     [entityPath]: 'entity-records', [networkPath]: 'power-network-records', [namePath]: 'custom-name-records',
     [levelPath]: 'core-level-records', [transportPath]: 'transport-records',
 };

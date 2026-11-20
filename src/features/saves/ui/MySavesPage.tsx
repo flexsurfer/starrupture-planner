@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { appIds } from '@/app/uklad/catalog';
 import { useRuntime, useSubscription } from '@/app/uklad/bindings';
+import { hasSaveMappings, LATEST_DATA_VERSION } from '@/features/app-shell/data-version';
 import { message, useTranslation, type MessageKey } from '@/shared/i18n';
 import { coreKey } from '../snapshot';
 import { saveViews, type SaveView, type SaveWorkspace } from '../types';
@@ -17,7 +18,9 @@ const viewLabels: Record<SaveView, MessageKey> = {
     map: 'Map', overview: 'Overview', 'power-networks': 'Power networks', storage: 'Storage', 'factory-plans': 'Factory plans',
 };
 
-function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disabled: boolean }) {
+function SaveOverview({ workspace, disabled, supportsSaveImport }: {
+    workspace: SaveWorkspace; disabled: boolean; supportsSaveImport: boolean;
+}) {
     const { t } = useTranslation();
     const runtime = useRuntime();
     const overview = useSubscription([appIds.subscriptions.SAVES_OVERVIEW, workspace.id]);
@@ -57,12 +60,12 @@ function SaveOverview({ workspace, disabled }: { workspace: SaveWorkspace; disab
             </div>
             <p className="px-1.5 text-xs text-base-content/65 sm:ml-auto sm:p-0">{workspace.isDemo ? t('Demo factory') : t('Last updated: {date}', { date: updated })}</p>
             <div className="ml-auto flex shrink-0 items-center gap-1 sm:ml-0">
-                <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7 text-(--save-action-ink)" disabled={disabled}
-                    onClick={() => runtime.dispatch([appIds.events.SAVES_IMPORT_OPEN, workspace.id])}>{t(workspace.isDemo ? 'Import your save' : 'Update')}</button>
+                {supportsSaveImport && <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7 text-(--save-action-ink)" disabled={disabled}
+                    onClick={() => runtime.dispatch([appIds.events.SAVES_IMPORT_OPEN, workspace.id])}>{t(workspace.isDemo ? 'Import your save' : 'Update')}</button>}
                 <button type="button" className="btn btn-ghost btn-xs h-7 min-h-7 text-[color-mix(in_oklab,var(--color-error)_60%,var(--color-base-content))]" disabled={disabled} onClick={remove}>{t('Remove')}</button>
             </div>
         </div>
-        {workspace.isDemo && <p className="shrink-0 bg-primary/5 px-4 py-2 text-xs text-base-content/75">{t('Sample data. Import your save to explore your own factory.')}</p>}
+        {workspace.isDemo && supportsSaveImport && <p className="shrink-0 bg-primary/5 px-4 py-2 text-xs text-base-content/75">{t('Sample data. Import your save to explore your own factory.')}</p>}
         <div id={`save-panel-${view}`} role="tabpanel" aria-labelledby={`save-view-${view}`}
             className={view === 'map' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'min-h-0 flex-1 overflow-auto p-3 sm:p-4'}>
             {view === 'map' && <SaveMap workspace={workspace} initialCoreId={mapSelections[workspace.id] ?? null} onOpenCore={openCore} />}
@@ -87,6 +90,8 @@ export function MySavesPage() {
     const storageError = useSubscription([appIds.subscriptions.SAVES_STORAGE_ERROR]);
     const catalog = useSubscription([appIds.subscriptions.SAVES_BUILDING_CATALOG]);
     const loading = useSubscription([appIds.subscriptions.UI_GAME_DATA_LOAD_PENDING]);
+    const dataVersion = useSubscription([appIds.subscriptions.APP_DATA_VERSION]);
+    const supportsSaveImport = hasSaveMappings(dataVersion);
     const disabled = storageError === 'load';
     useEffect(() => () => { runtime.dispatch([appIds.events.SAVES_IMPORT_CLOSE]); }, [runtime]);
     return <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-base-100">
@@ -95,7 +100,10 @@ export function MySavesPage() {
                 ? t('Your saves could not be loaded. Reload this page to try again.')
                 : t('Some changes could not be saved in this browser and may be lost when you close this page.')}
         </div>}
-        {workspace ? <SaveOverview key={workspace.id} workspace={workspace} disabled={disabled} /> :
+        {!supportsSaveImport && <p role="status" className="shrink-0 border-b border-info/30 bg-info/10 px-4 py-2 text-center text-sm">
+            {t('To import a save, select the latest game data version ({version}) from the dropdown at the top of the app.', { version: LATEST_DATA_VERSION.label })}
+        </p>}
+        {workspace ? <SaveOverview key={workspace.id} workspace={workspace} disabled={disabled} supportsSaveImport={supportsSaveImport} /> :
             <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4 sm:p-8">
                 <section className="my-auto w-full max-w-xl">
                     <h1 className="text-center text-xl font-semibold">{t('StarRupture Interactive Map')}</h1>
@@ -105,15 +113,17 @@ export function MySavesPage() {
                         <button type="button" className="btn btn-outline btn-sm" disabled={disabled || loading || !catalog}
                             onClick={() => runtime.dispatch([appIds.events.SAVES_OPEN_DEMO, t('Demo factory')])}>{t('Try a demo factory')}</button>
                     </div>
-                    <SaveImportCompatibility />
-                    <SaveFileDropZone disabled={disabled} onFile={file => {
-                        runtime.dispatch([appIds.events.SAVES_IMPORT_OPEN, crypto.randomUUID()]);
-                        runtime.dispatch([appIds.events.SAVES_IMPORT_READ, file]);
-                    }} />
-                    <SaveFileLocation />
+                    {supportsSaveImport && <>
+                        <SaveImportCompatibility />
+                        <SaveFileDropZone disabled={disabled} onFile={file => {
+                            runtime.dispatch([appIds.events.SAVES_IMPORT_OPEN, crypto.randomUUID()]);
+                            runtime.dispatch([appIds.events.SAVES_IMPORT_READ, file]);
+                        }} />
+                        <SaveFileLocation />
+                    </>}
                     <p className="mt-4 text-sm leading-relaxed text-base-content/70">{t('Map settings include cargo links, Core bounds and resource icons on buildings. Toggle Power networks to see connected buildings.')}</p>
                 </section>
             </div>}
-        <SaveImportDialog />
+        {supportsSaveImport && <SaveImportDialog />}
     </div>;
 }

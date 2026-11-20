@@ -27,5 +27,8 @@ it('accepts actual decompressed bytes exactly at the limit', async () => {
 
 it('rejects actual output over the limit even when its declared length is allowed', async () => {
     await expect(decodeSave(paddedSave(MAX_DECODED_SAVE_BYTES + 1, MAX_DECODED_SAVE_BYTES), extractionContext))
-        .rejects.toMatchObject({ code: 'decoded-size' });
+        .rejects.toMatchObject({ code: 'decoded-size', diagnostic: {
+            phase: 'decompression', declaredBytes: MAX_DECODED_SAVE_BYTES,
+            decodedBytes: MAX_DECODED_SAVE_BYTES + 1, decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+        } });
 });

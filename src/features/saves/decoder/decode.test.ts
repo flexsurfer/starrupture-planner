@@ -1,16 +1,73 @@
 // @vitest-environment node
-import { deflateSync } from 'node:zlib';
+import { deflateSync, type ZlibOptions } from 'node:zlib';
 import { expect, it, vi } from 'vitest';
 import { decodeSave, MAX_DECODED_SAVE_BYTES } from './decode';
 import { analyzeSave } from './analyze';
 import { extractionContext, saveFixture, storageFixture } from './test-fixture';
 
-function encode(value: unknown, declaredSize?: number): ArrayBuffer {
+function encode(value: unknown, declaredSize?: number, options?: ZlibOptions): ArrayBuffer {
     const text = typeof value === 'string' ? value : JSON.stringify(value);
     const header = Buffer.alloc(4);
     header.writeUInt32LE(declaredSize ?? Buffer.byteLength(text));
-    return Uint8Array.from(Buffer.concat([header, deflateSync(text)])).buffer;
+    return Uint8Array.from(Buffer.concat([header, deflateSync(text, options)])).buffer;
 }
+
+it.each(['GVAS', '{"timestamp":"synthetic"}', '<html>not a save</html>'])('rejects a 2,119-byte %s file before interpreting a size or opening its payload', async prefix => {
+    const bytes = Buffer.alloc(2119);
+    bytes.write(prefix);
+    const file = new Blob([bytes]);
+    const slice = vi.spyOn(file, 'slice');
+    const failure = await decodeSave(file, extractionContext).catch(error => error);
+    expect(failure).toMatchObject({ code: 'format', diagnostic: {
+        phase: 'header', decodedBytes: 0, decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+    } });
+    expect(slice).toHaveBeenCalledExactlyOnceWith(0, 6);
+    expect(failure.diagnostic).not.toHaveProperty('declaredBytes');
+});
+
+it.each([
+    ['compression method', 0x79, 0], ['window size', 0x88, 0], ['preset dictionary', 0x78, 0x20],
+] as const)('rejects an unsupported zlib %s even with a correct header checksum', async (_name, cmf, flags) => {
+    const bytes = new Uint8Array(encode(saveFixture(), MAX_DECODED_SAVE_BYTES + 1));
+    bytes[4] = cmf;
+    bytes[5] = flags + (31 - ((cmf << 8) + flags) % 31) % 31;
+    await expect(decodeSave(bytes.buffer, extractionContext)).rejects.toMatchObject({ code: 'format' });
+});
+
+it('rejects a zlib header checksum error before checking the declared size', async () => {
+    const bytes = new Uint8Array(encode(saveFixture(), MAX_DECODED_SAVE_BYTES + 1));
+    bytes[5] ^= 1;
+    await expect(decodeSave(bytes.buffer, extractionContext)).rejects.toMatchObject({ code: 'format' });
+});
+
+it.each([0, 1, 6, 9])('accepts valid zlib headers at compression level %s', async level => {
+    expect(await decodeSave(encode(saveFixture(), undefined, { level }), extractionContext))
+        .toEqual(analyzeSave(saveFixture(), extractionContext));
+});
+
+it.each([[0, 'size-header'], [MAX_DECODED_SAVE_BYTES + 1, 'declared-size']] as const)(
+    'reports a declared size of %s without claiming bytes were unpacked', async (declaredBytes, code) => {
+        await expect(decodeSave(encode(saveFixture(), declaredBytes), extractionContext)).rejects.toMatchObject({ code, diagnostic: {
+            phase: 'header', declaredBytes, decodedBytes: 0, decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+        } });
+    });
+
+it('reports the observed length separately when a recognized header disagrees with the payload', async () => {
+    const fixture = saveFixture();
+    const decodedBytes = Buffer.byteLength(JSON.stringify(fixture));
+    await expect(decodeSave(encode(fixture, decodedBytes + 1), extractionContext)).rejects.toMatchObject({ code: 'size-mismatch', diagnostic: {
+        phase: 'decompression', declaredBytes: decodedBytes + 1, decodedBytes, decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+    } });
+});
+
+it('distinguishes parsing failures from decompression failures in diagnostics', async () => {
+    await expect(decodeSave(encode('{bad'), extractionContext)).rejects.toMatchObject({ code: 'structure', diagnostic: {
+        phase: 'parse', declaredBytes: 4, decodedBytes: 4, decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+    } });
+    await expect(decodeSave(encode(saveFixture()).slice(0, -5), extractionContext)).rejects.toMatchObject({ code: 'compression', diagnostic: {
+        phase: 'decompression', declaredBytes: Buffer.byteLength(JSON.stringify(saveFixture())), decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+    } });
+});
 it('decodes the supported container directly into the app snapshot', async () => {
     const snapshot = await decodeSave(encode(saveFixture()), extractionContext);
     expect(snapshot).toEqual(analyzeSave(saveFixture(), extractionContext));
@@ -39,7 +96,7 @@ it('retains only the physical stock in the main inventory of each storage buildi
 it.each([
     ['invalid JSON', '{bad', undefined, 'structure'],
     ['unrelated JSON', { bases: [] }, undefined, 'structure'],
-    ['oversized header', {}, MAX_DECODED_SAVE_BYTES + 1, 'decoded-size'],
+    ['oversized header', {}, MAX_DECODED_SAVE_BYTES + 1, 'declared-size'],
     ['understated header', saveFixture(), 1, 'size-mismatch'],
     ['overstated header', {}, 10, 'size-mismatch'],
     ['unsupported format', { ...saveFixture(), version: 1 }, undefined, 'mapping-version'],

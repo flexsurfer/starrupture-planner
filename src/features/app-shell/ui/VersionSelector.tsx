@@ -36,6 +36,7 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({ className = "" }) => 
           style={{ width: 'auto', minWidth: '100px' }}
           value={currentVersion}
           disabled={loadPending}
+          aria-label={t('Game data version')}
           aria-busy={loadPending}
           onChange={(e) => {
             const next = e.target.value as DataVersion;

@@ -1,4 +1,5 @@
 import type { SaveImportTelemetry } from '@/features/saves/import-telemetry';
+import { saveImportDiagnosticData } from '@/features/saves/import-error';
 import { getAppRelease, getAppVersion } from '@/features/app-shell/app-version';
 
 type EventData = Record<string, string | number>;
@@ -33,11 +34,7 @@ export function trackSaveImport(telemetry: SaveImportTelemetry): void {
         } else {
             data.error = telemetry.error;
             data.stage = telemetry.stage;
-            if (telemetry.error === 'complexity' && telemetry.diagnostic) {
-                data.subcode = telemetry.diagnostic.subcode;
-                data.actual = telemetry.diagnostic.actual;
-                data.limit = telemetry.diagnostic.limit;
-            }
+            Object.assign(data, saveImportDiagnosticData(telemetry.error, telemetry.diagnostic));
         }
         for (const [key, value] of Object.entries(data)) {
             if (typeof value === 'number' && (!Number.isFinite(value) || value < 0)) delete data[key];

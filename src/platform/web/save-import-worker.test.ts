@@ -7,6 +7,7 @@ import recipeMappings from '../../../game-data/update2_QoL/save_recipes_mappings
 import observedFixture from '@/features/saves/decoder/fixtures/observed-0.3.5.json';
 import { analyzeSave } from '@/features/saves/decoder/analyze';
 import { saveDataContext, extractionContext, saveFixture } from '@/features/saves/decoder/test-fixture';
+import { MAX_DECODED_SAVE_BYTES } from '@/features/saves/import-limits';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); vi.resetModules(); });
 
@@ -64,6 +65,27 @@ it('sends a real decoder limit diagnostic as cloneable data without source conte
     await worker.onmessage({ data: { file, context: saveDataContext } } as MessageEvent);
     expect(structuredClone(worker.postMessage.mock.calls[0][0])).toEqual({ error: 'complexity', diagnostic: {
         subcode: 'building-name-chars', actual: 559, limit: 512,
+        phase: 'analysis', declaredBytes: Buffer.byteLength(json), decodedBytes: Buffer.byteLength(json),
+        decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+    } });
+});
+
+it.each(['format', 'declared-size'] as const)('sends real %s diagnostics through the worker without the file contents', async error => {
+    const worker = { onmessage: null as unknown as (event: MessageEvent) => Promise<void>, postMessage: vi.fn() };
+    vi.stubGlobal('self', worker);
+    stubMappings();
+    const bytes = Buffer.alloc(2119);
+    bytes.write('GVAS');
+    if (error === 'declared-size') {
+        bytes.writeUInt32LE(MAX_DECODED_SAVE_BYTES + 1);
+        bytes[4] = 0x78;
+        bytes[5] = 0x9c;
+    }
+    await import('./save-import-worker');
+    await worker.onmessage({ data: { file: new Blob([bytes]), context: saveDataContext } } as MessageEvent);
+    expect(structuredClone(worker.postMessage.mock.calls[0][0])).toEqual({ error, diagnostic: {
+        phase: 'header', decodedBytes: 0, decodedLimitBytes: MAX_DECODED_SAVE_BYTES,
+        ...(error === 'declared-size' ? { declaredBytes: MAX_DECODED_SAVE_BYTES + 1 } : {}),
     } });
 });
 

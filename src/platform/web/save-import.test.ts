@@ -30,13 +30,16 @@ it('transfers bytes to a worker, returns its report, and releases the worker', a
     expect(worker.terminate).toHaveBeenCalledOnce();
 });
 
-it('preserves structured limit diagnostics when reconstructing a worker error', async () => {
+it.each([
+    { error: 'complexity', diagnostic: { subcode: 'projection-chars', actual: 16_780_000, limit: 16_777_216 } },
+    { error: 'declared-size', diagnostic: { phase: 'header', declaredBytes: 1_073_741_825, decodedBytes: 0, decodedLimitBytes: 1_073_741_824 } },
+    { error: 'decoded-size', diagnostic: { phase: 'decompression', declaredBytes: 1_073_741_824, decodedBytes: 1_073_741_825, decodedLimitBytes: 1_073_741_824 } },
+])('preserves structured $error diagnostics when reconstructing a worker error', async ({ error, diagnostic }) => {
     vi.stubGlobal('Worker', TestWorker);
-    const diagnostic = { subcode: 'projection-chars', actual: 16_780_000, limit: 16_777_216 };
     const pending = readSaveInWorker(request(), new AbortController().signal);
     await vi.waitFor(() => expect(TestWorker.instances).toHaveLength(1));
-    TestWorker.instances[0].onmessage?.({ data: structuredClone({ error: 'complexity', diagnostic }) } as MessageEvent);
-    await expect(pending).rejects.toMatchObject({ code: 'complexity', diagnostic });
+    TestWorker.instances[0].onmessage?.({ data: structuredClone({ error, diagnostic }) } as MessageEvent);
+    await expect(pending).rejects.toMatchObject({ code: error, diagnostic });
     expect(TestWorker.instances[0].terminate).toHaveBeenCalledOnce();
 });
 
