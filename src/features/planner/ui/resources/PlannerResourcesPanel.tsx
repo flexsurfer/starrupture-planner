@@ -50,7 +50,9 @@ function PlannerResourcesPanelContent({ onClose, focusItemId, initialAmount, onC
         {coresOpen ? <CoreResourcePicker workspaceId={activeSave.id} focusItemId={focusItemId} onDone={() => setShowCores(false)} /> : <>
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
                 <p role="note" className="mb-3 border-s-2 border-base-content/20 ps-2 text-xs leading-normal text-base-content/70">
-                    {t('Enter your external supply in items per minute to see what you still need to produce.')}
+                    {t('Enter supply rates from extractors, production lines, or other bases to see what’s left to make. In single-target plans, use “{fitTarget}” to match your output rate to that supply.', {
+                        fitTarget: t('Fit target'),
+                    })}
                 </p>
                 <div className="mb-3">
                     <ManualResourceForm key={focusItemId ?? ''} focusItemId={focusItemId} initialAmount={initialAmount} />

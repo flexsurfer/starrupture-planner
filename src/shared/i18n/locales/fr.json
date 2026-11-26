@@ -892,7 +892,7 @@
   "Add resource": "Ajouter une ressource",
   "Used": "Utilisé",
   "Resources used by this plan": "Ressources utilisées par ce plan",
-  "Enter your external supply in items per minute to see what you still need to produce.": "Indiquez combien d’objets vous recevez de l’extérieur par minute pour voir ce qu’il vous reste à produire.",
+  "Enter supply rates from extractors, production lines, or other bases to see what’s left to make. In single-target plans, use “{fitTarget}” to match your output rate to that supply.": "Indiquez les débits de vos extracteurs, de vos lignes de production ou de vos autres bases pour voir ce qu’il reste à produire. Dans un plan à objectif unique, utilisez « {fitTarget} » pour adapter la cadence de production à ces apports.",
   "Add from Factory Map": "Ajouter depuis la carte d’usine",
   "or add from Factory Map": "ou ajouter depuis la carte d’usine",
   "Factory Map resources don’t sync. Remove and re-add them after updating your .sav file.": "Les ressources de la carte d’usine ne se synchronisent pas. Après la mise à jour du fichier .sav, retirez-les puis ajoutez-les à nouveau.",

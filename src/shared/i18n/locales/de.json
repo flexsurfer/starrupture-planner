@@ -890,7 +890,7 @@
   "Add resource": "Ressource hinzufügen",
   "Used": "Verwendet",
   "Resources used by this plan": "Von diesem Plan verwendete Ressourcen",
-  "Enter your external supply in items per minute to see what you still need to produce.": "Gib die externe Liefermenge pro Minute an, um zu sehen, was du noch produzieren musst.",
+  "Enter supply rates from extractors, production lines, or other bases to see what’s left to make. In single-target plans, use “{fitTarget}” to match your output rate to that supply.": "Gib an, wie viel deine Extraktoren, Produktionslinien oder andere Basen liefern, um zu sehen, was du noch herstellen musst. Bei einem einzelnen Ziel kannst du mit „{fitTarget}“ die passende Produktionsrate übernehmen.",
   "Selected node": "Ausgewählter Knoten",
   "Clear node selection": "Knotenauswahl aufheben",
   "Add from Factory Map": "Aus der Fabrikkarte hinzufügen",

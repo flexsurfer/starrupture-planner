@@ -890,7 +890,7 @@
   "Add resource": "Add resource",
   "Used": "Used",
   "Resources used by this plan": "Resources used by this plan",
-  "Enter your external supply in items per minute to see what you still need to produce.": "Enter your external supply in items per minute to see what you still need to produce.",
+  "Enter supply rates from extractors, production lines, or other bases to see what’s left to make. In single-target plans, use “{fitTarget}” to match your output rate to that supply.": "Enter supply rates from extractors, production lines, or other bases to see what’s left to make. In single-target plans, use “{fitTarget}” to match your output rate to that supply.",
   "Selected node": "Selected node",
   "Clear node selection": "Clear node selection",
   "Add from Factory Map": "Add from Factory Map",

@@ -900,7 +900,7 @@
   "Add resource": "Dodaj zasób",
   "Used": "Używane",
   "Resources used by this plan": "Zasoby używane przez ten plan",
-  "Enter your external supply in items per minute to see what you still need to produce.": "Podaj, ile sztuk na minutę otrzymujesz z zewnątrz, aby sprawdzić, co jeszcze musisz wyprodukować.",
+  "Enter supply rates from extractors, production lines, or other bases to see what’s left to make. In single-target plans, use “{fitTarget}” to match your output rate to that supply.": "Podaj, ile zasobów na minutę dostarczają ekstraktory, linie produkcyjne lub inne bazy, aby sprawdzić, co jeszcze trzeba wytworzyć. W planie z jednym celem wybierz „{fitTarget}”, aby dopasować tempo produkcji do tych dostaw.",
   "Add from Factory Map": "Dodaj z mapy fabryki",
   "or add from Factory Map": "lub dodaj z mapy fabryki",
   "Factory Map resources don’t sync. Remove and re-add them after updating your .sav file.": "Zasoby z mapy fabryki nie synchronizują się. Po aktualizacji pliku .sav usuń je i dodaj ponownie.",
