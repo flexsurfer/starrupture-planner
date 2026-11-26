@@ -890,6 +890,7 @@
   "Add resource": "Ressource hinzufügen",
   "Used": "Verwendet",
   "Resources used by this plan": "Von diesem Plan verwendete Ressourcen",
+  "Enter your external supply in items per minute to see what you still need to produce.": "Gib die externe Liefermenge pro Minute an, um zu sehen, was du noch produzieren musst.",
   "Selected node": "Ausgewählter Knoten",
   "Clear node selection": "Knotenauswahl aufheben",
   "Add from Factory Map": "Aus der Fabrikkarte hinzufügen",

@@ -890,6 +890,7 @@
   "Add resource": "Add resource",
   "Used": "Used",
   "Resources used by this plan": "Resources used by this plan",
+  "Enter your external supply in items per minute to see what you still need to produce.": "Enter your external supply in items per minute to see what you still need to produce.",
   "Selected node": "Selected node",
   "Clear node selection": "Clear node selection",
   "Add from Factory Map": "Add from Factory Map",
