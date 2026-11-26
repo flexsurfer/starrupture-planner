@@ -1,6 +1,7 @@
 import type { PlannerResource } from './resources';
 import type { UiText } from '@/shared/i18n/core';
 import type { PlannerFlowDirection } from './flow-graph';
+import type { PlannerNodePositions } from './node-positions';
 import type { CorporationLevelSelection, RecipeAlternativePreset } from '@/app/uklad/model';
 import { createStandardRecipePreset, createV2RecipePreset } from './recipe-presets';
 
@@ -22,6 +23,7 @@ export interface PlannerTab {
     resources: PlannerResource[];
     groupByStage: boolean;
     flowDirection: PlannerFlowDirection;
+    nodePositions: PlannerNodePositions;
     activeView: PlannerView;
 }
 
@@ -50,6 +52,7 @@ export function createPlannerTab(id: string, name: string, mode: PlannerMode, ac
         resources: [],
         groupByStage: false,
         flowDirection: 'LR',
+        nodePositions: {},
     };
 }
 

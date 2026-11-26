@@ -836,6 +836,7 @@
   "Cargo movement": "Ruch ładunków",
   "Labels appear as you zoom in.": "Etykiety pojawiają się po przybliżeniu.",
   "Reset display": "Resetuj widok",
+  "Reset node positions": "Przywróć domyślne położenie węzłów",
   "Positions from the save. Cargo routes are schematic connections, not in-game paths.": "Pozycje z zapisu gry. Trasy ładunków to połączenia schematyczne, a nie rzeczywiste trasy w grze.",
   "Experimental functionality": "Funkcja eksperymentalna",
   "Only tested with {dataVersion} game data and .sav files from StarRupture {gameVersion}.": "Testowano tylko z danymi gry {dataVersion} i plikami .sav ze StarRupture {gameVersion}.",

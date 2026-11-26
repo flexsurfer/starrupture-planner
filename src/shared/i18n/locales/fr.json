@@ -834,6 +834,7 @@
   "Cargo movement": "Animation du fret",
   "Labels appear as you zoom in.": "Les libellés apparaissent en zoomant.",
   "Reset display": "Réinitialiser l’affichage",
+  "Reset node positions": "Réinitialiser la position des nœuds",
   "Positions from the save. Cargo routes are schematic connections, not in-game paths.": "Positions issues de la sauvegarde. Les itinéraires de fret sont des liaisons schématiques, pas des trajets dans le jeu.",
   "Experimental functionality": "Fonctionnalité expérimentale",
   "Only tested with {dataVersion} game data and .sav files from StarRupture {gameVersion}.": "Testé uniquement avec les données de jeu {dataVersion} et les fichiers .sav de StarRupture {gameVersion}.",

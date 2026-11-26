@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createUkladTestHarness } from '@ukladjs/core/testing';
 import { createAppRuntime } from '@/app/uklad/runtime';
 import { appIds } from '@/app/uklad/catalog';
@@ -8,6 +8,7 @@ import type { SaveSnapshot } from '@/features/saves/snapshot';
 import type { AppVersionedGameData } from '@/app/uklad/model';
 import { createSaveWorkspace } from '@/features/saves/workspace';
 import { normalizePlannerTabs } from '@/platform/web/planner-tabs-storage';
+import * as matchInputs from '@/utils/matchInputsCalculation';
 import { normalizePlannerResources, saveResourceSnapshotKey } from './resources';
 
 const revision = `sha256:${'a'.repeat(64)}`;
@@ -304,6 +305,25 @@ describe('independent planner resources', () => {
         const before = structuredClone(resources());
         harness.dispatchSync([appIds.events.PLANNER_IMPORT_CORE_RESOURCES, 'world', picker().snapshotKey, [{ buildingId: 20 }]]);
         expect(resources()).toEqual(before);
+    });
+
+    it('skips resource-fit calculations for graph moves and recalculates when the supply changes', ({ onTestFinished }) => {
+        const { harness, resources } = setup();
+        harness.dispatchSync([appIds.events.PLANNER_ADD_MANUAL_RESOURCE, 'ore', 60]);
+        const calculate = vi.spyOn(matchInputs, 'calculateMaxTargetFromInputs');
+        onTestFinished(() => calculate.mockRestore());
+        const fit = vi.fn();
+        const stop = harness.watchSubscription([appIds.subscriptions.PLANNER_RESOURCE_FIT], fit);
+        onTestFinished(stop);
+        expect(calculate).toHaveBeenCalledTimes(1);
+        const nodeId = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_FLOW_GRAPH]).nodes[0].id;
+        harness.dispatchSync([appIds.events.PLANNER_SET_NODE_POSITIONS, 'plan', { [nodeId]: { x: 5, y: 0 } }]);
+        harness.dispatchSync([appIds.events.PLANNER_SET_NODE_POSITIONS, 'plan', { [nodeId]: { x: 10, y: 0 } }]);
+        harness.dispatchSync([appIds.events.PLANNER_RESET_NODE_POSITIONS, 'plan']);
+        expect(calculate).toHaveBeenCalledTimes(1);
+        harness.dispatchSync([appIds.events.PLANNER_SET_RESOURCE_RATE, resources()[0].id, 120]);
+        expect(calculate).toHaveBeenCalledTimes(2);
+        expect(fit.mock.lastCall?.[0].targetAmount).toBe(40);
     });
 
     it('fits a single target once without changing it on later resource edits', () => {

@@ -716,7 +716,9 @@ describe('headless application E2E', () => {
         await dispatchAll(scenario, [
             [appIds.events.PLANNER_SET_PINNED_NODE, 'single', pinnedNodeId],
             [appIds.events.PLANNER_SET_VIEWPORT, 'single', 25, -10, 1.2],
+            [appIds.events.PLANNER_SET_NODE_POSITIONS, 'single', { [pinnedNodeId]: { x: -35, y: 120 } }],
         ]);
+        expect(view.value('active')?.nodePositions).toEqual({ [pinnedNodeId]: { x: -35, y: 120 } });
         expect(view.value('pinned')).toEqual({ single: pinnedNodeId });
         expect(view.value('activePinned')).toBe(pinnedNodeId);
         expect(view.value('viewports')).toEqual({ single: { x: 25, y: -10, zoom: 1.2 } });
@@ -740,6 +742,13 @@ describe('headless application E2E', () => {
         expect(view.value('activeViewport')).toBeNull();
         await dispatch(scenario, [appIds.events.PLANNER_SET_TARGET_AMOUNT, 300]);
         expect(view.value('active')?.targetAmount).toBe(300);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_GROUP_BY_STAGE, true]);
+        expect(view.value('active')?.nodePositions).toEqual(single?.nodePositions);
+        await dispatch(scenario, [appIds.events.PLANNER_SET_GROUP_BY_STAGE, false]);
+        expect(view.value('active')?.nodePositions).toEqual({});
+        await dispatch(scenario, [appIds.events.PLANNER_SET_NODE_POSITIONS, 'copy', { [pinnedNodeId]: { x: 18, y: 46 } }]);
+        await dispatch(scenario, [appIds.events.PLANNER_RESET_NODE_POSITIONS, 'copy']);
+        expect(view.value('active')?.nodePositions).toEqual({});
         expect(view.value('tabs')[0]).toEqual(single);
         await dispatch(scenario, [appIds.events.PLANNER_CLOSE_TAB, 'copy']);
         expect(view.value('active')).toEqual(single);

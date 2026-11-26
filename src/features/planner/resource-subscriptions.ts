@@ -39,8 +39,16 @@ export const registerPlannerResourceSubscriptions: UkladModule<UkladRegistrar<Ap
             isTarget: targets.includes(building.itemId),
         })) })) });
     registrar.regSub(appIds.subscriptions.PLANNER_RESOURCE_FIT,
-        () => [[appIds.subscriptions.PLANNER_ACTIVE_TAB], [appIds.subscriptions.BUILDINGS_LIST]],
-        ([tab, buildings]) => getPlannerResourceFit(tab, buildings));
+        () => [
+            [appIds.subscriptions.PLANNER_MODE],
+            [appIds.subscriptions.PLANNER_SELECTED_ITEM_ID],
+            [appIds.subscriptions.PLANNER_RESOURCES],
+            [appIds.subscriptions.PLANNER_SINGLE_RECIPE_SELECTIONS],
+            [appIds.subscriptions.PLANNER_SELECTED_CORPORATION_LEVEL],
+            [appIds.subscriptions.BUILDINGS_LIST],
+        ],
+        ([mode, selectedItemId, resources, recipeSelections, selectedCorporationLevel, buildings]) =>
+            getPlannerResourceFit({ mode, selectedItemId, resources, recipeSelections, selectedCorporationLevel }, buildings));
     registrar.regSub(appIds.subscriptions.PLANNER_BUILDING_COMPARISON,
         () => [[appIds.subscriptions.PLANNER_COMPARISON_CORE_IDS], [appIds.subscriptions.SAVES_ACTIVE_WORKSPACE],
             [appIds.subscriptions.APP_DATA_VERSION], [appIds.subscriptions.PLANNER_PRODUCTION_FLOW], [appIds.subscriptions.BUILDINGS_LIST], [appIds.subscriptions.SAVES_BUILDING_CATALOG]],

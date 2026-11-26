@@ -18,6 +18,41 @@ describe('headless planner validation E2E', () => {
     };
     afterEach(async () => { await Promise.all(apps.splice(0).map(app => app.dispose())); });
 
+    it('resets manual positions for the edited plan when switching or adding a target', async () => {
+        const app = createApp();
+        await app.seed();
+        const view = app.mountView('planner layout', { tab: [S.PLANNER_ACTIVE_TAB], graph: [S.PLANNER_FLOW_GRAPH] } as const);
+        await app.dispatchAll([
+            [E.PLANNER_CREATE_TAB, 'single', 'Single', 'single'],
+            [E.PLANNER_SET_SELECTED_ITEM, 'iron-plate'],
+        ]);
+        const positions = { [view.value('graph').nodes[0].id]: { x: -50, y: 90 } };
+        await app.dispatchAll([
+            [E.PLANNER_SET_NODE_POSITIONS, 'single', positions],
+            [E.PLANNER_SET_SELECTED_ITEM, 'iron-plate'],
+            [E.PLANNER_SET_TARGET_AMOUNT, 120],
+        ]);
+        expect(view.value('tab')?.nodePositions).toEqual(positions);
+
+        await app.dispatchAll([
+            [E.PLANNER_CREATE_TAB, 'multi', 'Multi', 'multi'],
+            [E.PLANNER_ADD_TARGET, 'iron-plate'],
+            [E.PLANNER_SET_NODE_POSITIONS, 'multi', positions],
+            [E.PLANNER_SET_MULTI_TARGET_AMOUNT, 'iron-plate', 120],
+            [E.PLANNER_ADD_TARGET, 'iron-plate'],
+            [E.PLANNER_ADD_TARGET, 'missing'],
+        ]);
+        expect(view.value('tab')?.nodePositions).toEqual(positions);
+        await app.dispatch([E.PLANNER_ADD_TARGET, 'copper-wire']);
+        expect(view.value('tab')?.multiTargets).toHaveLength(2);
+        expect(view.value('tab')?.nodePositions).toEqual({});
+
+        await app.dispatch([E.PLANNER_SELECT_TAB, 'single']);
+        expect(view.value('tab')?.nodePositions).toEqual(positions);
+        await app.dispatch([E.PLANNER_SET_SELECTED_ITEM, 'copper-wire']);
+        expect(view.value('tab')?.nodePositions).toEqual({});
+    });
+
     it('keeps multi-target copies independent and refuses circular production recipes', async () => {
         const app = createApp();
         await app.seed('playtest', {

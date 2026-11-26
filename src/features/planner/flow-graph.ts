@@ -69,6 +69,7 @@ export function buildPlannerFlowGraph(flowNodes: PlannerFlowNode[], flowEdges: F
         return {
             id: getFlowNodeId(flowNode),
             type: flowNode.nodeType === 'target' ? 'output' : 'default',
+            deletable: false,
             position,
             sourcePosition,
             targetPosition,
@@ -95,6 +96,7 @@ export function buildPlannerFlowGraph(flowNodes: PlannerFlowNode[], flowEdges: F
             source,
             target,
             type: 'production',
+            deletable: false,
             style: { stroke: color, strokeWidth: 1.5, strokeOpacity: 0.4 },
             data: { itemName: getItemName(edge.itemId, items), rateLabel: `${edge.amount.toFixed(1)}/min` },
             label: `${getItemName(edge.itemId, items)}

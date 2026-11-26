@@ -121,6 +121,8 @@ export const appIds = {
         PLANNER_CLOSE_TAB: 'planner/close-tab',
         PLANNER_SET_PINNED_NODE: 'planner/set-pinned-node',
         PLANNER_SET_VIEWPORT: 'planner/set-viewport',
+        PLANNER_SET_NODE_POSITIONS: 'planner/set-node-positions',
+        PLANNER_RESET_NODE_POSITIONS: 'planner/reset-node-positions',
         PLANNER_SET_ACTIVE_VIEW: 'planner/set-active-view',
         PLANNER_DISMISS_TARGET_WARNING: 'planner/dismiss-target-warning',
         PLANNER_ADD_TARGET: 'planner/add-target',

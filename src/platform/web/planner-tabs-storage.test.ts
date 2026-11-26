@@ -26,8 +26,13 @@ describe('saved planner tabs', () => {
         harness.dispatchSync([appIds.events.PLANNER_CREATE_TAB, 'source', 'Iron', mode]);
         harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter_mk2:0']);
         harness.dispatchSync([appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'iron-ore', 80]);
+        const nodeId = harness.getSubscriptionValue([appIds.subscriptions.PLANNER_FLOW_GRAPH]).nodes[0].id;
+        const position = { x: -23.5, y: 0 };
+        harness.dispatchSync([appIds.events.PLANNER_SET_NODE_POSITIONS, 'source', { [nodeId]: position }]);
         const source = structuredClone(harness.getState().plannerTabs[0]);
         harness.dispatchSync([appIds.events.PLANNER_DUPLICATE_TAB, 'source', 'copy']);
+        expect(harness.getState().plannerTabs[1].nodePositions).toEqual({ [nodeId]: position });
+        harness.dispatchSync([appIds.events.PLANNER_SET_NODE_POSITIONS, 'copy', { [nodeId]: { x: 18, y: 46 } }]);
         harness.dispatchSync([appIds.events.PLANNER_SET_RECIPE_SELECTION, 'iron-plate', 'smelter:0']);
         harness.dispatchSync([appIds.events.PLANNER_SET_EXTERNAL_INPUT, 'iron-ore', 100]);
         const expectedTabs = structuredClone(harness.getState().plannerTabs);
@@ -41,8 +46,17 @@ describe('saved planner tabs', () => {
             expect(second.harness.getState().plannerTabs).toEqual(expectedTabs);
             expect(second.harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])).toEqual(expectedTabs[1]);
             expect(second.harness.getState().plannerActiveTabId).toBe('copy');
+            second.harness.dispatchSync([appIds.events.PLANNER_RESET_NODE_POSITIONS, 'copy']);
+            await second.harness.flush();
         } finally {
             second.runtime.dispose();
+        }
+        const reloaded = createSavedRuntime(storage);
+        try {
+            expect(reloaded.harness.getState().plannerTabs.map(tab => tab.nodePositions))
+                .toEqual([{ [nodeId]: position }, {}]);
+        } finally {
+            reloaded.runtime.dispose();
         }
     });
 
@@ -99,6 +113,7 @@ describe('saved planner tabs', () => {
         const storage = memoryStorageAdapter({
             [`tabs-test/${stateKeys.plannerTabs}`]: JSON.stringify({ v: 1, data: [
                 { ...tab, resources: undefined, targetAmount: -20, activeView: 'bad', flowDirection: 'bad',
+                    nodePositions: { moved: { x: 0, y: -2.25 }, malformed: { x: '1', y: 2 }, missing: null },
                     externalInputs: { 'iron-ore': 80, negative: -1, zero: 0, malformed: '20', missing: null },
                     multiTargets: [{ itemId: 'iron-plate', amount: 20 }, { itemId: 'iron-plate', amount: 30 }, { itemId: 'broken', amount: null }],
                     recipeSelections: { 'iron-plate': 'smelter:0', broken: 5 }, selectedCorporationLevel: { corporationId: 5, level: '1' } },
@@ -108,7 +123,7 @@ describe('saved planner tabs', () => {
         });
         const { runtime, harness } = createSavedRuntime(storage);
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_TABS])).toEqual([{
-            ...tab, name: 'Saved plan', resources: [{ id: 'legacy-resource-1', itemId: 'iron-ore', ratePerMinute: 80, enabled: true }], multiTargets: [{ itemId: 'iron-plate', amount: 20 }], recipeSelections: { 'iron-plate': 'smelter:0' },
+            ...tab, name: 'Saved plan', nodePositions: { moved: { x: 0, y: -2.25 } }, resources: [{ id: 'legacy-resource-1', itemId: 'iron-ore', ratePerMinute: 80, enabled: true }], multiTargets: [{ itemId: 'iron-plate', amount: 20 }], recipeSelections: { 'iron-plate': 'smelter:0' },
         }]);
         expect(harness.getSubscriptionValue([appIds.subscriptions.PLANNER_ACTIVE_TAB])?.id).toBe('valid');
         runtime.dispose();

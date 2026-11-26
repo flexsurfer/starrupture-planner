@@ -239,6 +239,8 @@ export interface AppContracts extends UkladContracts {
         [appIds.events.PLANNER_CLOSE_TAB]: [id: string];
         [appIds.events.PLANNER_SET_PINNED_NODE]: [tabId: string, nodeId: string | null];
         [appIds.events.PLANNER_SET_VIEWPORT]: [tabId: string, x: number, y: number, zoom: number];
+        [appIds.events.PLANNER_SET_NODE_POSITIONS]: [tabId: string, positions: PlannerTab['nodePositions']];
+        [appIds.events.PLANNER_RESET_NODE_POSITIONS]: [tabId: string];
         [appIds.events.PLANNER_SET_ACTIVE_VIEW]: [view: PlannerView];
         [appIds.events.PLANNER_DISMISS_TARGET_WARNING]: [];
         [appIds.events.PLANNER_ADD_TARGET]: [itemId: string];

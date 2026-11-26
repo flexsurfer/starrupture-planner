@@ -1,6 +1,7 @@
 import { normalizePlannerResources, nextPlannerResourceId, isValidResourceRate } from './resources';
 import { message } from '@/shared/i18n/core';
 import { createPlannerTab, getActivePlannerTab, type PlannerTab } from './state';
+import { normalizeNodePositions } from './node-positions';
 import { getMultiTargetWarning } from './target-conflicts';
 import { createRecipeResolver } from './production-flow';
 import type { UkladModule, UkladRegistrar } from '@ukladjs/core/vanilla';
@@ -106,6 +107,7 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
             selectedCorporationLevel: source.selectedCorporationLevel ? { ...source.selectedCorporationLevel } : null,
             multiTargets: source.multiTargets.map(target => ({ ...target })),
             recipeSelections: { ...source.recipeSelections },
+            nodePositions: normalizeNodePositions(source.nodePositions),
             resources: normalizePlannerResources(source.resources),
         });
         draftState.plannerComparisonCoreIds = [];
@@ -146,13 +148,27 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         const tab = getActivePlannerTab(draftState);
         if (tab && ['graph', 'table'].includes(view)) tab.activeView = view;
     });
+    registrar.regEvent(appIds.events.PLANNER_SET_NODE_POSITIONS, ({ draftState }, tabId, positions) => {
+        const tab = draftState.plannerTabs.find(entry => entry.id === tabId);
+        if (tab) Object.assign(tab.nodePositions, normalizeNodePositions(positions));
+    });
+    registrar.regEvent(appIds.events.PLANNER_RESET_NODE_POSITIONS, ({ draftState }, tabId) => {
+        const tab = draftState.plannerTabs.find(entry => entry.id === tabId);
+        if (tab && Object.keys(tab.nodePositions).length) tab.nodePositions = {};
+    });
     registrar.regEvent(appIds.events.PLANNER_SET_GROUP_BY_STAGE, ({ draftState }, enabled) => {
         const tab = getActivePlannerTab(draftState);
-        if (tab) tab.groupByStage = enabled;
+        if (tab && tab.groupByStage !== enabled) {
+            tab.groupByStage = enabled;
+            tab.nodePositions = {};
+        }
     });
     registrar.regEvent(appIds.events.PLANNER_SET_FLOW_DIRECTION, ({ draftState }, direction) => {
         const tab = getActivePlannerTab(draftState);
-        if (tab && ['LR', 'RL', 'TB', 'BT'].includes(direction)) tab.flowDirection = direction;
+        if (tab && tab.flowDirection !== direction && ['LR', 'RL', 'TB', 'BT'].includes(direction)) {
+            tab.flowDirection = direction;
+            tab.nodePositions = {};
+        }
     });
     registrar.regEvent(appIds.events.PLANNER_DISMISS_TARGET_WARNING, ({ draftState }) => {
         draftState.plannerTargetWarning = null;
@@ -168,6 +184,7 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         if (!info?.recipe.inputs.length) return;
         if (!validateTargets(draftState, tab, [...tab.multiTargets.map(t => t.itemId), itemId])) return;
         tab.multiTargets.push({ itemId, amount: info.recipe.output.amount_per_minute });
+        tab.nodePositions = {};
     });
     registrar.regEvent(appIds.events.PLANNER_REMOVE_TARGET, ({ draftState }, itemId) => {
         const tab = getActivePlannerTab(draftState);
@@ -190,6 +207,7 @@ export const registerPlannerEvents: UkladModule<UkladRegistrar<AppContracts>> = 
         const tab = getActivePlannerTab(draftState);
         if (tab?.mode !== 'single') return;
         draftState.plannerTargetWarning = null;
+        if (tab.selectedItemId !== itemId) tab.nodePositions = {};
         tab.selectedItemId = itemId;
         tab.selectedCorporationLevel = null;
         tab.targetAmount = getSlowestOutputRateForItem(draftState.buildingsList, itemId || '');

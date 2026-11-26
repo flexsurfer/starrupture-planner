@@ -22,6 +22,7 @@ describe('planner archive', () => {
         legacy.version = 1;
         for (const plan of legacy.plans) {
             delete plan.resources;
+            delete plan.nodePositions;
         }
         legacy.plans[0].externalInputs = { plate: 42, wire: 60 };
         const migrated = parseArchive(JSON.stringify(legacy));
@@ -33,6 +34,7 @@ describe('planner archive', () => {
         expect(migrated.plans[1].resources).toEqual([]);
         for (const plan of migrated.plans) {
             expect(plan).not.toHaveProperty('externalInputs');
+            expect(plan.nodePositions).toEqual({});
         }
         expect(parseArchive(JSON.stringify(migrated))).toEqual(migrated);
     });
@@ -133,6 +135,7 @@ describe('planner archive', () => {
         ['duplicate bases', (archive: ReturnType<typeof createArchive>) => archive.bases.push(archive.bases[0])],
         ['duplicate buildings', (archive: ReturnType<typeof createArchive>) => archive.bases[0].buildings.push(archive.bases[0].buildings[0])],
         ['invalid amount', (archive: ReturnType<typeof createArchive>) => { archive.plans[0].targetAmount = -1; }],
+        ['invalid node coordinates', (archive: ReturnType<typeof createArchive>) => { Object.assign(archive.plans[0], { nodePositions: { moved: { y: 2 } } }); }],
         ['missing V2 resources', (archive: ReturnType<typeof createArchive>) => { Reflect.deleteProperty(archive.plans[0], 'resources'); }],
         ['non-array resources', (archive: ReturnType<typeof createArchive>) => { Object.assign(archive.plans[0], { resources: {} }); }],
         ['duplicate resource IDs', (archive: ReturnType<typeof createArchive>) => { archive.plans[0].resources.push(archive.plans[0].resources[0]); }],

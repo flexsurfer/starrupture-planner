@@ -29,6 +29,7 @@ export function archiveFixture() {
     state.plannerTabs = [
         { ...createPlannerTab('single', 'Single plan', 'single', 'table'), selectedItemId: 'frame', targetAmount: 25,
             recipeSelections: { frame: 'assembler:alt' }, selectedCorporationLevel: { corporationId: 'corp', level: 2 }, flowDirection: 'BT', groupByStage: true,
+            nodePositions: { assembler_0_frame: { x: -23.5, y: 140 } },
             resources: [
                 { id: 'manual-plate', itemId: 'plate', ratePerMinute: 12, enabled: false },
                 { id: 'saved-wire', itemId: 'wire', ratePerMinute: 45, enabled: true, coreId: 100, coreName: 'Northern core' },

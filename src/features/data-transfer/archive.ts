@@ -1,6 +1,7 @@
 import { UiMessageError, type UiText, type MessageKey } from '@/shared/i18n/core';
 import type { AppState, Base, BaseBuilding, EnergyGroup } from '@/app/uklad/model';
 import { createPlannerTab, type PlannerTab } from '@/features/planner/state';
+import { normalizeNodePositions } from '@/features/planner/node-positions';
 import { isValidResourceRate, normalizePlannerResources, resourcesFromLegacyInputs } from '@/features/planner/resources';
 import type { BasesMode } from '@/features/bases/state';
 import { resolveInputBuilding } from '@/utils/productionPlanInputs';
@@ -193,6 +194,7 @@ export function parseArchive(text: string): PlannerArchive {
         // V1 plans used a per-item map. V2 owns independent resource allocations.
         check(value.version === 1 || plan.resources !== undefined);
         try {
+            plan.nodePositions = normalizeNodePositions(plan.nodePositions, true);
             plan.resources = normalizePlannerResources(plan.resources === undefined
                 ? resourcesFromLegacyInputs(plan.externalInputs)
                 : plan.resources, true);

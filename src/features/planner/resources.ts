@@ -61,6 +61,8 @@ export interface PlannerResourceFit {
     reason: 'multi-target' | 'no-target' | 'no-resources' | 'unrelated-resources' | null;
     targetAmount: number | null;
 }
+type ResourceFitPlan = Pick<PlannerTab, 'mode' | 'selectedItemId' | 'resources' | 'recipeSelections' | 'selectedCorporationLevel'>;
+
 export interface PlannerBuildingComparison {
     coreNames: string[];
     rows: { buildingTypeId: string; name: string; existing: number; planned: number; additional: number; spare: number }[];
@@ -185,12 +187,11 @@ export function buildPlannerResourceSummary(resources: PlannerResource[], target
         return { itemId, name: names.get(itemId) ?? itemId, rows, availableRate, usedRate, unusedRate: Math.max(0, availableRate - usedRate), isTarget: targets.includes(itemId) };
     }).sort((a, b) => a.name.localeCompare(b.name));
 }
-export function getPlannerResourceFit(tab: PlannerTab | null, buildings: Building[]): PlannerResourceFit {
+export function getPlannerResourceFit(tab: ResourceFitPlan | null, buildings: Building[]): PlannerResourceFit {
     const unavailable = (reason: PlannerResourceFit['reason']): PlannerResourceFit => ({ available: false, reason, targetAmount: null });
-    if (!tab?.selectedItemId && tab?.mode !== 'multi') return unavailable('no-target');
     if (tab?.mode === 'multi') return unavailable('multi-target');
     if (!tab?.selectedItemId) return unavailable('no-target');
-    const amounts = aggregatePlannerResources(tab.resources, plannerTargetIds(tab));
+    const amounts = aggregatePlannerResources(tab.resources, [tab.selectedItemId]);
     if (!Object.keys(amounts).length) return unavailable('no-resources');
     const inputBuildings = getPlannerInputBuildings(amounts);
     const targetAmount = calculateMaxTargetFromInputs({ selectedItemId: tab.selectedItemId, inputBuildings, buildings,

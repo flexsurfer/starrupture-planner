@@ -2,10 +2,13 @@ import { useFlowLabels } from '@/shared/i18n/useFlowLabels';
 import { useTranslation } from '@/shared/i18n';
 import { appIds } from '@/app/uklad/catalog';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import {
     ReactFlow,
     type Node,
     type Edge,
+    type OnNodesChange,
+    ControlButton,
     Controls,
     Background,
     useNodesState,
@@ -20,10 +23,13 @@ import { DiagramSettings } from './DiagramSettings';
 import { NodeCard } from './NodeCard';
 import { usePinnableNodeHighlight } from './usePinnableNodeHighlight';
 import { usePlannerInputActions } from './usePlannerInputActions';
+import type { PlannerNodePositions } from '../../node-positions';
 
 // Define node and edge types outside component to prevent React Flow warnings
 const nodeTypes = {};
 const edgeTypes = { production: ProductionFlowEdge };
+const proOptions = { hideAttribution: true };
+const fitViewOptions = { duration: 300, padding: 0.1 };
 
 /**
  * Flow diagram component for the production planner
@@ -38,7 +44,9 @@ export const PlannerFlowDiagram: React.FC<{ onManageResource?: (itemId: string, 
     }, [runtime]);
     const flowLabels = useFlowLabels();
     const { fitView } = useReactFlow();
-    const tabId = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TAB])?.id;
+    const activeTab = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_TAB]);
+    const tabId = activeTab?.id;
+    const nodePositions = activeTab?.nodePositions;
     const viewport = useSubscription([appIds.subscriptions.PLANNER_ACTIVE_VIEWPORT]);
     const rememberViewport = useCallback((_event: unknown, next: { x: number; y: number; zoom: number }) => {
         if (tabId) runtime.dispatch([appIds.events.PLANNER_SET_VIEWPORT, tabId, next.x, next.y, next.zoom]);
@@ -70,6 +78,26 @@ export const PlannerFlowDiagram: React.FC<{ onManageResource?: (itemId: string, 
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+    const handleNodesChange = useCallback<OnNodesChange>((changes) => {
+        onNodesChange(changes);
+        // React Flow sends dragging=false on drop and for completed keyboard moves.
+        const moved: PlannerNodePositions = {};
+        for (const change of changes) {
+            if (change.type === 'position' && change.dragging === false && change.position) {
+                moved[change.id] = { ...change.position };
+            }
+        }
+        if (tabId && Object.keys(moved).length) runtime.dispatch([appIds.events.PLANNER_SET_NODE_POSITIONS, tabId, moved]);
+    }, [onNodesChange, runtime, tabId]);
+    const resetNodePositions = () => {
+        if (!tabId) return;
+        runtime.dispatch([appIds.events.PLANNER_RESET_NODE_POSITIONS, tabId]);
+        // Commit the automatic coordinates before React Flow measures the graph for fitView.
+        flushSync(() => {
+            onNodesChange(flowGraph.nodes.map(({ id, position }) => ({ type: 'position', id, position, dragging: false })));
+        });
+        void fitView(fitViewOptions);
+    };
     const {
         nodes: highlightedNodes,
         edges: highlightedEdges,
@@ -77,16 +105,21 @@ export const PlannerFlowDiagram: React.FC<{ onManageResource?: (itemId: string, 
         onNodeDragStop,
     } = usePinnableNodeHighlight(nodes, edges, true, { pinnedNodeId, onPinnedNodeChange });
 
-    // Update React Flow nodes and edges when subscription data changes
     useEffect(() => {
-        if (flowGraph) {
-            setNodes(renderedNodes);
-            setEdges(flowGraph.edges);
-        } else {
-            setNodes([]);
-            setEdges([]);
-        }
-    }, [flowGraph, renderedNodes, setNodes, setEdges]);
+        setNodes(current => {
+            const byId = new Map(current.map(node => [node.id, node]));
+            return renderedNodes.map(node => {
+                const previous = byId.get(node.id);
+                return {
+                    ...previous,
+                    ...node,
+                    position: previous?.dragging ? previous.position : nodePositions?.[node.id] ?? node.position,
+                };
+            });
+        });
+    }, [renderedNodes, nodePositions, setNodes]);
+
+    useEffect(() => { setEdges(flowGraph.edges); }, [flowGraph.edges, setEdges]);
 
     useEffect(() => {
         // Validate against the calculated graph, not the initially empty React Flow nodes.
@@ -94,6 +127,7 @@ export const PlannerFlowDiagram: React.FC<{ onManageResource?: (itemId: string, 
     }, [flowGraph, pinnedNodeId, onPinnedNodeChange]);
 
     const layoutKey = JSON.stringify([selectedItemId, direction, groupByStage, nodes.length, sidebarOpen]);
+
     // Restore the session camera on mount; still fit when the actual layout changes.
     useEffect(() => {
         if (!nodes.length) return;
@@ -101,7 +135,7 @@ export const PlannerFlowDiagram: React.FC<{ onManageResource?: (itemId: string, 
         previousLayout.current = layoutKey;
         if (viewport && !layoutChanged) return;
         // Small delay to ensure DOM is updated
-        const timer = setTimeout(() => { if (nodes.length > 0) { fitView({ duration: 300, padding: 0.1 }); } }, 10);
+        const timer = setTimeout(() => { void fitView(fitViewOptions); }, 10);
         return () => clearTimeout(timer);
     }, [layoutKey, nodes.length, viewport, fitView]);
 
@@ -125,11 +159,11 @@ export const PlannerFlowDiagram: React.FC<{ onManageResource?: (itemId: string, 
                 nodes={highlightedNodes}
                 edges={highlightedEdges}
                 colorMode={theme}
-                onNodesChange={onNodesChange}
+                onNodesChange={handleNodesChange}
                 onEdgesChange={onEdgesChange}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
-                attributionPosition="bottom-left"
+                proOptions={proOptions}
                 minZoom={0.1}
                 maxZoom={2}
                 defaultViewport={viewport ?? undefined}
@@ -139,7 +173,17 @@ export const PlannerFlowDiagram: React.FC<{ onManageResource?: (itemId: string, 
                 onNodeDragStop={onNodeDragStop}
             >
                 <Background />
-                <Controls />
+                <Controls>
+                    <ControlButton
+                        title={t('Reset node positions')}
+                        aria-label={t('Reset node positions')}
+                        onClick={resetNodePositions}
+                    >
+                        <svg viewBox="3 3 18 18" className="size-3! max-h-none! max-w-none! shrink-0" style={{ fillOpacity: 1 }} aria-hidden="true">
+                            <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.93 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z" />
+                        </svg>
+                    </ControlButton>
+                </Controls>
             </ReactFlow>
         </div>
     );

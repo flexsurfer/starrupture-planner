@@ -834,6 +834,7 @@
   "Cargo movement": "Frachtbewegung",
   "Labels appear as you zoom in.": "Beschriftungen erscheinen beim Hineinzoomen.",
   "Reset display": "Darstellung zurücksetzen",
+  "Reset node positions": "Knotenpositionen zurücksetzen",
   "Positions from the save. Cargo routes are schematic connections, not in-game paths.": "Positionen aus dem Spielstand. Frachtrouten sind schematische Verbindungen und keine Wege im Spiel.",
   "Experimental functionality": "Experimentelle Funktion",
   "Only tested with {dataVersion} game data and .sav files from StarRupture {gameVersion}.": "Nur mit Spieldaten von {dataVersion} und .sav-Dateien aus StarRupture {gameVersion} getestet.",

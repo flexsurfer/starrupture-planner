@@ -1,5 +1,6 @@
 import { normalizePlannerResources, resourcesFromLegacyInputs } from '@/features/planner/resources';
 import { createPlannerTab, type PlannerTab } from '@/features/planner/state';
+import { normalizeNodePositions } from '@/features/planner/node-positions';
 import { normalizePinnedRecipeSelections } from './legacy-storage/pinned-recipes-storage';
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -20,6 +21,7 @@ export function normalizePlannerTabs(value: unknown): PlannerTab[] {
         tab.selectedItemId = typeof entry.selectedItemId === 'string' && entry.selectedItemId ? entry.selectedItemId : null;
         tab.targetAmount = positive(entry.targetAmount) ? entry.targetAmount : 60;
         tab.recipeSelections = normalizePinnedRecipeSelections(entry.recipeSelections);
+        tab.nodePositions = normalizeNodePositions(entry.nodePositions);
         tab.resources = entry.resources === undefined ? resourcesFromLegacyInputs(entry.externalInputs) : normalizePlannerResources(entry.resources);
         tab.groupByStage = entry.groupByStage === true;
         if (entry.flowDirection === 'LR' || entry.flowDirection === 'RL' || entry.flowDirection === 'TB' || entry.flowDirection === 'BT') {
